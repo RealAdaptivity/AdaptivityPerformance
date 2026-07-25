@@ -8,7 +8,7 @@ on:
 jobs:
   deploy-testflight:
     runs-on: macos-latest
-    if: "${{ secrets.APP_STORE_CONNECT_API_KEY != '' }}"
+    if: secrets.APP_STORE_CONNECT_API_KEY != ''
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -16,11 +16,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Production Bundle
         run: npm run build
