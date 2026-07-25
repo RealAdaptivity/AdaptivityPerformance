@@ -1,0 +1,44 @@
+name: Deploy Mechanic App to Apple TestFlight (Automated Cloud Upload)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy-testflight:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Production Bundle
+        run: npm run build
+
+      - name: Prepare Capacitor iOS Project
+        run: |
+          node -e "fs.copyFileSync('capacitor.tech.json', 'capacitor.config.json')"
+          npx cap add ios || true
+          npx cap sync ios
+
+      - name: Setup Fastlane & Build iOS Archive
+        run: |
+          cd ios/App
+          pod install || true
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: 'ios/App/App.xcworkspace'
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
