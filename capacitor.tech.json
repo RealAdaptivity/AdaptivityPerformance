@@ -1,0 +1,26 @@
+{
+  "appId": "com.adaptivityperformance.tech",
+  "appName": "Adaptivity Tech Dispatch",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#090a0f",
+      "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "Geolocation": {
+      "permissions": ["location"]
+    }
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}
