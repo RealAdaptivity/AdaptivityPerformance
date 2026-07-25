@@ -8,6 +8,7 @@ on:
 jobs:
   deploy-testflight:
     runs-on: macos-latest
+    if: "${{ secrets.APP_STORE_CONNECT_API_KEY != '' }}"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
