@@ -1,6 +1,6 @@
 {
-  "appId": "com.adaptivityperformance.customer",
-  "appName": "Adaptivity Mobile Mechanic",
+  "appId": "com.adaptivityperformance.tech",
+  "appName": "Adaptivity Tech Dispatch",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "server": {
@@ -10,11 +10,14 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 2000,
-      "backgroundColor": "#0b0c10",
+      "backgroundColor": "#090a0f",
       "showSpinner": false
     },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "Geolocation": {
+      "permissions": ["location"]
     }
   },
   "ios": {
