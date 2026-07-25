@@ -10,7 +10,6 @@ import { SEOContentBlock } from './components/SEOContentBlock';
 import { Testimonials } from './components/Testimonials';
 import { RepairTrackerDemo } from './components/RepairTrackerDemo';
 import { BookingModal } from './components/BookingModal';
-import { TechMobileApp } from './components/TechMobileApp';
 import { CustomerGarageModal } from './components/CustomerGarageModal';
 import { InspectionReportModal } from './components/InspectionReportModal';
 import { TechRecruitmentModal } from './components/TechRecruitmentModal';
@@ -20,11 +19,20 @@ import { MembershipModal } from './components/MembershipModal';
 import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
 import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
+import { StandaloneTechApp } from './components/StandaloneTechApp';
 
 function MainAppContent() {
   const { addBooking } = useBookingContext();
-  const [currentView, setCurrentView] = useState<'customer' | 'tech'>('customer');
+  
+  // Check if URL specifies tech view (e.g. ?view=tech or standalone app)
+  const isUrlTechView = typeof window !== 'undefined' && window.location.search.includes('view=tech');
+  const [currentView, setCurrentView] = useState<'customer' | 'tech'>(isUrlTechView ? 'tech' : 'customer');
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+
+  if (currentView === 'tech') {
+    return <StandaloneTechApp onSwitchToCustomerSite={() => setCurrentView('customer')} />;
+  }
+
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isGarageOpen, setIsGarageOpen] = useState(false);
   const [isInspectionOpen, setIsInspectionOpen] = useState(false);
@@ -105,10 +113,6 @@ function MainAppContent() {
     });
     return createdId;
   };
-
-  if (currentView === 'tech') {
-    return <TechMobileApp onReturnToCustomerSite={() => setCurrentView('customer')} />;
-  }
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
