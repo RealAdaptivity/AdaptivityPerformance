@@ -13,6 +13,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "node": "22.16.0",
       "ios": {
         "simulator": false
       }
