@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "build:ios:customer": "npm run build && node -e \"fs.copyFileSync('capacitor.customer.json', 'capacitor.config.json')\" && cap sync ios",
     "build:ios:tech": "npm run build && node -e \"fs.copyFileSync('capacitor.tech.json', 'capacitor.config.json')\" && cap sync ios",
+    "build:expo:tech": "npx eas build --platform ios",
     "lint": "oxlint",
     "preview": "vite preview"
   },
