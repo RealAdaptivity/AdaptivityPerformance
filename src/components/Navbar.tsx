@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wrench, Phone, Calendar, Clock, ShieldCheck, Truck, UserCheck, Car, FileCheck, UserPlus } from 'lucide-react';
+import { Wrench, Phone, Calendar, Clock, ShieldCheck, Truck, Car, FileCheck, UserPlus } from 'lucide-react';
 
 interface NavbarProps {
   onOpenBooking: () => void;
@@ -8,8 +8,6 @@ interface NavbarProps {
   onOpenInspection: () => void;
   onOpenRecruitment: () => void;
   onOpenMembership: () => void;
-  currentView: 'customer' | 'tech';
-  onToggleView: (view: 'customer' | 'tech') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ 
@@ -19,8 +17,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenInspection,
   onOpenRecruitment,
   onOpenMembership,
-  currentView, 
-  onToggleView 
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -110,19 +106,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Right CTA Actions & Employee App Mode Switcher */}
         <div className="hidden sm:flex items-center space-x-3">
           
-          {/* Mode Switcher Button */}
-          <button
-            onClick={() => onToggleView(currentView === 'customer' ? 'tech' : 'customer')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center space-x-1.5 ${
-              currentView === 'tech'
-                ? 'bg-orange-500 text-white border-orange-500 shadow-md'
-                : 'bg-slate-800 text-amber-400 border-amber-500/30 hover:bg-slate-700'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>{currentView === 'tech' ? 'Customer View' : 'Tech App Mode'}</span>
-          </button>
-
           <a 
             href="tel:2146203244" 
             className="flex items-center space-x-2 text-slate-200 hover:text-orange-400 px-3 py-2 text-sm font-semibold rounded-lg transition-colors border border-white/5 hover:border-orange-500/30 bg-white/[0.03]"
@@ -159,16 +142,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="lg:hidden bg-[#12141c] border-b border-white/10 px-4 pt-3 pb-6 space-y-4">
           <div className="flex flex-col space-y-3 font-medium text-slate-300">
-            <button
-              onClick={() => {
-                onToggleView(currentView === 'customer' ? 'tech' : 'customer');
-                setMobileMenuOpen(false);
-              }}
-              className="text-left font-bold text-orange-400 py-1 border-b border-white/5 flex items-center justify-between"
-            >
-              <span>{currentView === 'tech' ? 'Switch to Customer Site' : 'Launch Employee Mobile App'}</span>
-              <span className="text-[10px] bg-orange-500/20 px-2 py-0.5 rounded uppercase">Tech Portal</span>
-            </button>
             <button onClick={() => { 
               const elem = document.getElementById('membership');
               if (elem) elem.scrollIntoView({ behavior: 'smooth' });

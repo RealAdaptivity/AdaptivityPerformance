@@ -6,11 +6,7 @@ import {
   UserCheck, AlertTriangle, Download
 } from 'lucide-react';
 
-interface StandaloneTechAppProps {
-  onSwitchToCustomerSite?: () => void;
-}
-
-export const StandaloneTechApp: React.FC<StandaloneTechAppProps> = ({ onSwitchToCustomerSite }) => {
+export const StandaloneTechApp: React.FC = () => {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true); // Pre-authenticated for demo
   const [techEmail, setTechEmail] = useState('alex.vance@adaptivityperformance.com');
@@ -102,14 +98,7 @@ export const StandaloneTechApp: React.FC<StandaloneTechAppProps> = ({ onSwitchTo
             </div>
           </div>
 
-          {onSwitchToCustomerSite && (
-            <button 
-              onClick={onSwitchToCustomerSite}
-              className="text-xs text-slate-400 hover:text-white bg-slate-900 border border-white/10 px-3 py-1.5 rounded-lg"
-            >
-              Web Preview Mode
-            </button>
-          )}
+          {/* Standalone Native App Branding */}
         </div>
 
         {/* Login Form Card */}
@@ -208,20 +197,13 @@ export const StandaloneTechApp: React.FC<StandaloneTechAppProps> = ({ onSwitchTo
           </div>
 
           <div className="flex items-center space-x-2">
-            {onSwitchToCustomerSite && (
-              <button
-                onClick={onSwitchToCustomerSite}
-                className="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-lg border border-white/10"
-              >
-                Customer Site
-              </button>
-            )}
             <button
               onClick={() => setIsAuthenticated(false)}
-              className="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-lg border border-white/10 transition-colors"
+              className="p-1.5 bg-slate-900 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 rounded-lg border border-white/10 transition-colors flex items-center space-x-1 text-xs"
               title="Sign Out"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
             </button>
           </div>
         </div>

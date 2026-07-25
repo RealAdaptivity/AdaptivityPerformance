@@ -19,18 +19,23 @@ import { MembershipModal } from './components/MembershipModal';
 import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
 import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
+import { Capacitor } from '@capacitor/core';
 import { StandaloneTechApp } from './components/StandaloneTechApp';
 
 function MainAppContent() {
   const { addBooking } = useBookingContext();
   
-  // Check if URL specifies tech view (e.g. ?view=tech or standalone app)
-  const isUrlTechView = typeof window !== 'undefined' && window.location.search.includes('view=tech');
-  const [currentView, setCurrentView] = useState<'customer' | 'tech'>(isUrlTechView ? 'tech' : 'customer');
+  // Enforce Native Mobile iOS App Isolation:
+  // Native iOS App (Adaptivity Tech Dispatch) opens Standalone Tech App ONLY.
+  // Public website visitors on adaptivityperformance.com see Customer Website ONLY.
+  const isNativeTechApp = typeof window !== 'undefined' && (
+    Capacitor.isNativePlatform() || window.location.search.includes('view=tech')
+  );
+
   const [isBookingOpen, setIsBookingOpen] = useState(false);
 
-  if (currentView === 'tech') {
-    return <StandaloneTechApp onSwitchToCustomerSite={() => setCurrentView('customer')} />;
+  if (isNativeTechApp) {
+    return <StandaloneTechApp />;
   }
 
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
@@ -119,8 +124,6 @@ function MainAppContent() {
       
       {/* Navigation */}
       <Navbar
-        currentView={currentView}
-        onToggleView={view => setCurrentView(view)}
         onOpenBooking={() => {
           setEstimateDataForBooking(null);
           setIsBookingOpen(true);
