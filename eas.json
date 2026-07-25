@@ -19,11 +19,6 @@
     }
   },
   "submit": {
-    "production": {
-      "ios": {
-        "appleId": "service@adaptivityperformance.com",
-        "ascAppId": "68QFVQ738K"
-      }
-    }
+    "production": {}
   }
 }
