@@ -283,10 +283,19 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                 <button
                   type="submit"
                   disabled={isProcessing}
-                  className="px-7 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center space-x-2 transition-all disabled:opacity-50"
+                  className={`px-7 py-3.5 font-black text-xs rounded-xl shadow-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-50 ${
+                    paymentMethod === 'applepay'
+                      ? 'bg-white text-black hover:bg-slate-200 shadow-white/10'
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-500/25'
+                  }`}
                 >
                   {isProcessing ? (
                     <span>Processing Secure Escrow...</span>
+                  ) : paymentMethod === 'applepay' ? (
+                    <>
+                      <span className="text-base font-serif"></span>
+                      <span>Pay ${grandTotal}.00 with Face ID</span>
+                    </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4" />
