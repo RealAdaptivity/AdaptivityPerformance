@@ -22,11 +22,6 @@
         "NSLocationWhenInUseUsageDescription": "Adaptivity uses location to calculate mobile dispatch distance and display live van tracking.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Adaptivity uses continuous location to track mobile van dispatch progress while en route."
       }
-    },
-    "extra": {
-      "eas": {
-        "projectId": "e0ea386c-3f4a-4a63-bc15-7d12caba5a30"
-      }
     }
   }
 }
