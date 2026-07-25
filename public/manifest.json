@@ -1,0 +1,16 @@
+{
+  "short_name": "Adaptivity Tech",
+  "name": "Adaptivity Tech Dispatch",
+  "icons": [
+    {
+      "src": "app-icon-tech.png",
+      "type": "image/png",
+      "sizes": "1024x1024"
+    }
+  ],
+  "start_url": "./?view=tech",
+  "background_color": "#090a0f",
+  "theme_color": "#090a0f",
+  "display": "standalone",
+  "orientation": "portrait"
+}
