@@ -48,7 +48,9 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       adminViewAs={adminViewAs}
       onSwitchAdminView={onSwitchAdminView}
     >
-      {tab === 'garage' && <CustomerGarageTab onBookVehicle={goBook} />}
+      {tab === 'garage' && (
+        <CustomerGarageTab customerId={profile.id} onBookVehicle={goBook} />
+      )}
       {tab === 'book' && (
         <CustomerBookTab
           profile={profile}
@@ -57,7 +59,9 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
         />
       )}
       {tab === 'track' && <CustomerTrackTab />}
-      {tab === 'history' && <CustomerHistoryTab onBookService={goBook} />}
+      {tab === 'history' && (
+        <CustomerHistoryTab customerId={profile.id} onBookService={goBook} />
+      )}
       {tab === 'settings' && <CustomerSettingsTab profile={profile} onSignOut={onSignOut} />}
     </PortalLayout>
   );
