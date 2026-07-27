@@ -1,5 +1,6 @@
 import React from 'react';
-import { Wrench, Phone, MapPin, ShieldCheck, Mail } from 'lucide-react';
+import { Wrench, Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
+import { StoreBadgeLinks } from './StoreBadgeLinks';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -61,6 +62,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">
             <ShieldCheck className="w-4 h-4 text-orange-400" />
             <span>ASE Certified Technicians</span>
+          </div>
+
+          <div className="pt-4 space-y-3">
+            <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wider">
+              <Smartphone className="w-4 h-4 text-orange-400" />
+              <span>Customer Mobile App</span>
+            </div>
+            <p className="text-slate-500 text-[11px] leading-relaxed">
+              Book service, manage your garage, and track repairs from your phone.
+            </p>
+            <StoreBadgeLinks size="sm" />
           </div>
         </div>
 

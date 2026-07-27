@@ -1,0 +1,13 @@
+# Supabase CLI — AdaptivityPerformance (qqyairzymqpkbfxobztx)
+# https://supabase.com/docs/guides/cli/config
+
+project_id = "qqyairzymqpkbfxobztx"
+
+[api]
+enabled = true
+
+[db]
+major_version = 15
+
+[functions]
+# Per-function JWT: stripe-webhook deployed with --no-verify-jwt

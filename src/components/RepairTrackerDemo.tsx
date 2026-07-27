@@ -1,25 +1,38 @@
 import React, { useState } from 'react';
-import { useBookingContext } from '../context/BookingContext';
+import { useBookingContext, type Booking } from '../context/BookingContext';
+import { fetchBookingByReference } from '../services/bookingsApi';
 import { Truck, Phone, ShieldCheck, UserCheck, X, Search } from 'lucide-react';
 
 interface RepairTrackerDemoProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenCheckout?: () => void;
+  onOpenCheckout?: (booking: Booking) => void;
 }
 
 export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, onClose, onOpenCheckout }) => {
   const { getBookingById, bookings } = useBookingContext();
   const [jobSearchInput, setJobSearchInput] = useState('AP-8492');
   const [searchedBookingId, setSearchedBookingId] = useState('AP-8492');
+  const [remoteBooking, setRemoteBooking] = useState<Awaited<ReturnType<typeof fetchBookingByReference>>>(null);
 
   if (!isOpen) return null;
 
-  const currentBooking = getBookingById(searchedBookingId) || bookings[0];
+  const currentBooking =
+    remoteBooking ||
+    getBookingById(searchedBookingId) ||
+    bookings[0];
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSearchedBookingId(jobSearchInput.trim());
+    const ref = jobSearchInput.trim();
+    setSearchedBookingId(ref);
+    const remote = await fetchBookingByReference(ref);
+    if (remote) {
+      setRemoteBooking(remote);
+      setSearchedBookingId(remote.id);
+    } else {
+      setRemoteBooking(null);
+    }
   };
 
   return (
@@ -183,7 +196,7 @@ export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, on
               <button
                 onClick={() => {
                   onClose();
-                  onOpenCheckout();
+                  onOpenCheckout(currentBooking);
                 }}
                 className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-xs transition-colors flex-shrink-0"
               >

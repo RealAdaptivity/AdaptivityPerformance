@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Wrench, DollarSign, Truck, CheckCircle2, Send, Award, Compass } from 'lucide-react';
+import { X, Wrench, DollarSign, Truck, CheckCircle2, Send, Award, Compass, Loader2 } from 'lucide-react';
 
 interface TechRecruitmentModalProps {
   isOpen: boolean;
@@ -30,6 +30,8 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isOnboardingStripe, setIsOnboardingStripe] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -43,8 +45,18 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
     );
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+
+    if (payPreference === 'revshare' && email.trim() && name.trim()) {
+      setSubmitError(
+        'Revenue share uses Stripe Express after you are approved. Sign in to the Tech Portal → Settings to connect payouts (one Connect account per technician). We no longer create Stripe accounts from this public form.'
+      );
+      setIsSubmitted(true);
+      return;
+    }
+
     setIsSubmitted(true);
   };
 
@@ -429,6 +441,12 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                     </p>
                   </div>
 
+                  {submitError && (
+                    <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                      {submitError}
+                    </p>
+                  )}
+
                   <div className="pt-4 flex items-center justify-between">
                     <button
                       type="button"
@@ -440,10 +458,24 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
 
                     <button
                       type="submit"
-                      className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center space-x-2"
+                      disabled={isOnboardingStripe}
+                      className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center space-x-2 disabled:opacity-60"
                     >
-                      <Send className="w-4 h-4" />
-                      <span>Submit Technician Application</span>
+                      {isOnboardingStripe ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Opening Stripe Payout Setup…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>
+                            {payPreference === 'revshare'
+                              ? 'Submit & Set Up Stripe Payouts'
+                              : 'Submit Technician Application'}
+                          </span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

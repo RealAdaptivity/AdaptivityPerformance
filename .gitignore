@@ -13,6 +13,10 @@ dist-ssr
 *.local
 .env
 .env.*
+!.env.example
+
+# Generated Supabase MCP deploy payloads (run scripts/package-edge-functions.mjs)
+supabase/.edge-deploy/
 
 # Editor directories and files
 .vscode/*

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, CreditCard, ShieldCheck, CheckCircle2, Lock, Smartphone } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ShieldCheck, CheckCircle2, Lock } from 'lucide-react';
+import { StripeCheckoutSection } from './StripeCheckoutSection';
 
 interface PaymentCheckoutModalProps {
   isOpen: boolean;
@@ -7,10 +8,12 @@ interface PaymentCheckoutModalProps {
   bookingDetails?: {
     id: string;
     customerName: string;
+    customerEmail?: string;
     vehicle: string;
     services: string[];
     totalAmount: number;
     techName?: string;
+    techStripeAccountId?: string | null;
   };
   onPaymentSuccess?: (paymentId: string) => void;
 }
@@ -21,21 +24,26 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   bookingDetails = {
     id: 'AP-8492',
     customerName: 'Mark Stevens',
+    customerEmail: 'customer@example.com',
     vehicle: '2021 Ford F-150 SuperCrew',
     services: ['Front Ceramic Brake Pads & Rotors', 'Full Synthetic Oil Change'],
     totalAmount: 335,
     techName: 'Alex Vance (ASE Master Tech)',
+    techStripeAccountId: null,
   },
   onPaymentSuccess,
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'applepay' | 'googlepay'>('card');
-  const [cardNumber, setCardNumber] = useState('•••• •••• •••• 4821');
-  const [cardExp, setCardExp] = useState('08/28');
-  const [cardCvc, setCardCvc] = useState('921');
-  const [zipCode, setZipCode] = useState('76247');
   const [tipPercentage, setTipPercentage] = useState<number>(15);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+  const [paymentId, setPaymentId] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsPaid(false);
+      setPaymentId('');
+      setTipPercentage(15);
+    }
+  }, [isOpen, bookingDetails.id]);
 
   if (!isOpen) return null;
 
@@ -44,20 +52,13 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
   const grandTotal = baseAmount + tipAmount;
 
   // 80/20 Payout calculation
-  const techPayoutAmount = Math.round(baseAmount * 0.80) + tipAmount;
-  const platformFeeAmount = Math.round(baseAmount * 0.20);
+  const techPayoutAmount = Math.round(baseAmount * 0.70) + tipAmount;
+  const platformFeeAmount = Math.round(baseAmount * 0.30);
 
-  const handleProcessPayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
-
-    setTimeout(() => {
-      setIsProcessing(false);
-      setIsPaid(true);
-      if (onPaymentSuccess) {
-        onPaymentSuccess('PAY-' + Math.floor(100000 + Math.random() * 900000));
-      }
-    }, 1200);
+  const handlePaid = (piId: string) => {
+    setPaymentId(piId);
+    setIsPaid(true);
+    onPaymentSuccess?.(piId);
   };
 
   return (
@@ -111,7 +112,10 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
               </div>
               <h3 className="text-2xl font-heading font-black text-white">Payment Completed & Escrow Released!</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Thank you, <strong>{bookingDetails.customerName}</strong>! Your payment of <strong>${grandTotal}</strong> has been processed securely. An official receipt has been sent to your phone.
+                Thank you, <strong>{bookingDetails.customerName}</strong>! Your payment of <strong>${grandTotal}</strong> has been processed securely.
+                {paymentId && (
+                  <span className="block text-[11px] text-slate-500 mt-1 font-mono">Stripe PI: {paymentId}</span>
+                )}
               </p>
 
               {/* Real-time 80/20 Payout Breakdown Card */}
@@ -141,7 +145,7 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
               </div>
             </div>
           ) : (
-            <form onSubmit={handleProcessPayment} className="space-y-6">
+            <div className="space-y-6">
               
               {/* Order Summary Card */}
               <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3 text-xs">
@@ -186,126 +190,22 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                 </div>
               </div>
 
-              {/* Payment Method Selector */}
-              <div className="space-y-3">
-                <label className="block text-xs font-semibold text-slate-300">Select Official Payment Method:</label>
-                <div className="grid grid-cols-3 gap-3 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('card')}
-                    className={`p-3 rounded-xl border flex items-center justify-center space-x-2 font-bold transition-all ${
-                      paymentMethod === 'card' ? 'bg-orange-500/20 border-orange-500 text-orange-400' : 'bg-white/5 border-white/10 text-slate-400'
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Credit / Debit</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('applepay')}
-                    className={`p-3 rounded-xl border flex items-center justify-center space-x-2 font-bold transition-all ${
-                      paymentMethod === 'applepay' ? 'bg-white/20 border-white text-white' : 'bg-white/5 border-white/10 text-slate-400'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4" />
-                    <span>Apple Pay</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('googlepay')}
-                    className={`p-3 rounded-xl border flex items-center justify-center space-x-2 font-bold transition-all ${
-                      paymentMethod === 'googlepay' ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-white/5 border-white/10 text-slate-400'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4" />
-                    <span>Google Pay</span>
-                  </button>
-                </div>
-
-                {paymentMethod === 'card' && (
-                  <div className="space-y-3 pt-2 text-xs">
-                    <div>
-                      <label className="block text-slate-400 font-semibold mb-1">Card Number</label>
-                      <input
-                        type="text"
-                        required
-                        value={cardNumber}
-                        onChange={e => setCardNumber(e.target.value)}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3.5 py-2.5 font-mono text-white focus:outline-none focus:border-orange-500"
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-slate-400 font-semibold mb-1">Expiration</label>
-                        <input
-                          type="text"
-                          required
-                          value={cardExp}
-                          onChange={e => setCardExp(e.target.value)}
-                          className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 font-mono text-white text-center focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-400 font-semibold mb-1">CVC</label>
-                        <input
-                          type="text"
-                          required
-                          value={cardCvc}
-                          onChange={e => setCardCvc(e.target.value)}
-                          className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 font-mono text-white text-center focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-400 font-semibold mb-1">Zip Code</label>
-                        <input
-                          type="text"
-                          required
-                          value={zipCode}
-                          onChange={e => setZipCode(e.target.value)}
-                          className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-2 font-mono text-white text-center focus:outline-none focus:border-orange-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Total Calculation & Action */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <span className="text-xs text-slate-400 block">Total Due (Service + Tip)</span>
-                  <span className="text-2xl font-black text-emerald-400 font-mono">${grandTotal}.00</span>
-                  <span className="text-[10px] text-slate-500 block">Includes 8.25% TX Sales Tax & Escrow Hold</span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isProcessing}
-                  className={`px-7 py-3.5 font-black text-xs rounded-xl shadow-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-50 ${
-                    paymentMethod === 'applepay'
-                      ? 'bg-white text-black hover:bg-slate-200 shadow-white/10'
-                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-500/25'
-                  }`}
-                >
-                  {isProcessing ? (
-                    <span>Processing Secure Escrow...</span>
-                  ) : paymentMethod === 'applepay' ? (
-                    <>
-                      <span className="text-base font-serif"></span>
-                      <span>Pay ${grandTotal}.00 with Face ID</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4" />
-                      <span>Pay ${grandTotal}.00 & Release Escrow</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-            </form>
+              <StripeCheckoutSection
+                key={`${bookingDetails.id}-${tipAmount}`}
+                baseAmount={baseAmount}
+                tipAmount={tipAmount}
+                grandTotal={grandTotal}
+                techPayoutAmount={techPayoutAmount}
+                platformFeeAmount={platformFeeAmount}
+                bookingDetails={{
+                  id: bookingDetails.id,
+                  customerName: bookingDetails.customerName,
+                  customerEmail: bookingDetails.customerEmail,
+                  techStripeAccountId: bookingDetails.techStripeAccountId,
+                }}
+                onPaid={handlePaid}
+              />
+            </div>
           )}
         </div>
       </div>

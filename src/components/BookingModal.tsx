@@ -1,14 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, MapPin, Truck, Home, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2 } from 'lucide-react';
+import { createBookingWithCardHold } from '../services/stripePaymentsApi';
+import { StripeBookingHoldSection } from './StripeBookingHoldSection';
 
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialEstimateData?: any;
-  onBookingSubmitted?: (bookingData: any) => string;
+  initialEstimateData?: {
+    vehicle?: string;
+    vin?: string;
+    locationType?: 'mobile' | 'shop';
+    serviceAddress?: string;
+    services?: string[];
+    totalEstimate?: number;
+    calculatedDistanceMiles?: number;
+  };
+  onBookingSubmitted?: (result: {
+    bookingReference: string;
+    holdAmountDollars: number;
+    name: string;
+    phone: string;
+    vehicle: string;
+  }) => void;
 }
 
-export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, initialEstimateData, onBookingSubmitted }) => {
+function computeHoldAmountDollars(
+  serviceMode: 'mobile' | 'shop',
+  initialEstimate?: number
+): number {
+  const laborAndParts = initialEstimate && initialEstimate > 0 ? initialEstimate : 280;
+  const dispatchFee = serviceMode === 'mobile' ? 25 : 0;
+  const tax = Math.round(laborAndParts * 0.0825);
+  return laborAndParts + dispatchFee + tax;
+}
+
+export const BookingModal: React.FC<BookingModalProps> = ({
+  isOpen,
+  onClose,
+  initialEstimateData,
+  onBookingSubmitted,
+}) => {
   const [step, setStep] = useState(1);
   const [serviceMode, setServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [vehicle, setVehicle] = useState('2020 Ford F-150');
@@ -19,9 +50,19 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
   const [streetAddress, setStreetAddress] = useState('1234 Canyon Falls Dr');
   const [zipCode, setZipCode] = useState('76226');
   const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [bookingRef, setBookingRef] = useState('');
+  const [holdAmount, setHoldAmount] = useState(0);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCreatingHold, setIsCreatingHold] = useState(false);
+
+  const holdPreview = useMemo(
+    () => computeHoldAmountDollars(serviceMode, initialEstimateData?.totalEstimate),
+    [serviceMode, initialEstimateData?.totalEstimate]
+  );
 
   useEffect(() => {
     if (initialEstimateData) {
@@ -35,45 +76,87 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
     }
   }, [initialEstimateData]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setStep(1);
+      setClientSecret(null);
+      setSubmitError(null);
+      setBookingRef('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
-  const handleSubmitBooking = (e: React.FormEvent) => {
+  const buildAddress = () => {
+    const base =
+      serviceMode === 'mobile'
+        ? `${streetAddress.trim()}, ${zipCode.trim()}`
+        : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
+    const schedule = `${preferredDate} (${preferredTime})`;
+    const extra = notes.trim() ? ` • Notes: ${notes.trim()}` : '';
+    return `${base} • ${schedule}${extra}`;
+  };
+
+  const handleContinueToCardHold = async (e: React.FormEvent) => {
     e.preventDefault();
-    let generatedRef = 'AP-' + Math.floor(1000 + Math.random() * 9000);
+    setSubmitError(null);
+    setIsCreatingHold(true);
+    const amount = holdPreview;
+    setHoldAmount(amount);
 
-    if (onBookingSubmitted) {
-      const returnedId = onBookingSubmitted({
-        name: fullName,
-        phone: phone,
-        address: streetAddress,
-        zip: zipCode,
-        vehicle: vehicle,
-        vin: vinNumber,
-        services: [serviceRequested],
-        totalEstimate: initialEstimateData?.totalEstimate || 280,
+    try {
+      const servicesList = serviceRequested
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const hold = await createBookingWithCardHold({
+        customerName: fullName.trim(),
+        customerPhone: phone.trim(),
+        customerEmail: email.trim(),
+        customerAddress: buildAddress(),
+        zipCode: zipCode.trim() || '76247',
+        vehicleDescription: vehicle.trim(),
+        vin: vinNumber.trim() || undefined,
+        services: servicesList.length ? servicesList : [serviceRequested.trim()],
+        holdAmountDollars: amount,
         locationType: serviceMode,
-        distanceMiles: initialEstimateData?.calculatedDistanceMiles || 5.2,
       });
-      if (returnedId) generatedRef = returnedId;
-    }
 
-    setBookingRef(generatedRef);
-    setStep(3); // Confirmation step
+      setBookingRef(hold.bookingReference);
+      setClientSecret(hold.clientSecret);
+      setStep(3);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Could not start card hold');
+    } finally {
+      setIsCreatingHold(false);
+    }
+  };
+
+  const handleCardAuthorized = () => {
+    onBookingSubmitted?.({
+      bookingReference: bookingRef,
+      holdAmountDollars: holdAmount,
+      name: fullName,
+      phone,
+      vehicle,
+    });
+    setStep(4);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <div className="bg-[#12141c] w-full max-w-xl rounded-3xl border border-orange-500/40 shadow-2xl overflow-hidden relative text-white">
-        
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#181a26] to-[#0e1017] p-5 border-b border-white/10 flex items-center justify-between">
+      <div className="bg-[#12141c] w-full max-w-xl rounded-3xl border border-orange-500/40 shadow-2xl overflow-hidden relative text-white max-h-[92vh] flex flex-col">
+        <div className="bg-gradient-to-r from-[#181a26] to-[#0e1017] p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400">
               <Calendar className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-heading text-base font-bold text-white">Schedule Service • Adaptivity Performance</h3>
-              <p className="text-xs text-slate-400">Justin & Northlake Local Mobile/Shop Dispatch</p>
+              <p className="text-xs text-slate-400">
+                Step {step} of 4 • Card hold, charge on completion
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10">
@@ -81,10 +164,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           {step === 1 && (
             <form onSubmit={() => setStep(2)} className="space-y-4">
-              
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5">Service Type</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -183,6 +265,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
                 </div>
               </div>
 
+              <p className="text-[11px] text-slate-400">
+                Estimated diagnostic hold at booking:{' '}
+                <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong> (incl. dispatch & tax when
+                applicable)
+              </p>
+
               <button
                 type="submit"
                 className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all"
@@ -193,8 +281,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
           )}
 
           {step === 2 && (
-            <form onSubmit={handleSubmitBooking} className="space-y-4">
-              
+            <form onSubmit={handleContinueToCardHold} className="space-y-4">
               {serviceMode === 'mobile' ? (
                 <>
                   <div>
@@ -229,7 +316,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Your Full Name</label>
                   <input
@@ -255,6 +342,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Email (for receipt & card on file)</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  placeholder="you@email.com"
+                />
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Additional Issue Notes / Parking Info</label>
                 <textarea
                   rows={2}
@@ -268,10 +367,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
               <div className="bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-500/30 p-3 rounded-xl flex items-start space-x-2 text-[11px] text-slate-300">
                 <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-amber-400 font-bold block">12-Month / 12k Warranty Guarantee</strong>
-                  <span>Payments are processed through Adaptivity Platform Escrow upon job completion. Direct side payments (Zelle, Cash, Venmo) to techs are strictly prohibited and void warranty.</span>
+                  <strong className="text-amber-400 font-bold block">Card hold — charge when complete</strong>
+                  <span>
+                    Next step saves your card and places a <strong className="text-white">${holdPreview.toFixed(2)}</strong>{' '}
+                    authorization hold for the diagnostic visit. You are charged when the job is finished; your
+                    technician receives 70% through official platform checkout.
+                  </span>
                 </div>
               </div>
+
+              {submitError && (
+                <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{submitError}</p>
+              )}
 
               <div className="flex items-center space-x-2">
                 <button
@@ -283,15 +390,45 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
                 </button>
                 <button
                   type="submit"
-                  className="w-2/3 py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all"
+                  disabled={isCreatingHold}
+                  className="w-2/3 py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  Confirm & Request Service
+                  {isCreatingHold ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Preparing secure hold…
+                    </>
+                  ) : (
+                    <>Continue to card on file →</>
+                  )}
                 </button>
               </div>
             </form>
           )}
 
-          {step === 3 && (
+          {step === 3 && clientSecret && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-400">
+                Appointment <span className="font-mono text-orange-400 font-bold">#{bookingRef}</span>
+              </p>
+              <StripeBookingHoldSection
+                clientSecret={clientSecret}
+                holdAmountDollars={holdAmount}
+                customerName={fullName}
+                customerEmail={email}
+                onAuthorized={handleCardAuthorized}
+              />
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="w-full py-2 text-xs text-slate-400 hover:text-white"
+              >
+                ← Back to contact details
+              </button>
+            </div>
+          )}
+
+          {step === 4 && (
             <div className="text-center space-y-5 py-4">
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-2xl font-bold">
                 ✓
@@ -300,9 +437,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
                 <span className="text-xs bg-orange-500/10 text-orange-400 font-mono font-bold px-3 py-1 rounded-full border border-orange-500/30">
                   Confirmation #{bookingRef}
                 </span>
-                <h3 className="font-heading text-2xl font-bold text-white mt-2">Service Request Received!</h3>
+                <h3 className="font-heading text-2xl font-bold text-white mt-2">Appointment booked — card on file</h3>
                 <p className="text-xs text-slate-300 max-w-sm mx-auto mt-1">
-                  Our dispatch coordinator will text and call <strong className="text-white">{phone || '(214) 620-3244'}</strong> within 15 minutes to confirm technician assignment for {vehicle}.
+                  A <strong className="text-white">${holdAmount.toFixed(2)}</strong> hold is active for your diagnostic
+                  visit. We&apos;ll charge your card when the job is complete. Dispatch will reach you at{' '}
+                  <strong className="text-white">{phone}</strong> to confirm technician assignment.
                 </p>
               </div>
 
@@ -325,6 +464,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
                   <span className="text-slate-400">Scheduled:</span>
                   <span className="font-bold text-orange-400">{preferredDate} ({preferredTime})</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Hold amount:</span>
+                  <span className="font-bold text-emerald-400">${holdAmount.toFixed(2)}</span>
+                </div>
               </div>
 
               <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5">
@@ -339,9 +482,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({ isOpen, onClose, ini
               </button>
             </div>
           )}
-
         </div>
-
       </div>
     </div>
   );

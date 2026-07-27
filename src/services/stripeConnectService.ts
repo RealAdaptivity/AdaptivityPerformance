@@ -1,7 +1,12 @@
 import { loadStripe } from '@stripe/stripe-js';
 
-// Initialize Stripe Publishable Key (from .env or fallback test key)
-const stripePublishableKey = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_sample_adaptivity_key';
+// Initialize Stripe Publishable Key — never use a fake key in production builds
+const stripePublishableKey =
+  (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY ||
+  (import.meta.env.DEV ? 'pk_test_sample_adaptivity_key' : '');
+if (!stripePublishableKey && !import.meta.env.DEV) {
+  console.error('[Stripe] VITE_STRIPE_PUBLISHABLE_KEY is required for production builds');
+}
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
 export const getStripe = () => {
@@ -25,38 +30,29 @@ export interface PaymentSplitResult {
 }
 
 /**
- * Step 1: Onboard a Mobile Mechanic (Create Stripe Express Account Link)
+ * Step 1: Onboard a Mobile Mechanic (Stripe Express via Supabase Edge Function)
  */
 export async function createMechanicStripeAccount(
   techName: string,
-  techEmail: string
+  techEmail: string,
+  profileId?: string
 ): Promise<StripeAccountOnboardingResult> {
-  // Production server endpoint mockup call
-  console.log(`[Stripe Connect] Initializing Express Onboarding for ${techName} (${techEmail})...`);
-
-  // In production, your Node/Vite backend calls:
-  // const account = await stripe.accounts.create({
-  //   type: 'express',
-  //   country: 'US',
-  //   email: techEmail,
-  //   capabilities: { transfers: { requested: true } },
-  // });
-  // const accountLink = await stripe.accountLinks.create({
-  //   account: account.id,
-  //   refresh_url: 'http://localhost:5173/#reauth',
-  //   return_url: 'http://localhost:5173/#tech-dashboard',
-  //   type: 'account_onboarding',
-  // });
-
-  const mockAccountId = 'acct_1M' + Math.random().toString(36).substring(2, 11).toUpperCase();
+  const { startMechanicStripeOnboarding } = await import('./stripePaymentsApi');
+  const result = await startMechanicStripeOnboarding({
+    techName,
+    techEmail,
+    profileId,
+    returnUrl: typeof window !== 'undefined' ? `${window.location.origin}/#tech-onboarding-complete` : undefined,
+    refreshUrl: typeof window !== 'undefined' ? `${window.location.origin}/#tech-onboarding-refresh` : undefined,
+  });
   return {
-    accountId: mockAccountId,
-    onboardingUrl: `https://connect.stripe.com/express/oauth/authorize?response_type=code&client_id=ca_mock&scope=read_write`,
+    accountId: result.accountId,
+    onboardingUrl: result.onboardingUrl,
   };
 }
 
 /**
- * Step 2: Process Customer Payment & Auto-Split (80% Tech / 20% Platform)
+ * @deprecated Use create-booking-with-hold + capture-booking-payment (70/30). This mock must not run in prod.
  */
 export async function processCustomerCheckoutWith8020Split(
   totalJobCost: number,
@@ -64,28 +60,22 @@ export async function processCustomerCheckoutWith8020Split(
   techStripeAccountId: string,
   tipAmount: number = 0
 ): Promise<PaymentSplitResult> {
+  if (!import.meta.env.DEV) {
+    throw new Error(
+      'Legacy mock checkout is disabled. Use booking card hold → capture (70% tech / 30% platform).'
+    );
+  }
+
   const totalCharged = totalJobCost + tipAmount;
-  const techShareAmount = Math.round(totalJobCost * 0.80) + tipAmount;
-  const platformShareAmount = Math.round(totalJobCost * 0.20);
+  const techShareAmount = Math.round(totalJobCost * 0.7) + tipAmount;
+  const platformShareAmount = Math.round(totalJobCost * 0.3);
 
-  console.log(`[Stripe Connect] Processing $${totalCharged} Total Charge for ${customerEmail}...`);
-  console.log(` -> 80% Tech Payout: $${techShareAmount} to ${techStripeAccountId}`);
-  console.log(` -> 20% Platform Fee: $${platformShareAmount} to Adaptivity Performance`);
-
-  // In production, your server calls:
-  // const dynamicAmountInCents = Math.round(totalCharged * 100);
-  // const paymentIntent = await stripe.paymentIntents.create({
-  //   amount: dynamicAmountInCents, // Accepts ANY dynamic dollar amount calculated for that specific car!
-  //   currency: 'usd',
-  //   description: `Vehicle Repair Ticket #${Math.floor(1000 + Math.random()*9000)}`,
-  //   transfer_data: {
-  //     destination: techStripeAccountId,
-  //     amount: Math.round(techShareAmount * 100), // Dynamic 80% + Tip directly to Tech
-  //   },
-  // });
+  console.warn(
+    `[Stripe Connect DEV MOCK] $${totalCharged} for ${customerEmail} → tech $${techShareAmount} (${techStripeAccountId}), platform $${platformShareAmount}`
+  );
 
   return {
-    paymentIntentId: 'pi_' + Math.random().toString(36).substring(2, 12),
+    paymentIntentId: 'pi_mock_' + Math.random().toString(36).substring(2, 12),
     totalCharged,
     techShareAmount,
     platformShareAmount,

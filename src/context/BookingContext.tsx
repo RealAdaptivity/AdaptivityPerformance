@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  createBooking,
+  fetchAllBookings,
+  subscribeAllBookings,
+  updateBookingStatusRemote,
+} from '../services/bookingsApi';
 
-export type JobStatus = 'UNASSIGNED' | 'EN_ROUTE' | 'ON_SITE' | 'COMPLETED';
+export type JobStatus = 'UNASSIGNED' | 'EN_ROUTE' | 'ON_SITE' | 'COMPLETED' | 'CANCELED';
 
 export interface TechProfile {
   id: string;
@@ -9,6 +15,7 @@ export interface TechProfile {
   vanNumber: string;
   phone: string;
   rating: number;
+  stripeAccountId?: string | null;
 }
 
 export interface Booking {
@@ -27,6 +34,14 @@ export interface Booking {
   distanceMiles: number;
   etaMinutes: number;
   dateCreated: string;
+  /** Supabase row UUID (for authenticated updates). */
+  supabaseId?: string;
+  paymentIntentId?: string | null;
+  paymentStatus?: string;
+  holdAmountCents?: number | null;
+  capturedAmountCents?: number | null;
+  dispatchLat?: number | null;
+  dispatchLng?: number | null;
 }
 
 interface BookingContextType {
@@ -37,6 +52,7 @@ interface BookingContextType {
   claimBooking: (bookingId: string) => void;
   updateBookingStatus: (bookingId: string, status: JobStatus, distanceMiles?: number, etaMinutes?: number) => void;
   getBookingById: (bookingId: string) => Booking | undefined;
+  refreshBookings: () => Promise<void>;
 }
 
 const DEFAULT_TECHS: TechProfile[] = [
@@ -101,17 +117,45 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
   const [activeTech, setActiveTech] = useState<TechProfile>(DEFAULT_TECHS[0]);
 
+  const refreshBookings = useCallback(async () => {
+    const remote = await fetchAllBookings();
+    if (remote.length > 0) {
+      setBookings(remote);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshBookings();
+    const channel = subscribeAllBookings(() => {
+      refreshBookings();
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [refreshBookings]);
+
   const addBooking = (bookingData: Omit<Booking, 'id' | 'status' | 'dateCreated'>): string => {
-    const newId = 'AP-' + Math.floor(1000 + Math.random() * 9000);
+    const fallbackId = 'AP-' + Math.floor(1000 + Math.random() * 9000);
     const newBooking: Booking = {
       ...bookingData,
-      id: newId,
+      id: fallbackId,
       status: 'UNASSIGNED',
       dateCreated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
     };
 
     setBookings(prev => [newBooking, ...prev]);
-    return newId;
+
+    void (async () => {
+      const created = await createBooking(bookingData);
+      if (created) {
+        setBookings(prev => [
+          created,
+          ...prev.filter(b => b.id !== fallbackId && b.id !== created.id),
+        ]);
+      }
+    })();
+
+    return fallbackId;
   };
 
   const claimBooking = (bookingId: string) => {
@@ -122,6 +166,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           : b
       )
     );
+    void updateBookingStatusRemote(bookingId, 'EN_ROUTE', {
+      distanceMiles: 5,
+      etaMinutes: 12,
+      mechanicId: activeTech.id.startsWith('tech-') ? null : activeTech.id,
+    });
   };
 
   const updateBookingStatus = (bookingId: string, status: JobStatus, distanceMiles?: number, etaMinutes?: number) => {
@@ -138,6 +187,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return b;
       })
     );
+    void updateBookingStatusRemote(bookingId, status, { distanceMiles, etaMinutes });
   };
 
   const getBookingById = (bookingId: string) => {
@@ -154,6 +204,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         claimBooking,
         updateBookingStatus,
         getBookingById,
+        refreshBookings,
       }}
     >
       {children}

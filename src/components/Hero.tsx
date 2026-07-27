@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Truck, Home, Wrench, ShieldCheck, Zap, Star, MapPin, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { StoreBadgeLinks } from './StoreBadgeLinks';
 
 interface HeroProps {
   onOpenBooking: () => void;
@@ -144,6 +145,13 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
             >
               <span>Calculate Upfront Quote</span>
             </a>
+          </div>
+
+          <div className="pt-2 flex flex-col items-center gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+              Install the Adaptivity customer app
+            </p>
+            <StoreBadgeLinks className="justify-center" />
           </div>
 
           {/* Trust Guarantees */}

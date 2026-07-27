@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookingProvider, useBookingContext } from './context/BookingContext';
+import { BookingProvider, useBookingContext, type Booking } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { QuoteEstimator } from './components/QuoteEstimator';
@@ -21,9 +21,13 @@ import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
 import { Capacitor } from '@capacitor/core';
 import { StandaloneTechApp } from './components/StandaloneTechApp';
+import { AdminApp } from './admin/AdminApp';
+import { useAdminConsoleRoute } from './admin/adminRoute';
+import { PortalApp } from './portal/PortalApp';
+import { usePortalRoute } from './portal/portalRoute';
 
 function MainAppContent() {
-  const { addBooking } = useBookingContext();
+  const { refreshBookings } = useBookingContext();
   
   // Enforce Native Mobile iOS App Isolation:
   // Native iOS App (Adaptivity Tech Dispatch) opens Standalone Tech App ONLY.
@@ -44,6 +48,7 @@ function MainAppContent() {
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [checkoutBooking, setCheckoutBooking] = useState<Booking | null>(null);
   const [selectedMembershipPlan, setSelectedMembershipPlan] = useState<'basic' | 'vip' | 'fleet'>('vip');
   const [activeServiceMode, setActiveServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [estimateDataForBooking, setEstimateDataForBooking] = useState<any>(null);
@@ -101,22 +106,15 @@ function MainAppContent() {
     setIsBookingOpen(true);
   };
 
-  const handleBookingSubmittedInModal = (bookingData: any) => {
-    // Register booking into shared BookingContext
-    const createdId = addBooking({
-      customerName: bookingData.name || 'Local Customer',
-      customerPhone: bookingData.phone || '(214) 620-3244',
-      customerAddress: bookingData.address || 'Justin / Northlake Area',
-      zipCode: bookingData.zip || '76247',
-      vehicle: bookingData.vehicle || '2021 Ford F-150',
-      vin: bookingData.vin,
-      services: bookingData.services || ['General Maintenance'],
-      totalEstimate: bookingData.totalEstimate || 250,
-      locationType: bookingData.locationType || 'mobile',
-      distanceMiles: bookingData.distanceMiles || 5.0,
-      etaMinutes: 12,
-    });
-    return createdId;
+  const handleBookingSubmittedInModal = (result: {
+    bookingReference: string;
+    holdAmountDollars: number;
+    name: string;
+    phone: string;
+    vehicle: string;
+  }) => {
+    void refreshBookings();
+    return result.bookingReference;
   };
 
   return (
@@ -207,7 +205,10 @@ function MainAppContent() {
       <RepairTrackerDemo
         isOpen={isTrackerOpen}
         onClose={() => setIsTrackerOpen(false)}
-        onOpenCheckout={() => setIsCheckoutOpen(true)}
+        onOpenCheckout={(booking) => {
+          setCheckoutBooking(booking);
+          setIsCheckoutOpen(true);
+        }}
       />
 
       {/* Customer Vehicle Garage & Health Hub Modal */}
@@ -241,7 +242,23 @@ function MainAppContent() {
       {/* Official In-Platform Escrow Payment Checkout Modal */}
       <PaymentCheckoutModal
         isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
+        onClose={() => {
+          setIsCheckoutOpen(false);
+          setCheckoutBooking(null);
+        }}
+        bookingDetails={
+          checkoutBooking
+            ? {
+                id: checkoutBooking.id,
+                customerName: checkoutBooking.customerName,
+                vehicle: checkoutBooking.vehicle,
+                services: checkoutBooking.services,
+                totalAmount: checkoutBooking.totalEstimate,
+                techName: checkoutBooking.claimedBy?.name,
+                techStripeAccountId: checkoutBooking.claimedBy?.stripeAccountId ?? null,
+              }
+            : undefined
+        }
       />
 
       {/* Floating 24/7 AI Diagnostic Mechanic Chatbot */}
@@ -254,6 +271,17 @@ function MainAppContent() {
 }
 
 export function App() {
+  const isAdmin = useAdminConsoleRoute();
+  const isPortal = usePortalRoute();
+
+  if (isAdmin) {
+    return <AdminApp />;
+  }
+
+  if (isPortal) {
+    return <PortalApp />;
+  }
+
   return (
     <BookingProvider>
       <MainAppContent />

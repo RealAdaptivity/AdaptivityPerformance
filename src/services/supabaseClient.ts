@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../config/supabasePublic';
 
-// Read Supabase environment variables from .env
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://sample-project.supabase.co';
-const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'sample-anon-key';
+const supabaseUrl = (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_SUPABASE_URL || SUPABASE_URL;
+const supabaseAnonKey = (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -37,15 +37,20 @@ export function subscribeToLiveJobDispatch(bookingId: string, onUpdate: (updated
 }
 
 /**
- * Invoke Supabase Edge Function for Stripe Connect Payout
+ * Invoke Supabase Edge Function for Stripe Connect checkout (legacy alias)
  */
 export async function invokeStripePaymentEdgeFunction(payload: {
   amount: number;
   techStripeAccountId: string;
   customerEmail: string;
+  bookingReference?: string;
 }) {
-  console.log('[Supabase Edge Function] Invoking stripe-payout-handler...', payload);
-  return await supabase.functions.invoke('stripe-payout-handler', {
-    body: payload,
+  const { createCheckoutPaymentIntent } = await import('./stripePaymentsApi');
+  return createCheckoutPaymentIntent({
+    baseAmountDollars: payload.amount,
+    tipAmountDollars: 0,
+    customerEmail: payload.customerEmail,
+    techStripeAccountId: payload.techStripeAccountId,
+    bookingReference: payload.bookingReference,
   });
 }
