@@ -114,7 +114,16 @@ function flattenParams(
   for (const [key, value] of Object.entries(obj)) {
     if (value === undefined || value === null) continue;
     const fullKey = prefix ? `${prefix}[${key}]` : key;
-    if (typeof value === 'object' && !Array.isArray(value)) {
+    if (Array.isArray(value)) {
+      value.forEach((item, i) => {
+        if (item === undefined || item === null) return;
+        if (typeof item === 'object') {
+          Object.assign(out, flattenParams(item as Record<string, unknown>, `${fullKey}[${i}]`));
+        } else {
+          out[`${fullKey}[${i}]`] = String(item);
+        }
+      });
+    } else if (typeof value === 'object') {
       Object.assign(out, flattenParams(value as Record<string, unknown>, fullKey));
     } else {
       out[fullKey] = String(value);

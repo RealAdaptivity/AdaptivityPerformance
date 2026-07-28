@@ -1,6 +1,7 @@
 import React from 'react';
 import { Wrench, Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { SiteLink } from '../site/SiteLink';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -18,7 +19,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <span className="text-[10px] bg-black/30 px-3 py-1 rounded-full font-extrabold uppercase tracking-widest text-amber-200">
               Emergency Roadside Dispatch
             </span>
-            <h3 className="font-heading text-2xl sm:text-3xl font-extrabold">Stranded in Justin or Northlake?</h3>
+            <h3 className="font-heading text-2xl sm:text-3xl font-extrabold">Stranded in DFW or Fort Worth?</h3>
             <p className="text-sm text-amber-100 max-w-xl">
               Dead battery, flat tire, or sudden check engine light on I-35W / FM 407? Mobile unit available for rapid dispatch.
             </p>
@@ -56,7 +57,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            Justin & Northlake’s premier mobile auto repair and home garage performance specialist. Quality OE parts, transparent pricing, and 12-month nationwide warranty on all work.
+            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, transparent pricing, and 12-month nationwide warranty on all work.
           </p>
 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">
@@ -80,10 +81,19 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
         <div className="space-y-3">
           <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">Quick Navigation</h4>
           <ul className="space-y-2">
-            <li><a href="#estimator" className="hover:text-orange-400 transition-colors">Instant Quote Estimator</a></li>
-            <li><a href="#diagnostics" className="hover:text-orange-400 transition-colors">Smart Symptom Checker</a></li>
-            <li><a href="#area" className="hover:text-orange-400 transition-colors">Justin (76247) & Northlake (76226)</a></li>
-            <li><a href="#performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</a></li>
+            <li><SiteLink to="about" className="hover:text-orange-400 transition-colors">About Us</SiteLink></li>
+            <li><SiteLink to="about" hash="future" className="hover:text-orange-400 transition-colors">Future plans</SiteLink></li>
+            <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services</SiteLink></li>
+            <li><SiteLink to="quotes" className="hover:text-orange-400 transition-colors">Instant Quotes</SiteLink></li>
+            <li><SiteLink to="diagnostics" className="hover:text-orange-400 transition-colors">Symptom Checker</SiteLink></li>
+            <li><SiteLink to="join" className="hover:text-orange-400 transition-colors">Join as Tech</SiteLink></li>
+            <li><SiteLink to="learn" className="hover:text-orange-400 transition-colors">Want to Learn</SiteLink></li>
+            <li><SiteLink to="wantToTeach" className="hover:text-orange-400 transition-colors">Want to Teach</SiteLink></li>
+            <li><SiteLink to="careers" className="hover:text-orange-400 transition-colors">Careers</SiteLink></li>
+            <li><SiteLink to="partners" className="hover:text-orange-400 transition-colors">Shop & garage partners</SiteLink></li>
+            <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">DFW / Fort Worth coverage</SiteLink></li>
+            <li><SiteLink to="performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</SiteLink></li>
+            <li><SiteLink to="faq" className="hover:text-orange-400 transition-colors">FAQ</SiteLink></li>
             <li><button onClick={onOpenTracker} className="text-orange-400 hover:underline">Track Live Repair / Dispatch</button></li>
           </ul>
         </div>
@@ -115,7 +125,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
               <MapPin className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <strong className="text-white">Shop Base:</strong> 410 FM 156, Justin, TX 76247
-                <p className="text-[11px] text-slate-500">Dispatching units throughout Justin, Northlake, Argyle & Haslet</p>
+                <p className="text-[11px] text-slate-500">Dispatching across DFW / Fort Worth (zips 750–752, 760–762)</p>
               </div>
             </div>
 

@@ -11,6 +11,7 @@ import {
   type PortalRole,
 } from './portalAuth';
 import { navigateToMarketingSite } from './portalRoute';
+import { TECH_SPECIALTIES, type TechSpecialty } from '../services/techSpecialties';
 
 export const PortalLogin: React.FC = () => {
   const [portalRole, setPortalRole] = useState<PortalRole>('customer');
@@ -19,11 +20,22 @@ export const PortalLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [vanNumber, setVanNumber] = useState('');
+  const [specialties, setSpecialties] = useState<TechSpecialty[]>(['mechanical']);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState('');
   const [showReset, setShowReset] = useState(false);
+
+  const toggleSpecialty = (id: TechSpecialty) => {
+    setSpecialties((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((s) => s !== id);
+        return next.length ? next : prev;
+      }
+      return [...prev, id];
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +47,7 @@ export const PortalLogin: React.FC = () => {
         const { error: signUpError } = await signUpPortal(portalRole, email, password, fullName, {
           phone,
           vanNumber,
+          specialties: portalRole === 'tech' ? specialties : undefined,
         });
         if (signUpError) throw signUpError;
         setError(null);
@@ -57,7 +70,7 @@ export const PortalLogin: React.FC = () => {
       }
 
       if (portalRole === 'tech' && profile.role === 'customer') {
-        await ensureTechProfile(vanNumber);
+        await ensureTechProfile(vanNumber, specialties);
         profile = (await fetchPortalProfile(userId)) ?? profile;
       }
 
@@ -175,15 +188,44 @@ export const PortalLogin: React.FC = () => {
                 </div>
               )}
               {isSignUp && portalRole === 'tech' && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Van / unit #</label>
-                  <input
-                    value={vanNumber}
-                    onChange={(e) => setVanNumber(e.target.value)}
-                    placeholder="Mobile Unit 4"
-                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 outline-none"
-                  />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Van / unit #</label>
+                    <input
+                      value={vanNumber}
+                      onChange={(e) => setVanNumber(e.target.value)}
+                      placeholder="Mobile Unit 4"
+                      className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Your trade(s)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {TECH_SPECIALTIES.map((s) => {
+                        const on = specialties.includes(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => toggleSpecialty(s.id)}
+                            className={`text-left rounded-xl border px-2.5 py-2 transition-all ${
+                              on
+                                ? 'border-orange-500 bg-orange-500/15 text-orange-200'
+                                : 'border-white/10 bg-[#0b0c10] text-slate-400'
+                            }`}
+                          >
+                            <span className="block text-[11px] font-bold">{s.shortLabel}</span>
+                            <span className="block text-[10px] opacity-80 leading-snug mt-0.5">
+                              {s.description}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               )}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Email</label>

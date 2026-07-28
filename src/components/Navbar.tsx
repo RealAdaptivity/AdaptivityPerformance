@@ -9,11 +9,17 @@ import {
   Car,
   FileCheck,
   UserPlus,
+  Building2,
   LogIn,
   Menu,
   X,
+  Calculator,
+  MapPin,
+  GraduationCap,
 } from 'lucide-react';
 import { portalPath } from '../portal/portalRoute';
+import { SiteLink } from '../site/SiteLink';
+import { navigateSite, useSitePage } from '../site/siteRoute';
 
 interface NavbarProps {
   onOpenBooking: () => void;
@@ -21,6 +27,7 @@ interface NavbarProps {
   onOpenGarage: () => void;
   onOpenInspection: () => void;
   onOpenRecruitment: () => void;
+  onOpenPartnerApply: () => void;
   onOpenMembership: () => void;
 }
 
@@ -30,10 +37,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGarage,
   onOpenInspection,
   onOpenRecruitment,
+  onOpenPartnerApply,
   onOpenMembership,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const page = useSitePage();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -55,12 +64,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const close = () => setMenuOpen(false);
 
-  const openMembership = () => {
-    const elem = document.getElementById('membership');
-    if (elem) elem.scrollIntoView({ behavior: 'smooth' });
-    onOpenMembership();
-    close();
-  };
+  const linkClass = (id: string) =>
+    `transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5 ${
+      page === id ? 'text-orange-400' : 'hover:text-orange-400'
+    }`;
 
   return (
     <header className="sticky top-0 z-50 bg-[#0b0c10]/90 backdrop-blur-md border-b border-white/10">
@@ -69,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-2 min-w-0">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
             <span className="truncate">
-              <strong>NOW ACTIVE:</strong> Mobile Service in <strong>Justin</strong> & <strong>Northlake</strong>
+              <strong>NOW ACTIVE:</strong> Mobile Service across <strong>DFW</strong> & <strong>Fort Worth</strong>
             </span>
           </div>
           <span className="hidden sm:flex items-center space-x-1 flex-shrink-0 opacity-90">
@@ -79,8 +86,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
-        <a href="#" className="flex items-center space-x-3 group min-w-0">
+      <div className="container mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
+        <SiteLink to="home" className="flex items-center space-x-3 group min-w-0">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-0.5 shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-all duration-300 flex-shrink-0">
             <div className="w-full h-full bg-[#0b0c10] rounded-[10px] flex items-center justify-center">
               <Wrench className="w-5 h-5 text-orange-500 group-hover:rotate-12 transition-transform duration-300" />
@@ -94,26 +101,58 @@ export const Navbar: React.FC<NavbarProps> = ({
               Mobile & Shop Automotive Specialist
             </p>
           </div>
-        </a>
+        </SiteLink>
 
-        <div className="relative flex items-center gap-2 sm:gap-4" ref={menuRef}>
-          <nav className="flex items-center gap-1 sm:gap-2 text-sm font-medium text-slate-300">
-            <a
-              href="#services"
-              className="hover:text-orange-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5"
-            >
+        <div className="relative flex items-center gap-1.5 sm:gap-2" ref={menuRef}>
+          <nav className="hidden lg:flex items-center gap-0.5 text-sm font-medium text-slate-300">
+            <SiteLink to="services" className={linkClass('services')}>
               Services
-            </a>
-            <a
-              href="#estimator"
-              className="hover:text-orange-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center gap-1.5"
+            </SiteLink>
+            <SiteLink to="about" className={linkClass('about')}>
+              About
+            </SiteLink>
+            <SiteLink to="quotes" className={linkClass('quotes')}>
+              Quotes
+            </SiteLink>
+            <SiteLink
+              to="join"
+              className={`inline-flex items-center gap-1.5 ${linkClass('join')} ${
+                page === 'join' ? 'text-emerald-400' : 'text-emerald-400/90 hover:text-emerald-300'
+              }`}
             >
-              <span>Quotes</span>
-              <span className="bg-orange-500/20 text-orange-400 text-[10px] px-1.5 py-0.5 rounded font-bold uppercase hidden sm:inline">
-                Fast
-              </span>
-            </a>
+              <UserPlus className="w-3.5 h-3.5" />
+              Join as Tech
+            </SiteLink>
+            <SiteLink
+              to="learn"
+              className={`inline-flex items-center gap-1.5 ${linkClass('learn')} ${
+                page === 'learn' ? 'text-amber-400' : 'hover:text-amber-300'
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              Want to Learn
+            </SiteLink>
+            <SiteLink
+              to="wantToTeach"
+              className={`inline-flex items-center gap-1.5 ${linkClass('wantToTeach')} ${
+                page === 'wantToTeach' ? 'text-violet-300' : 'hover:text-violet-300'
+              }`}
+            >
+              Want to Teach
+            </SiteLink>
+            <SiteLink to="careers" className={linkClass('careers')}>
+              Careers
+            </SiteLink>
           </nav>
+
+          <button
+            type="button"
+            onClick={onOpenBooking}
+            className="hidden sm:inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/25"
+          >
+            <Calendar className="w-4 h-4" />
+            Schedule Service
+          </button>
 
           <button
             type="button"
@@ -128,6 +167,133 @@ export const Navbar: React.FC<NavbarProps> = ({
           {menuOpen && (
             <div className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,20rem)] bg-[#12141c] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 p-2 z-50">
               <div className="flex flex-col text-sm font-medium text-slate-300">
+                <SiteLink
+                  to="home"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
+                >
+                  Home
+                </SiteLink>
+                <SiteLink
+                  to="services"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
+                >
+                  <Wrench className="w-4 h-4 text-orange-400" /> Services
+                </SiteLink>
+                <SiteLink
+                  to="about"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
+                >
+                  About Us
+                </SiteLink>
+                <SiteLink
+                  to="quotes"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
+                >
+                  <Calculator className="w-4 h-4 text-sky-400" /> Instant Quotes
+                </SiteLink>
+                <SiteLink
+                  to="join"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-emerald-300"
+                >
+                  <UserPlus className="w-4 h-4 text-emerald-400" /> Join as Tech
+                </SiteLink>
+                <SiteLink
+                  to="learn"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-amber-300"
+                >
+                  <GraduationCap className="w-4 h-4 text-amber-400" /> Want to Learn
+                </SiteLink>
+                <SiteLink
+                  to="wantToTeach"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-violet-300"
+                >
+                  <GraduationCap className="w-4 h-4 text-violet-300" /> Want to Teach
+                </SiteLink>
+                <SiteLink
+                  to="careers"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
+                >
+                  Careers
+                </SiteLink>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenBooking();
+                    close();
+                  }}
+                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-orange-300 sm:hidden"
+                >
+                  <Calendar className="w-4 h-4 text-orange-400" /> Schedule Service
+                </button>
+
+                <div className="my-1 border-t border-white/10" />
+
+                <SiteLink
+                  to="membership"
+                  onNavigate={() => {
+                    close();
+                    onOpenMembership();
+                  }}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-orange-300"
+                >
+                  <ShieldCheck className="w-4 h-4 text-orange-400" /> VIP Shield
+                </SiteLink>
+                <SiteLink
+                  to="diagnostics"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
+                >
+                  Symptom Checker
+                </SiteLink>
+                <SiteLink
+                  to="partners"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-sky-300"
+                >
+                  <Building2 className="w-4 h-4 text-sky-400" /> Partner locations
+                </SiteLink>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenPartnerApply();
+                    close();
+                  }}
+                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-sky-300"
+                >
+                  <Building2 className="w-4 h-4 text-sky-400" /> Partner your shop
+                </button>
+                <SiteLink
+                  to="coverage"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5"
+                >
+                  <MapPin className="w-4 h-4 text-orange-400" /> Service area
+                </SiteLink>
+                <SiteLink
+                  to="performance"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
+                >
+                  Performance builds
+                </SiteLink>
+                <SiteLink
+                  to="faq"
+                  onNavigate={close}
+                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
+                >
+                  FAQ
+                </SiteLink>
+
+                <div className="my-1 border-t border-white/10" />
+
                 <button
                   type="button"
                   onClick={() => {
@@ -150,23 +316,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={openMembership}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-orange-300"
-                >
-                  <ShieldCheck className="w-4 h-4 text-orange-400" /> VIP Shield
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenRecruitment();
-                    close();
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-emerald-300"
-                >
-                  <UserPlus className="w-4 h-4 text-emerald-400" /> Join as Tech
-                </button>
-                <button
-                  type="button"
                   onClick={() => {
                     onOpenTracker();
                     close();
@@ -175,13 +324,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <Truck className="w-4 h-4 text-orange-400" /> Track Live Dispatch
                 </button>
-                <a
-                  href="#area"
-                  onClick={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
-                >
-                  Justin & Northlake Coverage
-                </a>
 
                 <div className="my-1 border-t border-white/10" />
 
@@ -208,7 +350,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="mt-1 mx-1 mb-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-orange-500/25"
                 >
                   <Calendar className="w-4 h-4" />
-                  Book Service
+                  Schedule Service
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateSite('join');
+                    onOpenRecruitment();
+                    close();
+                  }}
+                  className="mx-1 mb-1 flex items-center justify-center gap-2 border border-emerald-500/40 text-emerald-300 font-semibold py-2.5 rounded-xl hover:bg-emerald-500/10"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Open tech application
                 </button>
               </div>
             </div>

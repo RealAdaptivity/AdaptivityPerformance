@@ -14,6 +14,8 @@ const sharedFiles = {
   'connectBranding.ts': fs.readFileSync(path.join(sharedDir, 'connectBranding.ts'), 'utf8'),
   'connectAccountRecovery.ts': fs.readFileSync(path.join(sharedDir, 'connectAccountRecovery.ts'), 'utf8'),
   'connectTransfer.ts': fs.readFileSync(path.join(sharedDir, 'connectTransfer.ts'), 'utf8'),
+  'holdPricing.ts': fs.readFileSync(path.join(sharedDir, 'holdPricing.ts'), 'utf8'),
+  'captureHold.ts': fs.readFileSync(path.join(sharedDir, 'captureHold.ts'), 'utf8'),
 };
 
 const functions = [
@@ -21,12 +23,39 @@ const functions = [
   { name: 'create-connect-account', shared: ['stripe.ts', 'connectBranding.ts', 'connectAccountRecovery.ts'], verify_jwt: true },
   {
     name: 'create-booking-with-hold',
-    shared: ['stripe.ts', 'revenueSplit.ts', 'serviceArea.ts'],
+    shared: ['stripe.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
     verify_jwt: true,
   },
   {
     name: 'capture-booking-payment',
     shared: ['stripe.ts', 'revenueSplit.ts', 'connectTransfer.ts', 'connectAccountRecovery.ts'],
+    verify_jwt: true,
+  },
+  {
+    name: 'submit-booking-quote',
+    shared: ['stripe.ts'],
+    verify_jwt: true,
+  },
+  {
+    name: 'approve-booking-quote',
+    shared: [
+      'stripe.ts',
+      'captureHold.ts',
+      'connectTransfer.ts',
+      'revenueSplit.ts',
+      'connectAccountRecovery.ts',
+    ],
+    verify_jwt: true,
+  },
+  {
+    name: 'decline-booking-quote',
+    shared: [
+      'stripe.ts',
+      'captureHold.ts',
+      'connectTransfer.ts',
+      'revenueSplit.ts',
+      'connectAccountRecovery.ts',
+    ],
     verify_jwt: true,
   },
   { name: 'trigger-instant-payout', shared: ['stripe.ts', 'instantPayout.ts', 'connectAccountRecovery.ts'], verify_jwt: true },

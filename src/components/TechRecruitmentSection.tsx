@@ -19,18 +19,18 @@ export const TechRecruitmentSection: React.FC<TechRecruitmentSectionProps> = ({ 
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-full text-xs font-bold text-orange-400">
                 <UserPlus className="w-4 h-4 text-orange-400" />
-                <span>NOW HIRING: Mobile Automotive Technicians</span>
+                <span>NOW HIRING: All automotive trades — if it involves cars, apply</span>
               </div>
 
               <h2 className="text-3xl lg:text-4xl font-heading font-black text-white leading-tight">
                 Got Your Own Tools & Rig? <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500">
-                  Mechanics Keep 80% of Labor Billed ($65–$95+/hr)
+                  Techs Keep 80% of Labor Billed ($65–$95+/hr)
                 </span>
               </h2>
 
               <p className="text-sm text-slate-300 leading-relaxed">
-                Adaptivity Performance is expanding mobile service units in <strong>Justin, Northlake, Haslet, Argyle, and Denton</strong>. We handle customer acquisition, dispatch software, parts delivery logistics, and invoicing—you keep 80% of the revenue!
+                Expanding mobile units in <strong>Justin, Northlake, Haslet, Argyle, and Denton</strong> for mechanical, tires, glass, body, detailing, audio, tint, wrap/PPF, mods, and performance techs. We handle customers, dispatch, and invoicing—you keep 80% of the revenue!
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">

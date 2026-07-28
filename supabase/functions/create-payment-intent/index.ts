@@ -12,8 +12,11 @@ Deno.serve(async (req) => {
       baseAmountDollars,
       tipAmountDollars = 0,
       customerEmail,
+      customerName,
+      shippingAddress,
       techStripeAccountId,
       bookingReference,
+      preferFinancing,
     } = await req.json();
 
     const base = Number(baseAmountDollars);
@@ -32,11 +35,50 @@ Deno.serve(async (req) => {
     const params: Record<string, unknown> = {
       amount: totalCents,
       currency: 'usd',
+      // Dynamic methods: Affirm, Afterpay, Zip, Sunbit, Klarna when enabled in Dashboard
+      // (do not set payment_method_types — Stripe best practice).
       automatic_payment_methods: { enabled: true },
       receipt_email: customerEmail || undefined,
       metadata: {
         booking_reference: bookingReference || '',
         platform: 'adaptivity_performance',
+        prefer_financing: preferFinancing ? 'true' : 'false',
+        bnpl_providers: 'affirm,afterpay,zip,sunbit,klarna',
+        bnpl_hint:
+          totalCents >= 5000 && totalCents <= 70000
+            ? 'pay_in_4'
+            : totalCents > 70000
+              ? 'longer_monthly'
+              : 'card',
+      },
+    };
+
+    // Optional: Stripe Dashboard → Payment method configurations → platform PMC id
+    const pmc =
+      Deno.env.get('STRIPE_PAYMENT_METHOD_CONFIGURATION')?.trim() ||
+      Deno.env.get('STRIPE_PMC_CHECKOUT')?.trim();
+    if (pmc?.startsWith('pmc_')) {
+      params.payment_method_configuration = pmc;
+    }
+
+    // BNPL conversion: shipping address improves Affirm / Afterpay / Zip / Klarna eligibility
+    const ship = shippingAddress && typeof shippingAddress === 'object' ? shippingAddress : null;
+    const name = typeof customerName === 'string' && customerName.trim() ? customerName.trim() : 'Customer';
+    params.shipping = {
+      name,
+      address: {
+        line1:
+          typeof ship?.line1 === 'string' && ship.line1.trim()
+            ? ship.line1.trim()
+            : 'Service address on booking',
+        line2: typeof ship?.line2 === 'string' ? ship.line2 : undefined,
+        city: typeof ship?.city === 'string' && ship.city.trim() ? ship.city.trim() : 'Justin',
+        state: typeof ship?.state === 'string' && ship.state.trim() ? ship.state.trim() : 'TX',
+        postal_code:
+          typeof ship?.postal_code === 'string' && ship.postal_code.trim()
+            ? ship.postal_code.trim()
+            : '76247',
+        country: 'US',
       },
     };
 

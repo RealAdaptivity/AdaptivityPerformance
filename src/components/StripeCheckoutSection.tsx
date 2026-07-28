@@ -10,10 +10,12 @@ interface StripeCheckoutSectionProps {
   grandTotal: number;
   techPayoutAmount: number;
   platformFeeAmount: number;
+  preferFinancing?: boolean;
   bookingDetails: {
     id: string;
     customerName: string;
     customerEmail?: string;
+    serviceAddress?: string;
     techStripeAccountId?: string | null;
   };
   onPaid: (paymentIntentId: string) => void;
@@ -25,6 +27,7 @@ export const StripeCheckoutSection: React.FC<StripeCheckoutSectionProps> = ({
   grandTotal,
   techPayoutAmount,
   platformFeeAmount,
+  preferFinancing = true,
   bookingDetails,
   onPaid,
 }) => {
@@ -39,8 +42,13 @@ export const StripeCheckoutSection: React.FC<StripeCheckoutSectionProps> = ({
           baseAmountDollars: baseAmount,
           tipAmountDollars: tipAmount,
           customerEmail: bookingDetails.customerEmail,
+          customerName: bookingDetails.customerName,
+          shippingAddress: bookingDetails.serviceAddress
+            ? { line1: bookingDetails.serviceAddress }
+            : undefined,
           techStripeAccountId: bookingDetails.techStripeAccountId,
           bookingReference: bookingDetails.id,
+          preferFinancing,
         });
         if (!cancelled) setClientSecret(result.clientSecret);
       } catch (e: unknown) {
@@ -52,7 +60,7 @@ export const StripeCheckoutSection: React.FC<StripeCheckoutSectionProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [baseAmount, tipAmount, bookingDetails]);
+  }, [baseAmount, tipAmount, bookingDetails, preferFinancing]);
 
   const options = useMemo(() => {
     if (!clientSecret) return undefined;
@@ -75,6 +83,8 @@ export const StripeCheckoutSection: React.FC<StripeCheckoutSectionProps> = ({
         {loadError}
         <p className="text-xs text-slate-400 mt-2">
           Add Supabase secret <code className="text-slate-300">STRIPE_SECRET_KEY</code> (Dashboard → Project Settings → Edge Functions → Secrets).
+          Enable Affirm, Afterpay, Zip, Sunbit & Klarna under Stripe → Settings → Payment methods
+          (or attach a platform <code className="text-slate-300">pmc_…</code> config).
         </p>
       </div>
     );
@@ -91,6 +101,7 @@ export const StripeCheckoutSection: React.FC<StripeCheckoutSectionProps> = ({
         techPayoutAmount={techPayoutAmount}
         platformFeeAmount={platformFeeAmount}
         bookingDetails={bookingDetails}
+        preferFinancing={preferFinancing}
         onPaid={onPaid}
       />
     </Elements>

@@ -1,19 +1,17 @@
-/** Service zips aligned with website ServiceAreaChecker. Shop bookings skip zip gate. */
-export const COVERED_ZIPS = new Set([
-  '76247',
-  '76226',
-  '76262',
-  '76227',
-  '76052',
-  '76259',
-  '76248',
-  '76201',
-]);
+/** Mobile dispatch: DFW / Fort Worth area (keep in sync with src/services/serviceArea.ts). */
+
+export const COVERED_ZIP_PREFIXES = ['750', '751', '752', '760', '761', '762'] as const;
 
 export function normalizeZip(input: string | null | undefined): string | null {
   if (!input?.trim()) return null;
   const m = input.trim().match(/\b(\d{5})\b/);
   return m ? m[1] : null;
+}
+
+export function isCoveredZip(zipCode: string | null | undefined): boolean {
+  const zip = normalizeZip(zipCode);
+  if (!zip) return false;
+  return COVERED_ZIP_PREFIXES.some((p) => zip.startsWith(p));
 }
 
 export function assertServiceArea(zipCode: string | null | undefined, locationType: string) {
@@ -22,9 +20,9 @@ export function assertServiceArea(zipCode: string | null | undefined, locationTy
   if (!zip) {
     throw new Error('A valid 5-digit service zip code is required for mobile dispatch.');
   }
-  if (!COVERED_ZIPS.has(zip)) {
+  if (!isCoveredZip(zip)) {
     throw new Error(
-      `Mobile service is not available in zip ${zip}. Call (214) 620-3244 for extended-area quotes or book shop service.`
+      `Mobile service is not available in zip ${zip}. We serve the DFW / Fort Worth metro (TX zips starting 750–752 and 760–762). Call (214) 620-3244 for extended-area quotes or book shop service in Justin.`
     );
   }
 }

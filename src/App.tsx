@@ -1,20 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BookingProvider, useBookingContext, type Booking } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { QuoteEstimator } from './components/QuoteEstimator';
-import { DiagnosticAssistant } from './components/DiagnosticAssistant';
-import { ServiceAreaChecker } from './components/ServiceAreaChecker';
-import { PerformanceSection } from './components/PerformanceSection';
-import { SEOContentBlock } from './components/SEOContentBlock';
-import { Testimonials } from './components/Testimonials';
 import { RepairTrackerDemo } from './components/RepairTrackerDemo';
 import { BookingModal } from './components/BookingModal';
 import { CustomerGarageModal } from './components/CustomerGarageModal';
 import { InspectionReportModal } from './components/InspectionReportModal';
 import { TechRecruitmentModal } from './components/TechRecruitmentModal';
-import { TechRecruitmentSection } from './components/TechRecruitmentSection';
-import { MembershipSection } from './components/MembershipSection';
+import { PartnerApplyModal } from './components/PartnerApplyModal';
 import { MembershipModal } from './components/MembershipModal';
 import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
 import { AIMechanicChatbot } from './components/AIMechanicChatbot';
@@ -25,33 +17,82 @@ import { AdminApp } from './admin/AdminApp';
 import { useAdminConsoleRoute } from './admin/adminRoute';
 import { PortalApp } from './portal/PortalApp';
 import { usePortalRoute } from './portal/portalRoute';
+import { SERVICE_CATALOG } from './services/serviceCatalog';
+import { HomePage } from './pages/HomePage';
+import { renderMarketingPage } from './pages/MarketingPages';
+import { navigateSite, useSitePage } from './site/siteRoute';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
-  
-  // Enforce Native Mobile iOS App Isolation:
-  // Native iOS App (Adaptivity Tech Dispatch) opens Standalone Tech App ONLY.
-  // Public website visitors on adaptivityperformance.com see Customer Website ONLY.
-  const isNativeTechApp = typeof window !== 'undefined' && (
-    Capacitor.isNativePlatform() || window.location.search.includes('view=tech')
-  );
+  const page = useSitePage();
+
+  const isNativeTechApp =
+    typeof window !== 'undefined' &&
+    (Capacitor.isNativePlatform() || window.location.search.includes('view=tech'));
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-
-  if (isNativeTechApp) {
-    return <StandaloneTechApp />;
-  }
-
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isGarageOpen, setIsGarageOpen] = useState(false);
   const [isInspectionOpen, setIsInspectionOpen] = useState(false);
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
+  const [isPartnerApplyOpen, setIsPartnerApplyOpen] = useState(false);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutBooking, setCheckoutBooking] = useState<Booking | null>(null);
   const [selectedMembershipPlan, setSelectedMembershipPlan] = useState<'basic' | 'vip' | 'fleet'>('vip');
   const [activeServiceMode, setActiveServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [estimateDataForBooking, setEstimateDataForBooking] = useState<any>(null);
+
+  // Legacy #hash links on `/` → real pages
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+    const path = window.location.pathname.replace(/\/$/, '') || '/';
+    const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    const atHome = path === '/' || path === '' || path === base;
+    if (!atHome) return;
+    const map: Record<string, Parameters<typeof navigateSite>[0]> = {
+      about: 'about',
+      future: 'about',
+      services: 'services',
+      estimator: 'quotes',
+      membership: 'membership',
+      diagnostics: 'diagnostics',
+      partners: 'partners',
+      area: 'coverage',
+      performance: 'performance',
+      join: 'join',
+      careers: 'careers',
+      'want-to-teach': 'wantToTeach',
+      teach: 'wantToTeach',
+      learn: 'learn',
+      train: 'learn',
+      training: 'learn',
+      faq: 'faq',
+    };
+    const target = map[hash];
+    if (target) navigateSite(target, { replace: true, hash: hash === 'future' ? 'future' : undefined });
+  }, []);
+
+  // Scroll to in-page hash after route change (e.g. /about#future)
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, '');
+    if (!hash) return;
+    const t = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [page]);
+
+  if (isNativeTechApp) {
+    return <StandaloneTechApp />;
+  }
+
+  const openBooking = () => {
+    setEstimateDataForBooking(null);
+    setIsBookingOpen(true);
+  };
 
   const handleOpenBookingWithEstimate = (estimateDetails: any) => {
     setEstimateDataForBooking(estimateDetails);
@@ -117,83 +158,61 @@ function MainAppContent() {
     return result.bookingReference;
   };
 
+  const pageActions = {
+    onOpenBooking: openBooking,
+    onOpenRecruitment: () => setIsRecruitmentOpen(true),
+    onOpenPartnerApply: () => setIsPartnerApplyOpen(true),
+    onOpenMembership: handleOpenMembershipModal,
+    onBookWithEstimate: handleOpenBookingWithEstimate,
+    onSelectRecommendedService: handleSelectRecommendedService,
+    onBookService: (serviceId: string) => {
+      const match = SERVICE_CATALOG.find((s) => s.id === serviceId);
+      setEstimateDataForBooking({
+        services: [match?.title || serviceId],
+        locationType: 'mobile' as const,
+      });
+      setIsBookingOpen(true);
+    },
+    onBookAtShop: (partnerId: string) => {
+      setEstimateDataForBooking({
+        locationType: 'shop' as const,
+        partnerLocationId: partnerId,
+      });
+      setIsBookingOpen(true);
+    },
+    onBookMobileZip: handleBookMobileZip,
+    activeServiceMode,
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
-      
-      {/* Navigation */}
       <Navbar
-        onOpenBooking={() => {
-          setEstimateDataForBooking(null);
-          setIsBookingOpen(true);
-        }}
+        onOpenBooking={openBooking}
         onOpenTracker={() => setIsTrackerOpen(true)}
         onOpenGarage={() => setIsGarageOpen(true)}
         onOpenInspection={() => setIsInspectionOpen(true)}
         onOpenRecruitment={() => setIsRecruitmentOpen(true)}
-        onOpenMembership={() => handleOpenMembershipModal('vip')}
+        onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
+        onOpenMembership={() => {
+          navigateSite('membership');
+          handleOpenMembershipModal('vip');
+        }}
       />
 
       <main className="flex-grow">
-        {/* Hero with Service Mode Switcher */}
-        <Hero
-          onOpenBooking={() => {
-            setEstimateDataForBooking(null);
-            setIsBookingOpen(true);
-          }}
-          onSelectServiceMode={mode => setActiveServiceMode(mode)}
-        />
-
-        {/* Instant Quote Estimator */}
-        <QuoteEstimator
-          defaultMode={activeServiceMode}
-          onBookWithEstimate={handleOpenBookingWithEstimate}
-        />
-
-        {/* Adaptivity Shield VIP Membership Pricing & Benefits */}
-        <MembershipSection
-          onOpenMembership={handleOpenMembershipModal}
-        />
-
-        {/* Smart Diagnostic Symptom Assistant */}
-        <DiagnosticAssistant
-          onSelectRecommendedService={handleSelectRecommendedService}
-        />
-
-        {/* Mechanic Hiring & Recruitment Banner Section */}
-        <TechRecruitmentSection
-          onOpenRecruitment={() => setIsRecruitmentOpen(true)}
-        />
-
-        {/* Justin & Northlake Service Area Checker */}
-        <ServiceAreaChecker
-          onBookMobile={handleBookMobileZip}
-        />
-
-        {/* Performance & Custom Upgrades Showcase */}
-        <PerformanceSection
-          onOpenBooking={() => {
-            setEstimateDataForBooking(null);
-            setIsBookingOpen(true);
-          }}
-        />
-
-        {/* Local SEO Keyword & FAQ Block */}
-        <SEOContentBlock />
-
-        {/* Testimonials */}
-        <Testimonials />
+        {page === 'home' ? (
+          <HomePage
+            onOpenBooking={openBooking}
+            onSelectServiceMode={setActiveServiceMode}
+            onOpenRecruitment={() => setIsRecruitmentOpen(true)}
+          />
+        ) : (
+          renderMarketingPage(page, pageActions)
+        )}
       </main>
 
-      {/* Footer */}
-      <Footer
-        onOpenBooking={() => {
-          setEstimateDataForBooking(null);
-          setIsBookingOpen(true);
-        }}
-        onOpenTracker={() => setIsTrackerOpen(true)}
-      />
+      <Footer onOpenBooking={openBooking} onOpenTracker={() => setIsTrackerOpen(true)} />
 
-      {/* Booking Modal */}
       <BookingModal
         isOpen={isBookingOpen}
         onClose={() => setIsBookingOpen(false)}
@@ -201,7 +220,6 @@ function MainAppContent() {
         onBookingSubmitted={handleBookingSubmittedInModal}
       />
 
-      {/* Live Repair / Dispatch Tracker Modal Demo */}
       <RepairTrackerDemo
         isOpen={isTrackerOpen}
         onClose={() => setIsTrackerOpen(false)}
@@ -211,7 +229,6 @@ function MainAppContent() {
         }}
       />
 
-      {/* Customer Vehicle Garage & Health Hub Modal */}
       <CustomerGarageModal
         isOpen={isGarageOpen}
         onClose={() => setIsGarageOpen(false)}
@@ -219,27 +236,28 @@ function MainAppContent() {
         onOpenDVIReport={() => setIsInspectionOpen(true)}
       />
 
-      {/* Digital Vehicle Inspection (DVI) Report Modal */}
       <InspectionReportModal
         isOpen={isInspectionOpen}
         onClose={() => setIsInspectionOpen(false)}
         onApproveAndBook={handleApproveDVIAndBook}
       />
 
-      {/* Mobile Mechanic Recruitment Application Modal */}
       <TechRecruitmentModal
         isOpen={isRecruitmentOpen}
         onClose={() => setIsRecruitmentOpen(false)}
       />
 
-      {/* Adaptivity Shield VIP Membership Modal */}
+      <PartnerApplyModal
+        isOpen={isPartnerApplyOpen}
+        onClose={() => setIsPartnerApplyOpen(false)}
+      />
+
       <MembershipModal
         isOpen={isMembershipOpen}
         onClose={() => setIsMembershipOpen(false)}
         initialPlanId={selectedMembershipPlan}
       />
 
-      {/* Official In-Platform Escrow Payment Checkout Modal */}
       <PaymentCheckoutModal
         isOpen={isCheckoutOpen}
         onClose={() => {
@@ -251,6 +269,7 @@ function MainAppContent() {
             ? {
                 id: checkoutBooking.id,
                 customerName: checkoutBooking.customerName,
+                serviceAddress: checkoutBooking.customerAddress,
                 vehicle: checkoutBooking.vehicle,
                 services: checkoutBooking.services,
                 totalAmount: checkoutBooking.totalEstimate,
@@ -261,11 +280,7 @@ function MainAppContent() {
         }
       />
 
-      {/* Floating 24/7 AI Diagnostic Mechanic Chatbot */}
-      <AIMechanicChatbot
-        onBookService={handleBookFromAIChat}
-      />
-
+      <AIMechanicChatbot onBookService={handleBookFromAIChat} />
     </div>
   );
 }

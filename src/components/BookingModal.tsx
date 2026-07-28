@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2 } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
 import { StripeBookingHoldSection } from './StripeBookingHoldSection';
+import { computeHoldQuote } from '../services/holdPricing';
+import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface BookingModalProps {
     services?: string[];
     totalEstimate?: number;
     calculatedDistanceMiles?: number;
+    partnerLocationId?: string;
   };
   onBookingSubmitted?: (result: {
     bookingReference: string;
@@ -22,16 +25,6 @@ interface BookingModalProps {
     phone: string;
     vehicle: string;
   }) => void;
-}
-
-function computeHoldAmountDollars(
-  serviceMode: 'mobile' | 'shop',
-  initialEstimate?: number
-): number {
-  const laborAndParts = initialEstimate && initialEstimate > 0 ? initialEstimate : 280;
-  const dispatchFee = serviceMode === 'mobile' ? 25 : 0;
-  const tax = Math.round(laborAndParts * 0.0825);
-  return laborAndParts + dispatchFee + tax;
 }
 
 export const BookingModal: React.FC<BookingModalProps> = ({
@@ -44,7 +37,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [serviceMode, setServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [vehicle, setVehicle] = useState('2020 Ford F-150');
   const [vinNumber, setVinNumber] = useState('');
-  const [serviceRequested, setServiceRequested] = useState('Front Brake Replacement & Rotor Resurface');
+  const [serviceRequested, setServiceRequested] = useState('Mobile Diagnostic Visit');
   const [preferredDate, setPreferredDate] = useState('2026-07-22');
   const [preferredTime, setPreferredTime] = useState('Morning (8 AM - 12 PM)');
   const [streetAddress, setStreetAddress] = useState('1234 Canyon Falls Dr');
@@ -58,11 +51,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreatingHold, setIsCreatingHold] = useState(false);
+  const [partners, setPartners] = useState<PartnerLocation[]>([]);
+  const [partnerLocationId, setPartnerLocationId] = useState<string>('');
 
-  const holdPreview = useMemo(
-    () => computeHoldAmountDollars(serviceMode, initialEstimateData?.totalEstimate),
-    [serviceMode, initialEstimateData?.totalEstimate]
+  const selectedPartner = useMemo(
+    () => partners.find((p) => p.id === partnerLocationId) || partners[0] || null,
+    [partners, partnerLocationId]
   );
+
+  const holdQuote = useMemo(() => {
+    const fromField = serviceRequested
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const fromInitial = initialEstimateData?.services || [];
+    return computeHoldQuote(fromField.length ? fromField : fromInitial.length ? fromInitial : ['diagnostic']);
+  }, [serviceRequested, initialEstimateData?.services]);
+  const holdPreview = holdQuote.holdDollars;
 
   useEffect(() => {
     if (initialEstimateData) {
@@ -73,6 +78,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       if (initialEstimateData.services && initialEstimateData.services.length > 0) {
         setServiceRequested(initialEstimateData.services.join(', '));
       }
+      if (initialEstimateData.partnerLocationId) {
+        setPartnerLocationId(initialEstimateData.partnerLocationId);
+        setServiceMode('shop');
+      }
     }
   }, [initialEstimateData]);
 
@@ -82,7 +91,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setClientSecret(null);
       setSubmitError(null);
       setBookingRef('');
+      return;
     }
+    void fetchApprovedPartners()
+      .then((list) => {
+        setPartners(list);
+        setPartnerLocationId((prev) => {
+          if (prev && list.some((p) => p.id === prev)) return prev;
+          const owned = list.find((p) => p.isAdaptivityOwned);
+          return owned?.id || list[0]?.id || '';
+        });
+      })
+      .catch(() => setPartners([]));
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -91,7 +111,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     const base =
       serviceMode === 'mobile'
         ? `${streetAddress.trim()}, ${zipCode.trim()}`
-        : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
+        : selectedPartner
+          ? `${selectedPartner.businessName} • ${selectedPartner.address}`
+          : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
     const schedule = `${preferredDate} (${preferredTime})`;
     const extra = notes.trim() ? ` • Notes: ${notes.trim()}` : '';
     return `${base} • ${schedule}${extra}`;
@@ -115,12 +137,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         customerPhone: phone.trim(),
         customerEmail: email.trim(),
         customerAddress: buildAddress(),
-        zipCode: zipCode.trim() || '76247',
+        zipCode:
+          serviceMode === 'shop'
+            ? selectedPartner?.zipCode || zipCode.trim() || '76247'
+            : zipCode.trim() || '76247',
         vehicleDescription: vehicle.trim(),
         vin: vinNumber.trim() || undefined,
         services: servicesList.length ? servicesList : [serviceRequested.trim()],
         holdAmountDollars: amount,
         locationType: serviceMode,
+        partnerLocationId:
+          serviceMode === 'shop' ? selectedPartner?.id || partnerLocationId || undefined : undefined,
       });
 
       setBookingRef(hold.bookingReference);
@@ -197,10 +224,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     }`}
                   >
                     <Home className="w-4 h-4 text-orange-400" />
-                    <span>Drop Off at Justin Shop</span>
+                    <span>Drop Off at Shop / Partner</span>
                   </button>
                 </div>
               </div>
+
+              {serviceMode === 'shop' && partners.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                    Choose shop / garage partner
+                  </label>
+                  <select
+                    value={partnerLocationId}
+                    onChange={(e) => setPartnerLocationId(e.target.value)}
+                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  >
+                    {partners.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.businessName}
+                        {p.city ? ` — ${p.city}` : ''}
+                        {p.hasLift ? ' · Lift' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -265,10 +313,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-400">
-                Estimated diagnostic hold at booking:{' '}
-                <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong> (incl. dispatch & tax when
-                applicable)
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Card hold at booking:{' '}
+                <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong>
+                <span className="block text-slate-500 mt-1">
+                  {holdQuote.mode === 'direct' ? 'Direct service' : '$100 diagnostic'} —{' '}
+                  {holdQuote.explanation}
+                </span>
+                <span className="block text-amber-400/90 mt-1.5">
+                  Card hold only at booking. At final checkout: Affirm, Afterpay, Zip, Sunbit, or Klarna —
+                  Pay in 4 or longer plans when your repair total qualifies.
+                </span>
               </p>
 
               <button
@@ -296,23 +351,33 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Zip Code (Justin/Northlake/Argyle/Haslet)</label>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Zip Code (DFW / Fort Worth)</label>
                     <input
                       type="text"
                       required
                       value={zipCode}
                       onChange={e => setZipCode(e.target.value)}
                       className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                      placeholder="76247 or 76226"
+                      placeholder="76102, 76011, 76247…"
                     />
                   </div>
                 </>
               ) : (
                 <div className="p-3.5 bg-slate-900 rounded-xl border border-white/10 text-xs text-slate-300 space-y-1">
                   <div className="font-bold text-white flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-orange-400" /> Shop Base Address:
+                    <MapPin className="w-3.5 h-3.5 text-orange-400" /> Drop-off location:
                   </div>
-                  <p>Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247</p>
+                  {selectedPartner ? (
+                    <>
+                      <p className="text-white font-semibold">{selectedPartner.businessName}</p>
+                      <p>{selectedPartner.address}</p>
+                      {selectedPartner.hoursNote && (
+                        <p className="text-slate-500">{selectedPartner.hoursNote}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p>Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247</p>
+                  )}
                 </div>
               )}
 
@@ -370,7 +435,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <strong className="text-amber-400 font-bold block">Card hold — charge when complete</strong>
                   <span>
                     Next step saves your card and places a <strong className="text-white">${holdPreview.toFixed(2)}</strong>{' '}
-                    authorization hold for the diagnostic visit. You are charged when the job is finished; your
+                    authorization hold
+                    {holdQuote.mode === 'diagnostic'
+                      ? ' for the diagnostic visit (repairs recommended after inspection)'
+                      : ' for this direct-book service'}
+                    . You are charged when the job is finished; your
                     technician receives 70% through official platform checkout.
                   </span>
                 </div>
@@ -439,7 +508,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </span>
                 <h3 className="font-heading text-2xl font-bold text-white mt-2">Appointment booked — card on file</h3>
                 <p className="text-xs text-slate-300 max-w-sm mx-auto mt-1">
-                  A <strong className="text-white">${holdAmount.toFixed(2)}</strong> hold is active for your diagnostic
+                  A <strong className="text-white">${holdAmount.toFixed(2)}</strong> hold is active for your
                   visit. We&apos;ll charge your card when the job is complete. Dispatch will reach you at{' '}
                   <strong className="text-white">{phone}</strong> to confirm technician assignment.
                 </p>

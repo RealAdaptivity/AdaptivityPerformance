@@ -18,6 +18,9 @@ export type DispatchBooking = {
   status: string;
   distanceMiles: number;
   etaMinutes: number;
+  quoteStatus: string;
+  holdAmountCents: number | null;
+  paymentStatus: string;
 };
 
 function mapRow(row: Record<string, unknown>): DispatchBooking {
@@ -34,6 +37,9 @@ function mapRow(row: Record<string, unknown>): DispatchBooking {
     status: row.status as string,
     distanceMiles: Number(row.distance_miles),
     etaMinutes: Number(row.eta_minutes),
+    quoteStatus: (row.quote_status as string) || 'none',
+    holdAmountCents: (row.hold_amount_cents as number | null) ?? null,
+    paymentStatus: (row.payment_status as string) || 'none',
   };
 }
 
@@ -43,7 +49,59 @@ export async function fetchDispatchBookings(): Promise<DispatchBooking[]> {
   return (data || []).map(mapRow);
 }
 
+export type TechJobCapacity = 'multi' | 'standalone';
+
+const ACTIVE_JOB_STATUSES = ['EN_ROUTE', 'ON_SITE'] as const;
+
+export async function fetchMyJobCapacity(): Promise<TechJobCapacity> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 'multi';
+  const { data } = await supabase
+    .from('mechanic_details')
+    .select('job_capacity')
+    .eq('profile_id', user.id)
+    .maybeSingle();
+  return data?.job_capacity === 'standalone' ? 'standalone' : 'multi';
+}
+
+export async function updateMyJobCapacity(capacity: TechJobCapacity) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  await ensureTechProfile();
+  const { error } = await supabase
+    .from('mechanic_details')
+    .update({ job_capacity: capacity })
+    .eq('profile_id', user.id);
+  if (error) throw error;
+}
+
 export async function claimBookingRow(referenceCode: string, mechanicId: string) {
+  const { data: detail } = await supabase
+    .from('mechanic_details')
+    .select('job_capacity')
+    .eq('profile_id', mechanicId)
+    .maybeSingle();
+
+  if (detail?.job_capacity === 'standalone') {
+    const { data: active, error: activeErr } = await supabase
+      .from('bookings')
+      .select('id, reference_code')
+      .eq('mechanic_id', mechanicId)
+      .in('status', [...ACTIVE_JOB_STATUSES])
+      .neq('reference_code', referenceCode)
+      .limit(1);
+    if (activeErr) throw activeErr;
+    if (active && active.length > 0) {
+      throw new Error(
+        'You are on Standalone mode (one job at a time). Finish or release your active job, or switch to Multi-job in Settings.'
+      );
+    }
+  }
+
   const { error } = await supabase
     .from('bookings')
     .update({ status: 'EN_ROUTE', mechanic_id: mechanicId, eta_minutes: 12, distance_miles: 5 })
@@ -78,6 +136,49 @@ export async function captureBookingPayment(bookingReference: string) {
   }>('capture-booking-payment', { bookingReference });
 }
 
+export type QuoteLineInput = {
+  title: string;
+  laborDollars: number;
+  partsDollars?: number;
+  notes?: string;
+};
+
+export async function submitBookingQuote(
+  bookingReference: string,
+  lineItems: QuoteLineInput[],
+  techNotes?: string
+) {
+  return invokeEdgeFunction<{
+    ok: boolean;
+    quoteId: string;
+    totalDollars: number;
+    repairsDollars: number;
+    diagnosticFeeDollars: number;
+    message?: string;
+  }>('submit-booking-quote', {
+    bookingReference,
+    lineItems,
+    techNotes,
+  });
+}
+
+export async function approveBookingQuote(bookingReference: string) {
+  return invokeEdgeFunction<{
+    ok: boolean;
+    capturedAmountDollars?: number;
+    remainderDollars?: number;
+    message?: string;
+  }>('approve-booking-quote', { bookingReference });
+}
+
+export async function declineBookingQuote(bookingReference: string, reason?: string) {
+  return invokeEdgeFunction<{
+    ok: boolean;
+    chargedDiagnosticDollars?: number;
+    message?: string;
+  }>('decline-booking-quote', { bookingReference, reason, chargeDiagnostic: true });
+}
+
 export function subscribeDispatchBookings(onChange: () => void) {
   return supabase
     .channel('web-tech-dispatch')
@@ -101,12 +202,37 @@ export type TechConnectStatus = {
   hasBankAccount?: boolean;
 };
 
-export async function ensureTechProfile(vanNumber?: string) {
-  const { error } = await supabase.rpc('ensure_tech_profile', {
+export async function ensureTechProfile(vanNumber?: string, specialties?: string[]) {
+  const payload: Record<string, unknown> = {
     p_van_number: vanNumber?.trim() || 'Mobile Unit',
-    p_role_title: 'ASE Technician',
-  });
+  };
+  if (specialties?.length) {
+    payload.p_specialties = specialties;
+  }
+  const { error } = await supabase.rpc('ensure_tech_profile', payload);
   if (error) throw error;
+}
+
+export async function fetchMyTechSpecialties(): Promise<string[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return ['mechanical'];
+  const { data } = await supabase
+    .from('mechanic_details')
+    .select('specialties')
+    .eq('profile_id', user.id)
+    .maybeSingle();
+  const list = Array.isArray(data?.specialties) ? (data!.specialties as string[]) : [];
+  return list.length ? list : ['mechanical'];
+}
+
+export async function updateMyTechSpecialties(specialties: string[]) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  await ensureTechProfile(undefined, specialties);
 }
 
 export async function fetchLocalMechanicStripeId(): Promise<string | null> {

@@ -2,9 +2,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   fetchTechConnectStatus,
   fetchLocalMechanicStripeId,
+  fetchMyJobCapacity,
   openExpressDashboard,
   openStripePayoutSetup,
+  updateMyJobCapacity,
   type TechConnectStatus,
+  type TechJobCapacity,
 } from '../../services/techDispatch';
 import {
   linkedAccountId,
@@ -25,6 +28,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [showDebitModal, setShowDebitModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [jobCapacity, setJobCapacity] = useState<TechJobCapacity>('multi');
+  const [savingCapacity, setSavingCapacity] = useState(false);
+  const [capacityMsg, setCapacityMsg] = useState<string | null>(null);
 
   const openStripeUrl = (url: string) => {
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -55,10 +61,29 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
 
   useEffect(() => {
     void refresh();
+    void fetchMyJobCapacity().then(setJobCapacity);
     const onFocus = () => void refresh({ quiet: true });
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, [refresh]);
+
+  const saveJobCapacity = async (capacity: TechJobCapacity) => {
+    setSavingCapacity(true);
+    setCapacityMsg(null);
+    try {
+      await updateMyJobCapacity(capacity);
+      setJobCapacity(capacity);
+      setCapacityMsg(
+        capacity === 'multi'
+          ? 'Saved — you can claim multiple active jobs.'
+          : 'Saved — one active job at a time. Change anytime.'
+      );
+    } catch (e: unknown) {
+      setCapacityMsg(e instanceof Error ? e.message : 'Could not save work style');
+    } finally {
+      setSavingCapacity(false);
+    }
+  };
 
   useEffect(() => {
     if (stripeReturnSync) void refresh();
@@ -114,6 +139,43 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           Sign in with a real tech user to test payouts end-to-end.
         </p>
       )}
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-white">Work style</h3>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Choose whether you take multiple jobs or stay standalone on one job. You can change this anytime.
+        </p>
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            type="button"
+            disabled={savingCapacity}
+            onClick={() => void saveJobCapacity('multi')}
+            className={`text-left px-3 py-3 rounded-xl border text-xs transition-all ${
+              jobCapacity === 'multi'
+                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
+                : 'border-white/10 text-slate-400 hover:bg-white/5'
+            }`}
+          >
+            <strong className="block text-sm mb-0.5">Multi-job</strong>
+            Claim several active dispatches at once
+          </button>
+          <button
+            type="button"
+            disabled={savingCapacity}
+            onClick={() => void saveJobCapacity('standalone')}
+            className={`text-left px-3 py-3 rounded-xl border text-xs transition-all ${
+              jobCapacity === 'standalone'
+                ? 'border-sky-500 bg-sky-500/10 text-sky-300'
+                : 'border-white/10 text-slate-400 hover:bg-white/5'
+            }`}
+          >
+            <strong className="block text-sm mb-0.5">Standalone (single)</strong>
+            One active job until you finish or release it
+          </button>
+        </div>
+        {capacityMsg && <p className="text-[11px] text-slate-400">{capacityMsg}</p>}
+      </div>
+
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-white">Stripe Express payouts</h3>
         <p className="text-xs text-slate-400">{label}</p>

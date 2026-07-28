@@ -48,7 +48,9 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, reference_code, mechanic_id, payment_intent_id, payment_status, hold_amount_cents, total_estimate')
+      .select(
+        'id, reference_code, mechanic_id, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status'
+      )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
 
@@ -58,6 +60,21 @@ Deno.serve(async (req) => {
 
     if (booking.mechanic_id !== user.id) {
       return jsonResponse({ error: 'Only the assigned technician can complete payment capture' }, 403);
+    }
+
+    if (
+      booking.quote_status === 'awaiting_diagnostic' ||
+      booking.quote_status === 'quote_pending'
+    ) {
+      return jsonResponse(
+        {
+          error:
+            booking.quote_status === 'quote_pending'
+              ? 'A repair quote is waiting for customer approval. Capture happens after they approve.'
+              : 'This is a diagnostic visit. Submit recommended repairs for customer approval (or wait for approval) before capturing.',
+        },
+        400
+      );
     }
 
     const paymentIntentId = booking.payment_intent_id;

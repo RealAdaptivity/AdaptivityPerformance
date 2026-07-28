@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Wrench, DollarSign, Truck, CheckCircle2, Send, Award, Compass, Loader2 } from 'lucide-react';
+import { X, Wrench, DollarSign, Truck, CheckCircle2, Send, Award, Compass, Loader2, Layers, User } from 'lucide-react';
 
 interface TechRecruitmentModalProps {
   isOpen: boolean;
@@ -14,7 +14,9 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
   const [zip, setZip] = useState('76247');
   const [yearsExp, setYearsExp] = useState('5-8 Years');
   const [aseCerts, setAseCerts] = useState<string[]>(['A4 Brakes', 'A6 Electrical']);
+  const [trades, setTrades] = useState<string[]>(['Mechanical / ASE']);
   const [payPreference, setPayPreference] = useState<'hourly' | 'revshare'>('revshare');
+  const [jobCapacity, setJobCapacity] = useState<'multi' | 'standalone'>('multi');
   const [hasVehicle, setHasVehicle] = useState(true);
 
   // Tool audit checklist items
@@ -43,6 +45,16 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
     setAseCerts(prev =>
       prev.includes(cert) ? prev.filter(c => c !== cert) : [...prev, cert]
     );
+  };
+
+  const toggleTrade = (trade: string) => {
+    setTrades((prev) => {
+      if (prev.includes(trade)) {
+        const next = prev.filter((t) => t !== trade);
+        return next.length ? next : prev;
+      }
+      return [...prev, trade];
+    });
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -76,7 +88,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="font-heading font-extrabold text-lg text-white">Join Adaptivity as a Mobile Mechanic</h2>
+                <h2 className="font-heading font-extrabold text-lg text-white">Join Adaptivity as a Mobile Tech</h2>
                 <span className="text-[11px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
                   80% Revenue Split to Techs + 100% Tips
                 </span>
@@ -123,6 +135,13 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
               <h3 className="text-2xl font-heading font-black text-white">Technician Application Received!</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
                 Thanks, <strong>{name}</strong>. Our Service Director will contact you at <strong>{phone}</strong> within 24 hours to schedule a quick tool audit and ride-along test for the 80% split dispatch network.
+              </p>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Preferred work style:{' '}
+                <strong className="text-white">
+                  {jobCapacity === 'multi' ? 'Multi-job (take several jobs)' : 'Standalone (one job at a time)'}
+                </strong>
+                . You can change this anytime in Tech Portal → Settings after you’re approved.
               </p>
               <div className="pt-4">
                 <button
@@ -206,7 +225,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 font-semibold mb-1">Years of Automotive Repair Experience</label>
+                      <label className="block text-slate-300 font-semibold mb-1">Years of Experience</label>
                       <select
                         value={yearsExp}
                         onChange={e => setYearsExp(e.target.value)}
@@ -216,6 +235,43 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                         <option value="5-8 Years">5-8 Years Senior Technician</option>
                         <option value="9+ Years">9+ Years Master Technician</option>
                       </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1.5">
+                        Trade specialties (select all that apply)
+                      </label>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        {[
+                          'Mechanical / ASE',
+                          'Tire & Wheel',
+                          'Auto Glass',
+                          'Body Work',
+                          'Mobile Detailing',
+                          'Modification / Accessories',
+                          'Audio',
+                          'Tint',
+                          'Wrap / PPF',
+                          'Performance',
+                        ].map((trade) => {
+                          const on = trades.includes(trade);
+                          return (
+                            <button
+                              key={trade}
+                              type="button"
+                              onClick={() => toggleTrade(trade)}
+                              className={`p-2.5 rounded-xl border text-left font-semibold transition-all ${
+                                on
+                                  ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                                  : 'bg-white/5 border-white/10 text-slate-400'
+                              }`}
+                            >
+                              {on ? '✓ ' : '+ '}
+                              {trade}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     <div>
@@ -400,6 +456,48 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                           {aseCerts.includes(cert) ? '✓ ' : '+ '} {cert}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      How do you want to work? (changeable later in Settings)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setJobCapacity('multi')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                          jobCapacity === 'multi'
+                            ? 'bg-emerald-950/30 border-emerald-500 text-white'
+                            : 'bg-white/5 border-white/10 text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 font-bold text-sm text-emerald-400 mb-1">
+                          <Layers className="w-4 h-4" />
+                          Multi-job
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          Claim and juggle multiple active dispatches — best if you want max volume and earnings.
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setJobCapacity('standalone')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                          jobCapacity === 'standalone'
+                            ? 'bg-sky-950/30 border-sky-500 text-white'
+                            : 'bg-white/5 border-white/10 text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 font-bold text-sm text-sky-400 mb-1">
+                          <User className="w-4 h-4" />
+                          Standalone (single)
+                        </div>
+                        <p className="text-[11px] text-slate-300">
+                          One active job at a time — focus on a single customer until that job is done.
+                        </p>
+                      </button>
                     </div>
                   </div>
 

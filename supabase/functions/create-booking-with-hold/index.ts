@@ -3,6 +3,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
 import { splitJobTotalCents } from './_shared/revenueSplit.ts';
 import { assertServiceArea, resolveServiceZip } from './_shared/serviceArea.ts';
+import { computeHoldFromServices } from './_shared/holdPricing.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -40,15 +41,20 @@ Deno.serve(async (req) => {
       vehicleDescription,
       vin,
       services,
-      holdAmountDollars,
       customerEmail,
       locationType,
+      partnerLocationId,
     } = body;
 
-    const hold = Number(holdAmountDollars);
     if (!customerName?.trim() || !customerAddress?.trim() || !Array.isArray(services) || services.length === 0) {
       return jsonResponse({ error: 'Missing required booking fields' }, 400);
     }
+
+    // Server computes hold: $100 diagnostic unless only direct-book services
+    // (brakes / oil / transmission oil / differential).
+    const quote = computeHoldFromServices(services);
+    const hold = quote.holdDollars;
+    const normalizedServices = quote.serviceTitles;
     if (!Number.isFinite(hold) || hold <= 0) {
       return jsonResponse({ error: 'Invalid diagnostic hold amount' }, 400);
     }
@@ -90,6 +96,18 @@ Deno.serve(async (req) => {
       if (!profileRow) userId = null;
     }
 
+    let resolvedPartnerId: string | null = null;
+    if (locationType === 'shop' && typeof partnerLocationId === 'string' && partnerLocationId.trim()) {
+      const { data: partner } = await supabase
+        .from('partner_locations')
+        .select('id')
+        .eq('id', partnerLocationId.trim())
+        .eq('status', 'approved')
+        .eq('host_jobs', true)
+        .maybeSingle();
+      resolvedPartnerId = partner?.id ?? null;
+    }
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -100,12 +118,14 @@ Deno.serve(async (req) => {
         zip_code: (resolvedZip ?? zipCode?.trim()) || null,
         vehicle_description: vehicleDescription?.trim() || 'Customer vehicle',
         vin: vin?.trim() || null,
-        services,
+        services: normalizedServices,
         total_estimate: hold,
         location_type: locationType === 'shop' ? 'shop' : 'mobile',
+        partner_location_id: resolvedPartnerId,
         reference_code: '',
         payment_status: 'awaiting_card',
         hold_amount_cents: holdCents,
+        quote_status: quote.mode === 'diagnostic' ? 'awaiting_diagnostic' : 'none',
       })
       .select('id, reference_code')
       .single();
@@ -122,7 +142,15 @@ Deno.serve(async (req) => {
       currency: 'usd',
       capture_method: 'manual',
       automatic_payment_methods: { enabled: true },
+      // Card hold for later capture — BNPL is for final checkout only.
       setup_future_usage: 'off_session',
+      excluded_payment_method_types: [
+        'affirm',
+        'klarna',
+        'afterpay_clearpay',
+        'zip',
+        'sunbit',
+      ],
       metadata: {
         type: 'booking_hold',
         booking_reference: booking.reference_code,
@@ -130,6 +158,14 @@ Deno.serve(async (req) => {
         platform: 'adaptivity_performance',
       },
     };
+
+    const holdPmc =
+      Deno.env.get('STRIPE_PAYMENT_METHOD_CONFIGURATION_HOLDS')?.trim() ||
+      Deno.env.get('STRIPE_PMC_HOLDS')?.trim();
+    if (holdPmc?.startsWith('pmc_')) {
+      // Prefer a card-only holds PMC in Dashboard; exclusions remain as a safety net.
+      piParams.payment_method_configuration = holdPmc;
+    }
     if (receiptEmail) {
       piParams.receipt_email = receiptEmail;
     }
@@ -179,8 +215,11 @@ Deno.serve(async (req) => {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       holdAmountDollars: hold,
+      holdMode: quote.mode,
       message:
-        'Confirm your card to place a hold for the diagnostic visit. You are charged when the job is completed.',
+        quote.mode === 'direct'
+          ? 'Confirm your card to authorize this service. You are charged when the job is completed.'
+          : 'Confirm your card for the $100 diagnostic hold. After inspection we recommend repairs before any additional charge.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Booking authorization failed';

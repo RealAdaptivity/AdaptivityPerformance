@@ -13,8 +13,17 @@ export async function createCheckoutPaymentIntent(params: {
   baseAmountDollars: number;
   tipAmountDollars?: number;
   customerEmail?: string;
+  customerName?: string;
+  shippingAddress?: {
+    line1?: string;
+    line2?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+  };
   techStripeAccountId?: string | null;
   bookingReference?: string;
+  preferFinancing?: boolean;
 }): Promise<CreatePaymentIntentResult> {
   const { data, error } = await supabase.functions.invoke('create-payment-intent', {
     body: params,
@@ -67,6 +76,7 @@ export async function createBookingWithCardHold(params: {
   services: string[];
   holdAmountDollars: number;
   locationType: 'mobile' | 'shop';
+  partnerLocationId?: string;
 }): Promise<BookingHoldResult> {
   const data = await invokeEdgeFunction<BookingHoldResult>('create-booking-with-hold', params);
   if (!data?.clientSecret) throw new Error('Missing Stripe authorization from server');

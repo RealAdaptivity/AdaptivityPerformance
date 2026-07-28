@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Truck, Home, Wrench, ShieldCheck, Zap, Star, MapPin, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { SiteLink } from '../site/SiteLink';
 
 interface HeroProps {
   onOpenBooking: () => void;
@@ -26,7 +27,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
         <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
           <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-orange-500/10 border border-orange-500/30 text-orange-400">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-            <span>Serving Justin, TX & Northlake, TX Areas</span>
+            <span>Serving DFW & Fort Worth Areas</span>
           </span>
           <span className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800/80 border border-slate-700/60 text-slate-300">
             <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
@@ -45,7 +46,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
           </h1>
 
           <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Adaptivity Performance delivers dealership-quality mechanic service directly to your driveway in Justin and Northlake, or handles heavy performance builds and major engine repairs in our dedicated garage hub.
+            Adaptivity Performance handles almost anything car-related — diagnostics & repair, tires, glass, body work, detailing, audio, tint, wraps, mods, and performance — at your driveway across DFW / Fort Worth, or heavy builds at our Justin garage hub.
           </p>
 
           {/* Interactive Mode Switcher Container */}
@@ -130,7 +131,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
           </div>
 
           {/* Action CTAs */}
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <button
               onClick={onOpenBooking}
               className="w-full sm:w-auto flex items-center justify-center space-x-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-base px-8 py-4 rounded-xl shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 transition-all transform hover:-translate-y-0.5 active:scale-95"
@@ -139,12 +140,19 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
               <ArrowRight className="w-5 h-5" />
             </button>
 
-            <a
-              href="#estimator"
+            <SiteLink
+              to="about"
               className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-base px-6 py-4 rounded-xl border border-slate-700/60 hover:border-slate-500 transition-colors"
             >
-              <span>Calculate Upfront Quote</span>
-            </a>
+              About Us
+            </SiteLink>
+
+            <SiteLink
+              to="services"
+              className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-semibold text-base px-6 py-4 rounded-xl border border-slate-700/60 hover:border-slate-500 transition-colors"
+            >
+              Browse Services
+            </SiteLink>
           </div>
 
           <div className="pt-2 flex flex-col items-center gap-3">
@@ -167,14 +175,14 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
               <Zap className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-white uppercase">Same-Day Service</h4>
-                <p className="text-[11px] text-slate-400">Fast response in Justin & Northlake</p>
+                <p className="text-[11px] text-slate-400">Fast response across DFW / Fort Worth</p>
               </div>
             </div>
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02]">
               <MapPin className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-white uppercase">No Travel Fee local</h4>
-                <p className="text-[11px] text-slate-400">Justin 76247 & Northlake 76226</p>
+                <p className="text-[11px] text-slate-400">Free first 15 mi from Justin hub</p>
               </div>
             </div>
             <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02]">

@@ -54,7 +54,7 @@ export async function signUpPortal(
   email: string,
   password: string,
   fullName: string,
-  extras?: { phone?: string; vanNumber?: string }
+  extras?: { phone?: string; vanNumber?: string; specialties?: string[] }
 ) {
   const metadata =
     portal === 'tech'
@@ -63,6 +63,7 @@ export async function signUpPortal(
           full_name: fullName.trim(),
           van_number: extras?.vanNumber?.trim() || 'Mobile Unit',
           role_title: 'ASE Technician',
+          specialties: extras?.specialties?.length ? extras.specialties : ['mechanical'],
         }
       : {
           role: 'customer',
@@ -82,11 +83,14 @@ export async function signOutPortal() {
 }
 
 /** Creates mechanic_details + tech role for the signed-in user (dispatch / Stripe). */
-export async function ensureTechProfile(vanNumber?: string) {
-  const { error } = await supabase.rpc('ensure_tech_profile', {
+export async function ensureTechProfile(vanNumber?: string, specialties?: string[]) {
+  const payload: Record<string, unknown> = {
     p_van_number: vanNumber?.trim() || 'Mobile Unit',
-    p_role_title: 'ASE Technician',
-  });
+  };
+  if (specialties?.length) {
+    payload.p_specialties = specialties;
+  }
+  const { error } = await supabase.rpc('ensure_tech_profile', payload);
   if (error) throw error;
 }
 
