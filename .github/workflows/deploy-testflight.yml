@@ -1,4 +1,7 @@
-name: Deploy Mechanic App to Apple TestFlight (Automated Cloud Upload)
+name: Mechanic Capacitor iOS / TestFlight
+
+# Capacitor 8 generates an SPM Xcode project (ios/App/App.xcodeproj).
+# There is no CocoaPods App.xcworkspace. TestFlight upload requires a signed .ipa.
 
 on:
   push:
@@ -6,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-testflight:
+  capacitor-ios:
     runs-on: macos-latest
     steps:
       - name: Checkout Code
@@ -16,28 +19,130 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Production Bundle
         run: npm run build
 
-      - name: Prepare Capacitor iOS Project
+      - name: Prepare Capacitor iOS Project (SPM)
         run: |
+          set -euo pipefail
           node -e "fs.copyFileSync('capacitor.tech.json', 'capacitor.config.json')"
-          npx --no-install cap add ios || true
+          if [ ! -d ios/App/App.xcodeproj ]; then
+            npx --no-install cap add ios
+          fi
           npx --no-install cap sync ios
+          test -f ios/App/App.xcodeproj/project.pbxproj
+          echo "Xcode project ready at ios/App/App.xcodeproj (Swift Package Manager — no Pods workspace)."
+          ls -la ios/App
 
-      - name: Setup Fastlane & Build iOS Archive
-        run: |
-          cd ios/App
-          pod install || true
-
-      - name: Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v1
+      - name: Upload iOS Xcode project artifact
+        uses: actions/upload-artifact@v4
         with:
-          app-path: 'ios/App/App.xcworkspace'
+          name: Adaptivity-Tech-iOS-Project
+          path: ios/
+
+      - name: Check signing + App Store Connect secrets
+        id: tf
+        env:
+          ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          CERT: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          CERT_PW: ${{ secrets.P12_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "${ISSUER}" ] && [ -n "${KEY_ID}" ] && [ -n "${KEY}" ] && [ -n "${CERT}" ] && [ -n "${CERT_PW}" ] && [ -n "${TEAM_ID}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### TestFlight upload skipped"
+              echo "Capacitor iOS project artifact was uploaded successfully."
+              echo ""
+              echo "To enable automatic TestFlight upload, add these GitHub Actions secrets:"
+              echo "- \`APP_STORE_CONNECT_ISSUER_ID\`"
+              echo "- \`APP_STORE_CONNECT_KEY_ID\`"
+              echo "- \`APP_STORE_CONNECT_API_KEY\` (AuthKey_*.p8 contents)"
+              echo "- \`BUILD_CERTIFICATE_BASE64\` (distribution .p12)"
+              echo "- \`P12_PASSWORD\`"
+              echo "- \`APPLE_TEAM_ID\`"
+              echo ""
+              echo "Then this workflow will archive \`App.xcodeproj\`, export an \`.ipa\`, and upload it."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Import distribution certificate
+        if: steps.tf.outputs.ready == 'true'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          p12-password: ${{ secrets.P12_PASSWORD }}
+
+      - name: Download App Store provisioning profile
+        if: steps.tf.outputs.ready == 'true'
+        uses: apple-actions/download-provisioning-profiles@v3
+        with:
+          bundle-id: com.adaptivityperformance.tech
+          profile-type: IOS_APP_STORE
           issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+
+      - name: Archive and export IPA
+        id: archive
+        if: steps.tf.outputs.ready == 'true'
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          ARCHIVE_PATH="${RUNNER_TEMP}/App.xcarchive"
+          EXPORT_PATH="${RUNNER_TEMP}/ipa"
+          mkdir -p "${EXPORT_PATH}"
+
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "${ARCHIVE_PATH}" \
+            DEVELOPMENT_TEAM="${TEAM_ID}" \
+            CODE_SIGN_STYLE=Automatic \
+            archive
+
+          /usr/bin/plutil -create xml1 "${RUNNER_TEMP}/ExportOptions.plist"
+          /usr/bin/plutil -insert method -string app-store-connect "${RUNNER_TEMP}/ExportOptions.plist"
+          /usr/bin/plutil -insert destination -string export "${RUNNER_TEMP}/ExportOptions.plist"
+          /usr/bin/plutil -insert teamID -string "${TEAM_ID}" "${RUNNER_TEMP}/ExportOptions.plist"
+          /usr/bin/plutil -insert signingStyle -string automatic "${RUNNER_TEMP}/ExportOptions.plist"
+          /usr/bin/plutil -insert uploadSymbols -bool true "${RUNNER_TEMP}/ExportOptions.plist"
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath "${ARCHIVE_PATH}" \
+            -exportPath "${EXPORT_PATH}" \
+            -exportOptionsPlist "${RUNNER_TEMP}/ExportOptions.plist"
+
+          IPA="$(ls "${EXPORT_PATH}"/*.ipa | head -n 1)"
+          echo "ipa=${IPA}" >> "$GITHUB_OUTPUT"
+          echo "Exported IPA: ${IPA}"
+
+      - name: Upload IPA artifact
+        if: steps.tf.outputs.ready == 'true' && steps.archive.outputs.ipa != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: Adaptivity-Tech-IPA
+          path: ${{ steps.archive.outputs.ipa }}
+
+      - name: Upload IPA to TestFlight
+        if: steps.tf.outputs.ready == 'true' && steps.archive.outputs.ipa != ''
+        uses: apple-actions/upload-testflight-build@v4
+        with:
+          app-path: ${{ steps.archive.outputs.ipa }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          uses-non-exempt-encryption: 'false'

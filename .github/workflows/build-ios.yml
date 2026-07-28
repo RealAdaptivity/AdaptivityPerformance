@@ -1,8 +1,9 @@
-name: Build Mechanic iOS App in Cloud (Mac Runner)
+name: Build Mechanic iOS App Artifact
+
+# Produces the Capacitor 8 SPM Xcode project as a downloadable artifact.
+# Prefer the TestFlight workflow for signed .ipa upload when secrets are configured.
 
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -16,18 +17,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Web Production Assets
         run: npm run build
 
-      - name: Prepare Capacitor iOS Project
+      - name: Prepare Capacitor iOS Project (SPM)
         run: |
+          set -euo pipefail
           node -e "fs.copyFileSync('capacitor.tech.json', 'capacitor.config.json')"
-          npx --no-install cap add ios || true
+          if [ ! -d ios/App/App.xcodeproj ]; then
+            npx --no-install cap add ios
+          fi
           npx --no-install cap sync ios
+          test -f ios/App/App.xcodeproj/project.pbxproj
 
       - name: Upload iOS Project Artifact
         uses: actions/upload-artifact@v4

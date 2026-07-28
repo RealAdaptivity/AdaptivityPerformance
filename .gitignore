@@ -15,6 +15,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Capacitor native projects are generated in CI (`npx cap add/sync`)
+/ios
+/android
+
 # Generated Supabase MCP deploy payloads (run scripts/package-edge-functions.mjs)
 supabase/.edge-deploy/
 
