@@ -103,13 +103,14 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             </div>
             <h3 className="font-heading text-xl font-extrabold text-white">How we make techs more profitable</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Mobile mechanics, audio, tint, wrap, body, detailing, and performance techs keep the majority
-              of labor billed — with Stripe Express payouts, Instant or Standard cash-out, and a dispatch
-              board that matches jobs to your trade.
+              Mobile mechanics, audio, tint, wrap, body, detailing, and performance techs keep{' '}
+              <strong className="text-white">70% of labor billed</strong> (30% platform) — with Stripe
+              Express payouts, Instant or Standard cash-out, and a dispatch board that matches jobs to your
+              trade.
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[
-                'Strong revenue share on completed jobs (plus tips)',
+                '70% revenue share on completed jobs (plus 100% of tips)',
                 'We find the customers — you bring tools and skill',
                 'Claim jobs by specialty and get paid after capture',
               ].map((item) => (

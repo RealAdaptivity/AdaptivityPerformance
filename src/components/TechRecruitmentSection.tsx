@@ -25,12 +25,12 @@ export const TechRecruitmentSection: React.FC<TechRecruitmentSectionProps> = ({ 
               <h2 className="text-3xl lg:text-4xl font-heading font-black text-white leading-tight">
                 Got Your Own Tools & Rig? <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500">
-                  Techs Keep 80% of Labor Billed ($65–$95+/hr)
+                  Techs Keep 70% of Labor Billed ($65–$95+/hr)
                 </span>
               </h2>
 
               <p className="text-sm text-slate-300 leading-relaxed">
-                Expanding mobile units in <strong>Justin, Northlake, Haslet, Argyle, and Denton</strong> for mechanical, tires, glass, body, detailing, audio, tint, wrap/PPF, mods, and performance techs. We handle customers, dispatch, and invoicing—you keep 80% of the revenue!
+                Expanding mobile units in <strong>Justin, Northlake, Haslet, Argyle, and Denton</strong> for mechanical, tires, glass, body, detailing, audio, tint, wrap/PPF, mods, and performance techs. We handle customers, dispatch, and invoicing—you keep 70% of the revenue (30% platform)!
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -45,8 +45,8 @@ export const TechRecruitmentSection: React.FC<TechRecruitmentSectionProps> = ({ 
                 <div className="flex items-start space-x-3 bg-white/[0.03] border border-white/5 p-3.5 rounded-xl">
                   <DollarSign className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-white block font-bold mb-0.5">80% Revenue Split + 100% Tips</strong>
-                    <span className="text-slate-400">80/20 split on labor billed or flat hourly base.</span>
+                    <strong className="text-white block font-bold mb-0.5">70% Revenue Split + 100% Tips</strong>
+                    <span className="text-slate-400">70/30 split on labor billed or flat hourly base.</span>
                   </div>
                 </div>
 

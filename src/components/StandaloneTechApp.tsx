@@ -31,7 +31,7 @@ export const StandaloneTechApp: React.FC = () => {
       services: ['Front Ceramic Brake Pads & OEM Sensor Replacement', 'Synthetic Oil Service'],
       distanceMiles: 4.8,
       totalEstimate: 415,
-      techPayout: 332, // 80%
+      techPayout: 291, // 70%
       urgent: true,
     },
     {
@@ -43,7 +43,7 @@ export const StandaloneTechApp: React.FC = () => {
       services: ['Serpentine Belt & Tensioner Replacement', 'Multi-Point Inspection'],
       distanceMiles: 3.2,
       totalEstimate: 360,
-      techPayout: 288, // 80%
+      techPayout: 252, // 70%
       urgent: false,
     }
   ]);
@@ -359,11 +359,11 @@ export const StandaloneTechApp: React.FC = () => {
                       </div>
                     )}
 
-                    {/* 80% Payout Card */}
+                    {/* 70% Payout Card */}
                     <div className="bg-slate-900 p-3.5 rounded-2xl border border-white/10 text-xs space-y-1">
                       <div className="flex justify-between font-bold text-white">
-                        <span>Your 80% Labor Share:</span>
-                        <span className="text-emerald-400 font-mono text-sm">${Math.round(activeJob.totalEstimate * 0.80)}.00</span>
+                        <span>Your 70% Labor Share:</span>
+                        <span className="text-emerald-400 font-mono text-sm">${Math.round(activeJob.totalEstimate * 0.70)}.00</span>
                       </div>
                       <p className="text-[10px] text-slate-400">Transferred automatically via Stripe Express upon customer sign-off.</p>
                     </div>
@@ -453,7 +453,7 @@ export const StandaloneTechApp: React.FC = () => {
                     <div className="bg-gradient-to-r from-slate-900 to-slate-950 p-3.5 rounded-2xl border border-emerald-500/30 flex items-center justify-between text-xs">
                       <div>
                         <span className="text-[10px] text-slate-400 block">Customer Total: ${job.totalEstimate}</span>
-                        <span className="text-xs text-slate-300 font-bold">Your 80% Payout:</span>
+                        <span className="text-xs text-slate-300 font-bold">Your 70% Payout:</span>
                       </div>
                       <span className="text-xl font-extrabold text-emerald-400 font-mono">${job.techPayout}.00</span>
                     </div>
@@ -481,7 +481,7 @@ export const StandaloneTechApp: React.FC = () => {
             {/* Big Earnings Balance Card */}
             <div className="bg-gradient-to-br from-[#161a26] to-[#0d0e14] border border-emerald-500/30 rounded-3xl p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-extrabold text-emerald-400 tracking-wider">AVAILABLE 80% SHARE BALANCE</span>
+                <span className="text-xs uppercase font-extrabold text-emerald-400 tracking-wider">AVAILABLE 70% SHARE BALANCE</span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">
                   Stripe Express Connected
                 </span>
@@ -520,8 +520,8 @@ export const StandaloneTechApp: React.FC = () => {
                     <span className="text-[11px] text-slate-400">Order #AP-8492 • Customer: Mark Stevens</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-emerald-400 font-mono font-bold block text-sm">$224.00</span>
-                    <span className="text-[10px] text-slate-500">80% Share ($280 total)</span>
+                    <span className="text-emerald-400 font-mono font-bold block text-sm">$196.00</span>
+                    <span className="text-[10px] text-slate-500">70% Share ($280 total)</span>
                   </div>
                 </div>
 
@@ -531,8 +531,8 @@ export const StandaloneTechApp: React.FC = () => {
                     <span className="text-[11px] text-slate-400">Order #AP-7210 • Customer: Sarah Jenkins</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-emerald-400 font-mono font-bold block text-sm">$76.00</span>
-                    <span className="text-[10px] text-slate-500">80% Share ($95 total)</span>
+                    <span className="text-emerald-400 font-mono font-bold block text-sm">$66.50</span>
+                    <span className="text-[10px] text-slate-500">70% Share ($95 total)</span>
                   </div>
                 </div>
               </div>
@@ -552,7 +552,7 @@ export const StandaloneTechApp: React.FC = () => {
                 <Building2 className="w-5 h-5 text-orange-400" />
                 <div>
                   <h3 className="font-heading font-extrabold text-sm text-white">Direct Deposit & Payout Settings</h3>
-                  <p className="text-[11px] text-slate-400">Manage your connected bank account for automated 80% labor payouts.</p>
+                  <p className="text-[11px] text-slate-400">Manage your connected bank account for automated 70% labor payouts.</p>
                 </div>
               </div>
 

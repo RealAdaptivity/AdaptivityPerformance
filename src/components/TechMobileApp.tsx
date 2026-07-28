@@ -19,8 +19,8 @@ export const TechMobileApp: React.FC<TechMobileAppProps> = ({ onReturnToCustomer
   const rawGrossEarnings = completedBookings.reduce((sum, b) => sum + b.totalEstimate, 0) + 
     myClaimedBookings.reduce((sum, b) => sum + (b.status === 'ON_SITE' ? b.totalEstimate : 0), 0);
   
-  // 80% Mechanic Share
-  const techNetEarnings = Math.round(rawGrossEarnings * 0.80);
+  // 70% Mechanic Share
+  const techNetEarnings = Math.round(rawGrossEarnings * 0.70);
 
   const handleSimulateDrive = (bookingId: string, currentMiles: number, currentEta: number) => {
     const newMiles = Math.max(0.2, Math.round((currentMiles - 1.2) * 10) / 10);
@@ -332,11 +332,11 @@ export const TechMobileApp: React.FC<TechMobileAppProps> = ({ onReturnToCustomer
                           </div>
                         </div>
 
-                        {/* 80% Payout Breakdown Badge */}
+                        {/* 70% Payout Breakdown Badge */}
                         <div className="bg-slate-900 p-3 rounded-xl border border-white/10 text-xs space-y-1">
                           <div className="flex justify-between font-bold text-white">
-                            <span>Your 80% Labor Share:</span>
-                            <span className="text-emerald-400 font-mono">${Math.round(job.totalEstimate * 0.80)}.00</span>
+                            <span>Your 70% Labor Share:</span>
+                            <span className="text-emerald-400 font-mono">${Math.round(job.totalEstimate * 0.70)}.00</span>
                           </div>
                           <div className="text-[10px] text-slate-400">
                             Auto-transferred directly to your bank account via Stripe Express immediately upon customer platform checkout.
@@ -377,7 +377,7 @@ export const TechMobileApp: React.FC<TechMobileAppProps> = ({ onReturnToCustomer
             <div className="bg-gradient-to-br from-slate-900 via-[#12141c] to-[#161d2a] p-5 rounded-3xl border border-emerald-500/40 shadow-2xl space-y-4 relative overflow-hidden">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-emerald-400">Available 80% Share Balance</span>
+                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-emerald-400">Available 70% Share Balance</span>
                   <div className="font-heading text-3xl font-black text-white font-mono mt-0.5">
                     ${cashoutSuccess ? '0.00' : '318.00'}
                   </div>
@@ -430,13 +430,13 @@ export const TechMobileApp: React.FC<TechMobileAppProps> = ({ onReturnToCustomer
             {/* Payout Breakdown Rules Notice */}
             <div className="bg-[#12141c] p-4 rounded-2xl border border-white/10 text-xs space-y-2">
               <h4 className="font-bold text-white flex items-center gap-1 text-xs">
-                <ShieldCheck className="w-4 h-4 text-orange-400" /> How Adaptivity 80/20 Mobile Payouts Work:
+                <ShieldCheck className="w-4 h-4 text-orange-400" /> How Adaptivity 70/30 Mobile Payouts Work:
               </h4>
               <ul className="space-y-1.5 text-slate-300 text-[11px] list-disc list-inside leading-relaxed">
-                <li>Mechanics keep <strong>80% of total labor billed</strong> on all mobile dispatch repairs.</li>
+                <li>Mechanics keep <strong>70% of total labor billed</strong> on all mobile dispatch repairs.</li>
                 <li>100% of customer tips are passed directly to technician payout with zero fees.</li>
                 <li>Customer payment is held securely in <strong>Adaptivity Escrow</strong> until customer signs digital completion.</li>
-                <li>Upon customer sign-off, 80% share is transferred to your bank within 30 seconds via Stripe Express.</li>
+                <li>Upon customer sign-off, 70% share is transferred to your bank within 30 seconds via Stripe Express.</li>
               </ul>
             </div>
 
@@ -452,7 +452,7 @@ export const TechMobileApp: React.FC<TechMobileAppProps> = ({ onReturnToCustomer
                   </div>
                   <div className="text-right font-mono">
                     <div className="font-extrabold text-emerald-400 text-sm">$280.00 Total</div>
-                    <div className="text-[10px] text-amber-400">Tech Share: $224 (80%)</div>
+                    <div className="text-[10px] text-amber-400">Tech Share: $196 (70%)</div>
                   </div>
                 </div>
 
@@ -463,7 +463,7 @@ export const TechMobileApp: React.FC<TechMobileAppProps> = ({ onReturnToCustomer
                   </div>
                   <div className="text-right font-mono">
                     <div className="font-extrabold text-emerald-400 text-sm">$95.00 Total</div>
-                    <div className="text-[10px] text-amber-400">Tech Share: $76 (80%)</div>
+                    <div className="text-[10px] text-amber-400">Tech Share: $66.50 (70%)</div>
                   </div>
                 </div>
               </div>

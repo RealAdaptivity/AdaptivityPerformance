@@ -90,7 +90,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
               <div className="flex items-center space-x-2">
                 <h2 className="font-heading font-extrabold text-lg text-white">Join Adaptivity as a Mobile Tech</h2>
                 <span className="text-[11px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
-                  80% Revenue Split to Techs + 100% Tips
+                  70% Revenue Split to Techs + 100% Tips
                 </span>
               </div>
               <p className="text-xs text-slate-400">Justin, Northlake, Argyle & Denton County Mobile Dispatch Network</p>
@@ -117,7 +117,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
           </div>
           <div className="flex items-center space-x-2">
             <DollarSign className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span>80% Labor Payout</span>
+            <span>70% Labor Payout</span>
           </div>
           <div className="flex items-center space-x-2">
             <Compass className="w-4 h-4 text-blue-400 flex-shrink-0" />
@@ -134,7 +134,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
               </div>
               <h3 className="text-2xl font-heading font-black text-white">Technician Application Received!</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Thanks, <strong>{name}</strong>. Our Service Director will contact you at <strong>{phone}</strong> within 24 hours to schedule a quick tool audit and ride-along test for the 80% split dispatch network.
+                Thanks, <strong>{name}</strong>. Our Service Director will contact you at <strong>{phone}</strong> within 24 hours to schedule a quick tool audit and ride-along test for the 70/30 split dispatch network.
               </p>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
                 Preferred work style:{' '}
@@ -511,10 +511,10 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                         }`}
                       >
                         <div className="flex items-center justify-between font-bold text-sm text-emerald-400 mb-1">
-                          <span>80/20 Revenue Split + 100% Tips</span>
-                          <span>Mechanic Keeps 80%</span>
+                          <span>70/30 Revenue Split + 100% Tips</span>
+                          <span>Mechanic Keeps 70%</span>
                         </div>
-                        <p className="text-[11px] text-slate-300">Mechanics keep 80% of total labor billed. Technicians average $65.00 – $95.00+/hr on mobile repair jobs in Justin & Northlake.</p>
+                        <p className="text-[11px] text-slate-300">Mechanics keep 70% of total labor billed (30% platform). Technicians average $65.00 – $95.00+/hr on mobile repair jobs in Justin & Northlake.</p>
                       </div>
 
                       <div
@@ -535,7 +535,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                   <div className="bg-slate-950 border border-white/10 p-3.5 rounded-xl text-xs space-y-1">
                     <strong className="text-emerald-400 font-bold block">🔒 Official Platform Checkout & Payout Terms</strong>
                     <p className="text-[11px] text-slate-300">
-                      All customer service payments are processed through Adaptivity In-App Checkout. Technicians receive 80% of total labor billed + 100% tips deposited directly to their bank account after every completed job. Cash/Zelle side-transactions are prohibited.
+                      All customer service payments are processed through Adaptivity In-App Checkout. Technicians receive 70% of total labor billed + 100% tips deposited directly to their bank account after every completed job. Cash/Zelle side-transactions are prohibited.
                     </p>
                   </div>
 

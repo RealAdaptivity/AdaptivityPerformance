@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 -- Enable Realtime on Bookings Table for GPS Van Tracking
 ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
 
--- 2. Mechanics Table (Mobile Technicians 80/20 Revenue Split)
+-- 2. Mechanics Table (Mobile Technicians 70/30 Revenue Split)
 CREATE TABLE IF NOT EXISTS public.mechanics (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

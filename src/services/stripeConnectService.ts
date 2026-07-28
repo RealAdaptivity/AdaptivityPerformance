@@ -24,7 +24,7 @@ export interface StripeAccountOnboardingResult {
 export interface PaymentSplitResult {
   paymentIntentId: string;
   totalCharged: number;
-  techShareAmount: number; // 80%
+  techShareAmount: number; // 70%
   platformShareAmount: number; // 20%
   status: 'succeeded' | 'requires_action';
 }

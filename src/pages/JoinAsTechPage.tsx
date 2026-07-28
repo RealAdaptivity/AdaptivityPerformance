@@ -90,7 +90,7 @@ const APPLY_NEEDS = [
   'Whether you own a truck / van / utility rig',
   'Tool inventory checklist for your trade',
   'ASE certs (if any)',
-  'Pay preference: 80/20 revenue share or hourly base',
+  'Pay preference: 70/30 revenue share or hourly base',
   'Work style: Multi-job or Standalone (changeable later in Settings)',
 ];
 
@@ -126,9 +126,9 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
           </h1>
           <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
             Adaptivity is a DFW / Fort Worth mobile + shop network. Independent techs claim jobs by trade,
-            keep most of the labor billed, and get paid through Stripe — Instant or Standard. Start as a
-            normal tech; as you complete jobs and grow your own shop or business, you can advance into a
-            partnered host with us. Already own a shop or garage? You can partner as a host sooner.
+            keep 70% of labor billed (30% to Adaptivity), and get paid through Stripe — Instant or Standard.
+            Start as a normal tech; as you complete jobs and grow your own shop or business, you can advance
+            into a partnered host with us. Already own a shop or garage? You can partner as a host sooner.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
@@ -285,9 +285,9 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2">
               <DollarSign className="w-5 h-5 text-emerald-400" />
-              <h3 className="font-bold text-white">80% labor + 100% tips</h3>
+              <h3 className="font-bold text-white">70% labor + 100% tips</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Revenue-share techs keep 80% of labor billed. Tips go fully to you. Platform handles checkout.
+                Revenue-share techs keep 70% of labor billed (30% to Adaptivity). Tips go fully to you. Platform handles checkout.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2">
