@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { TechRecruitmentSection } from '../components/TechRecruitmentSection';
 import { SiteLink } from '../site/SiteLink';
+import {
+  TECH_INSURANCE_RECOMMENDATION,
+  TECH_LIABILITY_SUMMARY,
+} from '../content/contractorLiability';
 
 type Props = {
   onOpenRecruitment: () => void;
@@ -76,13 +80,15 @@ const REQUIREMENTS = [
     title: 'Business basics',
     items: [
       'Able to work as an independent contractor (1099) on our platform',
+      'Adaptivity is not liable for accidents or damage you cause on a job — you are',
+      'Insurance for tools / liability is strongly recommended (not required to join)',
+      'Customers are told before the diagnostic hold that the working tech is responsible for damage they cause',
       'Stripe Express payout account (we walk you through Connect after approval)',
       'Professional communication with customers — you’re the face of Adaptivity on site',
       'No side cash / Zelle for Adaptivity jobs — all payments stay in-app',
     ],
   },
 ];
-
 const APPLY_NEEDS = [
   'Full name, mobile phone, and email',
   'Home / service-base ZIP code',
@@ -210,6 +216,14 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
                 </ul>
               </article>
             ))}
+          </div>
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 sm:p-6 space-y-2 text-left">
+            <h3 className="font-heading text-lg font-extrabold text-amber-300 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5" />
+              Liability &amp; insurance (read before you apply)
+            </h3>
+            <p className="text-sm text-slate-300 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
+            <p className="text-sm text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
           </div>
         </div>
       </section>

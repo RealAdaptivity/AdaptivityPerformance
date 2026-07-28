@@ -12,6 +12,11 @@ import {
 } from './portalAuth';
 import { navigateToMarketingSite } from './portalRoute';
 import { TECH_SPECIALTIES, type TechSpecialty } from '../services/techSpecialties';
+import {
+  TECH_INSURANCE_RECOMMENDATION,
+  TECH_LIABILITY_ACK_LABEL,
+  TECH_LIABILITY_SUMMARY,
+} from '../content/contractorLiability';
 
 export const PortalLogin: React.FC = () => {
   const [portalRole, setPortalRole] = useState<PortalRole>('customer');
@@ -26,6 +31,7 @@ export const PortalLogin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState('');
   const [showReset, setShowReset] = useState(false);
+  const [acceptedLiability, setAcceptedLiability] = useState(false);
 
   const toggleSpecialty = (id: TechSpecialty) => {
     setSpecialties((prev) => {
@@ -44,6 +50,9 @@ export const PortalLogin: React.FC = () => {
     try {
       if (isSignUp) {
         if (!fullName.trim()) throw new Error('Full name is required.');
+        if (portalRole === 'tech' && !acceptedLiability) {
+          throw new Error('Confirm the liability & insurance acknowledgment to create a tech account.');
+        }
         const { error: signUpError } = await signUpPortal(portalRole, email, password, fullName, {
           phone,
           vanNumber,
@@ -225,6 +234,20 @@ export const PortalLogin: React.FC = () => {
                       })}
                     </div>
                   </div>
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 space-y-2">
+                    <p className="text-[11px] text-amber-100/90 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={acceptedLiability}
+                        onChange={(e) => setAcceptedLiability(e.target.checked)}
+                        className="mt-0.5 rounded border-white/20"
+                        required
+                      />
+                      <span className="text-[11px] text-slate-200 leading-relaxed">{TECH_LIABILITY_ACK_LABEL}</span>
+                    </label>
+                  </div>
                 </>
               )}
               <div>
@@ -249,7 +272,7 @@ export const PortalLogin: React.FC = () => {
               </div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (isSignUp && portalRole === 'tech' && !acceptedLiability)}
                 className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-lg disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 <Lock className="w-4 h-4" />

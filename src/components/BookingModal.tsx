@@ -4,6 +4,7 @@ import { createBookingWithCardHold } from '../services/stripePaymentsApi';
 import { StripeBookingHoldSection } from './StripeBookingHoldSection';
 import { computeHoldQuote } from '../services/holdPricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
+import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../content/contractorLiability';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -325,6 +326,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   then charges through Adaptivity (tech 70% · platform 30%). Affirm, Afterpay, Zip, Sunbit, or
                   Klarna may appear at final checkout when eligible.
                 </span>
+                <span className="block text-slate-500 mt-1.5">{CUSTOMER_TECH_LIABILITY_NOTICE}</span>
               </p>
 
               <button

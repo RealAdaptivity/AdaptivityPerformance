@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { X, Wrench, DollarSign, Truck, CheckCircle2, Send, Award, Compass, Loader2, Layers, User } from 'lucide-react';
+import {
+  TECH_INSURANCE_RECOMMENDATION,
+  TECH_LIABILITY_ACK_LABEL,
+  TECH_LIABILITY_SUMMARY,
+} from '../content/contractorLiability';
 
 interface TechRecruitmentModalProps {
   isOpen: boolean;
@@ -34,6 +39,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
   const [isSubmitted, setIsSubmitted] = useState(false);
   const isOnboardingStripe = false;
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [acceptedLiability, setAcceptedLiability] = useState(false);
 
   if (!isOpen) return null;
 
@@ -60,6 +66,11 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+
+    if (!acceptedLiability) {
+      setSubmitError('Please confirm the liability & insurance acknowledgment before submitting.');
+      return;
+    }
 
     if (payPreference === 'revshare' && email.trim() && name.trim()) {
       setSubmitError(
@@ -539,6 +550,22 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                     </p>
                   </div>
 
+                  <div className="bg-amber-950/40 border border-amber-500/30 p-3.5 rounded-xl text-xs space-y-2">
+                    <strong className="text-amber-300 font-bold block">Liability &amp; insurance</strong>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
+                    <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={acceptedLiability}
+                        onChange={(e) => setAcceptedLiability(e.target.checked)}
+                        className="mt-0.5 rounded border-white/20"
+                        required
+                      />
+                      <span className="text-[11px] text-slate-200 leading-relaxed">{TECH_LIABILITY_ACK_LABEL}</span>
+                    </label>
+                  </div>
+
                   {submitError && (
                     <p className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
                       {submitError}
@@ -556,7 +583,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
 
                     <button
                       type="submit"
-                      disabled={isOnboardingStripe}
+                      disabled={isOnboardingStripe || !acceptedLiability}
                       className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center space-x-2 disabled:opacity-60"
                     >
                       {isOnboardingStripe ? (

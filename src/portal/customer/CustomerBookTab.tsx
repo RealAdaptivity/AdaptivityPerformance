@@ -5,6 +5,7 @@ import { StripeBookingHoldSection } from '../../components/StripeBookingHoldSect
 import { SERVICE_CATALOG } from '../../services/serviceCatalog';
 import { computeHoldQuote } from '../../services/holdPricing';
 import { loadGarageVehicles, vehicleLabel } from './garageStorage';
+import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../../content/contractorLiability';
 
 type Props = {
   profile: PortalProfile;
@@ -112,12 +113,13 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 px-3 py-2.5">
+      <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 space-y-2">
         <p className="text-[11px] text-orange-200/95 leading-relaxed">
           <strong>How quoting works:</strong> most visits start with a{' '}
           <strong>$100 diagnostic hold</strong>. Your tech inspects on site, agrees labor + parts pricing
           with you, then charges through Adaptivity (tech 70% · platform 30%).
         </p>
+        <p className="text-[11px] text-slate-400 leading-relaxed">{CUSTOMER_TECH_LIABILITY_NOTICE}</p>
       </div>
 
       {vehicles.length > 0 && (
