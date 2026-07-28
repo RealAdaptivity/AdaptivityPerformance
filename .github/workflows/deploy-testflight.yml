@@ -26,8 +26,8 @@ jobs:
       - name: Prepare Capacitor iOS Project
         run: |
           node -e "fs.copyFileSync('capacitor.tech.json', 'capacitor.config.json')"
-          npx cap add ios || true
-          npx cap sync ios
+          npx --no-install cap add ios || true
+          npx --no-install cap sync ios
 
       - name: Setup Fastlane & Build iOS Archive
         run: |
