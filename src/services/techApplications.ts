@@ -2,12 +2,19 @@ import { supabase } from './supabaseClient';
 
 const TRADE_TO_SPECIALTY: Record<string, string> = {
   'Mechanical / ASE': 'mechanical',
+  'Tire & Wheel': 'tires',
   'Tires & wheels': 'tires',
+  'Auto Glass': 'glass',
   'Auto glass': 'glass',
+  'Body Work': 'bodywork',
   'Body work': 'bodywork',
+  'Mobile Detailing': 'detailing',
   'Mobile detailing': 'detailing',
+  'Modification / Accessories': 'modification',
   'Mods / accessories': 'modification',
+  Audio: 'audio',
   'Car audio': 'audio',
+  Tint: 'tint',
   'Window tint': 'tint',
   'Wrap / PPF': 'wrap',
   Performance: 'performance',
@@ -103,34 +110,31 @@ export async function submitTechApplication(input: TechApplicationInput) {
     throw new Error('Liability acknowledgment is required.');
   }
   const specialties = tradesToSpecialties(input.trades);
-  const { data, error } = await supabase
-    .from('tech_applications')
-    .insert({
-      full_name: input.fullName.trim(),
-      email: input.email.trim().toLowerCase(),
-      phone: input.phone.trim(),
-      zip_code: input.zipCode?.trim() || null,
-      years_experience: input.yearsExperience?.trim() || null,
-      trades: input.trades.length ? input.trades : ['Mechanical / ASE'],
-      specialties,
-      ase_certs: input.aseCerts || [],
-      tools: input.tools || {},
-      has_vehicle: Boolean(input.hasVehicle),
-      pay_preference: input.payPreference === 'hourly' ? 'revshare' : 'revshare',
-      job_capacity: input.jobCapacity === 'standalone' ? 'standalone' : 'multi',
-      liability_accepted: true,
-      notes: input.notes?.trim() || null,
-      status: 'submitted',
-      payload: {
-        source: 'website_tech_form',
-        submittedAt: new Date().toISOString(),
-      },
-    })
-    .select('id')
-    .single();
+  // Insert only — no .select(). Anon can INSERT but only admins can SELECT,
+  // so RETURNING via .select() fails RLS ("new row violates row-level security policy").
+  const { error } = await supabase.from('tech_applications').insert({
+    full_name: input.fullName.trim(),
+    email: input.email.trim().toLowerCase(),
+    phone: input.phone.trim(),
+    zip_code: input.zipCode?.trim() || null,
+    years_experience: input.yearsExperience?.trim() || null,
+    trades: input.trades.length ? input.trades : ['Mechanical / ASE'],
+    specialties,
+    ase_certs: input.aseCerts || [],
+    tools: input.tools || {},
+    has_vehicle: Boolean(input.hasVehicle),
+    pay_preference: input.payPreference === 'hourly' ? 'revshare' : 'revshare',
+    job_capacity: input.jobCapacity === 'standalone' ? 'standalone' : 'multi',
+    liability_accepted: true,
+    notes: input.notes?.trim() || null,
+    status: 'submitted',
+    payload: {
+      source: 'website_tech_form',
+      submittedAt: new Date().toISOString(),
+    },
+  });
 
-  if (error) throw error;
-  return data;
+  if (error) throw new Error(error.message || 'Could not submit application. Try again.');
 }
 
 export async function fetchTechApplications(): Promise<TechApplicationRow[]> {

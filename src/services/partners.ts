@@ -62,31 +62,28 @@ export async function fetchApprovedPartners(): Promise<PartnerLocation[]> {
 
 /** Public apply form — stores a partner application for admin review. */
 export async function submitPartnerApplication(input: PartnerApplicationInput) {
-  const { data, error } = await supabase
-    .from('partner_applications')
-    .insert({
-      business_name: input.businessName.trim(),
-      contact_name: input.contactName.trim(),
-      email: input.email.trim(),
-      phone: input.phone?.trim() || null,
-      address: input.address?.trim() || null,
-      city: input.city?.trim() || null,
-      zip_code: input.zipCode?.trim() || null,
-      has_lift: Boolean(input.hasLift),
-      bay_count: input.bayCount ?? null,
-      hours_note: input.hoursNote?.trim() || null,
-      notes: input.notes?.trim() || null,
-      status: 'submitted',
-      payload: {
-        source: 'website_partner_form',
-        submittedAt: new Date().toISOString(),
-      },
-    })
-    .select('id')
-    .single();
+  // Insert only — no .select(). Anon can INSERT but only admins can SELECT,
+  // so RETURNING via .select() fails RLS.
+  const { error } = await supabase.from('partner_applications').insert({
+    business_name: input.businessName.trim(),
+    contact_name: input.contactName.trim(),
+    email: input.email.trim(),
+    phone: input.phone?.trim() || null,
+    address: input.address?.trim() || null,
+    city: input.city?.trim() || null,
+    zip_code: input.zipCode?.trim() || null,
+    has_lift: Boolean(input.hasLift),
+    bay_count: input.bayCount ?? null,
+    hours_note: input.hoursNote?.trim() || null,
+    notes: input.notes?.trim() || null,
+    status: 'submitted',
+    payload: {
+      source: 'website_partner_form',
+      submittedAt: new Date().toISOString(),
+    },
+  });
 
-  if (error) throw error;
-  return data;
+  if (error) throw new Error(error.message || 'Could not submit application');
 }
 
 export type PartnerApplicationRow = {
