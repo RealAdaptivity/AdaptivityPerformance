@@ -31,13 +31,13 @@ export const BnplMessaging: React.FC<Props> = ({
   const options = useMemo(
     () => ({
       amount: amountCents,
-      currency: 'usd',
+      currency: 'USD' as const,
       countryCode: 'US' as const,
-      paymentMethodTypes: ['affirm', 'afterpay_clearpay', 'klarna', 'zip'] as (
+      // Messaging Element currently types Affirm / Klarna / Afterpay only; Zip & Sunbit still appear at Payment Element checkout.
+      paymentMethodTypes: ['affirm', 'afterpay_clearpay', 'klarna'] as (
         | 'affirm'
         | 'afterpay_clearpay'
         | 'klarna'
-        | 'zip'
       )[],
     }),
     [amountCents]

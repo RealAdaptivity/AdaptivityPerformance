@@ -32,7 +32,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isOnboardingStripe, setIsOnboardingStripe] = useState(false);
+  const isOnboardingStripe = false;
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!isOpen) return null;

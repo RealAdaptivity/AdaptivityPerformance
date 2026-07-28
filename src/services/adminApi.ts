@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
 import { rowToBooking, type BookingRow } from './bookingMappers';
-import type { Booking } from '../context/BookingContext';
+import type { Booking, JobStatus } from '../context/BookingContext';
 
 const ADMIN_BOOKING_SELECT = `
   id,
