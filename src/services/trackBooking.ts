@@ -1,5 +1,4 @@
 import { supabase } from './supabaseClient';
-import { approveBookingQuote, declineBookingQuote } from './techDispatch';
 
 export type QuoteLineItem = {
   title: string;
@@ -28,6 +27,7 @@ export type TrackedBooking = {
   quoteDiagnosticFeeCents: number | null;
   quoteRepairsCents: number | null;
   quoteTechNotes: string | null;
+  capturedAmountCents: number | null;
 };
 
 function mapRow(row: Record<string, unknown>): TrackedBooking {
@@ -55,6 +55,7 @@ function mapRow(row: Record<string, unknown>): TrackedBooking {
     quoteDiagnosticFeeCents: (row.quote_diagnostic_fee_cents as number | null) ?? null,
     quoteRepairsCents: (row.quote_repairs_cents as number | null) ?? null,
     quoteTechNotes: (row.quote_tech_notes as string | null) ?? null,
+    capturedAmountCents: (row.captured_amount_cents as number | null) ?? null,
   };
 }
 
@@ -79,5 +80,3 @@ export function subscribeBookingReference(reference: string, onChange: () => voi
     )
     .subscribe();
 }
-
-export { approveBookingQuote, declineBookingQuote };

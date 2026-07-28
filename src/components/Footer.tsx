@@ -57,7 +57,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, transparent pricing, and 12-month nationwide warranty on all work.
+            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, transparent $100 holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
           </p>
 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">
@@ -84,7 +84,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="about" className="hover:text-orange-400 transition-colors">About Us</SiteLink></li>
             <li><SiteLink to="about" hash="future" className="hover:text-orange-400 transition-colors">Future plans</SiteLink></li>
             <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services</SiteLink></li>
-            <li><SiteLink to="quotes" className="hover:text-orange-400 transition-colors">Instant Quotes</SiteLink></li>
+            <li><SiteLink to="quotes" className="hover:text-orange-400 transition-colors">Price Estimate</SiteLink></li>
             <li><SiteLink to="diagnostics" className="hover:text-orange-400 transition-colors">Symptom Checker</SiteLink></li>
             <li><SiteLink to="join" className="hover:text-orange-400 transition-colors">Join as Tech</SiteLink></li>
             <li><SiteLink to="learn" className="hover:text-orange-400 transition-colors">Want to Learn</SiteLink></li>

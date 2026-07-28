@@ -775,14 +775,16 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
               {/* Total Box */}
               <div className="bg-[#0b0c10] p-4 rounded-xl border border-white/10 flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-slate-400">Exact Total Cost</div>
-                  <div className="text-[11px] text-emerald-400 font-semibold">12-Month Warranty Included</div>
+                  <div className="text-xs text-slate-400">Rough estimate only</div>
+                  <div className="text-[11px] text-amber-400 font-semibold">
+                    Final price set by your tech on site
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300 font-heading">
-                    ${totalPrice}
+                    ~${totalPrice}
                   </div>
-                  <div className="text-[10px] text-slate-500">Includes labor, OE parts & travel</div>
+                  <div className="text-[10px] text-slate-500">Ballpark labor + parts · not a final bill</div>
                 </div>
               </div>
 
@@ -792,7 +794,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                 className="w-full py-3.5 px-4 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all flex items-center justify-center space-x-2"
               >
                 <Calendar className="w-4 h-4" />
-                <span>Lock In Estimate & Schedule</span>
+                <span>Book $100 diagnostic hold</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 

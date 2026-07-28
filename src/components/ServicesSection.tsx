@@ -88,7 +88,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking,
                         <span className="block text-[11px] text-slate-500 line-clamp-1">{s.description}</span>
                       </span>
                       <span className="text-[11px] font-bold text-orange-400 shrink-0 pt-0.5">
-                        {s.directBook ? `$${s.price}` : 'Quote'}
+                        On-site price
                       </span>
                     </button>
                   </li>

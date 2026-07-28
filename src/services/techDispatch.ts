@@ -124,16 +124,30 @@ export async function cancelJobWithHold(referenceCode: string) {
   });
 }
 
-export async function captureBookingPayment(bookingReference: string) {
+export async function captureBookingPayment(
+  bookingReference: string,
+  opts?: {
+    mode?: 'charge' | 'diagnostic_only';
+    lineItems?: QuoteLineInput[];
+    techNotes?: string;
+  }
+) {
   return invokeEdgeFunction<{
     ok: boolean;
     capturedAmountDollars?: number;
     techPayoutDollars?: number;
+    remainderDollars?: number;
     alreadyCaptured?: boolean;
     transferId?: string | null;
     transferWarning?: string | null;
     connectAccountId?: string | null;
-  }>('capture-booking-payment', { bookingReference });
+    message?: string;
+  }>('capture-booking-payment', {
+    bookingReference,
+    mode: opts?.mode ?? 'charge',
+    lineItems: opts?.lineItems,
+    techNotes: opts?.techNotes,
+  });
 }
 
 export type QuoteLineInput = {
@@ -143,40 +157,38 @@ export type QuoteLineInput = {
   notes?: string;
 };
 
+/** @deprecated Use captureBookingPayment with line items — quote approval removed. */
 export async function submitBookingQuote(
   bookingReference: string,
   lineItems: QuoteLineInput[],
   techNotes?: string
 ) {
-  return invokeEdgeFunction<{
-    ok: boolean;
-    quoteId: string;
-    totalDollars: number;
-    repairsDollars: number;
-    diagnosticFeeDollars: number;
-    message?: string;
-  }>('submit-booking-quote', {
-    bookingReference,
+  return captureBookingPayment(bookingReference, {
+    mode: 'charge',
     lineItems,
     techNotes,
-  });
+  }).then((r) => ({
+    ok: r.ok,
+    quoteId: '',
+    totalDollars: r.capturedAmountDollars ?? 0,
+    repairsDollars: 0,
+    diagnosticFeeDollars: 100,
+    message: r.message,
+  }));
 }
 
-export async function approveBookingQuote(bookingReference: string) {
-  return invokeEdgeFunction<{
-    ok: boolean;
-    capturedAmountDollars?: number;
-    remainderDollars?: number;
-    message?: string;
-  }>('approve-booking-quote', { bookingReference });
+/** @deprecated Customer quote approval removed — tech charges on site. */
+export async function approveBookingQuote(_bookingReference: string) {
+  throw new Error(
+    'Quote approval is no longer used. Your tech sets the price on site and charges through Adaptivity.'
+  );
 }
 
-export async function declineBookingQuote(bookingReference: string, reason?: string) {
-  return invokeEdgeFunction<{
-    ok: boolean;
-    chargedDiagnosticDollars?: number;
-    message?: string;
-  }>('decline-booking-quote', { bookingReference, reason, chargeDiagnostic: true });
+/** @deprecated Use captureBookingPayment({ mode: 'diagnostic_only' }) from the tech. */
+export async function declineBookingQuote(_bookingReference: string, _reason?: string) {
+  throw new Error(
+    'Decline-quote is no longer used. Ask your tech to charge diagnostic only if you skip repairs.'
+  );
 }
 
 export function subscribeDispatchBookings(onChange: () => void) {

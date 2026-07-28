@@ -41,17 +41,12 @@ export type CatalogService = {
   duration: string;
   icon: string;
   kind: ServiceKind;
-  /** Skips $100 diagnostic — book & hold at catalog price. */
+  /** Always false — all bookings use $100 diagnostic hold; tech sets price on site. */
   directBook: boolean;
 };
 
-/** Direct-book exceptions: no diagnostic-first hold. */
-export const DIRECT_BOOK_KINDS: ServiceKind[] = [
-  'oil_change',
-  'brakes',
-  'transmission_oil',
-  'differential',
-];
+/** Legacy list (empty): all services use diagnostic hold + tech-set pricing. */
+export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
 export const DIAGNOSTIC_HOLD_DOLLARS = 100;
 
@@ -80,7 +75,7 @@ export const SERVICE_CATALOG: CatalogService[] = [
     id: 'diagnostic',
     title: 'Mobile Diagnostic Visit',
     description:
-      '$100 diagnostic fee. We inspect, scan, and recommend exactly what needs to be done before any repair work.',
+      '$100 diagnostic hold. Tech inspects on site and sets labor + parts pricing before any repair charge.',
     price: DIAGNOSTIC_HOLD_DOLLARS,
     duration: '45–60 mins',
     icon: '🔍',
@@ -90,42 +85,44 @@ export const SERVICE_CATALOG: CatalogService[] = [
   {
     id: 'oil_change',
     title: 'Full Synthetic Mobile Oil Change',
-    description: 'Euro synthetic oil + OEM filter + basic multi-point check. No diagnostic fee required.',
-    price: 149,
-    duration: '45 mins',
+    description:
+      'Euro synthetic oil + OEM filter + multi-point check. Final price set by your tech on site.',
+    price: DIAGNOSTIC_HOLD_DOLLARS,
+    duration: '45 mins+',
     icon: '🛢️',
     kind: 'oil_change',
-    directBook: true,
+    directBook: false,
   },
   {
     id: 'brakes',
     title: 'Brake Service (Pads / Rotors)',
-    description: 'Front or rear brake service. Quoted & booked directly — no diagnostic fee.',
-    price: 349,
-    duration: '90 mins',
+    description:
+      'Pads, rotors, sensors as needed. Tech diagnoses wear on site and sets labor + parts pricing.',
+    price: DIAGNOSTIC_HOLD_DOLLARS,
+    duration: '1–3 hrs',
     icon: '🛑',
     kind: 'brakes',
-    directBook: true,
+    directBook: false,
   },
   {
     id: 'transmission_oil',
     title: 'Transmission Fluid Service',
-    description: 'Transmission fluid exchange / service. Booked directly — no diagnostic fee.',
-    price: 279,
-    duration: '75 mins',
+    description: 'Fluid service — final price set by your tech on site after confirming fluid type.',
+    price: DIAGNOSTIC_HOLD_DOLLARS,
+    duration: '1–2 hrs',
     icon: '⚙️',
     kind: 'transmission_oil',
-    directBook: true,
+    directBook: false,
   },
   {
     id: 'differential',
     title: 'Differential Fluid Service',
-    description: 'Front/rear/center differential fluid service. Booked directly — no diagnostic fee.',
-    price: 229,
-    duration: '60 mins',
+    description: 'Diff fluid service — final price set by tech on site.',
+    price: DIAGNOSTIC_HOLD_DOLLARS,
+    duration: '1–2 hrs',
     icon: '🔧',
     kind: 'differential',
-    directBook: true,
+    directBook: false,
   },
   consult(
     'battery',

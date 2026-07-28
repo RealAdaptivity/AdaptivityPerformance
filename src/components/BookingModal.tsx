@@ -317,12 +317,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 Card hold at booking:{' '}
                 <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong>
                 <span className="block text-slate-500 mt-1">
-                  {holdQuote.mode === 'direct' ? 'Direct service' : '$100 diagnostic'} —{' '}
+                  {holdQuote.mode === 'direct' ? 'Service hold' : '$100 diagnostic'} —{' '}
                   {holdQuote.explanation}
                 </span>
                 <span className="block text-amber-400/90 mt-1.5">
-                  Card hold only at booking. At final checkout: Affirm, Afterpay, Zip, Sunbit, or Klarna —
-                  Pay in 4 or longer plans when your repair total qualifies.
+                  Card hold only at booking. Your tech diagnoses on site, sets labor + parts pricing with you,
+                  then charges through Adaptivity (tech 70% · platform 30%). Affirm, Afterpay, Zip, Sunbit, or
+                  Klarna may appear at final checkout when eligible.
                 </span>
               </p>
 
@@ -437,8 +438,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     Next step saves your card and places a <strong className="text-white">${holdPreview.toFixed(2)}</strong>{' '}
                     authorization hold
                     {holdQuote.mode === 'diagnostic'
-                      ? ' for the diagnostic visit (repairs recommended after inspection)'
-                      : ' for this direct-book service'}
+                      ? ' for the diagnostic visit — your tech sets repair pricing on site'
+                      : ' until the job is completed'}
                     . You are charged when the job is finished; your
                     technician receives 70% through official platform checkout.
                   </span>

@@ -193,7 +193,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onNavigate={close}
                   className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
                 >
-                  <Calculator className="w-4 h-4 text-sky-400" /> Instant Quotes
+                  <Calculator className="w-4 h-4 text-sky-400" /> Price Estimate
                 </SiteLink>
                 <SiteLink
                   to="join"

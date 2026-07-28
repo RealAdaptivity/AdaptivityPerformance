@@ -217,9 +217,7 @@ Deno.serve(async (req) => {
       holdAmountDollars: hold,
       holdMode: quote.mode,
       message:
-        quote.mode === 'direct'
-          ? 'Confirm your card to authorize this service. You are charged when the job is completed.'
-          : 'Confirm your card for the $100 diagnostic hold. After inspection we recommend repairs before any additional charge.',
+        'Confirm your card for the $100 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Booking authorization failed';

@@ -1,4 +1,26 @@
-# React + TypeScript + Vite
+# Adaptivity Performance (website + portal)
+
+Marketing site, customer/tech web portals, admin dispatch, and Supabase Edge Functions.
+
+GitHub Pages deploys from `.github/workflows/deploy.yml`.
+
+## Native apps (not this repo)
+
+Store / TestFlight builds use Expo + EAS — **not** Capacitor wrapping this site:
+
+- Tech: https://github.com/RealAdaptivity/AdaptivityTechApp
+- Customer: https://github.com/RealAdaptivity/AdaptivityCustomerApp
+
+The Capacitor iOS / TestFlight workflows in this repo are deprecated stubs.
+
+## Local web
+
+```bash
+npm install
+npm run dev
+```
+
+## React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 

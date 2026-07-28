@@ -115,8 +115,8 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
       <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 px-3 py-2.5">
         <p className="text-[11px] text-orange-200/95 leading-relaxed">
           <strong>How quoting works:</strong> most visits start with a{' '}
-          <strong>$100 diagnostic</strong>. We inspect, then recommend repairs. Exceptions (no
-          diagnostic fee): oil change, brakes, transmission fluid, and differential service.
+          <strong>$100 diagnostic hold</strong>. Your tech inspects on site, agrees labor + parts pricing
+          with you, then charges through Adaptivity (tech 70% · platform 30%).
         </p>
       </div>
 
@@ -158,14 +158,14 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
                   {s.directBook ? (
                     <span className="ml-2 text-[10px] font-bold text-emerald-400/90">DIRECT</span>
                   ) : (
-                    <span className="ml-2 text-[10px] font-bold text-sky-300/90">DIAGNOSTIC</span>
+                    <span className="ml-2 text-[10px] font-bold text-sky-300/90">ON-SITE PRICE</span>
                   )}
                 </span>
                 <span className="block text-[11px] text-slate-500 mt-0.5 leading-relaxed">
                   {s.description}
                 </span>
               </span>
-              <span className="text-xs font-bold text-white shrink-0">${s.price}</span>
+              <span className="text-xs font-bold text-amber-400/90 shrink-0">$100 hold</span>
             </label>
           ))}
         </div>

@@ -6,7 +6,6 @@ import {
   claimBookingRow,
   fetchDispatchBookings,
   fetchMyTechSpecialties,
-  submitBookingQuote,
   subscribeDispatchBookings,
   updateBookingRow,
   type DispatchBooking,
@@ -21,7 +20,7 @@ export const TechJobsTab: React.FC = () => {
   const [jobs, setJobs] = useState<DispatchBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeJob, setActiveJob] = useState<DispatchBooking | null>(null);
-  const [jobPhase, setJobPhase] = useState<'en_route' | 'on_site' | 'quote_sent' | 'complete'>('en_route');
+  const [jobPhase, setJobPhase] = useState<'en_route' | 'on_site' | 'complete'>('en_route');
   const [mechanicId, setMechanicId] = useState<string | null>(null);
   const [mySpecialties, setMySpecialties] = useState<string[]>(['mechanical']);
   const [message, setMessage] = useState<string | null>(null);
@@ -56,9 +55,8 @@ export const TechJobsTab: React.FC = () => {
     if (!activeJob) return;
     const fresh = jobs.find((j) => j.referenceCode === activeJob.referenceCode);
     if (!fresh) return;
-    if (fresh.quoteStatus !== activeJob.quoteStatus || fresh.status !== activeJob.status) {
+    if (fresh.status !== activeJob.status || fresh.paymentStatus !== activeJob.paymentStatus) {
       setActiveJob(fresh);
-      if (fresh.quoteStatus === 'quote_pending') setJobPhase('quote_sent');
       if (fresh.status === 'COMPLETED') setJobPhase('complete');
     }
   }, [jobs, activeJob]);
@@ -66,9 +64,6 @@ export const TechJobsTab: React.FC = () => {
   const available = jobs.filter(
     (j) => j.status === 'UNASSIGNED' && techCanClaimServices(mySpecialties, j.services)
   );
-
-  const isDiagnosticJob = (job: DispatchBooking) =>
-    job.quoteStatus === 'awaiting_diagnostic' || job.quoteStatus === 'quote_pending';
 
   const textCustomerOnTheWay = (job: DispatchBooking) => {
     const ok = openOnTheWaySms({
@@ -91,8 +86,7 @@ export const TechJobsTab: React.FC = () => {
     }
     try {
       await claimBookingRow(job.referenceCode, mechanicId);
-      const claimed = { ...job, status: 'EN_ROUTE', etaMinutes: job.etaMinutes || 12 };
-      setActiveJob(claimed);
+      setActiveJob({ ...job, status: 'EN_ROUTE', etaMinutes: job.etaMinutes || 12 });
       setFilter('active');
       setJobPhase('en_route');
       setLines([{ title: '', laborDollars: '', partsDollars: '' }]);
@@ -107,12 +101,33 @@ export const TechJobsTab: React.FC = () => {
   const handleArrived = async () => {
     if (!activeJob) return;
     setJobPhase('on_site');
-    await updateBookingRow(activeJob.referenceCode, { status: 'ON_SITE', distance_miles: 0, eta_minutes: 0 });
+    await updateBookingRow(activeJob.referenceCode, {
+      status: 'ON_SITE',
+      distance_miles: 0,
+      eta_minutes: 0,
+    });
     setActiveJob({ ...activeJob, status: 'ON_SITE' });
     await loadJobs();
   };
 
-  const handleSubmitQuote = async () => {
+  const repairsSubtotal = lines.reduce(
+    (s, l) => s + (Number(l.laborDollars) || 0) + (Number(l.partsDollars) || 0),
+    0
+  );
+  const holdDollars = (activeJob?.holdAmountCents ?? 10000) / 100;
+  const chargeTotal = holdDollars + repairsSubtotal;
+
+  const finishJob = () => {
+    setBusy(false);
+    setTimeout(() => {
+      setActiveJob(null);
+      setFilter('available');
+      setJobPhase('en_route');
+      void loadJobs();
+    }, 2500);
+  };
+
+  const handleCharge = async () => {
     if (!activeJob) return;
     const lineItems = lines
       .map((l) => ({
@@ -123,60 +138,53 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && l.laborDollars + l.partsDollars > 0);
 
     if (!lineItems.length) {
-      setMessage('Add at least one recommended repair with a dollar amount.');
+      setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only.');
       return;
     }
 
     setBusy(true);
     setMessage(null);
     try {
-      const result = await submitBookingQuote(activeJob.referenceCode, lineItems, techNotes);
-      setActiveJob({ ...activeJob, quoteStatus: 'quote_pending' });
-      setJobPhase('quote_sent');
-      setMessage(
-        `Quote sent ($${result.totalDollars.toFixed(2)}). Waiting for customer approval — then payment captures automatically.`
-      );
-      await loadJobs();
+      const result = await captureBookingPayment(activeJob.referenceCode, {
+        mode: 'charge',
+        lineItems,
+        techNotes,
+      });
+      setJobPhase('complete');
+      if (result.transferWarning) {
+        setMessage(
+          `Charged $${result.capturedAmountDollars?.toFixed(2)}, but Connect transfer failed: ${result.transferWarning}`
+        );
+      } else {
+        setMessage(
+          `Charged $${result.capturedAmountDollars?.toFixed(2)} — your 70% share $${result.techPayoutDollars?.toFixed(2)} to Connect`
+        );
+      }
+      finishJob();
     } catch (e: unknown) {
-      setMessage(e instanceof Error ? e.message : 'Could not submit quote');
-    } finally {
+      setMessage(e instanceof Error ? e.message : 'Charge failed');
       setBusy(false);
     }
   };
 
-  const handleCompleteDirect = async () => {
+  const handleDiagnosticOnly = async () => {
     if (!activeJob) return;
+    if (!confirm('Charge the $100 diagnostic only and close the job?')) return;
     setBusy(true);
-    setJobPhase('complete');
+    setMessage(null);
     try {
-      const result = await captureBookingPayment(activeJob.referenceCode);
-      await updateBookingRow(activeJob.referenceCode, { status: 'COMPLETED' });
-      if (result.transferWarning) {
-        setMessage(
-          `Captured, but Connect transfer failed: ${result.transferWarning} Open Earnings and tap Retry transfer.`
-        );
-      } else {
-        setMessage(
-          `Charged $${result.capturedAmountDollars?.toFixed(2) ?? '0'} — $${result.techPayoutDollars?.toFixed(2) ?? '0'} to Connect`
-        );
-      }
-    } catch (e: unknown) {
+      const result = await captureBookingPayment(activeJob.referenceCode, {
+        mode: 'diagnostic_only',
+      });
+      setJobPhase('complete');
       setMessage(
-        e instanceof Error
-          ? `${e.message} — job stays open until capture succeeds.`
-          : 'Capture failed.'
+        `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
       );
-      setJobPhase('on_site');
+      finishJob();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
       setBusy(false);
-      return;
     }
-    setBusy(false);
-    setTimeout(() => {
-      setActiveJob(null);
-      setFilter('available');
-      setJobPhase('en_route');
-      loadJobs();
-    }, 2500);
   };
 
   const handleCancel = async () => {
@@ -200,76 +208,69 @@ export const TechJobsTab: React.FC = () => {
           {message}
         </p>
       )}
+
       <div className="flex gap-2">
         {(['available', 'active'] as const).map((f) => (
           <button
             key={f}
             type="button"
             onClick={() => setFilter(f)}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl border ${
-              filter === f ? 'border-orange-500 text-orange-400 bg-orange-500/10' : 'border-white/10 text-slate-500'
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
+              filter === f ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400'
             }`}
           >
-            {f === 'available' ? `Available (${available.length})` : 'My active job'}
+            {f}
           </button>
         ))}
       </div>
 
-      {filter === 'available' &&
-        available.map((job) => (
-          <div key={job.id} className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-2">
-            <div className="flex justify-between gap-2">
-              <p className="font-bold text-white">{job.customer}</p>
-              <span className="text-[11px] text-slate-500">{job.distanceMiles.toFixed(1)} mi</span>
-            </div>
-            <p className="font-mono text-orange-400 text-xs font-bold">{job.referenceCode}</p>
-            {job.quoteStatus === 'awaiting_diagnostic' && (
-              <p className="text-[10px] font-bold text-sky-300">DIAGNOSTIC — quote after inspection</p>
-            )}
-            <p className="text-xs text-slate-400">{job.vehicle}</p>
-            <p className="text-[11px] text-slate-500">{job.address}</p>
-            <ul className="text-[11px] text-slate-400">
-              {job.services.map((s) => (
-                <li key={s}>• {s}</li>
-              ))}
-            </ul>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-sm font-bold">${job.total}</span>
+      {filter === 'available' && (
+        <div className="space-y-2">
+          {available.length === 0 && (
+            <p className="text-xs text-slate-500">No open jobs matching your specialties.</p>
+          )}
+          {available.map((job) => (
+            <div
+              key={job.id}
+              className="rounded-xl border border-white/10 bg-[#12141c] p-3 space-y-2"
+            >
+              <div className="flex justify-between gap-2">
+                <div>
+                  <p className="text-sm font-bold text-white">{job.customer}</p>
+                  <p className="text-[11px] text-slate-400">{job.vehicle}</p>
+                  <p className="text-[11px] text-slate-500">{job.services.join(' · ')}</p>
+                </div>
+                <span className="text-[10px] text-amber-400 font-bold">$100 hold</span>
+              </div>
               <button
                 type="button"
                 onClick={() => void handleClaim(job)}
-                className="px-4 py-2 bg-orange-500 rounded-lg text-xs font-bold text-white"
+                className="w-full py-2.5 bg-orange-500 rounded-xl text-xs font-bold text-white"
               >
-                Claim dispatch →
+                Claim job
               </button>
             </div>
-          </div>
-        ))}
-
-      {filter === 'available' && available.length === 0 && (
-        <p className="text-xs text-slate-500 text-center py-8">
-          No unassigned jobs — new web bookings appear here in realtime.
-        </p>
+          ))}
+        </div>
       )}
 
       {filter === 'active' && activeJob && (
-        <div className="bg-[#12141c] border border-orange-500/30 rounded-2xl p-4 space-y-3">
-          <p className="text-orange-400 font-bold">{activeJob.referenceCode}</p>
-          <p className="text-white font-semibold">{activeJob.customer}</p>
-          <p className="text-xs text-slate-400">{activeJob.address}</p>
-          {isDiagnosticJob(activeJob) && (
-            <p className="text-[11px] text-sky-300/95 leading-relaxed">
-              Diagnostic visit: inspect, then submit recommended repairs. Customer approves before any repair
-              charge (diagnostic hold stays on file).
+        <div className="rounded-xl border border-orange-500/30 bg-[#12141c] p-4 space-y-3">
+          <div>
+            <p className="text-sm font-bold text-white">{activeJob.customer}</p>
+            <p className="text-[11px] text-slate-400">{activeJob.address}</p>
+            <p className="text-[11px] text-slate-500">{activeJob.services.join(' · ')}</p>
+            <p className="text-[10px] text-amber-400/90 mt-1">
+              $100 diagnostic hold on file — you set labor + parts after diagnosis.
             </p>
-          )}
+          </div>
 
           {jobPhase === 'en_route' && (
             <div className="space-y-2">
               <button
                 type="button"
                 onClick={() => textCustomerOnTheWay(activeJob)}
-                className="w-full py-3 bg-sky-600 rounded-xl text-xs font-bold text-white"
+                className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-white"
               >
                 Text customer — on the way
               </button>
@@ -283,13 +284,17 @@ export const TechJobsTab: React.FC = () => {
             </div>
           )}
 
-          {jobPhase === 'on_site' && activeJob.quoteStatus === 'awaiting_diagnostic' && (
+          {jobPhase === 'on_site' && (
             <div className="space-y-3 border border-white/10 rounded-xl p-3 bg-[#0b0c10]">
-              <p className="text-[11px] font-bold text-slate-300 uppercase">Recommended repairs</p>
+              <p className="text-[11px] font-bold text-slate-300 uppercase">Set price (labor + parts)</p>
+              <p className="text-[10px] text-slate-500">
+                Agree the price with the customer on site, then charge. Adaptivity takes 30%; you keep 70% +
+                tips.
+              </p>
               {lines.map((line, idx) => (
                 <div key={idx} className="space-y-1.5 border-b border-white/5 pb-2">
                   <input
-                    placeholder="Repair title (e.g. Front brake pads)"
+                    placeholder="Line title (e.g. Front brake pads)"
                     value={line.title}
                     onChange={(e) => {
                       const next = [...lines];
@@ -336,53 +341,40 @@ export const TechJobsTab: React.FC = () => {
                 + Add line
               </button>
               <textarea
-                placeholder="Notes for customer (optional)"
+                placeholder="Notes (optional)"
                 value={techNotes}
                 onChange={(e) => setTechNotes(e.target.value)}
                 rows={2}
                 className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
               />
               <p className="text-[10px] text-slate-500">
-                Total charged on approval = $
-                {(
-                  (activeJob.holdAmountCents ?? 10000) / 100 +
-                  lines.reduce(
-                    (s, l) => s + (Number(l.laborDollars) || 0) + (Number(l.partsDollars) || 0),
-                    0
-                  )
-                ).toFixed(2)}{' '}
-                (includes ${(activeJob.holdAmountCents ?? 10000) / 100} diagnostic)
+                Total charge = ${chargeTotal.toFixed(2)} (${holdDollars.toFixed(0)} diagnostic + $
+                {repairsSubtotal.toFixed(2)} repairs)
               </p>
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => void handleSubmitQuote()}
+                onClick={() => void handleCharge()}
                 className="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
               >
-                {busy ? 'Sending…' : 'Send quote to customer →'}
+                {busy ? 'Charging…' : `Charge customer $${chargeTotal.toFixed(2)}`}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleDiagnosticOnly()}
+                className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60"
+              >
+                Diagnostic only ($100) — no repairs
               </button>
             </div>
           )}
 
-          {jobPhase === 'on_site' && !isDiagnosticJob(activeJob) && (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void handleCompleteDirect()}
-              className="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
-            >
-              Complete job & capture payment
-            </button>
+          {jobPhase === 'complete' && (
+            <p className="text-xs text-emerald-400">Job complete. Returning to board…</p>
           )}
 
-          {(jobPhase === 'quote_sent' || activeJob.quoteStatus === 'quote_pending') && (
-            <p className="text-xs text-emerald-400 leading-relaxed">
-              Quote pending customer approval. You’ll see Connect earnings after they approve and payment
-              captures.
-            </p>
-          )}
-
-          {jobPhase !== 'complete' && activeJob.quoteStatus !== 'quote_pending' && (
+          {jobPhase !== 'complete' && (
             <button
               type="button"
               onClick={() => void handleCancel()}
@@ -395,7 +387,9 @@ export const TechJobsTab: React.FC = () => {
       )}
 
       {filter === 'active' && !activeJob && (
-        <p className="text-xs text-slate-500 text-center py-8">Claim a job from Available to start dispatch.</p>
+        <p className="text-xs text-slate-500 text-center py-8">
+          Claim a job from Available to start dispatch.
+        </p>
       )}
     </div>
   );

@@ -28,7 +28,13 @@ const functions = [
   },
   {
     name: 'capture-booking-payment',
-    shared: ['stripe.ts', 'revenueSplit.ts', 'connectTransfer.ts', 'connectAccountRecovery.ts'],
+    shared: [
+      'stripe.ts',
+      'revenueSplit.ts',
+      'connectTransfer.ts',
+      'connectAccountRecovery.ts',
+      'captureHold.ts',
+    ],
     verify_jwt: true,
   },
   {
@@ -38,24 +44,12 @@ const functions = [
   },
   {
     name: 'approve-booking-quote',
-    shared: [
-      'stripe.ts',
-      'captureHold.ts',
-      'connectTransfer.ts',
-      'revenueSplit.ts',
-      'connectAccountRecovery.ts',
-    ],
+    shared: ['stripe.ts'],
     verify_jwt: true,
   },
   {
     name: 'decline-booking-quote',
-    shared: [
-      'stripe.ts',
-      'captureHold.ts',
-      'connectTransfer.ts',
-      'revenueSplit.ts',
-      'connectAccountRecovery.ts',
-    ],
+    shared: ['stripe.ts'],
     verify_jwt: true,
   },
   { name: 'trigger-instant-payout', shared: ['stripe.ts', 'instantPayout.ts', 'connectAccountRecovery.ts'], verify_jwt: true },

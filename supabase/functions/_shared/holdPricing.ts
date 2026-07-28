@@ -12,12 +12,7 @@ type CatalogService = {
   directBook: boolean;
 };
 
-const DIRECT_BOOK_KINDS: ServiceKind[] = [
-  "oil_change",
-  "brakes",
-  "transmission_oil",
-  "differential"
-];
+const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
 const SERVICE_CATALOG: CatalogService[] = [
   {
@@ -30,30 +25,30 @@ const SERVICE_CATALOG: CatalogService[] = [
   {
     "id": "oil_change",
     "title": "Full Synthetic Mobile Oil Change",
-    "price": 149,
+    "price": 100,
     "kind": "oil_change",
-    "directBook": true
+    "directBook": false
   },
   {
     "id": "brakes",
     "title": "Brake Service (Pads / Rotors)",
-    "price": 349,
+    "price": 100,
     "kind": "brakes",
-    "directBook": true
+    "directBook": false
   },
   {
     "id": "transmission_oil",
     "title": "Transmission Fluid Service",
-    "price": 279,
+    "price": 100,
     "kind": "transmission_oil",
-    "directBook": true
+    "directBook": false
   },
   {
     "id": "differential",
     "title": "Differential Fluid Service",
-    "price": 229,
+    "price": 100,
     "kind": "differential",
-    "directBook": true
+    "directBook": false
   },
   {
     "id": "battery",
@@ -306,26 +301,10 @@ export function computeHoldFromServices(services: unknown): ServerHoldQuote {
     ? services.map((s) => String(s)).filter((s) => s.trim())
     : [];
   const resolved = resolveServices(labels);
-  if (resolved.length === 0) {
-    return {
-      holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
-      mode: 'diagnostic',
-      serviceTitles: ['Mobile Diagnostic Visit'],
-    };
-  }
-
-  const allDirect = resolved.every((s) => DIRECT_BOOK_KINDS.includes(s.kind) && s.directBook);
-  if (allDirect) {
-    return {
-      holdDollars: resolved.reduce((sum, s) => sum + s.price, 0),
-      mode: 'direct',
-      serviceTitles: resolved.map((s) => s.title),
-    };
-  }
-
   return {
     holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
     mode: 'diagnostic',
-    serviceTitles: resolved.map((s) => s.title),
+    serviceTitles:
+      resolved.length > 0 ? resolved.map((s) => s.title) : ['Mobile Diagnostic Visit'],
   };
 }

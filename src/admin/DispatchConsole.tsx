@@ -572,7 +572,12 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             <li key={s}>{s}</li>
           ))}
         </ul>
-        <p className="text-sm font-bold text-orange-400 mt-2">${booking.totalEstimate.toFixed(2)} estimate</p>
+        <p className="text-sm font-bold text-orange-400 mt-2">
+          Hold {formatMoney(booking.holdAmountCents)}
+          {booking.capturedAmountCents
+            ? ` · Charged ${formatMoney(booking.capturedAmountCents)}`
+            : ` · Board est. $${booking.totalEstimate.toFixed(2)}`}
+        </p>
       </div>
 
       <div className="rounded-xl bg-[#0b0c10] border border-white/10 p-3 space-y-1.5">
