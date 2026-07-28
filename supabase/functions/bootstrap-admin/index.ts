@@ -76,6 +76,38 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: createError?.message || 'Failed to create admin user' }, 400);
     }
 
+    // handle_new_user ignores "admin" from metadata (signup hardening) — promote explicitly.
+    const { error: promoteError } = await supabase.rpc('promote_profile_to_admin', {
+      target_id: created.user.id,
+    });
+
+    if (promoteError) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          role: 'admin',
+          full_name: fullName?.trim() || 'Dispatch Admin',
+          email: email.trim(),
+        })
+        .eq('id', created.user.id);
+      if (updateError) {
+        return jsonResponse(
+          {
+            error: `User created but profile not promoted to admin: ${promoteError.message}`,
+          },
+          500
+        );
+      }
+    } else {
+      await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName?.trim() || 'Dispatch Admin',
+          email: email.trim(),
+        })
+        .eq('id', created.user.id);
+    }
+
     return jsonResponse({
       ok: true,
       email: created.user.email,
