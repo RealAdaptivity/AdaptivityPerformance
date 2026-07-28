@@ -16,6 +16,7 @@ import {
   TECH_INSURANCE_RECOMMENDATION,
   TECH_LIABILITY_ACK_LABEL,
   TECH_LIABILITY_SUMMARY,
+  TECH_WORKERS_COMP_NOTICE,
 } from '../content/contractorLiability';
 
 export const PortalLogin: React.FC = () => {
@@ -237,6 +238,7 @@ export const PortalLogin: React.FC = () => {
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 space-y-2">
                     <p className="text-[11px] text-amber-100/90 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
                     <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_WORKERS_COMP_NOTICE}</p>
                     <label className="flex items-start gap-2 cursor-pointer">
                       <input
                         type="checkbox"

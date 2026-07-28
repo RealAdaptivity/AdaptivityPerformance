@@ -19,6 +19,7 @@ import { SiteLink } from '../site/SiteLink';
 import {
   TECH_INSURANCE_RECOMMENDATION,
   TECH_LIABILITY_SUMMARY,
+  TECH_WORKERS_COMP_NOTICE,
 } from '../content/contractorLiability';
 
 type Props = {
@@ -81,6 +82,7 @@ const REQUIREMENTS = [
     items: [
       'Able to work as an independent contractor (1099) on our platform',
       'Adaptivity is not liable for accidents or damage you cause on a job — you are',
+      'You are responsible for your own injury / medical insurance (Texas 1099 — no Adaptivity workers’ comp claim)',
       'Insurance for tools / liability is strongly recommended (not required to join)',
       'Customers are told before the diagnostic hold that the working tech is responsible for damage they cause',
       'Stripe Express payout account (we walk you through Connect after approval)',
@@ -224,6 +226,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
             </h3>
             <p className="text-sm text-slate-300 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
             <p className="text-sm text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
+            <p className="text-sm text-slate-400 leading-relaxed">{TECH_WORKERS_COMP_NOTICE}</p>
           </div>
         </div>
       </section>

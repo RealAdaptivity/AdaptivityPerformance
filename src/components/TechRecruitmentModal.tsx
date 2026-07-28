@@ -4,6 +4,7 @@ import {
   TECH_INSURANCE_RECOMMENDATION,
   TECH_LIABILITY_ACK_LABEL,
   TECH_LIABILITY_SUMMARY,
+  TECH_WORKERS_COMP_NOTICE,
 } from '../content/contractorLiability';
 
 interface TechRecruitmentModalProps {
@@ -554,6 +555,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                     <strong className="text-amber-300 font-bold block">Liability &amp; insurance</strong>
                     <p className="text-[11px] text-slate-300 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
                     <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_WORKERS_COMP_NOTICE}</p>
                     <label className="flex items-start gap-2.5 cursor-pointer pt-1">
                       <input
                         type="checkbox"
