@@ -46,7 +46,7 @@ export const TechRecruitmentSection: React.FC<TechRecruitmentSectionProps> = ({ 
                   <DollarSign className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-white block font-bold mb-0.5">70% Revenue Split + 100% Tips</strong>
-                    <span className="text-slate-400">70/30 split on labor billed or flat hourly base.</span>
+                    <span className="text-slate-400">70/30 split on labor billed (flat hourly coming soon).</span>
                   </div>
                 </div>
 

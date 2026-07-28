@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Adaptivity Performance">
+  <defs>
+    <linearGradient id="apOrange" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fb923c"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0b0c10"/>
+  <g fill="url(#apOrange)">
+    <!-- Open-end wrench forming left stroke of A -->
+    <path d="M34 28c-9-9-23-11-27-4 4 1 7 3 10 6l-4 4c-3 3-5 6-6 10 7-4 18-2 27 7l34 34 11-11-45-46z"/>
+    <path d="M52 66 41 77l38 38c3.5 3.5 9 3.5 12.5 0l8-8c3.5-3.5 3.5-9 0-12.5L52 66z"/>
+    <!-- Double chevron / performance stroke -->
+    <path d="M72 30h16L66 74H50L72 30z"/>
+    <path d="M90 30h16L84 74H68L90 30z"/>
+    <!-- A crossbar -->
+    <rect x="54" y="58" width="24" height="9" rx="2"/>
+  </g>
+  <!-- Motion arc -->
+  <path d="M30 102c22 12 48 12 70-2" fill="none" stroke="#f97316" stroke-width="5.5" stroke-linecap="round"/>
+</svg>

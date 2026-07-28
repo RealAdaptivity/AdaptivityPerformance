@@ -1,5 +1,6 @@
 import React from 'react';
-import { Star, CheckCircle2, MapPin } from 'lucide-react';
+import { Star, CheckCircle2, MapPin, ExternalLink, Share2 } from 'lucide-react';
+import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
 
 const REVIEWS = [
   {
@@ -32,7 +33,6 @@ export const Testimonials: React.FC = () => {
   return (
     <section className="py-20 bg-[#0e1017] border-t border-white/5">
       <div className="container mx-auto px-4">
-        
         <div className="max-w-3xl mx-auto text-center space-y-3 mb-12">
           <div className="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
             <Star className="w-3.5 h-3.5 fill-orange-400" />
@@ -44,11 +44,36 @@ export const Testimonials: React.FC = () => {
           <p className="text-slate-400 text-sm sm:text-base">
             See what vehicle owners across Harvest, Canyon Falls, Pecan Square, and Justin have to say.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <a
+              href={GOOGLE_REVIEW_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-400 transition-colors"
+            >
+              <Star className="w-3.5 h-3.5 fill-white" />
+              Leave a Google review
+              <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                void shareAdaptivity();
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/15 text-slate-200 text-xs font-bold hover:border-orange-500/40 hover:text-orange-300 transition-colors"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Share Adaptivity
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {REVIEWS.map((rev, idx) => (
-            <div key={idx} className="bg-[#12141c] p-6 rounded-2xl border border-white/10 flex flex-col justify-between space-y-4">
+            <div
+              key={idx}
+              className="bg-[#12141c] p-6 rounded-2xl border border-white/10 flex flex-col justify-between space-y-4"
+            >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex text-amber-400 space-x-1">
@@ -61,9 +86,7 @@ export const Testimonials: React.FC = () => {
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-300 italic leading-relaxed">
-                  "{rev.text}"
-                </p>
+                <p className="text-xs text-slate-300 italic leading-relaxed">"{rev.text}"</p>
               </div>
 
               <div className="pt-4 border-t border-white/5">
@@ -71,12 +94,13 @@ export const Testimonials: React.FC = () => {
                 <div className="text-xs text-orange-400 flex items-center gap-1 mt-0.5">
                   <MapPin className="w-3 h-3" /> {rev.location}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1 font-mono">{rev.vehicle} • {rev.service}</div>
+                <div className="text-[11px] text-slate-500 mt-1 font-mono">
+                  {rev.vehicle} • {rev.service}
+                </div>
               </div>
             </div>
           ))}
         </div>
-
       </div>
     </section>
   );

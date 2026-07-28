@@ -20,11 +20,28 @@ import { usePortalRoute } from './portal/portalRoute';
 import { SERVICE_CATALOG } from './services/serviceCatalog';
 import { HomePage } from './pages/HomePage';
 import { renderMarketingPage } from './pages/MarketingPages';
-import { navigateSite, useSitePage } from './site/siteRoute';
+import { navigateSite, useSitePage, useSitePathname } from './site/siteRoute';
+import {
+  applyDocumentSeo,
+  cityFromPath,
+  citySeo,
+  PAGE_SEO,
+} from './site/seo';
+import { CityLandingPage } from './pages/CityLandingPage';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
   const page = useSitePage();
+  const pathname = useSitePathname();
+  const cityLanding = cityFromPath(pathname);
+
+  useEffect(() => {
+    if (page === 'city' && cityLanding) {
+      applyDocumentSeo(citySeo(cityLanding));
+      return;
+    }
+    applyDocumentSeo(PAGE_SEO[page] || PAGE_SEO.home);
+  }, [page, cityLanding]);
 
   const isNativeTechApp =
     typeof window !== 'undefined' &&
@@ -206,6 +223,8 @@ function MainAppContent() {
             onSelectServiceMode={setActiveServiceMode}
             onOpenRecruitment={() => setIsRecruitmentOpen(true)}
           />
+        ) : page === 'city' && cityLanding ? (
+          <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
         ) : (
           renderMarketingPage(page, pageActions)
         )}

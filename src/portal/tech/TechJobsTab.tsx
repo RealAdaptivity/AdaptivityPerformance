@@ -10,7 +10,8 @@ import {
   updateBookingRow,
   type DispatchBooking,
 } from '../../services/techDispatch';
-import { openOnTheWaySms } from '../../services/onTheWaySms';
+import { sendOnTheWaySmsAuto, sendChargeReceiptSmsAuto } from '../../services/sendSms';
+import { uploadJobPhoto } from '../../services/jobPhotos';
 import { techCanClaimServices } from '../../services/serviceCatalog';
 
 type LineDraft = { title: string; laborDollars: string; partsDollars: string };
@@ -26,6 +27,7 @@ export const TechJobsTab: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [techNotes, setTechNotes] = useState('');
+  const [customerAgreed, setCustomerAgreed] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([
     { title: '', laborDollars: '', partsDollars: '' },
   ]);
@@ -65,15 +67,19 @@ export const TechJobsTab: React.FC = () => {
     (j) => j.status === 'UNASSIGNED' && techCanClaimServices(mySpecialties, j.services)
   );
 
-  const textCustomerOnTheWay = (job: DispatchBooking) => {
-    const ok = openOnTheWaySms({
+  const textCustomerOnTheWay = async (job: DispatchBooking) => {
+    const result = await sendOnTheWaySmsAuto({
       phone: job.phone,
       customerName: job.customer,
       referenceCode: job.referenceCode,
-      etaMinutes: job.etaMinutes || 12,
+      etaMinutes: job.etaMinutes || 20,
     });
-    if (!ok) {
+    if (!result.sent) {
       setMessage('This booking has no customer phone on file.');
+      return;
+    }
+    if (result.via === 'twilio') {
+      setMessage('On-the-way text sent automatically.');
       return;
     }
     setMessage('Opened your SMS app — send the “on the way” text, then head to the job.');
@@ -86,13 +92,14 @@ export const TechJobsTab: React.FC = () => {
     }
     try {
       await claimBookingRow(job.referenceCode, mechanicId);
-      setActiveJob({ ...job, status: 'EN_ROUTE', etaMinutes: job.etaMinutes || 12 });
+      setActiveJob({ ...job, status: 'EN_ROUTE', etaMinutes: job.etaMinutes || 20 });
       setFilter('active');
       setJobPhase('en_route');
       setLines([{ title: '', laborDollars: '', partsDollars: '' }]);
       setTechNotes('');
+      setCustomerAgreed(false);
       await loadJobs();
-      setMessage('Job claimed — tap “Text customer — on the way” to open Messages.');
+      setMessage('Job claimed — tap “Text customer — on the way” (auto-sends when Twilio is configured).');
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Claim failed');
     }
@@ -127,8 +134,52 @@ export const TechJobsTab: React.FC = () => {
     }, 2500);
   };
 
+  const sendReceiptSms = async (
+    job: DispatchBooking,
+    amountDollars: number,
+    kind: 'charge' | 'diagnostic_only' | 'no_show'
+  ) => {
+    if (!job.phone) return;
+    const result = await sendChargeReceiptSmsAuto({
+      phone: job.phone,
+      customerName: job.customer,
+      referenceCode: job.referenceCode,
+      amountDollars,
+      kind,
+    });
+    if (result.via === 'twilio') {
+      setMessage((prev) => `${prev || 'Done'} · Receipt SMS sent.`);
+    } else if (result.via === 'device') {
+      setMessage((prev) => `${prev || 'Done'} · Opened SMS composer for receipt.`);
+    }
+  };
+
+  const handleAddJobPhoto = async () => {
+    if (!activeJob) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      void (async () => {
+        try {
+          await uploadJobPhoto({ bookingId: activeJob.id, file, kind: 'dvi' });
+          setMessage('Job photo uploaded.');
+        } catch (e: unknown) {
+          setMessage(e instanceof Error ? e.message : 'Photo upload failed');
+        }
+      })();
+    };
+    input.click();
+  };
+
   const handleCharge = async () => {
     if (!activeJob) return;
+    if (!customerAgreed) {
+      setMessage('Confirm the customer agreed to this on-site price before charging.');
+      return;
+    }
     const lineItems = lines
       .map((l) => ({
         title: l.title.trim(),
@@ -138,7 +189,7 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && l.laborDollars + l.partsDollars > 0);
 
     if (!lineItems.length) {
-      setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only.');
+      setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only / No-show.');
       return;
     }
 
@@ -149,6 +200,7 @@ export const TechJobsTab: React.FC = () => {
         mode: 'charge',
         lineItems,
         techNotes,
+        customerAgreedOnSite: true,
       });
       setJobPhase('complete');
       if (result.transferWarning) {
@@ -160,6 +212,7 @@ export const TechJobsTab: React.FC = () => {
           `Charged $${result.capturedAmountDollars?.toFixed(2)} — your 70% share $${result.techPayoutDollars?.toFixed(2)} to Connect`
         );
       }
+      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge');
       finishJob();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Charge failed');
@@ -180,9 +233,31 @@ export const TechJobsTab: React.FC = () => {
       setMessage(
         `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
       );
+      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? 100, 'diagnostic_only');
       finishJob();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
+      setBusy(false);
+    }
+  };
+
+  const handleNoShow = async () => {
+    if (!activeJob) return;
+    if (!confirm('Customer no-show? Capture the $100 diagnostic hold and close the job.')) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await captureBookingPayment(activeJob.referenceCode, {
+        mode: 'no_show',
+      });
+      setJobPhase('complete');
+      setMessage(
+        `No-show $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
+      );
+      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? 100, 'no_show');
+      finishJob();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'No-show charge failed');
       setBusy(false);
     }
   };
@@ -269,7 +344,7 @@ export const TechJobsTab: React.FC = () => {
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => textCustomerOnTheWay(activeJob)}
+                onClick={() => void textCustomerOnTheWay(activeJob)}
                 className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-white"
               >
                 Text customer — on the way
@@ -282,6 +357,16 @@ export const TechJobsTab: React.FC = () => {
                 Mark arrived on-site
               </button>
             </div>
+          )}
+
+          {jobPhase !== 'complete' && (
+            <button
+              type="button"
+              onClick={() => void handleAddJobPhoto()}
+              className="w-full py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-bold text-slate-200"
+            >
+              Add job photo
+            </button>
           )}
 
           {jobPhase === 'on_site' && (
@@ -351,9 +436,21 @@ export const TechJobsTab: React.FC = () => {
                 Total charge = ${chargeTotal.toFixed(2)} (${holdDollars.toFixed(0)} diagnostic + $
                 {repairsSubtotal.toFixed(2)} repairs)
               </p>
+              <label className="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={customerAgreed}
+                  onChange={(e) => setCustomerAgreed(e.target.checked)}
+                  className="mt-0.5 rounded border-white/20"
+                />
+                <span>
+                  Customer agreed on site to <strong className="text-white">${chargeTotal.toFixed(2)}</strong>{' '}
+                  before I charge their card
+                </span>
+              </label>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || !customerAgreed}
                 onClick={() => void handleCharge()}
                 className="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
               >
@@ -366,6 +463,14 @@ export const TechJobsTab: React.FC = () => {
                 className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60"
               >
                 Diagnostic only ($100) — no repairs
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleNoShow()}
+                className="w-full py-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60"
+              >
+                No-show — capture $100 hold
               </button>
             </div>
           )}

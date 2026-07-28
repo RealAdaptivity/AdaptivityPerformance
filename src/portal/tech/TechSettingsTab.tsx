@@ -3,16 +3,21 @@ import {
   fetchTechConnectStatus,
   fetchLocalMechanicStripeId,
   fetchMyJobCapacity,
+  fetchMyTechSpecialties,
   fetchTechW9Status,
   fetchTechYearToDateCompensation,
+  fetchContractorAgreementStatus,
+  markContractorAgreementSigned,
   markTechW9Complete,
   openExpressDashboard,
   openStripePayoutSetup,
   updateMyJobCapacity,
+  updateMyTechSpecialties,
   type TechConnectStatus,
   type TechJobCapacity,
   type TechW9Status,
 } from '../../services/techDispatch';
+import { TECH_SPECIALTIES, type TechSpecialty } from '../../services/techSpecialties';
 import {
   FORM_1099_NEC_NOTICE,
   FORM_1099_NEC_PLATFORM_NOTE,
@@ -24,6 +29,7 @@ import {
   stripeStatusLabel,
   writeCachedTechConnectStatus,
 } from '../../services/techConnectCache';
+import { openContractorAgreementPrintWindow } from '../../services/contractorAgreementPdf';
 import { AddInstantDebitCardModal } from './AddInstantDebitCardModal';
 
 type Props = { onSignOut: () => void; stripeReturnSync?: boolean; adminPreview?: boolean };
@@ -40,9 +46,15 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [jobCapacity, setJobCapacity] = useState<TechJobCapacity>('multi');
   const [savingCapacity, setSavingCapacity] = useState(false);
   const [capacityMsg, setCapacityMsg] = useState<string | null>(null);
+  const [specialties, setSpecialties] = useState<TechSpecialty[]>(['mechanical']);
+  const [savingSpecialties, setSavingSpecialties] = useState(false);
+  const [specialtyMsg, setSpecialtyMsg] = useState<string | null>(null);
   const [w9, setW9] = useState<TechW9Status | null>(null);
   const [w9Busy, setW9Busy] = useState(false);
   const [w9Msg, setW9Msg] = useState<string | null>(null);
+  const [agreement, setAgreement] = useState<{ signed: boolean; signedAt: string | null } | null>(null);
+  const [agreementBusy, setAgreementBusy] = useState(false);
+  const [agreementMsg, setAgreementMsg] = useState<string | null>(null);
   const [ytd, setYtd] = useState<{
     year: number;
     totalDollars: number;
@@ -61,14 +73,16 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     if (!opts?.quiet) setLoading(true);
     setLoadError(null);
     try {
-      const [remote, localId, w9Status, ytdPay] = await Promise.all([
+      const [remote, localId, w9Status, ytdPay, agreementStatus] = await Promise.all([
         fetchTechConnectStatus(),
         fetchLocalMechanicStripeId(),
         fetchTechW9Status(),
         fetchTechYearToDateCompensation().catch(() => null),
+        fetchContractorAgreementStatus(),
       ]);
       setLocalStripeId(localId);
       setW9(w9Status);
+      setAgreement(agreementStatus);
       if (ytdPay) setYtd(ytdPay);
       if (remote) {
         setStatus(remote);
@@ -87,6 +101,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   useEffect(() => {
     void refresh();
     void fetchMyJobCapacity().then(setJobCapacity);
+    void fetchMyTechSpecialties().then((list) =>
+      setSpecialties(list.length ? (list as TechSpecialty[]) : ['mechanical'])
+    );
     const onFocus = () => void refresh({ quiet: true });
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
@@ -107,6 +124,29 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
       setCapacityMsg(e instanceof Error ? e.message : 'Could not save work style');
     } finally {
       setSavingCapacity(false);
+    }
+  };
+
+  const toggleSpecialty = (id: TechSpecialty) => {
+    setSpecialties((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((s) => s !== id);
+        return next.length ? next : ['mechanical'];
+      }
+      return [...prev, id];
+    });
+  };
+
+  const saveSpecialties = async () => {
+    setSavingSpecialties(true);
+    setSpecialtyMsg(null);
+    try {
+      await updateMyTechSpecialties(specialties);
+      setSpecialtyMsg('Specialties saved — job board filters to your trades.');
+    } catch (e: unknown) {
+      setSpecialtyMsg(e instanceof Error ? e.message : 'Could not save specialties');
+    } finally {
+      setSavingSpecialties(false);
     }
   };
 
@@ -164,6 +204,42 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           Sign in with a real tech user to test payouts end-to-end.
         </p>
       )}
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-white">Your trade specialties</h3>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Pick every trade you cover. Available jobs match these specialties.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {TECH_SPECIALTIES.map((s) => {
+            const on = specialties.includes(s.id);
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => toggleSpecialty(s.id)}
+                className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${
+                  on
+                    ? 'border-orange-500 bg-orange-500/15 text-orange-300'
+                    : 'border-white/10 text-slate-400 hover:bg-white/5'
+                }`}
+              >
+                {on ? '✓ ' : ''}
+                {s.shortLabel}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          disabled={savingSpecialties}
+          onClick={() => void saveSpecialties()}
+          className="w-full py-2.5 bg-orange-500 rounded-xl text-xs font-bold text-white disabled:opacity-60"
+        >
+          {savingSpecialties ? 'Saving…' : 'Save specialties'}
+        </button>
+        {specialtyMsg && <p className="text-[11px] text-slate-400">{specialtyMsg}</p>}
+      </div>
 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-white">Work style</h3>
@@ -252,6 +328,65 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         >
           Download blank IRS Form W-9 (PDF)
         </a>
+      </div>
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-white">Independent Contractor Agreement</h3>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Review and accept the 1099 contractor terms (liability, workers’ comp notice, tax forms, payouts).
+          Required before claiming your first job. Print/save as PDF from the browser print dialog.
+        </p>
+        {agreement?.signed ? (
+          <p className="text-[11px] text-emerald-400 leading-relaxed">
+            Accepted
+            {agreement.signedAt ? ` · ${new Date(agreement.signedAt).toLocaleDateString()}` : ''}.
+          </p>
+        ) : (
+          <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
+            Not accepted yet. Open the agreement, then confirm acceptance below.
+          </p>
+        )}
+        {agreementMsg && <p className="text-[11px] text-slate-400">{agreementMsg}</p>}
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              openContractorAgreementPrintWindow({
+                signedAt: agreement?.signedAt,
+              });
+            } catch (e: unknown) {
+              setAgreementMsg(e instanceof Error ? e.message : 'Could not open agreement');
+            }
+          }}
+          className="w-full py-3 border border-white/15 text-slate-200 rounded-xl text-xs font-bold"
+        >
+          View / print agreement (PDF)
+        </button>
+        {!agreement?.signed && (
+          <button
+            type="button"
+            disabled={agreementBusy}
+            onClick={() => {
+              void (async () => {
+                setAgreementBusy(true);
+                setAgreementMsg(null);
+                try {
+                  const signedAt = await markContractorAgreementSigned();
+                  setAgreement({ signed: true, signedAt });
+                  openContractorAgreementPrintWindow({ signedAt });
+                  setAgreementMsg('Agreement accepted. You can claim jobs once W-9 is also complete.');
+                } catch (e: unknown) {
+                  setAgreementMsg(e instanceof Error ? e.message : 'Could not record acceptance');
+                } finally {
+                  setAgreementBusy(false);
+                }
+              })();
+            }}
+            className="w-full py-3 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold disabled:opacity-50"
+          >
+            {agreementBusy ? 'Saving…' : 'I accept the Independent Contractor Agreement'}
+          </button>
+        )}
       </div>
 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">

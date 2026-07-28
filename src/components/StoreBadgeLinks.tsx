@@ -6,6 +6,10 @@ interface StoreBadgeLinksProps {
   size?: 'sm' | 'md';
 }
 
+function isLiveStoreUrl(url: string) {
+  return Boolean(url && url !== '#');
+}
+
 export const StoreBadgeLinks: React.FC<StoreBadgeLinksProps> = ({
   className = '',
   size = 'md',
@@ -13,32 +17,53 @@ export const StoreBadgeLinks: React.FC<StoreBadgeLinksProps> = ({
   const height = size === 'sm' ? 'h-10' : 'h-11';
   const textMain = size === 'sm' ? 'text-[11px]' : 'text-xs';
   const textSub = size === 'sm' ? 'text-[9px]' : 'text-[10px]';
+  const appStoreLive = isLiveStoreUrl(customerAppLinks.appStore);
+  const playStoreLive = isLiveStoreUrl(customerAppLinks.playStore);
+
+  if (!appStoreLive && !playStoreLive) {
+    return (
+      <div className={`flex flex-wrap items-center gap-3 ${className}`}>
+        <div
+          className={`inline-flex items-center gap-2.5 ${height} px-4 rounded-xl bg-black/60 border border-white/10 text-slate-400`}
+        >
+          <span className="flex flex-col leading-none text-left">
+            <span className={`${textSub} text-slate-500`}>Customer app</span>
+            <span className={`${textMain} font-semibold text-slate-300`}>Coming soon on iOS & Android</span>
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex flex-wrap items-center gap-3 ${className}`}>
-      <a
-        href={customerAppLinks.appStore}
-        aria-label="Download on the App Store"
-        className={`inline-flex items-center gap-2.5 ${height} px-4 rounded-xl bg-black border border-white/20 hover:border-white/40 hover:bg-black/90 transition-colors`}
-      >
-        <AppleLogo className="w-5 h-5 text-white shrink-0" />
-        <span className="flex flex-col leading-none text-left">
-          <span className={`${textSub} text-slate-300`}>Download on the</span>
-          <span className={`${textMain} font-semibold text-white`}>App Store</span>
-        </span>
-      </a>
+      {appStoreLive ? (
+        <a
+          href={customerAppLinks.appStore}
+          aria-label="Download on the App Store"
+          className={`inline-flex items-center gap-2.5 ${height} px-4 rounded-xl bg-black border border-white/20 hover:border-white/40 hover:bg-black/90 transition-colors`}
+        >
+          <AppleLogo className="w-5 h-5 text-white shrink-0" />
+          <span className="flex flex-col leading-none text-left">
+            <span className={`${textSub} text-slate-300`}>Download on the</span>
+            <span className={`${textMain} font-semibold text-white`}>App Store</span>
+          </span>
+        </a>
+      ) : null}
 
-      <a
-        href={customerAppLinks.playStore}
-        aria-label="Get it on Google Play"
-        className={`inline-flex items-center gap-2.5 ${height} px-4 rounded-xl bg-black border border-white/20 hover:border-white/40 hover:bg-black/90 transition-colors`}
-      >
-        <GooglePlayLogo className="w-5 h-5 shrink-0" />
-        <span className="flex flex-col leading-none text-left">
-          <span className={`${textSub} text-slate-300`}>Get it on</span>
-          <span className={`${textMain} font-semibold text-white`}>Google Play</span>
-        </span>
-      </a>
+      {playStoreLive ? (
+        <a
+          href={customerAppLinks.playStore}
+          aria-label="Get it on Google Play"
+          className={`inline-flex items-center gap-2.5 ${height} px-4 rounded-xl bg-black border border-white/20 hover:border-white/40 hover:bg-black/90 transition-colors`}
+        >
+          <GooglePlayLogo className="w-5 h-5 shrink-0" />
+          <span className="flex flex-col leading-none text-left">
+            <span className={`${textSub} text-slate-300`}>Get it on</span>
+            <span className={`${textMain} font-semibold text-white`}>Google Play</span>
+          </span>
+        </a>
+      ) : null}
     </div>
   );
 };

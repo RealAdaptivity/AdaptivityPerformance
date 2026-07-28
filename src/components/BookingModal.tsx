@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2, Share2, Star } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
 import { StripeBookingHoldSection } from './StripeBookingHoldSection';
 import { computeHoldQuote } from '../services/holdPricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../content/contractorLiability';
+import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
+import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -39,8 +41,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [vehicle, setVehicle] = useState('2020 Ford F-150');
   const [vinNumber, setVinNumber] = useState('');
   const [serviceRequested, setServiceRequested] = useState('Mobile Diagnostic Visit');
-  const [preferredDate, setPreferredDate] = useState('2026-07-22');
-  const [preferredTime, setPreferredTime] = useState('Morning (8 AM - 12 PM)');
+  const [preferredDate, setPreferredDate] = useState(todayISODate());
+  const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [streetAddress, setStreetAddress] = useState('1234 Canyon Falls Dr');
   const [zipCode, setZipCode] = useState('76226');
   const [fullName, setFullName] = useState('');
@@ -109,15 +111,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   if (!isOpen) return null;
 
   const buildAddress = () => {
-    const base =
-      serviceMode === 'mobile'
-        ? `${streetAddress.trim()}, ${zipCode.trim()}`
-        : selectedPartner
-          ? `${selectedPartner.businessName} • ${selectedPartner.address}`
-          : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
-    const schedule = `${preferredDate} (${preferredTime})`;
-    const extra = notes.trim() ? ` • Notes: ${notes.trim()}` : '';
-    return `${base} • ${schedule}${extra}`;
+    if (serviceMode === 'mobile') {
+      return `${streetAddress.trim()}, ${zipCode.trim()}`;
+    }
+    return selectedPartner
+      ? `${selectedPartner.businessName} • ${selectedPartner.address}`
+      : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
   };
 
   const handleContinueToCardHold = async (e: React.FormEvent) => {
@@ -149,6 +148,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         locationType: serviceMode,
         partnerLocationId:
           serviceMode === 'shop' ? selectedPartner?.id || partnerLocationId || undefined : undefined,
+        preferredDate,
+        preferredTimeWindow: preferredTime,
+        customerNotes: notes.trim() || undefined,
       });
 
       setBookingRef(hold.bookingReference);
@@ -306,10 +308,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     onChange={e => setPreferredTime(e.target.value)}
                     className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                   >
-                    <option value="Morning (8 AM - 12 PM)">Morning (8 AM - 12 PM)</option>
-                    <option value="Afternoon (12 PM - 4 PM)">Afternoon (12 PM - 4 PM)</option>
-                    <option value="Evening (4 PM - 7 PM)">Evening (4 PM - 7 PM)</option>
-                    <option value="Emergency ASAP">Emergency Roadside ASAP</option>
+                    {PREFERRED_TIME_WINDOWS.map((w) => (
+                      <option key={w} value={w}>
+                        {w}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -544,6 +547,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
               <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5">
                 <ShieldCheck className="w-4 h-4" /> 12-Month / 12,000-Mile Warranty Auto-Registered
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void shareAdaptivity({
+                      title: 'Adaptivity Performance',
+                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake & DFW.`,
+                    });
+                  }}
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-orange-500/40 text-orange-300 font-bold text-xs hover:bg-orange-500/10"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Share with a neighbor
+                </button>
+                <a
+                  href={GOOGLE_REVIEW_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-white/15 text-slate-200 font-bold text-xs hover:border-amber-500/40 hover:text-amber-300"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  Leave a review
+                </a>
               </div>
 
               <button

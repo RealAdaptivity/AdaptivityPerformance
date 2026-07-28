@@ -44,6 +44,9 @@ Deno.serve(async (req) => {
       customerEmail,
       locationType,
       partnerLocationId,
+      preferredDate,
+      preferredTimeWindow,
+      customerNotes,
     } = body;
 
     if (!customerName?.trim() || !customerAddress?.trim() || !Array.isArray(services) || services.length === 0) {
@@ -122,6 +125,18 @@ Deno.serve(async (req) => {
         total_estimate: hold,
         location_type: locationType === 'shop' ? 'shop' : 'mobile',
         partner_location_id: resolvedPartnerId,
+        preferred_date:
+          typeof preferredDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(preferredDate.trim())
+            ? preferredDate.trim()
+            : null,
+        preferred_time_window:
+          typeof preferredTimeWindow === 'string' && preferredTimeWindow.trim()
+            ? preferredTimeWindow.trim().slice(0, 80)
+            : null,
+        customer_notes:
+          typeof customerNotes === 'string' && customerNotes.trim()
+            ? customerNotes.trim().slice(0, 1000)
+            : null,
         reference_code: '',
         payment_status: 'awaiting_card',
         hold_amount_cents: holdCents,

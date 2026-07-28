@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, Wrench, AlertTriangle, Lock, UserPlus } from 'lucide-react';
+import { AlertTriangle, Lock, UserPlus } from 'lucide-react';
 import {
   fetchPortalProfile,
   resetPortalPassword,
@@ -84,6 +84,16 @@ export const PortalLogin: React.FC = () => {
         profile = (await fetchPortalProfile(userId)) ?? profile;
       }
 
+      if (portalRole === 'tech') {
+        try {
+          const { linkApprovedTechApplication } = await import('../services/techApplications');
+          await linkApprovedTechApplication();
+          profile = (await fetchPortalProfile(userId)) ?? profile;
+        } catch {
+          /* no approved application */
+        }
+      }
+
       if (!roleMatchesPortal(profile.role, portalRole)) {
         await import('../services/supabaseClient').then(({ supabase }) => supabase.auth.signOut());
         throw new Error(
@@ -126,13 +136,11 @@ export const PortalLogin: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md bg-[#12141c] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mx-auto">
-              {portalRole === 'customer' ? (
-                <Car className="w-6 h-6 text-orange-400" />
-              ) : (
-                <Wrench className="w-6 h-6 text-orange-400" />
-              )}
-            </div>
+            <img
+              src={`${(import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')}logo-ui.png`}
+              alt="Adaptivity Performance"
+              className="w-14 h-14 rounded-2xl mx-auto object-cover bg-[#0b0c10] shadow-lg shadow-orange-500/20"
+            />
             <h1 className="font-heading text-xl font-extrabold text-white">
               {portalRole === 'customer' ? 'Customer portal' : 'Technician portal'}
             </h1>

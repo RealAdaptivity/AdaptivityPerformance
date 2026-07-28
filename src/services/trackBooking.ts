@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { invokeEdgeFunction } from './edgeFunctionErrors';
 
 export type QuoteLineItem = {
   title: string;
@@ -28,6 +29,9 @@ export type TrackedBooking = {
   quoteRepairsCents: number | null;
   quoteTechNotes: string | null;
   capturedAmountCents: number | null;
+  preferredDate: string | null;
+  preferredTimeWindow: string | null;
+  customerNotes: string | null;
 };
 
 function mapRow(row: Record<string, unknown>): TrackedBooking {
@@ -56,6 +60,9 @@ function mapRow(row: Record<string, unknown>): TrackedBooking {
     quoteRepairsCents: (row.quote_repairs_cents as number | null) ?? null,
     quoteTechNotes: (row.quote_tech_notes as string | null) ?? null,
     capturedAmountCents: (row.captured_amount_cents as number | null) ?? null,
+    preferredDate: (row.preferred_date as string | null) ?? null,
+    preferredTimeWindow: (row.preferred_time_window as string | null) ?? null,
+    customerNotes: (row.customer_notes as string | null) ?? null,
   };
 }
 
@@ -79,4 +86,41 @@ export function subscribeBookingReference(reference: string, onChange: () => voi
       () => onChange()
     )
     .subscribe();
+}
+
+/** Customer cancel when UNASSIGNED / EN_ROUTE and payment not captured. */
+export async function cancelCustomerBooking(referenceCode: string) {
+  return invokeEdgeFunction('cancel-booking-hold', {
+    bookingReference: referenceCode.trim(),
+    releaseJob: true,
+  });
+}
+
+/** Post-capture tip ($1–$500). */
+export async function addBookingTip(referenceCode: string, tipAmountDollars: number) {
+  return invokeEdgeFunction<{ ok?: boolean; tipAmountDollars?: number }>('add-booking-tip', {
+    bookingReference: referenceCode.trim(),
+    tipAmountDollars,
+  });
+}
+
+/** Reschedule preferred slot — keeps card hold. Releases tech if EN_ROUTE. */
+export async function rescheduleCustomerBooking(opts: {
+  referenceCode: string;
+  preferredDate: string;
+  preferredTimeWindow: string;
+  customerNotes?: string;
+}) {
+  return invokeEdgeFunction<{
+    ok?: boolean;
+    preferredDate?: string;
+    preferredTimeWindow?: string;
+    releasedTech?: boolean;
+    message?: string;
+  }>('reschedule-booking', {
+    bookingReference: opts.referenceCode.trim(),
+    preferredDate: opts.preferredDate,
+    preferredTimeWindow: opts.preferredTimeWindow,
+    customerNotes: opts.customerNotes,
+  });
 }

@@ -42,6 +42,9 @@ export interface Booking {
   capturedAmountCents?: number | null;
   dispatchLat?: number | null;
   dispatchLng?: number | null;
+  preferredDate?: string | null;
+  preferredTimeWindow?: string | null;
+  customerNotes?: string | null;
 }
 
 interface BookingContextType {

@@ -33,6 +33,7 @@ import {
   type DispatchTech,
 } from '../services/adminApi';
 import { FORM_1099_NEC_NOTICE, FORM_1099_NEC_THRESHOLD_DOLLARS } from '../content/taxForms';
+import { techCanClaimServices } from '../services/serviceCatalog';
 
 type TabId = 'dispatch' | 'map' | 'payments' | 'techs';
 type StatusFilter = 'ALL' | JobStatus;
@@ -580,6 +581,15 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             </a>
           </span>
         </p>
+        {(booking.preferredDate || booking.preferredTimeWindow) && (
+          <p className="text-xs text-orange-300 font-semibold">
+            Scheduled:{' '}
+            {[booking.preferredDate, booking.preferredTimeWindow].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {booking.customerNotes && (
+          <p className="text-[11px] text-slate-500">Notes: {booking.customerNotes}</p>
+        )}
         <p className="flex items-center gap-2 text-slate-400">
           <Truck className="w-3.5 h-3.5" />
           {booking.vehicle}
@@ -661,6 +671,23 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           >
             Capture amount (hold)
           </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  'Capture $100 diagnostic hold for no-show / missed appointment and mark job completed?'
+                )
+              ) {
+                return;
+              }
+              void onAdjustCapture(booking.id, 100, true);
+            }}
+            className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2"
+          >
+            No-show — capture $100 & complete
+          </button>
         </div>
       ) : null}
 
@@ -688,6 +715,33 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             onChange={(e) => setRefundAmount(e.target.value)}
             className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-sm"
           />
+          <div className="flex flex-wrap gap-1.5">
+            {[25, 50, 100].map((amt) => (
+              <button
+                key={amt}
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  setRefundAmount(String(amt));
+                  void onRefund(booking.id, amt, forceAfterPayout);
+                }}
+                className="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 border border-white/15 rounded-lg hover:bg-white/5 disabled:opacity-50"
+              >
+                ${amt}
+              </button>
+            ))}
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => {
+                setRefundAmount('');
+                void onRefund(booking.id, undefined, forceAfterPayout);
+              }}
+              className="px-2.5 py-1.5 text-[11px] font-bold text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/10 disabled:opacity-50"
+            >
+              Full
+            </button>
+          </div>
           <label className="flex items-center gap-2 text-[11px] text-slate-400">
             <input
               type="checkbox"
@@ -744,12 +798,16 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
         >
           <option value="">— Unassigned —</option>
-          {techs.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-              {t.vanNumber ? ` (${t.vanNumber})` : ''}
-            </option>
-          ))}
+          {techs.map((t) => {
+            const canClaim = techCanClaimServices(t.specialties || ['mechanical'], booking.services);
+            return (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.vanNumber ? ` (${t.vanNumber})` : ''}
+                {canClaim ? '' : ' (specialty mismatch)'}
+              </option>
+            );
+          })}
         </select>
       </label>
 

@@ -77,6 +77,9 @@ export async function createBookingWithCardHold(params: {
   holdAmountDollars: number;
   locationType: 'mobile' | 'shop';
   partnerLocationId?: string;
+  preferredDate?: string;
+  preferredTimeWindow?: string;
+  customerNotes?: string;
 }): Promise<BookingHoldResult> {
   const data = await invokeEdgeFunction<BookingHoldResult>('create-booking-with-hold', params);
   if (!data?.clientSecret) throw new Error('Missing Stripe authorization from server');

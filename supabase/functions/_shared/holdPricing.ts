@@ -301,10 +301,26 @@ export function computeHoldFromServices(services: unknown): ServerHoldQuote {
     ? services.map((s) => String(s)).filter((s) => s.trim())
     : [];
   const resolved = resolveServices(labels);
+  if (resolved.length === 0) {
+    return {
+      holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
+      mode: 'diagnostic',
+      serviceTitles: ['Mobile Diagnostic Visit'],
+    };
+  }
+
+  const allDirect = resolved.every((s) => DIRECT_BOOK_KINDS.includes(s.kind) && s.directBook);
+  if (allDirect) {
+    return {
+      holdDollars: resolved.reduce((sum, s) => sum + s.price, 0),
+      mode: 'direct',
+      serviceTitles: resolved.map((s) => s.title),
+    };
+  }
+
   return {
     holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
     mode: 'diagnostic',
-    serviceTitles:
-      resolved.length > 0 ? resolved.map((s) => s.title) : ['Mobile Diagnostic Visit'],
+    serviceTitles: resolved.map((s) => s.title),
   };
 }

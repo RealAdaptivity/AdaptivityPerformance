@@ -1,9 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  addBookingTip,
+  cancelCustomerBooking,
   fetchBookingByReference,
+  rescheduleCustomerBooking,
   subscribeBookingReference,
   type TrackedBooking,
 } from '../../services/trackBooking';
+import { fetchJobPhotosByReference, type JobPhoto } from '../../services/jobPhotos';
+import { openStreetMapEmbedUrl } from '../../config/stripeDashboard';
+import {
+  formatPreferredSchedule,
+  PREFERRED_TIME_WINDOWS,
+  todayISODate,
+} from '../../services/scheduleWindows';
 
 const STATUS_LABEL: Record<string, string> = {
   UNASSIGNED: 'Finding your technician',
@@ -22,8 +32,15 @@ export const CustomerTrackTab: React.FC = () => {
   const [reference, setReference] = useState('');
   const [trackedRef, setTrackedRef] = useState<string | null>(null);
   const [booking, setBooking] = useState<TrackedBooking | null>(null);
+  const [photos, setPhotos] = useState<JobPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [customTip, setCustomTip] = useState('');
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState(todayISODate());
+  const [rescheduleWindow, setRescheduleWindow] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
 
   const load = useCallback(async (ref: string) => {
     setLoading(true);
@@ -33,7 +50,12 @@ export const CustomerTrackTab: React.FC = () => {
       if (!row) {
         setError('No booking found for that reference.');
         setBooking(null);
-      } else setBooking(row);
+        setPhotos([]);
+      } else {
+        setBooking(row);
+        const pics = await fetchJobPhotosByReference(ref).catch(() => []);
+        setPhotos(pics);
+      }
     } finally {
       setLoading(false);
     }
@@ -47,6 +69,73 @@ export const CustomerTrackTab: React.FC = () => {
       void channel.unsubscribe();
     };
   }, [trackedRef, load]);
+
+  const canCancel =
+    booking &&
+    (booking.status === 'UNASSIGNED' || booking.status === 'EN_ROUTE') &&
+    booking.paymentStatus !== 'captured' &&
+    booking.paymentStatus !== 'canceled' &&
+    booking.paymentStatus !== 'refunded';
+
+  const canReschedule = Boolean(canCancel);
+
+  const handleCancel = async () => {
+    if (!booking || !confirm('Cancel this booking and release the card hold?')) return;
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      await cancelCustomerBooking(booking.referenceCode);
+      setActionMsg('Booking canceled.');
+      await load(booking.referenceCode);
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : 'Cancel failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!booking) return;
+    if (
+      booking.status === 'EN_ROUTE' &&
+      !confirm(
+        'A tech is already en route. Rescheduling keeps your card hold but releases the tech so someone can claim the new slot. Continue?'
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      const result = await rescheduleCustomerBooking({
+        referenceCode: booking.referenceCode,
+        preferredDate: rescheduleDate,
+        preferredTimeWindow: rescheduleWindow,
+      });
+      setActionMsg(result.message || 'Rescheduled. Card hold kept.');
+      setShowReschedule(false);
+      await load(booking.referenceCode);
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : 'Reschedule failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleTip = async (amount: number) => {
+    if (!booking) return;
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      await addBookingTip(booking.referenceCode, amount);
+      setActionMsg(`Thanks — $${amount.toFixed(2)} tip sent to your technician.`);
+      setCustomTip('');
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : 'Tip failed');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -72,18 +161,40 @@ export const CustomerTrackTab: React.FC = () => {
       </button>
       {loading && <p className="text-xs text-slate-500">Updating…</p>}
       {error && <p className="text-xs text-rose-400">{error}</p>}
+      {actionMsg && <p className="text-xs text-emerald-400">{actionMsg}</p>}
       {booking && (
         <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3 text-sm">
           <p className="font-mono text-orange-400 font-bold">{booking.referenceCode}</p>
           <p className="text-white font-semibold">{STATUS_LABEL[booking.status] ?? booking.status}</p>
           <p className="text-xs text-slate-400">{booking.vehicle}</p>
           <p className="text-xs text-slate-500">{booking.customerAddress}</p>
+          {formatPreferredSchedule(booking.preferredDate, booking.preferredTimeWindow) && (
+            <p className="text-xs text-orange-300 font-semibold">
+              Scheduled: {formatPreferredSchedule(booking.preferredDate, booking.preferredTimeWindow)}
+            </p>
+          )}
           {booking.status === 'EN_ROUTE' && (
             <p className="text-xs text-emerald-400">
               ETA ~{booking.etaMinutes} min · {booking.distanceMiles.toFixed(1)} mi
             </p>
           )}
           <p className="text-xs text-slate-400">Payment: {booking.paymentStatus.replace(/_/g, ' ')}</p>
+
+          {booking.dispatchLat != null && booking.dispatchLng != null && (
+            <div className="space-y-2">
+              <iframe
+                title="Technician map"
+                src={openStreetMapEmbedUrl(booking.dispatchLat, booking.dispatchLng, 13)}
+                className="w-full h-48 rounded-xl border border-white/10"
+                loading="lazy"
+              />
+              {booking.status === 'EN_ROUTE' && (
+                <p className="text-[11px] text-emerald-400">
+                  Live tech location · ETA ~{booking.etaMinutes} min
+                </p>
+              )}
+            </div>
+          )}
 
           {(booking.quoteStatus === 'awaiting_diagnostic' || booking.status === 'ON_SITE') &&
             booking.paymentStatus !== 'captured' && (
@@ -93,24 +204,139 @@ export const CustomerTrackTab: React.FC = () => {
               </p>
             )}
 
-          {booking.quoteLineItems.length > 0 && booking.paymentStatus === 'captured' && (
-            <div className="space-y-2 border border-white/10 rounded-xl p-3 bg-white/[0.03]">
-              <p className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">Receipt</p>
-              <ul className="space-y-1.5">
-                {booking.quoteLineItems.map((item, i) => (
-                  <li key={i} className="flex justify-between gap-2 text-xs text-slate-300">
-                    <span>{item.title}</span>
-                    <span className="font-mono text-white shrink-0">
-                      {dollars((item.labor_cents || 0) + (item.parts_cents || 0))}
-                    </span>
-                  </li>
+          {(booking.quoteLineItems.length > 0 || booking.capturedAmountCents != null) &&
+            booking.paymentStatus === 'captured' && (
+              <div className="space-y-2 border border-white/10 rounded-xl p-3 bg-white/[0.03]">
+                <p className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">Receipt</p>
+                <ul className="space-y-1.5">
+                  {booking.quoteLineItems.map((item, i) => (
+                    <li key={i} className="flex justify-between gap-2 text-xs text-slate-300">
+                      <span>{item.title}</span>
+                      <span className="font-mono text-white shrink-0">
+                        {dollars((item.labor_cents || 0) + (item.parts_cents || 0))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="flex justify-between text-white font-bold text-xs pt-1 border-t border-white/10">
+                  <span>Total charged</span>
+                  <span>{dollars(booking.capturedAmountCents ?? booking.quoteTotalCents)}</span>
+                </p>
+              </div>
+            )}
+
+          {booking.paymentStatus === 'captured' && booking.status !== 'CANCELED' && (
+            <div className="space-y-2 border border-white/10 rounded-xl p-3">
+              <p className="text-[11px] font-bold text-slate-300 uppercase">Tip your technician</p>
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 15].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void handleTip(amt)}
+                    className="px-3 py-2 rounded-lg text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 disabled:opacity-50"
+                  >
+                    ${amt}
+                  </button>
                 ))}
-              </ul>
-              <p className="flex justify-between text-white font-bold text-xs pt-1 border-t border-white/10">
-                <span>Total charged</span>
-                <span>{dollars(booking.quoteTotalCents ?? booking.capturedAmountCents)}</span>
-              </p>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  step="0.01"
+                  placeholder="Custom $"
+                  value={customTip}
+                  onChange={(e) => setCustomTip(e.target.value)}
+                  className="flex-1 bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+                />
+                <button
+                  type="button"
+                  disabled={busy || !customTip || Number(customTip) < 1}
+                  onClick={() => void handleTip(Number(customTip))}
+                  className="px-3 py-2 rounded-lg text-xs font-bold bg-white/10 text-white disabled:opacity-50"
+                >
+                  Tip
+                </button>
+              </div>
             </div>
+          )}
+
+          {canReschedule && (
+            <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 p-3 space-y-2">
+              {!showReschedule ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setRescheduleDate(booking.preferredDate || todayISODate());
+                    setRescheduleWindow(
+                      booking.preferredTimeWindow || PREFERRED_TIME_WINDOWS[0]
+                    );
+                    setShowReschedule(true);
+                  }}
+                  className="w-full py-2.5 text-xs font-bold text-orange-300 border border-orange-500/40 rounded-xl disabled:opacity-50"
+                >
+                  Reschedule appointment
+                </button>
+              ) : (
+                <>
+                  <p className="text-[11px] text-slate-400">
+                    Card hold stays on file. If a tech is already en route, they are released for the new slot.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      min={todayISODate()}
+                      value={rescheduleDate}
+                      onChange={(e) => setRescheduleDate(e.target.value)}
+                      className="bg-[#0b0c10] border border-white/15 rounded-lg px-2 py-2 text-xs text-white"
+                    />
+                    <select
+                      value={rescheduleWindow}
+                      onChange={(e) => setRescheduleWindow(e.target.value)}
+                      className="bg-[#0b0c10] border border-white/15 rounded-lg px-2 py-2 text-xs text-white"
+                    >
+                      {PREFERRED_TIME_WINDOWS.map((w) => (
+                        <option key={w} value={w}>
+                          {w}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleReschedule()}
+                      className="flex-1 py-2 text-xs font-bold bg-orange-500 text-white rounded-lg disabled:opacity-50"
+                    >
+                      Save new slot
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setShowReschedule(false)}
+                      className="px-3 py-2 text-xs font-bold text-slate-400 border border-white/15 rounded-lg"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {canCancel && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleCancel()}
+              className="w-full py-2.5 text-xs font-bold text-rose-300 border border-rose-500/40 rounded-xl disabled:opacity-50"
+            >
+              Cancel booking & release hold
+            </button>
           )}
 
           {booking.quoteStatus === 'quote_approved' && (
@@ -118,6 +344,23 @@ export const CustomerTrackTab: React.FC = () => {
           )}
           {booking.quoteStatus === 'quote_declined' && (
             <p className="text-xs text-slate-400">Diagnostic visit only — $100 applied.</p>
+          )}
+
+          {photos.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-slate-300 uppercase">Job photos</p>
+              <div className="grid grid-cols-2 gap-2">
+                {photos.map((p) => (
+                  <a key={p.id} href={p.publicUrl} target="_blank" rel="noreferrer">
+                    <img
+                      src={p.publicUrl}
+                      alt={p.caption || p.kind}
+                      className="w-full h-24 object-cover rounded-lg border border-white/10"
+                    />
+                  </a>
+                ))}
+              </div>
+            </div>
           )}
 
           <div className="flex flex-wrap gap-2">

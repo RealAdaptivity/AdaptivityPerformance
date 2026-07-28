@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Wrench,
   Phone,
   Calendar,
   Clock,
@@ -16,10 +15,12 @@ import {
   Calculator,
   MapPin,
   GraduationCap,
+  Wrench,
 } from 'lucide-react';
 import { portalPath } from '../portal/portalRoute';
 import { SiteLink } from '../site/SiteLink';
 import { navigateSite, useSitePage } from '../site/siteRoute';
+import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   onOpenBooking: () => void;
@@ -81,26 +82,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <span className="hidden sm:flex items-center space-x-1 flex-shrink-0 opacity-90">
             <Clock className="w-3.5 h-3.5" />
-            <span>Mon–Sat 7AM–7PM</span>
+            <span>Open 24/7</span>
           </span>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
-        <SiteLink to="home" className="flex items-center space-x-3 group min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 p-0.5 shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-all duration-300 flex-shrink-0">
-            <div className="w-full h-full bg-[#0b0c10] rounded-[10px] flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-orange-500 group-hover:rotate-12 transition-transform duration-300" />
-            </div>
-          </div>
-          <div className="min-w-0">
-            <div className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1.5 truncate">
-              ADAPTIVITY <span className="text-orange-500">PERFORMANCE</span>
-            </div>
-            <p className="text-[10px] tracking-widest text-slate-400 uppercase font-semibold hidden sm:block">
-              Mobile & Shop Automotive Specialist
-            </p>
-          </div>
+        <SiteLink to="home" className="group min-w-0">
+          <BrandLogo withWordmark size={40} />
         </SiteLink>
 
         <div className="relative flex items-center gap-1.5 sm:gap-2" ref={menuRef}>

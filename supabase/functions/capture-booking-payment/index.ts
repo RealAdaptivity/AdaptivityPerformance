@@ -6,7 +6,7 @@ import {
   resolveTechStripeAccountId,
   transferTechShareToConnect,
 } from './_shared/connectTransfer.ts';
-
+import { sendExpoPush } from './_shared/expoPush.ts';
 type LineItemIn = {
   title?: string;
   laborDollars?: number;
@@ -56,16 +56,29 @@ Deno.serve(async (req) => {
       lineItems,
       techNotes,
       diagnosticOnly,
+      customerAgreedOnSite,
     } = body;
 
     if (!bookingReference?.trim()) {
       return jsonResponse({ error: 'bookingReference is required' }, 400);
     }
 
-    const mode: 'charge' | 'diagnostic_only' =
-      diagnosticOnly === true || modeRaw === 'diagnostic_only'
-        ? 'diagnostic_only'
-        : 'charge';
+    const mode: 'charge' | 'diagnostic_only' | 'no_show' =
+      modeRaw === 'no_show'
+        ? 'no_show'
+        : diagnosticOnly === true || modeRaw === 'diagnostic_only'
+          ? 'diagnostic_only'
+          : 'charge';
+
+    if (mode === 'charge' && customerAgreedOnSite !== true) {
+      return jsonResponse(
+        {
+          error:
+            'Confirm the customer agreed to the on-site price before charging (customerAgreedOnSite).',
+        },
+        400
+      );
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -75,7 +88,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, mechanic_id, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status'
+        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -162,15 +175,18 @@ Deno.serve(async (req) => {
     let totalChargeCents = holdCents;
     let quoteStatus: string = 'quote_approved';
 
-    if (mode === 'diagnostic_only') {
+    if (mode === 'diagnostic_only' || mode === 'no_show') {
       totalChargeCents = holdCents;
       quoteStatus = 'quote_declined';
       normalized = [
         {
-          title: 'Mobile diagnostic visit',
+          title: mode === 'no_show' ? 'No-show / missed appointment' : 'Mobile diagnostic visit',
           labor_cents: holdCents,
           parts_cents: 0,
-          notes: 'Customer declined additional repairs',
+          notes:
+            mode === 'no_show'
+              ? 'Customer no-show — diagnostic hold captured'
+              : 'Customer declined additional repairs',
         },
       ];
     } else {
@@ -221,14 +237,21 @@ Deno.serve(async (req) => {
       .insert({
         booking_id: booking.id,
         submitted_by: user.id,
-        status: mode === 'diagnostic_only' ? 'declined' : 'approved',
+        status: mode === 'charge' ? 'approved' : 'declined',
         line_items: normalized,
         diagnostic_fee_cents: holdCents,
         repairs_cents: repairsCents,
         total_cents: totalChargeCents,
-        tech_notes: typeof techNotes === 'string' ? techNotes.trim() : null,
-        approved_at: mode === 'diagnostic_only' ? null : new Date().toISOString(),
-        declined_at: mode === 'diagnostic_only' ? new Date().toISOString() : null,
+        tech_notes: [
+          typeof techNotes === 'string' ? techNotes.trim() : '',
+          mode === 'charge' && customerAgreedOnSite === true
+            ? 'Customer agreed to on-site price before charge.'
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+        approved_at: mode === 'charge' ? new Date().toISOString() : null,
+        declined_at: mode === 'charge' ? null : new Date().toISOString(),
         capture_amount_cents: totalChargeCents,
       })
       .select('id')
@@ -242,7 +265,12 @@ Deno.serve(async (req) => {
       paymentIntentId,
       holdCents,
       totalChargeCents,
-      source: mode === 'diagnostic_only' ? 'tech_diagnostic_only' : 'tech_set_price',
+      source:
+        mode === 'no_show'
+          ? 'tech_no_show'
+          : mode === 'diagnostic_only'
+            ? 'tech_diagnostic_only'
+            : 'tech_set_price',
     });
 
     await supabase
@@ -269,6 +297,29 @@ Deno.serve(async (req) => {
         .eq('id', quote.id);
     }
 
+    // Push when customer has Expo token. Receipt SMS is tech device composer (Twilio deferred).
+    const capturedDollars = (result.capturedCents / 100).toFixed(2);
+    if (booking.customer_id) {
+      try {
+        const { data: tokens } = await supabase
+          .from('device_push_tokens')
+          .select('expo_push_token')
+          .eq('profile_id', booking.customer_id);
+        const pushTokens = (tokens || [])
+          .map((t) => t.expo_push_token as string)
+          .filter(Boolean);
+        if (pushTokens.length) {
+          await sendExpoPush(pushTokens, {
+            title: 'Payment complete',
+            body: `$${capturedDollars} charged for job ${booking.reference_code}.`,
+            data: { bookingReference: booking.reference_code, type: 'capture' },
+          });
+        }
+      } catch (e) {
+        console.warn('[capture-booking-payment] push failed', e);
+      }
+    }
+
     return jsonResponse({
       ok: true,
       alreadyCaptured: false,
@@ -285,11 +336,13 @@ Deno.serve(async (req) => {
       transferWarning: result.transferError,
       connectAccountId: result.techStripeAccountId,
       message:
-        mode === 'diagnostic_only'
-          ? 'Diagnostic visit charged. Job complete.'
-          : result.remainderCents > 0
-            ? 'Hold captured and repair remainder charged to card on file.'
-            : 'Charged from card hold.',
+        mode === 'no_show'
+          ? 'No-show hold charged. Job complete.'
+          : mode === 'diagnostic_only'
+            ? 'Diagnostic visit charged. Job complete.'
+            : result.remainderCents > 0
+              ? 'Hold captured and repair remainder charged to card on file.'
+              : 'Charged from card hold.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Capture failed';

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { cityFromPath } from './seo';
 
 export type SitePage =
   | 'home'
@@ -14,9 +15,10 @@ export type SitePage =
   | 'partners'
   | 'coverage'
   | 'performance'
-  | 'faq';
+  | 'faq'
+  | 'city';
 
-const PAGE_SEGMENTS: Record<SitePage, string> = {
+const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city'>, string> = {
   home: '',
   about: 'about',
   services: 'services',
@@ -33,11 +35,11 @@ const PAGE_SEGMENTS: Record<SitePage, string> = {
   faq: 'faq',
 };
 
-const SEGMENT_TO_PAGE: Record<string, SitePage> = Object.fromEntries(
-  (Object.entries(PAGE_SEGMENTS) as [SitePage, string][])
+const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'home'>> = Object.fromEntries(
+  (Object.entries(PAGE_SEGMENTS) as [Exclude<SitePage, 'city'>, string][])
     .filter(([, seg]) => seg)
     .map(([page, seg]) => [seg, page])
-) as Record<string, SitePage>;
+) as Record<string, Exclude<SitePage, 'city' | 'home'>>;
 
 /** Legacy homepage anchors → page routes */
 const HASH_TO_PAGE: Record<string, SitePage> = {
@@ -79,6 +81,10 @@ function normalizePath(pathname: string): string {
 export function sitePath(page: SitePage, hash?: string): string {
   const base = import.meta.env.BASE_URL || '/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+  if (page === 'city') {
+    const cleaned = normalizedBase.replace(/\/+/g, '/');
+    return hash ? `${cleaned}#${hash}` : cleaned;
+  }
   const seg = PAGE_SEGMENTS[page];
   const path = seg ? `${normalizedBase}${seg}` : normalizedBase;
   const cleaned = path.replace(/\/+/g, '/');
@@ -88,6 +94,7 @@ export function sitePath(page: SitePage, hash?: string): string {
 export function readSitePage(): SitePage {
   if (typeof window === 'undefined') return 'home';
   const path = normalizePath(window.location.pathname);
+  if (cityFromPath(path)) return 'city';
   if (path === '/' || path === '') {
     const hash = window.location.hash.replace(/^#/, '');
     if (hash && HASH_TO_PAGE[hash]) return HASH_TO_PAGE[hash];
@@ -108,6 +115,16 @@ function subscribeToRoute(callback: () => void) {
 
 export function useSitePage(): SitePage {
   return useSyncExternalStore(subscribeToRoute, readSitePage, () => 'home');
+}
+
+function readPathname(): string {
+  if (typeof window === 'undefined') return '/';
+  return normalizePath(window.location.pathname);
+}
+
+/** Pathname snapshot so city-to-city navigations re-render when page stays `'city'`. */
+export function useSitePathname(): string {
+  return useSyncExternalStore(subscribeToRoute, readPathname, () => '/');
 }
 
 export function navigateSite(page: SitePage, opts?: { hash?: string; replace?: boolean }) {

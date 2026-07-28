@@ -23,6 +23,9 @@ export type BookingRow = {
   captured_amount_cents?: number | null;
   dispatch_lat?: number | null;
   dispatch_lng?: number | null;
+  preferred_date?: string | null;
+  preferred_time_window?: string | null;
+  customer_notes?: string | null;
   mechanic?: {
     id: string;
     full_name: string | null;
@@ -79,6 +82,9 @@ export function rowToBooking(row: BookingRow): Booking {
     capturedAmountCents: row.captured_amount_cents ?? null,
     dispatchLat: row.dispatch_lat != null ? Number(row.dispatch_lat) : null,
     dispatchLng: row.dispatch_lng != null ? Number(row.dispatch_lng) : null,
+    preferredDate: row.preferred_date ?? null,
+    preferredTimeWindow: row.preferred_time_window ?? null,
+    customerNotes: row.customer_notes ?? null,
   };
 }
 

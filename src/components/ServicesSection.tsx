@@ -1,6 +1,11 @@
 import React, { useMemo } from 'react';
 import { ArrowRight, Wrench } from 'lucide-react';
-import { SERVICE_CATALOG, specialtyForServiceKind, type CatalogService } from '../services/serviceCatalog';
+import {
+  SERVICE_CATALOG,
+  formatCatalogPriceRange,
+  specialtyForServiceKind,
+  type CatalogService,
+} from '../services/serviceCatalog';
 
 const SPECIALTY_LABELS: Record<string, string> = {
   mechanical: 'Diagnostics & Mechanical',
@@ -87,8 +92,8 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking,
                         </span>
                         <span className="block text-[11px] text-slate-500 line-clamp-1">{s.description}</span>
                       </span>
-                      <span className="text-[11px] font-bold text-orange-400 shrink-0 pt-0.5">
-                        On-site price
+                      <span className="text-[11px] font-bold text-orange-400 shrink-0 pt-0.5 text-right max-w-[7.5rem] leading-snug">
+                        {formatCatalogPriceRange(s) ?? 'On-site price'}
                       </span>
                     </button>
                   </li>

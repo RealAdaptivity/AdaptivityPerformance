@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /portal
+Disallow: /login
+Disallow: /admin
+Disallow: /tech-stripe-
+
+Sitemap: https://adaptivityperformance.com/sitemap.xml

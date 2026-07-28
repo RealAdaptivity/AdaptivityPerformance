@@ -6,6 +6,7 @@ import { SERVICE_CATALOG } from '../../services/serviceCatalog';
 import { computeHoldQuote } from '../../services/holdPricing';
 import { loadGarageVehicles, vehicleLabel } from './garageStorage';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../../content/contractorLiability';
+import { PREFERRED_TIME_WINDOWS, todayISODate } from '../../services/scheduleWindows';
 
 type Props = {
   profile: PortalProfile;
@@ -21,6 +22,8 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
   const [zip, setZip] = useState('76226');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [preferredDate, setPreferredDate] = useState(todayISODate());
+  const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [step, setStep] = useState<'form' | 'card' | 'done'>('form');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -59,13 +62,16 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
         customerName: profile.fullName || profile.email.split('@')[0],
         customerPhone: phone.trim(),
         customerEmail: profile.email,
-        customerAddress: `${address.trim()}${notes ? ` · ${notes}` : ''}`,
+        customerAddress: address.trim(),
         zipCode: zip.trim() || '76247',
         vehicleDescription: vehicle ? vehicleLabel(vehicle) : 'Customer vehicle',
         vin: vehicle?.vin,
         services: serviceTitles,
         holdAmountDollars: quote.holdDollars,
         locationType: 'mobile',
+        preferredDate,
+        preferredTimeWindow: preferredTime,
+        customerNotes: notes.trim() || undefined,
       });
       setHoldAmount(hold.holdAmountDollars ?? quote.holdDollars);
       setBookingRef(hold.bookingReference);
@@ -191,6 +197,33 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
           onChange={(e) => setPhone(e.target.value)}
           className="bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm"
         />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="space-y-1">
+          <span className="text-[10px] uppercase font-bold text-slate-500">Preferred date</span>
+          <input
+            type="date"
+            required
+            min={todayISODate()}
+            value={preferredDate}
+            onChange={(e) => setPreferredDate(e.target.value)}
+            className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm"
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-[10px] uppercase font-bold text-slate-500">Time window</span>
+          <select
+            value={preferredTime}
+            onChange={(e) => setPreferredTime(e.target.value)}
+            className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm"
+          >
+            {PREFERRED_TIME_WINDOWS.map((w) => (
+              <option key={w} value={w}>
+                {w}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <textarea
         placeholder="Notes / parking / symptoms"

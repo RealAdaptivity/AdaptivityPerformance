@@ -26,6 +26,9 @@ const ADMIN_BOOKING_SELECT = `
   captured_amount_cents,
   dispatch_lat,
   dispatch_lng,
+  preferred_date,
+  preferred_time_window,
+  customer_notes,
   mechanic:profiles!bookings_mechanic_id_fkey (
     id,
     full_name,
@@ -42,6 +45,7 @@ export type DispatchTech = {
   vanNumber: string | null;
   stripeAccountId: string | null;
   toolsVerified: boolean;
+  specialties: string[];
 };
 
 export type AdminPaymentRow = {
@@ -73,6 +77,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       van_number,
       stripe_account_id,
       tools_verified,
+      specialties,
       profiles!mechanic_details_profile_id_fkey ( id, full_name, phone, email, role )
     `);
 
@@ -86,7 +91,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       full_name,
       phone,
       email,
-      mechanic_details ( van_number, stripe_account_id, tools_verified )
+      mechanic_details ( van_number, stripe_account_id, tools_verified, specialties )
     `
     )
     .eq('role', 'tech');
@@ -98,6 +103,9 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
   for (const row of detailRows ?? []) {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
     if (!profile?.id) continue;
+    const specialties = Array.isArray(row.specialties)
+      ? (row.specialties as string[])
+      : ['mechanical'];
     byId.set(profile.id as string, {
       id: profile.id as string,
       name: (profile.full_name as string) || 'Technician',
@@ -106,6 +114,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       vanNumber: (row.van_number as string) ?? null,
       stripeAccountId: (row.stripe_account_id as string) ?? null,
       toolsVerified: Boolean(row.tools_verified),
+      specialties: specialties.length ? specialties : ['mechanical'],
     });
   }
 
@@ -114,6 +123,9 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
     const details = Array.isArray(row.mechanic_details)
       ? row.mechanic_details[0]
       : row.mechanic_details;
+    const specialties = Array.isArray(details?.specialties)
+      ? (details.specialties as string[])
+      : ['mechanical'];
     byId.set(row.id as string, {
       id: row.id as string,
       name: (row.full_name as string) || 'Technician',
@@ -122,6 +134,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       vanNumber: (details?.van_number as string) ?? null,
       stripeAccountId: (details?.stripe_account_id as string) ?? null,
       toolsVerified: Boolean(details?.tools_verified),
+      specialties: specialties.length ? specialties : ['mechanical'],
     });
   }
 

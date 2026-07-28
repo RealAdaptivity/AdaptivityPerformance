@@ -88,6 +88,9 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return <PerformanceSection onOpenBooking={actions.onOpenBooking} />;
     case 'faq':
       return <SEOContentBlock />;
+    case 'city':
+    case 'home':
+      return null;
     default:
       return null;
   }

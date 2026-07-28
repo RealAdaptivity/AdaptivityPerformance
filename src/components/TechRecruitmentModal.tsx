@@ -6,6 +6,7 @@ import {
   TECH_LIABILITY_SUMMARY,
   TECH_WORKERS_COMP_NOTICE,
 } from '../content/contractorLiability';
+import { submitTechApplication } from '../services/techApplications';
 
 interface TechRecruitmentModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isOnboardingStripe = false;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [acceptedLiability, setAcceptedLiability] = useState(false);
@@ -73,15 +75,28 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
       return;
     }
 
-    if (payPreference === 'revshare' && email.trim() && name.trim()) {
-      setSubmitError(
-        'Revenue share uses Stripe Express after you are approved. Sign in to the Tech Portal → Settings to connect payouts (one Connect account per technician). We no longer create Stripe accounts from this public form.'
-      );
+    setIsSubmitting(true);
+    try {
+      await submitTechApplication({
+        fullName: name,
+        email,
+        phone,
+        zipCode: zip,
+        yearsExperience: yearsExp,
+        trades,
+        aseCerts,
+        tools,
+        hasVehicle,
+        payPreference: 'revshare',
+        jobCapacity,
+        liabilityAccepted: true,
+      });
       setIsSubmitted(true);
-      return;
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Could not submit application. Try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitted(true);
   };
 
   const checkedToolCount = Object.values(tools).filter(Boolean).length;
@@ -146,7 +161,10 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
               </div>
               <h3 className="text-2xl font-heading font-black text-white">Technician Application Received!</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Thanks, <strong>{name}</strong>. Our Service Director will contact you at <strong>{phone}</strong> within 24 hours to schedule a quick tool audit and ride-along test for the 70/30 split dispatch network.
+                Thanks, <strong>{name}</strong>. Your application is in our admin inbox. We’ll contact you at{' '}
+                <strong>{phone}</strong> within 24 hours. After approval, create your Tech account at{' '}
+                <strong className="text-white">/portal</strong> with <strong>{email}</strong>, then finish Stripe
+                Express + W-9 in Settings.
               </p>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
                 Preferred work style:{' '}
@@ -530,16 +548,20 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                       </div>
 
                       <div
-                        onClick={() => setPayPreference('hourly')}
-                        className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                          payPreference === 'hourly' ? 'bg-orange-950/30 border-orange-500 text-white' : 'bg-white/5 border-white/10 text-slate-400'
-                        }`}
+                        className="p-4 rounded-xl border border-white/10 bg-white/[0.03] text-slate-500 cursor-not-allowed opacity-80 relative"
+                        aria-disabled="true"
+                        title="Flat hourly is coming soon"
                       >
-                        <div className="flex items-center justify-between font-bold text-sm text-orange-400 mb-1">
+                        <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                          Coming soon
+                        </span>
+                        <div className="flex items-center justify-between font-bold text-sm text-slate-500 mb-1 pr-24">
                           <span>Guaranteed $50 - $65/hr Base</span>
                           <span>Flat Hourly Rate</span>
                         </div>
-                        <p className="text-[11px] text-slate-300">Guaranteed hourly rate for active dispatch time + 100% of customer tips and monthly tool stipends.</p>
+                        <p className="text-[11px] text-slate-500">
+                          Guaranteed hourly for active dispatch + 100% tips — not open for signup yet. Apply on 70/30 for now.
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -585,22 +607,18 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
 
                     <button
                       type="submit"
-                      disabled={isOnboardingStripe || !acceptedLiability}
+                      disabled={isOnboardingStripe || isSubmitting || !acceptedLiability}
                       className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center space-x-2 disabled:opacity-60"
                     >
-                      {isOnboardingStripe ? (
+                      {isSubmitting || isOnboardingStripe ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Opening Stripe Payout Setup…</span>
+                          <span>Submitting…</span>
                         </>
                       ) : (
                         <>
                           <Send className="w-4 h-4" />
-                          <span>
-                            {payPreference === 'revshare'
-                              ? 'Submit & Set Up Stripe Payouts'
-                              : 'Submit Technician Application'}
-                          </span>
+                          <span>Submit Technician Application</span>
                         </>
                       )}
                     </button>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Wrench, Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
+import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
+import { CITY_LANDINGS, cityPath } from '../site/seo';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -48,9 +49,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
         {/* Brand */}
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white">
-              <Wrench className="w-4 h-4" />
-            </div>
+            <img
+              src={`${(import.meta.env.BASE_URL || '/').replace(/\/?$/, '/')}logo-ui.png`}
+              alt="Adaptivity Performance"
+              className="w-8 h-8 rounded-lg object-cover bg-[#0b0c10]"
+            />
             <span className="font-heading font-extrabold text-lg text-white">
               ADAPTIVITY <span className="text-orange-500">PERFORMANCE</span>
             </span>
@@ -103,16 +106,32 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">Operating Hours</h4>
           <div className="space-y-1.5 text-slate-300">
             <div className="flex justify-between border-b border-white/5 pb-1">
-              <span>Monday - Friday:</span>
-              <span className="font-bold text-white">7:00 AM - 7:00 PM</span>
+              <span>Every day:</span>
+              <span className="font-bold text-white">24/7</span>
             </div>
-            <div className="flex justify-between border-b border-white/5 pb-1">
-              <span>Saturday:</span>
-              <span className="font-bold text-white">8:00 AM - 5:00 PM</span>
-            </div>
-            <div className="flex justify-between border-b border-white/5 pb-1">
-              <span>Sunday:</span>
-              <span className="text-orange-400 font-bold">Emergency Mobile Only</span>
+            <p className="text-[11px] text-slate-500 pt-1">
+              Mobile dispatch available around the clock across our DFW coverage area.
+            </p>
+          </div>
+
+          <div className="pt-4 space-y-2">
+            <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">City pages</h4>
+            <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+              {CITY_LANDINGS.map((city) => (
+                <a
+                  key={city.slug}
+                  href={cityPath(city.slug)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.history.pushState({}, '', cityPath(city.slug));
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="hover:text-orange-400 transition-colors"
+                >
+                  {city.city}
+                </a>
+              ))}
             </div>
           </div>
         </div>

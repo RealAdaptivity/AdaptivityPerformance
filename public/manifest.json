@@ -1,16 +1,21 @@
 {
-  "short_name": "Adaptivity Tech",
-  "name": "Adaptivity Tech Dispatch",
+  "short_name": "Adaptivity",
+  "name": "Adaptivity Performance",
   "icons": [
     {
-      "src": "app-icon-tech.png",
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "1024x1024"
+    },
+    {
+      "src": "app-icon.png",
       "type": "image/png",
       "sizes": "1024x1024"
     }
   ],
-  "start_url": "./?view=tech",
-  "background_color": "#090a0f",
-  "theme_color": "#090a0f",
+  "start_url": "./",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
   "display": "standalone",
   "orientation": "portrait"
 }

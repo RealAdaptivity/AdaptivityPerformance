@@ -43,6 +43,9 @@ export type CatalogService = {
   kind: ServiceKind;
   /** Always false — all bookings use $100 diagnostic hold; tech sets price on site. */
   directBook: boolean;
+  /** Illustrative labor+parts ballpark (not a final bill). */
+  typicalMinDollars?: number;
+  typicalMaxDollars?: number;
 };
 
 /** Legacy list (empty): all services use diagnostic hold + tech-set pricing. */
@@ -56,7 +59,9 @@ function consult(
   description: string,
   icon: string,
   kind: ServiceKind,
-  duration = '45–60 mins consult'
+  duration = '45–60 mins consult',
+  typicalMinDollars?: number,
+  typicalMaxDollars?: number
 ): CatalogService {
   return {
     id,
@@ -67,7 +72,14 @@ function consult(
     icon,
     kind,
     directBook: false,
+    typicalMinDollars,
+    typicalMaxDollars,
   };
+}
+
+export function formatCatalogPriceRange(s: Pick<CatalogService, 'typicalMinDollars' | 'typicalMaxDollars'>): string | null {
+  if (s.typicalMinDollars == null || s.typicalMaxDollars == null) return null;
+  return `Typically $${s.typicalMinDollars}–$${s.typicalMaxDollars}`;
 }
 
 export const SERVICE_CATALOG: CatalogService[] = [
@@ -81,6 +93,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     icon: '🔍',
     kind: 'diagnostic',
     directBook: false,
+    typicalMinDollars: 100,
+    typicalMaxDollars: 100,
   },
   {
     id: 'oil_change',
@@ -92,6 +106,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     icon: '🛢️',
     kind: 'oil_change',
     directBook: false,
+    typicalMinDollars: 89,
+    typicalMaxDollars: 160,
   },
   {
     id: 'brakes',
@@ -103,6 +119,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     icon: '🛑',
     kind: 'brakes',
     directBook: false,
+    typicalMinDollars: 280,
+    typicalMaxDollars: 650,
   },
   {
     id: 'transmission_oil',
@@ -113,6 +131,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     icon: '⚙️',
     kind: 'transmission_oil',
     directBook: false,
+    typicalMinDollars: 180,
+    typicalMaxDollars: 350,
   },
   {
     id: 'differential',
@@ -123,6 +143,8 @@ export const SERVICE_CATALOG: CatalogService[] = [
     icon: '🔧',
     kind: 'differential',
     directBook: false,
+    typicalMinDollars: 140,
+    typicalMaxDollars: 280,
   },
   consult(
     'battery',
@@ -130,35 +152,49 @@ export const SERVICE_CATALOG: CatalogService[] = [
     '$100 on-site test. Mechanical tech diagnoses battery, alternator, or starter issues and quotes before parts/install.',
     '🔋',
     'battery',
-    '30–45 mins'
+    '30–45 mins',
+    180,
+    420
   ),
   consult(
     'ac_service',
     'A/C & Climate Service',
     '$100 on-site A/C assessment. Diagnose cooling, recharge needs, or HVAC issues before repair charge.',
     '❄️',
-    'ac_service'
+    'ac_service',
+    '45–60 mins consult',
+    150,
+    450
   ),
   consult(
     'suspension',
     'Suspension & Ride Control',
     '$100 on-site inspection. Shocks, struts, bushings, or alignment concerns quoted after assessment.',
     '🛣️',
-    'suspension'
+    'suspension',
+    '45–60 mins consult',
+    250,
+    900
   ),
   consult(
     'exhaust_repair',
     'Exhaust Repair',
     '$100 on-site inspection. Mufflers, pipes, catalytic issues, and leaks assessed before repair quote.',
     '💨',
-    'exhaust_repair'
+    'exhaust_repair',
+    '45–60 mins consult',
+    200,
+    800
   ),
   consult(
     'cooling_system',
     'Cooling System / Overheating',
     '$100 on-site cooling check. Radiator, thermostat, water pump, and leak concerns quoted after inspection.',
     '🌡️',
-    'cooling_system'
+    'cooling_system',
+    '45–60 mins consult',
+    180,
+    700
   ),
   consult(
     'belts_hoses',
@@ -166,21 +202,29 @@ export const SERVICE_CATALOG: CatalogService[] = [
     '$100 on-site inspection. Serpentine belts, tensioners, and hose replacements quoted before work.',
     '🔗',
     'belts_hoses',
-    '30–45 mins'
+    '30–45 mins',
+    120,
+    350
   ),
   consult(
     'ignition',
     'Ignition / Spark Plugs',
     '$100 on-site assessment. Misfires, plugs, coils, and ignition issues quoted before repair.',
     '⚡',
-    'ignition'
+    'ignition',
+    '45–60 mins consult',
+    150,
+    480
   ),
   consult(
     'fuel_system',
     'Fuel System Service',
     '$100 on-site assessment. Fuel filters, injectors, pumps, and related concerns quoted after inspection.',
     '⛽',
-    'fuel_system'
+    'fuel_system',
+    '45–60 mins consult',
+    200,
+    650
   ),
   consult(
     'tires',
@@ -188,14 +232,19 @@ export const SERVICE_CATALOG: CatalogService[] = [
     '$100 on-site tire service consult. Mount, balance, rotation, puncture repair, or TPMS quoted before work.',
     '🛞',
     'tires',
-    '30–60 mins'
+    '30–60 mins',
+    40,
+    200
   ),
   consult(
     'wheel_service',
     'Wheels & Alignment Concern',
     '$100 on-site wheel/alignment assessment. Vibration, curb rash, or alignment needs quoted before service.',
     '⭕',
-    'wheel_service'
+    'wheel_service',
+    '45–60 mins consult',
+    100,
+    350
   ),
   consult(
     'auto_glass',
@@ -203,7 +252,9 @@ export const SERVICE_CATALOG: CatalogService[] = [
     '$100 on-site glass assessment. Chip repair or windshield / side glass replacement quoted before work.',
     '🪟',
     'auto_glass',
-    '30–45 mins'
+    '30–45 mins',
+    80,
+    450
   ),
   consult(
     'car_audio',
@@ -211,7 +262,9 @@ export const SERVICE_CATALOG: CatalogService[] = [
     '$100 on-site consult. Speakers, head unit, amp, or full system quoted before install.',
     '🔊',
     'car_audio',
-    '45–90 mins consult'
+    '45–90 mins consult',
+    200,
+    1500
   ),
   consult(
     'window_tint',

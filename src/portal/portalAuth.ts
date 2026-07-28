@@ -92,6 +92,12 @@ export async function ensureTechProfile(vanNumber?: string, specialties?: string
   }
   const { error } = await supabase.rpc('ensure_tech_profile', payload);
   if (error) throw error;
+  try {
+    const { linkApprovedTechApplication } = await import('../services/techApplications');
+    await linkApprovedTechApplication();
+  } catch {
+    /* optional — no approved application is fine */
+  }
 }
 
 import { portalPath } from './portalRoute';

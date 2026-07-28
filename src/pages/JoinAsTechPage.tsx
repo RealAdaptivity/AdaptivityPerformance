@@ -100,7 +100,7 @@ const APPLY_NEEDS = [
   'Whether you own a truck / van / utility rig',
   'Tool inventory checklist for your trade',
   'ASE certs (if any)',
-  'Pay preference: 70/30 revenue share or hourly base',
+  'Pay preference: 70/30 revenue share (flat hourly coming soon)',
   'Work style: Multi-job or Standalone (changeable later in Settings)',
   'W-9 tax ID (completed in Stripe Express before first job)',
 ];
@@ -310,11 +310,14 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
                 Revenue-share techs keep 70% of labor billed (30% to Adaptivity). Tips go fully to you. Platform handles checkout.
               </p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2">
+            <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2 relative overflow-hidden">
+              <span className="absolute top-3 right-3 text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                Coming soon
+              </span>
               <ShieldCheck className="w-5 h-5 text-orange-400" />
-              <h3 className="font-bold text-white">Hourly option available</h3>
+              <h3 className="font-bold text-white">Flat hourly</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Prefer a base rate? Choose guaranteed hourly during apply — still 100% of tips.
+                Guaranteed hourly base + 100% tips is on the roadmap. New techs start on 70/30 revenue share today.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2">

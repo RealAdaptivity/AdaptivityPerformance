@@ -16,6 +16,8 @@ const sharedFiles = {
   'connectTransfer.ts': fs.readFileSync(path.join(sharedDir, 'connectTransfer.ts'), 'utf8'),
   'holdPricing.ts': fs.readFileSync(path.join(sharedDir, 'holdPricing.ts'), 'utf8'),
   'captureHold.ts': fs.readFileSync(path.join(sharedDir, 'captureHold.ts'), 'utf8'),
+  'twilioSms.ts': fs.readFileSync(path.join(sharedDir, 'twilioSms.ts'), 'utf8'),
+  'expoPush.ts': fs.readFileSync(path.join(sharedDir, 'expoPush.ts'), 'utf8'),
 };
 
 const functions = [
@@ -34,6 +36,27 @@ const functions = [
       'connectTransfer.ts',
       'connectAccountRecovery.ts',
       'captureHold.ts',
+      'expoPush.ts',
+    ],
+    verify_jwt: true,
+  },
+  {
+    name: 'send-sms',
+    shared: ['stripe.ts', 'twilioSms.ts'],
+    verify_jwt: true,
+  },
+  {
+    name: 'send-push',
+    shared: ['stripe.ts', 'expoPush.ts'],
+    verify_jwt: true,
+  },
+  {
+    name: 'add-booking-tip',
+    shared: [
+      'stripe.ts',
+      'connectTransfer.ts',
+      'connectAccountRecovery.ts',
+      'revenueSplit.ts',
     ],
     verify_jwt: true,
   },
@@ -72,6 +95,7 @@ const functions = [
   },
   { name: 'bootstrap-admin', shared: ['stripe.ts'], verify_jwt: false },
   { name: 'cancel-booking-hold', shared: ['stripe.ts', 'cancelHold.ts'], verify_jwt: true },
+  { name: 'reschedule-booking', shared: ['stripe.ts'], verify_jwt: true },
   {
     name: 'admin-adjust-capture',
     shared: ['stripe.ts', 'adminAuth.ts', 'revenueSplit.ts', 'connectTransfer.ts', 'connectAccountRecovery.ts'],

@@ -82,13 +82,19 @@ export async function updateMyJobCapacity(capacity: TechJobCapacity) {
 export async function claimBookingRow(referenceCode: string, mechanicId: string) {
   const { data: detail } = await supabase
     .from('mechanic_details')
-    .select('job_capacity, w9_completed_at')
+    .select('job_capacity, w9_completed_at, contractor_agreement_signed_at')
     .eq('profile_id', mechanicId)
     .maybeSingle();
 
   if (!detail?.w9_completed_at) {
     throw new Error(
       'Complete IRS Form W-9 before your first job: open Settings → connect Stripe Express and submit your SSN or EIN (tax ID). We never store your SSN ourselves — Stripe collects it for 1099 reporting.'
+    );
+  }
+
+  if (!detail?.contractor_agreement_signed_at) {
+    throw new Error(
+      'Accept the Independent Contractor Agreement in Settings (print/save PDF) before claiming your first job.'
     );
   }
 
@@ -110,14 +116,14 @@ export async function claimBookingRow(referenceCode: string, mechanicId: string)
 
   const { error } = await supabase
     .from('bookings')
-    .update({ status: 'EN_ROUTE', mechanic_id: mechanicId, eta_minutes: 12, distance_miles: 5 })
+    .update({ status: 'EN_ROUTE', mechanic_id: mechanicId, eta_minutes: 20, distance_miles: 8 })
     .eq('reference_code', referenceCode);
   if (error) throw error;
 }
 
 export async function updateBookingRow(
   referenceCode: string,
-  patch: Partial<{ status: string; distance_miles: number; eta_minutes: number }>
+  patch: Partial<{ status: string; distance_miles: number; eta_minutes: number; dispatch_lat: number; dispatch_lng: number }>
 ) {
   const { error } = await supabase.from('bookings').update(patch).eq('reference_code', referenceCode);
   if (error) throw error;
@@ -133,9 +139,10 @@ export async function cancelJobWithHold(referenceCode: string) {
 export async function captureBookingPayment(
   bookingReference: string,
   opts?: {
-    mode?: 'charge' | 'diagnostic_only';
+    mode?: 'charge' | 'diagnostic_only' | 'no_show';
     lineItems?: QuoteLineInput[];
     techNotes?: string;
+    customerAgreedOnSite?: boolean;
   }
 ) {
   return invokeEdgeFunction<{
@@ -153,6 +160,7 @@ export async function captureBookingPayment(
     mode: opts?.mode ?? 'charge',
     lineItems: opts?.lineItems,
     techNotes: opts?.techNotes,
+    customerAgreedOnSite: opts?.customerAgreedOnSite,
   });
 }
 
@@ -375,6 +383,31 @@ export async function fetchTechW9Status(): Promise<TechW9Status> {
 /** Certify W-9 after Stripe collected SSN/EIN (or manual ack once tax is on file). */
 export async function markTechW9Complete(): Promise<string> {
   const { data, error } = await supabase.rpc('mark_tech_w9_complete');
+  if (error) throw error;
+  return String(data);
+}
+
+export async function fetchContractorAgreementStatus(): Promise<{
+  signed: boolean;
+  signedAt: string | null;
+}> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { signed: false, signedAt: null };
+  const { data } = await supabase
+    .from('mechanic_details')
+    .select('contractor_agreement_signed_at')
+    .eq('profile_id', user.id)
+    .maybeSingle();
+  return {
+    signed: Boolean(data?.contractor_agreement_signed_at),
+    signedAt: (data?.contractor_agreement_signed_at as string) || null,
+  };
+}
+
+export async function markContractorAgreementSigned(): Promise<string> {
+  const { data, error } = await supabase.rpc('mark_contractor_agreement_signed');
   if (error) throw error;
   return String(data);
 }

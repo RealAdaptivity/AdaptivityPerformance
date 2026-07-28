@@ -18,8 +18,13 @@ if (start < 0 || end < 0) throw new Error('Could not locate catalog block');
 
 const consultFn = `
 const DIAGNOSTIC_HOLD_DOLLARS = 100;
-function consult(id, title, description, icon, kind, duration = '45–60 mins consult') {
-  return { id, title, description, price: DIAGNOSTIC_HOLD_DOLLARS, duration, icon, kind, directBook: false };
+function consult(id, title, description, icon, kind, duration = '45–60 mins consult', typicalMinDollars, typicalMaxDollars) {
+  return {
+    id, title, description, price: DIAGNOSTIC_HOLD_DOLLARS, duration, icon, kind, directBook: false,
+    ...(typicalMinDollars != null && typicalMaxDollars != null
+      ? { typicalMinDollars, typicalMaxDollars }
+      : {}),
+  };
 }
 `;
 
@@ -31,7 +36,8 @@ const block = consultFn + src
   .replace(/: CatalogService/g, '')
   .replace(/: ServiceKind/g, '')
   .replace(/function consult\([\s\S]*?\n\}/, '')
-  .replace(/const DIAGNOSTIC_HOLD_DOLLARS[\s\S]*?;/, '');
+  .replace(/const DIAGNOSTIC_HOLD_DOLLARS[\s\S]*?;/, '')
+  .replace(/function formatCatalogPriceRange[\s\S]*?\n\}/, '');
 
 const tmp = path.join(root, 'scripts', '.tmp-catalog.mjs');
 fs.writeFileSync(tmp, block + '\nexport { DIAGNOSTIC_HOLD_DOLLARS, DIRECT_BOOK_KINDS, SERVICE_CATALOG };\n');
@@ -241,7 +247,14 @@ export type CatalogService = {
   kind: ServiceKind;
   directBook: boolean;
   category: ${categories.map((c) => `'${c}'`).join(' | ')};
+  typicalMinDollars?: number;
+  typicalMaxDollars?: number;
 };
+
+export function formatCatalogPriceRange(s: Pick<CatalogService, 'typicalMinDollars' | 'typicalMaxDollars'>): string | null {
+  if (s.typicalMinDollars == null || s.typicalMaxDollars == null) return null;
+  return \`Typically $\${s.typicalMinDollars}–$\${s.typicalMaxDollars}\`;
+}
 
 export const DIRECT_BOOK_KINDS: ServiceKind[] = ${JSON.stringify(DIRECT_BOOK_KINDS, null, 2)};
 

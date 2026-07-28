@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, reference_code, mechanic_id, payment_intent_id, payment_status')
+      .select('id, reference_code, mechanic_id, customer_id, payment_intent_id, payment_status, status')
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
 
@@ -53,8 +53,22 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Booking not found' }, 404);
     }
 
-    if (!isAdmin && booking.mechanic_id !== user.id) {
+    const isCustomer = booking.customer_id === user.id;
+    const isMechanic = booking.mechanic_id === user.id;
+    if (!isAdmin && !isMechanic && !isCustomer) {
       return jsonResponse({ error: 'Not authorized to cancel this booking hold' }, 403);
+    }
+
+    if (isCustomer && !isAdmin) {
+      if (booking.payment_status === 'captured') {
+        return jsonResponse({ error: 'This job is already charged — contact support for refunds.' }, 400);
+      }
+      if (booking.status === 'ON_SITE' || booking.status === 'COMPLETED') {
+        return jsonResponse(
+          { error: 'Tech is already on site or finished — contact support to cancel.' },
+          400
+        );
+      }
     }
 
     const result = await cancelBookingHoldForRow(supabase, booking, { releaseJob: Boolean(releaseJob) });
