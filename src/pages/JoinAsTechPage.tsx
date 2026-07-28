@@ -86,6 +86,7 @@ const REQUIREMENTS = [
       'Insurance for tools / liability is strongly recommended (not required to join)',
       'Customers are told before the diagnostic hold that the working tech is responsible for damage they cause',
       'Stripe Express payout account (we walk you through Connect after approval)',
+      'IRS Form W-9 / tax ID (SSN or EIN) via Stripe before your first claimed job',
       'Professional communication with customers — you’re the face of Adaptivity on site',
       'No side cash / Zelle for Adaptivity jobs — all payments stay in-app',
     ],
@@ -100,6 +101,7 @@ const APPLY_NEEDS = [
   'ASE certs (if any)',
   'Pay preference: 70/30 revenue share or hourly base',
   'Work style: Multi-job or Standalone (changeable later in Settings)',
+  'W-9 tax ID (completed in Stripe Express before first job)',
 ];
 
 const TRADES = [

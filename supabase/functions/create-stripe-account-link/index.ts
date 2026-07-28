@@ -66,6 +66,20 @@ async function readExternalAccountFlags(accountId: string): Promise<{
   }
 }
 
+function taxIdRequirementsOpen(account: StripeAccount | null): boolean {
+  const due = [
+    ...(account?.requirements?.currently_due ?? []),
+    ...(account?.requirements?.past_due ?? []),
+  ];
+  return due.some(
+    (f) =>
+      f.includes('id_number') ||
+      f.includes('ssn') ||
+      f.includes('tax_id') ||
+      f === 'individual.verification.document'
+  );
+}
+
 function accountStatusPayload(
   account: StripeAccount | null,
   flags?: { hasDebitCardForInstant?: boolean; hasBankAccount?: boolean }
@@ -78,12 +92,15 @@ function accountStatusPayload(
       payoutsEnabled: false,
       transfersEnabled: false,
       readyForPayouts: false,
+      taxIdProvided: false,
       requirementsDue: [] as string[],
       hasDebitCardForInstant: false,
       hasBankAccount: false,
     };
   }
   const transfersEnabled = transfersCapabilityActive(account);
+  const taxIdProvided =
+    Boolean(account.details_submitted) && !taxIdRequirementsOpen(account);
   return {
     accountId: account.id,
     detailsSubmitted: Boolean(account.details_submitted),
@@ -95,6 +112,7 @@ function accountStatusPayload(
       Boolean(account.details_submitted) &&
       Boolean(account.charges_enabled) &&
       Boolean(account.payouts_enabled),
+    taxIdProvided,
     requirementsDue: account.requirements?.currently_due ?? [],
     hasDebitCardForInstant: flags?.hasDebitCardForInstant === true,
     hasBankAccount: flags?.hasBankAccount === true,
@@ -144,6 +162,34 @@ async function persistStripeAccountId(
   if (error) {
     throw new Error(`Could not save Stripe account to your profile: ${error.message}`);
   }
+}
+
+async function syncTaxIdAndW9Flag(
+  supabase: SupabaseClient,
+  profileId: string,
+  taxIdProvided: boolean
+) {
+  if (!taxIdProvided) {
+    await supabase
+      .from('mechanic_details')
+      .update({ tax_id_provided: false })
+      .eq('profile_id', profileId);
+    return;
+  }
+  // Tax ID collected in Stripe = W-9 purpose satisfied; never store SSN/EIN ourselves.
+  await supabase
+    .from('mechanic_details')
+    .update({
+      tax_id_provided: true,
+      w9_completed_at: new Date().toISOString(),
+    })
+    .eq('profile_id', profileId)
+    .is('w9_completed_at', null);
+
+  await supabase
+    .from('mechanic_details')
+    .update({ tax_id_provided: true })
+    .eq('profile_id', profileId);
 }
 
 async function clearStoredStripeAccountId(supabase: SupabaseClient, profileId: string) {
@@ -291,11 +337,13 @@ Deno.serve(async (req) => {
     const externalFlags = await readExternalAccountFlags(accountId);
 
     await persistStripeAccountId(supabase, user.id, accountId, techName);
+    const statusPayload = accountStatusPayload(account, externalFlags);
+    await syncTaxIdAndW9Flag(supabase, user.id, statusPayload.taxIdProvided);
 
     if (statusOnly) {
       const duplicateStripeAccounts = await countConnectAccountsForEmail(techEmail);
       return jsonResponse({
-        ...accountStatusPayload(account, externalFlags),
+        ...statusPayload,
         savedToProfile: true,
         duplicateStripeAccountsForEmail: duplicateStripeAccounts,
         usingAccountId: accountId,
@@ -315,7 +363,7 @@ Deno.serve(async (req) => {
         );
       }
       return jsonResponse({
-        ...accountStatusPayload(account, externalFlags),
+        ...statusPayload,
         loginUrl: login.url,
         expressDashboardUrl: login.url,
         usingAccountId: accountId,
@@ -359,7 +407,7 @@ Deno.serve(async (req) => {
     }
 
     return jsonResponse({
-      ...accountStatusPayload(account, externalFlags),
+      ...statusPayload,
       onboardingUrl: accountLink.url as string,
       duplicateStripeAccountsForEmail: await countConnectAccountsForEmail(techEmail),
       usingAccountId: accountId,

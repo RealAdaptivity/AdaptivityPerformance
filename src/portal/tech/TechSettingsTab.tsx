@@ -3,11 +3,14 @@ import {
   fetchTechConnectStatus,
   fetchLocalMechanicStripeId,
   fetchMyJobCapacity,
+  fetchTechW9Status,
+  markTechW9Complete,
   openExpressDashboard,
   openStripePayoutSetup,
   updateMyJobCapacity,
   type TechConnectStatus,
   type TechJobCapacity,
+  type TechW9Status,
 } from '../../services/techDispatch';
 import {
   linkedAccountId,
@@ -31,6 +34,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [jobCapacity, setJobCapacity] = useState<TechJobCapacity>('multi');
   const [savingCapacity, setSavingCapacity] = useState(false);
   const [capacityMsg, setCapacityMsg] = useState<string | null>(null);
+  const [w9, setW9] = useState<TechW9Status | null>(null);
+  const [w9Busy, setW9Busy] = useState(false);
+  const [w9Msg, setW9Msg] = useState<string | null>(null);
 
   const openStripeUrl = (url: string) => {
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -43,14 +49,19 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     if (!opts?.quiet) setLoading(true);
     setLoadError(null);
     try {
-      const [remote, localId] = await Promise.all([
+      const [remote, localId, w9Status] = await Promise.all([
         fetchTechConnectStatus(),
         fetchLocalMechanicStripeId(),
+        fetchTechW9Status(),
       ]);
       setLocalStripeId(localId);
+      setW9(w9Status);
       if (remote) {
         setStatus(remote);
         if (remote.accountId) writeCachedTechConnectStatus(remote);
+        if (remote.taxIdProvided && !w9Status.completed) {
+          setW9(await fetchTechW9Status());
+        }
       }
     } catch (e: unknown) {
       setLoadError(e instanceof Error ? e.message : 'Could not load Stripe status');
@@ -174,6 +185,59 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           </button>
         </div>
         {capacityMsg && <p className="text-[11px] text-slate-400">{capacityMsg}</p>}
+      </div>
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-white">IRS Form W-9 (required before first job)</h3>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Every mechanic must provide a tax ID (SSN or EIN) before claiming a dispatch. We collect it through{' '}
+          <strong className="text-slate-300">Stripe Express</strong> (same as Form W-9) so Adaptivity can issue 1099s.
+          We do not store your Social Security number in our database.
+        </p>
+        {w9?.completed ? (
+          <p className="text-[11px] text-emerald-400 leading-relaxed">
+            W-9 / tax ID on file
+            {w9.completedAt ? ` · ${new Date(w9.completedAt).toLocaleDateString()}` : ''}. You can claim jobs.
+          </p>
+        ) : (
+          <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
+            Not complete yet. Connect Stripe Express below and submit your SSN or EIN, then tap Mark W-9 complete
+            (or refresh — we auto-detect when Stripe has your tax ID).
+          </p>
+        )}
+        {w9Msg && <p className="text-[11px] text-slate-400">{w9Msg}</p>}
+        {!w9?.completed && (
+          <button
+            type="button"
+            disabled={w9Busy || !(status?.taxIdProvided || status?.detailsSubmitted)}
+            onClick={() => {
+              void (async () => {
+                setW9Busy(true);
+                setW9Msg(null);
+                try {
+                  await markTechW9Complete();
+                  setW9(await fetchTechW9Status());
+                  setW9Msg('W-9 marked complete. You can claim jobs.');
+                } catch (e: unknown) {
+                  setW9Msg(e instanceof Error ? e.message : 'Could not mark W-9 complete');
+                } finally {
+                  setW9Busy(false);
+                }
+              })();
+            }}
+            className="w-full py-3 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold disabled:opacity-50"
+          >
+            {w9Busy ? 'Saving…' : 'I submitted my tax ID in Stripe — mark W-9 complete'}
+          </button>
+        )}
+        <a
+          href="https://www.irs.gov/pub/irs-pdf/fw9.pdf"
+          target="_blank"
+          rel="noreferrer"
+          className="block text-[11px] text-orange-400 underline"
+        >
+          Download blank IRS Form W-9 (PDF)
+        </a>
       </div>
 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
