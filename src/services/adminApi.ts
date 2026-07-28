@@ -132,7 +132,7 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
   const { data, error } = await supabase
     .from('payments')
     .select(
-      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, stripe_transfer_id, tech_stripe_account_id, created_at'
+      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, stripe_transfer_id, tech_stripe_account_id, tech_transfer_cents, created_at'
     )
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -151,6 +151,31 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
     techStripeAccountId: row.tech_stripe_account_id as string | null,
     createdAt: row.created_at as string,
   }));
+}
+
+/** YTD tech_transfer totals by Connect account for 1099-NEC $600 tracking. */
+export async function fetchAdminNecYtdByStripeAccount(
+  year = new Date().getFullYear()
+): Promise<Map<string, number>> {
+  const start = `${year}-01-01T00:00:00.000Z`;
+  const end = `${year + 1}-01-01T00:00:00.000Z`;
+  const { data, error } = await supabase
+    .from('payments')
+    .select('tech_stripe_account_id, tech_transfer_cents, status, created_at')
+    .gte('created_at', start)
+    .lt('created_at', end)
+    .not('tech_stripe_account_id', 'is', null)
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  const map = new Map<string, number>();
+  for (const row of data || []) {
+    const status = String(row.status || '');
+    if (status !== 'succeeded' && status !== 'partially_refunded') continue;
+    const acct = row.tech_stripe_account_id as string;
+    if (!acct?.startsWith('acct_')) continue;
+    map.set(acct, (map.get(acct) || 0) + (Number(row.tech_transfer_cents) || 0));
+  }
+  return map;
 }
 
 export async function adminPatchBooking(

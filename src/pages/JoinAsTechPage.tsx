@@ -87,6 +87,7 @@ const REQUIREMENTS = [
       'Customers are told before the diagnostic hold that the working tech is responsible for damage they cause',
       'Stripe Express payout account (we walk you through Connect after approval)',
       'IRS Form W-9 / tax ID (SSN or EIN) via Stripe before your first claimed job',
+      'Form 1099-NEC: if you earn $600+ in a calendar year, Adaptivity files with the IRS and sends you a copy by Jan 31',
       'Professional communication with customers — you’re the face of Adaptivity on site',
       'No side cash / Zelle for Adaptivity jobs — all payments stay in-app',
     ],

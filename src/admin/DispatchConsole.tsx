@@ -27,10 +27,12 @@ import {
   fetchAdminBookings,
   fetchAdminPayments,
   fetchDispatchTechs,
+  fetchAdminNecYtdByStripeAccount,
   subscribeAdminBookings,
   type AdminPaymentRow,
   type DispatchTech,
 } from '../services/adminApi';
+import { FORM_1099_NEC_NOTICE, FORM_1099_NEC_THRESHOLD_DOLLARS } from '../content/taxForms';
 
 type TabId = 'dispatch' | 'map' | 'payments' | 'techs';
 type StatusFilter = 'ALL' | JobStatus;
@@ -61,6 +63,7 @@ export const DispatchConsole: React.FC = () => {
   const [tab, setTab] = useState<TabId>('dispatch');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [techs, setTechs] = useState<DispatchTech[]>([]);
+  const [necYtdByAcct, setNecYtdByAcct] = useState<Map<string, number>>(new Map());
   const [payments, setPayments] = useState<AdminPaymentRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
@@ -72,14 +75,16 @@ export const DispatchConsole: React.FC = () => {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [b, t, p] = await Promise.all([
+      const [b, t, p, nec] = await Promise.all([
         fetchAdminBookings(),
         fetchDispatchTechs(),
         fetchAdminPayments(),
+        fetchAdminNecYtdByStripeAccount().catch(() => new Map<string, number>()),
       ]);
       setBookings(b);
       setTechs(t);
       setPayments(p);
+      setNecYtdByAcct(nec);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load dispatch data');
     } finally {
@@ -449,7 +454,11 @@ export const DispatchConsole: React.FC = () => {
       )}
 
       {tab === 'techs' && (
-        <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <section className="space-y-4">
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-100/90 leading-relaxed">
+            <strong className="text-amber-300">1099-NEC:</strong> {FORM_1099_NEC_NOTICE}
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {techs.length === 0 ? (
             <p className="text-sm text-slate-500 col-span-full py-8 text-center">
               No technician profiles yet. Have techs sign in once on{' '}
@@ -457,7 +466,11 @@ export const DispatchConsole: React.FC = () => {
               sign up with the Tech tab and role <code className="text-orange-300">tech</code>.
             </p>
           ) : (
-            techs.map((t) => (
+            techs.map((t) => {
+              const ytdCents = t.stripeAccountId ? necYtdByAcct.get(t.stripeAccountId) || 0 : 0;
+              const ytdDollars = ytdCents / 100;
+              const over = ytdCents >= FORM_1099_NEC_THRESHOLD_DOLLARS * 100;
+              return (
               <div key={t.id} className="bg-[#12141c] border border-white/10 rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <Wrench className="w-4 h-4 text-orange-400" />
@@ -481,9 +494,17 @@ export const DispatchConsole: React.FC = () => {
                   )}
                   {t.toolsVerified ? ' · Tools verified' : ''}
                 </p>
+                <p className={`text-[11px] ${over ? 'text-amber-300' : 'text-slate-400'}`}>
+                  {new Date().getFullYear()} YTD tech share: ${ytdDollars.toFixed(2)}
+                  {over
+                    ? ` · 1099-NEC required (file + copy by Jan 31)`
+                    : ` / $${FORM_1099_NEC_THRESHOLD_DOLLARS}`}
+                </p>
               </div>
-            ))
+            );
+            })
           )}
+          </div>
         </section>
       )}
     </div>

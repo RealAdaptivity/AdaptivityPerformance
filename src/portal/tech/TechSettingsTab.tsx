@@ -4,6 +4,7 @@ import {
   fetchLocalMechanicStripeId,
   fetchMyJobCapacity,
   fetchTechW9Status,
+  fetchTechYearToDateCompensation,
   markTechW9Complete,
   openExpressDashboard,
   openStripePayoutSetup,
@@ -12,6 +13,11 @@ import {
   type TechJobCapacity,
   type TechW9Status,
 } from '../../services/techDispatch';
+import {
+  FORM_1099_NEC_NOTICE,
+  FORM_1099_NEC_PLATFORM_NOTE,
+  FORM_1099_NEC_THRESHOLD_DOLLARS,
+} from '../../content/taxForms';
 import {
   linkedAccountId,
   readCachedTechConnectStatus,
@@ -37,6 +43,12 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [w9, setW9] = useState<TechW9Status | null>(null);
   const [w9Busy, setW9Busy] = useState(false);
   const [w9Msg, setW9Msg] = useState<string | null>(null);
+  const [ytd, setYtd] = useState<{
+    year: number;
+    totalDollars: number;
+    thresholdDollars: number;
+    meetsNecThreshold: boolean;
+  } | null>(null);
 
   const openStripeUrl = (url: string) => {
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
@@ -49,13 +61,15 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     if (!opts?.quiet) setLoading(true);
     setLoadError(null);
     try {
-      const [remote, localId, w9Status] = await Promise.all([
+      const [remote, localId, w9Status, ytdPay] = await Promise.all([
         fetchTechConnectStatus(),
         fetchLocalMechanicStripeId(),
         fetchTechW9Status(),
+        fetchTechYearToDateCompensation().catch(() => null),
       ]);
       setLocalStripeId(localId);
       setW9(w9Status);
+      if (ytdPay) setYtd(ytdPay);
       if (remote) {
         setStatus(remote);
         if (remote.accountId) writeCachedTechConnectStatus(remote);
@@ -237,6 +251,42 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           className="block text-[11px] text-orange-400 underline"
         >
           Download blank IRS Form W-9 (PDF)
+        </a>
+      </div>
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
+        <h3 className="text-sm font-bold text-white">Form 1099-NEC</h3>
+        <p className="text-xs text-slate-400 leading-relaxed">{FORM_1099_NEC_NOTICE}</p>
+        <p className="text-[11px] text-slate-500 leading-relaxed">{FORM_1099_NEC_PLATFORM_NOTE}</p>
+        {ytd && (
+          <div className="rounded-xl border border-white/10 bg-[#0b0c10] px-3 py-2.5 space-y-1">
+            <p className="text-[11px] text-slate-400">
+              {ytd.year} YTD compensation (your 70% job share)
+            </p>
+            <p className="text-lg font-extrabold text-white tabular-nums">
+              ${ytd.totalDollars.toFixed(2)}
+              <span className="text-xs font-semibold text-slate-500 ml-2">
+                / ${FORM_1099_NEC_THRESHOLD_DOLLARS} threshold
+              </span>
+            </p>
+            <p
+              className={`text-[11px] ${
+                ytd.meetsNecThreshold ? 'text-amber-300' : 'text-emerald-400/90'
+              }`}
+            >
+              {ytd.meetsNecThreshold
+                ? `At or above $${FORM_1099_NEC_THRESHOLD_DOLLARS} — Adaptivity will file Form 1099-NEC and send you a copy by Jan 31 of the next year.`
+                : `Under $${FORM_1099_NEC_THRESHOLD_DOLLARS} so far this year — no 1099-NEC required until the threshold is met.`}
+            </p>
+          </div>
+        )}
+        <a
+          href="https://www.irs.gov/forms-pubs/about-form-1099-nec"
+          target="_blank"
+          rel="noreferrer"
+          className="block text-[11px] text-orange-400 underline"
+        >
+          IRS: About Form 1099-NEC
         </a>
       </div>
 
