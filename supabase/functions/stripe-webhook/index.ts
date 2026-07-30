@@ -132,20 +132,35 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+  // Platform + Connect destinations each get their own whsec_ — accept either.
+  const webhookSecrets = [
+    ...(Deno.env.get('STRIPE_WEBHOOK_SECRET') || '').split(','),
+    Deno.env.get('STRIPE_WEBHOOK_SECRET_CONNECT') || '',
+  ]
+    .map((s) => s.trim())
+    .filter(Boolean);
   const rawBody = await req.text();
   const signature = req.headers.get('stripe-signature');
   const secretKey = Deno.env.get('STRIPE_SECRET_KEY') || '';
   const isLive = secretKey.startsWith('sk_live_');
 
   // Live: always verify. Test: verify when secret is configured (recommended).
-  if (isLive && !webhookSecret?.trim()) {
+  if (isLive && webhookSecrets.length === 0) {
     console.error('[stripe-webhook] STRIPE_WEBHOOK_SECRET required for live mode');
     return new Response('Webhook secret not configured', { status: 500 });
   }
 
-  if (webhookSecret) {
-    if (!signature || !(await verifyStripeSignature(rawBody, signature, webhookSecret))) {
+  if (webhookSecrets.length > 0) {
+    let ok = false;
+    if (signature) {
+      for (const secret of webhookSecrets) {
+        if (await verifyStripeSignature(rawBody, signature, secret)) {
+          ok = true;
+          break;
+        }
+      }
+    }
+    if (!ok) {
       return new Response('Invalid signature', { status: 400 });
     }
   } else {
