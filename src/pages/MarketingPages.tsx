@@ -12,6 +12,7 @@ import { JoinAsTechPage } from './JoinAsTechPage';
 import { CareersPage } from './CareersPage';
 import { WantToLearnPage } from './WantToLearnPage';
 import { WantToTeachPage } from './WantToTeachPage';
+import { BlogIndexPage } from './BlogIndexPage';
 import type { SitePage } from '../site/siteRoute';
 
 type SharedActions = {
@@ -88,6 +89,9 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return <PerformanceSection onOpenBooking={actions.onOpenBooking} />;
     case 'faq':
       return <SEOContentBlock />;
+    case 'blog':
+      return <BlogIndexPage />;
+    case 'blogPost':
     case 'city':
     case 'home':
       return null;

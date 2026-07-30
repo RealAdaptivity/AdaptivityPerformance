@@ -21,6 +21,7 @@ export type DispatchBooking = {
   quoteStatus: string;
   holdAmountCents: number | null;
   paymentStatus: string;
+  preferredDate: string | null;
 };
 
 function mapRow(row: Record<string, unknown>): DispatchBooking {
@@ -40,6 +41,7 @@ function mapRow(row: Record<string, unknown>): DispatchBooking {
     quoteStatus: (row.quote_status as string) || 'none',
     holdAmountCents: (row.hold_amount_cents as number | null) ?? null,
     paymentStatus: (row.payment_status as string) || 'none',
+    preferredDate: (row.preferred_date as string | null) ?? null,
   };
 }
 

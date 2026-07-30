@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Adaptivity Performance — Flyer 8.5×11</title>
+  <style>
+    @page { size: letter; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #1a1a1a; color: #fff; }
+    .hint { max-width: 8.5in; margin: 12px auto; padding: 0 16px; color: #94a3b8; font-size: 12px; text-align: center; }
+    .flyer {
+      width: 8.5in; height: 11in; margin: 0 auto 20px; background: #0b0c10;
+      border-left: 0.1in solid #f97316; border-right: 0.1in solid #f97316;
+      padding: 0.35in 0.45in 0.3in; display: flex; flex-direction: column; align-items: center; text-align: center;
+      box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    }
+    .logo { width: 1.05in; height: 1.05in; margin-bottom: 0.08in; }
+    .brand { font-size: 22pt; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; }
+    .name { margin-top: 0.06in; font-size: 12pt; font-weight: 700; }
+    .tag { margin-top: 0.05in; color: #f97316; font-size: 9pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+    .sub { margin-top: 0.08in; color: #cbd5e1; font-size: 9pt; }
+    .cta { margin-top: 0.18in; width: 100%; background: #f97316; color: #0b0c10; border-radius: 0.1in; padding: 0.16in 0.12in; }
+    .cta strong { display: block; font-size: 13pt; font-weight: 900; }
+    .cta span { display: block; margin-top: 0.05in; font-size: 8.5pt; font-weight: 700; }
+    .h { margin-top: 0.2in; font-size: 9pt; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+    .cat { margin-top: 0.1in; color: #f97316; font-size: 8.5pt; font-weight: 800; text-align: left; width: 100%; }
+    .line { color: #e2e8f0; font-size: 8pt; line-height: 1.35; text-align: left; width: 100%; margin-top: 0.03in; }
+    .partners { margin-top: 0.16in; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 0.12in; text-align: left; }
+    .box { border: 1.5px solid #f97316; border-radius: 0.08in; background: #12141c; padding: 0.12in; }
+    .box.sky { border-color: #38bdf8; }
+    .box h4 { font-size: 9pt; font-weight: 800; margin-bottom: 0.05in; }
+    .box.sky h4 { color: #38bdf8; }
+    .box h4.tech { color: #f97316; }
+    .box p { font-size: 7.5pt; color: #cbd5e1; line-height: 1.35; }
+    .ref { margin-top: 0.12in; color: #f97316; font-size: 8.5pt; font-weight: 700; }
+    .cities { margin-top: 0.06in; color: #94a3b8; font-size: 7.5pt; line-height: 1.35; }
+    .contact { margin-top: auto; width: 100%; border: 2px solid #f97316; border-radius: 0.1in; background: #12141c; padding: 0.16in; }
+    .phone { color: #f97316; font-size: 18pt; font-weight: 900; }
+    .email { margin-top: 0.06in; font-size: 9pt; font-weight: 700; }
+    .web { margin-top: 0.04in; color: #f97316; font-size: 10pt; font-weight: 700; }
+    .addr { margin-top: 0.05in; color: #94a3b8; font-size: 8pt; }
+    .fine { margin-top: 0.1in; color: #64748b; font-size: 7pt; }
+    @media print {
+      body { background: #0b0c10; }
+      .hint { display: none; }
+      .flyer { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <p class="hint">Letter 8.5″×11″ — Chrome Print → Letter · Margins None · Background graphics ON</p>
+  <div class="flyer">
+    <img class="logo" src="logo-mark-on-transparent.png" alt="Adaptivity Performance" />
+    <div class="brand">Adaptivity Performance</div>
+    <div class="name">Michael Smith · Owner / Operator</div>
+    <div class="tag">Full-service mobile auto · Justin hub &amp; DFW</div>
+    <div class="sub">Driveway + shop · On-site pricing · Multi-trade techs · Open 24/7</div>
+
+    <div class="cta">
+      <strong>BOOK A $100 DIAGNOSTIC HOLD</strong>
+      <span>Labor + parts priced on site after inspection — you approve before we charge</span>
+    </div>
+
+    <div class="h">All services</div>
+    <div class="cat">Mechanical</div>
+    <div class="line">Diagnostics · Oil · Brakes · Battery / charging · A/C · Suspension · Exhaust · Cooling · Belts &amp; hoses · Ignition · Fuel · Transmission &amp; differential fluids</div>
+    <div class="cat">Tires · Wheels · Glass</div>
+    <div class="line">Mount / balance / flats · TPMS · Wheel &amp; alignment concerns · Windshield / auto glass</div>
+    <div class="cat">Appearance · Body · Detail</div>
+    <div class="line">Window tint · Vinyl wrap · PPF · Body / dent repair · Mobile detailing · Ceramic coating · Paint correction · Headlight restore</div>
+    <div class="cat">Audio · Interior · Performance</div>
+    <div class="line">Car audio · Interior lighting · Interior color · Accessories · Performance tune · Intake &amp; exhaust upgrades</div>
+
+    <div class="h">Partner programs</div>
+    <div class="partners">
+      <div class="box">
+        <h4 class="tech">Independent techs</h4>
+        <p>Join our multi-trade network · 70% tech / 30% platform · Mobile, Justin hub, or partner shops · Apply at AdaptivityPerformance.com/join</p>
+      </div>
+      <div class="box sky">
+        <h4>Shop &amp; garage hosts</h4>
+        <p>Partner your bay, lift, or garage · We book customers to you · Holds &amp; payouts on our platform · Apply at AdaptivityPerformance.com/partners</p>
+      </div>
+    </div>
+    <div class="ref">Referrals — $25 / $25 credit when a friend completes their first job</div>
+
+    <div class="h" style="margin-top:0.14in">We come to you</div>
+    <div class="cities">Justin · Northlake · Keller · Flower Mound · Southlake · Fort Worth · Arlington · Frisco · Denton · Roanoke · Argyle · Haslet · &amp; more DFW</div>
+
+    <div class="contact">
+      <div class="phone">(214) 620-3244</div>
+      <div class="email">Owner@adaptivityperformance.com</div>
+      <div class="web">AdaptivityPerformance.com</div>
+      <div class="addr">410 FM 156, Justin TX 76247 · Open 24/7</div>
+    </div>
+    <div class="fine">12-month nationwide warranty on qualifying work · Transparent on-site pricing</div>
+  </div>
+</body>
+</html>

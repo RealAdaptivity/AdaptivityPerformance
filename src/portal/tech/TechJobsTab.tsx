@@ -13,11 +13,29 @@ import {
 import { sendOnTheWaySmsAuto, sendChargeReceiptSmsAuto } from '../../services/sendSms';
 import { uploadJobPhoto } from '../../services/jobPhotos';
 import { techCanClaimServices } from '../../services/serviceCatalog';
+import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
+import {
+  fetchMyPartsExpenseClaims,
+  submitPartsExpenseClaim,
+  uploadExpenseReceiptFile,
+  type PartsExpenseClaim,
+} from '../../services/partsExpenses';
+import { todayISODate } from '../../services/scheduleWindows';
+import { JobChatPanel } from '../../components/JobChatPanel';
 
 type LineDraft = { title: string; laborDollars: string; partsDollars: string };
+type JobsFilter = 'today' | 'available' | 'active';
+
+function googleMapsDirectionsUrl(address: string): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+}
+
+function isTodaysJob(j: DispatchBooking, today: string): boolean {
+  return j.preferredDate === today || j.status === 'EN_ROUTE' || j.status === 'ON_SITE';
+}
 
 export const TechJobsTab: React.FC = () => {
-  const [filter, setFilter] = useState<'available' | 'active'>('available');
+  const [filter, setFilter] = useState<JobsFilter>('available');
   const [jobs, setJobs] = useState<DispatchBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeJob, setActiveJob] = useState<DispatchBooking | null>(null);
@@ -31,6 +49,18 @@ export const TechJobsTab: React.FC = () => {
   const [lines, setLines] = useState<LineDraft[]>([
     { title: '', laborDollars: '', partsDollars: '' },
   ]);
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDesc, setExpenseDesc] = useState('');
+  const [expenseBusy, setExpenseBusy] = useState(false);
+  const [claims, setClaims] = useState<PartsExpenseClaim[]>([]);
+
+  const loadClaims = useCallback(async () => {
+    try {
+      setClaims(await fetchMyPartsExpenseClaims());
+    } catch {
+      /* ignore if table missing */
+    }
+  }, []);
 
   const loadJobs = useCallback(async () => {
     try {
@@ -47,11 +77,12 @@ export const TechJobsTab: React.FC = () => {
     void supabase.auth.getSession().then(({ data }) => setMechanicId(data.session?.user?.id ?? null));
     void fetchMyTechSpecialties().then(setMySpecialties);
     loadJobs();
+    void loadClaims();
     const ch = subscribeDispatchBookings(() => loadJobs());
     return () => {
       void ch.unsubscribe();
     };
-  }, [loadJobs]);
+  }, [loadJobs, loadClaims]);
 
   useEffect(() => {
     if (!activeJob) return;
@@ -63,9 +94,19 @@ export const TechJobsTab: React.FC = () => {
     }
   }, [jobs, activeJob]);
 
+  const today = todayISODate();
   const available = jobs.filter(
     (j) => j.status === 'UNASSIGNED' && techCanClaimServices(mySpecialties, j.services)
   );
+  const todayJobs = jobs.filter((j) => isTodaysJob(j, today));
+
+  const openNavigate = (address: string) => {
+    if (!address?.trim()) {
+      setMessage('This job has no customer address on file.');
+      return;
+    }
+    window.open(googleMapsDirectionsUrl(address.trim()), '_blank', 'noopener,noreferrer');
+  };
 
   const textCustomerOnTheWay = async (job: DispatchBooking) => {
     const result = await sendOnTheWaySmsAuto({
@@ -174,6 +215,63 @@ export const TechJobsTab: React.FC = () => {
     input.click();
   };
 
+  const handleSubmitExpense = async () => {
+    if (!activeJob) return;
+    setExpenseBusy(true);
+    setMessage(null);
+    try {
+      await submitPartsExpenseClaim({
+        bookingId: activeJob.id,
+        amountDollars: Number(expenseAmount),
+        description: expenseDesc,
+        receiptPath: null,
+      });
+      setExpenseAmount('');
+      setExpenseDesc('');
+      setMessage('Parts reimbursement claim submitted.');
+      await loadClaims();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Claim failed');
+    } finally {
+      setExpenseBusy(false);
+    }
+  };
+
+  const handleAttachReceiptAndSubmit = async () => {
+    if (!activeJob) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      void (async () => {
+        setExpenseBusy(true);
+        setMessage(null);
+        try {
+          let receiptPath: string | null = null;
+          if (file) {
+            receiptPath = await uploadExpenseReceiptFile({ bookingId: activeJob.id, file });
+          }
+          await submitPartsExpenseClaim({
+            bookingId: activeJob.id,
+            amountDollars: Number(expenseAmount),
+            description: expenseDesc,
+            receiptPath,
+          });
+          setExpenseAmount('');
+          setExpenseDesc('');
+          setMessage(file ? 'Claim submitted with receipt.' : 'Claim submitted.');
+          await loadClaims();
+        } catch (e: unknown) {
+          setMessage(e instanceof Error ? e.message : 'Claim failed');
+        } finally {
+          setExpenseBusy(false);
+        }
+      })();
+    };
+    input.click();
+  };
+
   const handleCharge = async () => {
     if (!activeJob) return;
     if (!customerAgreed) {
@@ -274,6 +372,59 @@ export const TechJobsTab: React.FC = () => {
     }
   };
 
+  const renderAvailableCard = (job: DispatchBooking) => {
+    const match = specialtyMatchHint(mySpecialties, job.services);
+    return (
+      <div key={job.id} className="rounded-xl border border-white/10 bg-[#12141c] p-3 space-y-2">
+        <div className="flex justify-between gap-2">
+          <div>
+            <p className="text-sm font-bold text-white">{job.customer}</p>
+            <p className="text-[11px] text-slate-400">{job.vehicle}</p>
+            {job.preferredDate && (
+              <p className="text-[10px] text-slate-500">Preferred: {job.preferredDate}</p>
+            )}
+            <p className="text-[11px] text-slate-500">{job.services.join(' · ')}</p>
+            {match.chips.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1.5">
+                {match.chips.map((c) => (
+                  <span
+                    key={c}
+                    className="text-[10px] font-bold text-orange-300 bg-orange-500/15 px-2 py-0.5 rounded"
+                  >
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
+            {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
+          </div>
+          <span className="text-[10px] text-amber-400 font-bold shrink-0">$100 hold</span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => openNavigate(job.address)}
+            className="flex-1 py-2.5 bg-blue-700 rounded-xl text-xs font-bold text-white"
+          >
+            Navigate
+          </button>
+          {job.status === 'UNASSIGNED' && (
+            <button
+              type="button"
+              onClick={() => void handleClaim(job)}
+              className="flex-1 py-2.5 bg-orange-500 rounded-xl text-xs font-bold text-white"
+            >
+              Claim job
+            </button>
+          )}
+        </div>
+        {job.status !== 'UNASSIGNED' && (
+          <p className="text-[10px] text-orange-400 font-bold uppercase">{job.status.replace('_', ' ')}</p>
+        )}
+      </div>
+    );
+  };
+
   if (loading) return <p className="text-xs text-slate-500">Loading dispatch board…</p>;
 
   return (
@@ -285,7 +436,13 @@ export const TechJobsTab: React.FC = () => {
       )}
 
       <div className="flex gap-2">
-        {(['available', 'active'] as const).map((f) => (
+        {(
+          [
+            ['today', `Today (${todayJobs.length})`],
+            ['available', 'Available'],
+            ['active', 'Active'],
+          ] as const
+        ).map(([f, label]) => (
           <button
             key={f}
             type="button"
@@ -294,38 +451,29 @@ export const TechJobsTab: React.FC = () => {
               filter === f ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400'
             }`}
           >
-            {f}
+            {label}
           </button>
         ))}
       </div>
+
+      {filter === 'today' && (
+        <div className="space-y-2">
+          <p className="text-[11px] text-slate-400 font-bold uppercase">
+            Today’s route — preferred today or in progress
+          </p>
+          {todayJobs.length === 0 && (
+            <p className="text-xs text-slate-500">No jobs scheduled for today.</p>
+          )}
+          {todayJobs.map((job) => renderAvailableCard(job))}
+        </div>
+      )}
 
       {filter === 'available' && (
         <div className="space-y-2">
           {available.length === 0 && (
             <p className="text-xs text-slate-500">No open jobs matching your specialties.</p>
           )}
-          {available.map((job) => (
-            <div
-              key={job.id}
-              className="rounded-xl border border-white/10 bg-[#12141c] p-3 space-y-2"
-            >
-              <div className="flex justify-between gap-2">
-                <div>
-                  <p className="text-sm font-bold text-white">{job.customer}</p>
-                  <p className="text-[11px] text-slate-400">{job.vehicle}</p>
-                  <p className="text-[11px] text-slate-500">{job.services.join(' · ')}</p>
-                </div>
-                <span className="text-[10px] text-amber-400 font-bold">$100 hold</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleClaim(job)}
-                className="w-full py-2.5 bg-orange-500 rounded-xl text-xs font-bold text-white"
-              >
-                Claim job
-              </button>
-            </div>
-          ))}
+          {available.map((job) => renderAvailableCard(job))}
         </div>
       )}
 
@@ -339,6 +487,16 @@ export const TechJobsTab: React.FC = () => {
               $100 diagnostic hold on file — you set labor + parts after diagnosis.
             </p>
           </div>
+
+          <button
+            type="button"
+            onClick={() => openNavigate(activeJob.address)}
+            className="w-full py-2.5 bg-blue-700 rounded-xl text-xs font-bold text-white"
+          >
+            Navigate
+          </button>
+
+          <JobChatPanel bookingId={activeJob.id} selfId={null} title="Customer chat" />
 
           {jobPhase === 'en_route' && (
             <div className="space-y-2">
@@ -475,6 +633,45 @@ export const TechJobsTab: React.FC = () => {
             </div>
           )}
 
+          {(jobPhase === 'on_site' || jobPhase === 'complete') && (
+            <div className="space-y-2 border border-white/10 rounded-xl p-3 bg-[#0b0c10]">
+              <p className="text-[11px] font-bold text-slate-300 uppercase">Parts reimbursement</p>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Amount $"
+                value={expenseAmount}
+                onChange={(e) => setExpenseAmount(e.target.value)}
+                className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+              />
+              <input
+                placeholder="Description (e.g. brake pads)"
+                value={expenseDesc}
+                onChange={(e) => setExpenseDesc(e.target.value)}
+                className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={expenseBusy}
+                  onClick={() => void handleSubmitExpense()}
+                  className="flex-1 py-2.5 bg-white/10 rounded-xl text-xs font-bold text-white disabled:opacity-60"
+                >
+                  {expenseBusy ? '…' : 'Submit claim'}
+                </button>
+                <button
+                  type="button"
+                  disabled={expenseBusy}
+                  onClick={() => void handleAttachReceiptAndSubmit()}
+                  className="flex-1 py-2.5 bg-sky-700 rounded-xl text-xs font-bold text-white disabled:opacity-60"
+                >
+                  + Receipt
+                </button>
+              </div>
+            </div>
+          )}
+
           {jobPhase === 'complete' && (
             <p className="text-xs text-emerald-400">Job complete. Returning to board…</p>
           )}
@@ -495,6 +692,23 @@ export const TechJobsTab: React.FC = () => {
         <p className="text-xs text-slate-500 text-center py-8">
           Claim a job from Available to start dispatch.
         </p>
+      )}
+
+      {claims.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-white/10">
+          <p className="text-[11px] font-bold text-slate-300 uppercase">My parts claims</p>
+          {claims.slice(0, 10).map((c) => (
+            <div
+              key={c.id}
+              className="flex justify-between gap-2 text-[11px] text-slate-400 bg-[#12141c] border border-white/5 rounded-lg px-3 py-2"
+            >
+              <span>
+                ${(c.amountCents / 100).toFixed(2)} · {c.description}
+              </span>
+              <span className="font-bold text-slate-300 uppercase shrink-0">{c.status}</span>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

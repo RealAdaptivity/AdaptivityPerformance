@@ -29,6 +29,8 @@ const ADMIN_BOOKING_SELECT = `
   preferred_date,
   preferred_time_window,
   customer_notes,
+  preferred_mechanic_id,
+  hold_expires_at,
   mechanic:profiles!bookings_mechanic_id_fkey (
     id,
     full_name,
@@ -198,6 +200,8 @@ export async function adminPatchBooking(
     mechanicId?: string | null;
     etaMinutes?: number;
     distanceMiles?: number;
+    cancelReason?: string | null;
+    noShowReason?: string | null;
   }
 ) {
   const body: Record<string, unknown> = {};
@@ -205,7 +209,21 @@ export async function adminPatchBooking(
   if (patch.mechanicId !== undefined) body.mechanic_id = patch.mechanicId;
   if (patch.etaMinutes !== undefined) body.eta_minutes = patch.etaMinutes;
   if (patch.distanceMiles !== undefined) body.distance_miles = patch.distanceMiles;
+  if (patch.cancelReason !== undefined) body.cancel_reason = patch.cancelReason;
+  if (patch.noShowReason !== undefined) body.no_show_reason = patch.noShowReason;
 
+  const { error } = await supabase.from('bookings').update(body).eq('reference_code', referenceCode);
+  if (error) throw new Error(error.message);
+}
+
+async function adminSetBookingReason(
+  referenceCode: string,
+  patch: { cancelReason?: string; noShowReason?: string }
+) {
+  const body: Record<string, unknown> = {};
+  if (patch.cancelReason) body.cancel_reason = patch.cancelReason;
+  if (patch.noShowReason) body.no_show_reason = patch.noShowReason;
+  if (Object.keys(body).length === 0) return;
   const { error } = await supabase.from('bookings').update(body).eq('reference_code', referenceCode);
   if (error) throw new Error(error.message);
 }
@@ -217,25 +235,38 @@ export function subscribeAdminBookings(onChange: () => void) {
     .subscribe();
 }
 
-export async function adminCancelBookingHold(bookingReference: string, releaseJob = true) {
-  return invokeEdgeFunction<{
+export async function adminCancelBookingHold(
+  bookingReference: string,
+  releaseJob = true,
+  cancelReason?: string
+) {
+  const result = await invokeEdgeFunction<{
     ok: boolean;
     bookingReference: string;
     stripeStatus: string | null;
     released: boolean;
   }>('admin-cancel-booking-hold', { bookingReference, releaseJob });
+  if (cancelReason) {
+    await adminSetBookingReason(bookingReference, { cancelReason });
+  }
+  return result;
 }
 
 export async function adminAdjustCapture(
   bookingReference: string,
   captureAmountDollars: number,
-  markCompleted = false
+  markCompleted = false,
+  noShowReason?: string
 ) {
-  return invokeEdgeFunction('admin-adjust-capture', {
+  const result = await invokeEdgeFunction('admin-adjust-capture', {
     bookingReference,
     captureAmountDollars,
     markCompleted,
   });
+  if (noShowReason) {
+    await adminSetBookingReason(bookingReference, { noShowReason });
+  }
+  return result;
 }
 
 export async function adminRefundBooking(

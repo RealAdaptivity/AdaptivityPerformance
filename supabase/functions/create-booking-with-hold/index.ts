@@ -47,6 +47,8 @@ Deno.serve(async (req) => {
       preferredDate,
       preferredTimeWindow,
       customerNotes,
+      referralCode,
+      preferredMechanicId: preferredMechanicIdRaw,
     } = body;
 
     if (!customerName?.trim() || !customerAddress?.trim() || !Array.isArray(services) || services.length === 0) {
@@ -111,6 +113,30 @@ Deno.serve(async (req) => {
       resolvedPartnerId = partner?.id ?? null;
     }
 
+    let referralCodeUsed: string | null = null;
+    let referralCodeId: string | null = null;
+    const referralRaw =
+      typeof referralCode === 'string' ? referralCode.trim().toUpperCase() : '';
+    if (referralRaw) {
+      const { data: codeRow } = await supabase
+        .from('referral_codes')
+        .select('id, code, profile_id, active')
+        .eq('code', referralRaw)
+        .eq('active', true)
+        .maybeSingle();
+      if (codeRow?.code && codeRow.profile_id !== userId) {
+        referralCodeUsed = codeRow.code as string;
+        referralCodeId = codeRow.id as string;
+      }
+    }
+
+    const preferredMechanicId =
+      typeof preferredMechanicIdRaw === 'string' && preferredMechanicIdRaw.trim()
+        ? preferredMechanicIdRaw.trim()
+        : null;
+
+    const holdExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -137,6 +163,9 @@ Deno.serve(async (req) => {
           typeof customerNotes === 'string' && customerNotes.trim()
             ? customerNotes.trim().slice(0, 1000)
             : null,
+        referral_code_used: referralCodeUsed,
+        preferred_mechanic_id: preferredMechanicId,
+        hold_expires_at: holdExpiresAt,
         reference_code: '',
         payment_status: 'awaiting_card',
         hold_amount_cents: holdCents,
@@ -224,6 +253,15 @@ Deno.serve(async (req) => {
       console.error('[create-booking-with-hold] payments upsert:', paymentRowError.message);
     }
 
+    if (referralCodeId && userId) {
+      await supabase.from('referral_redemptions').insert({
+        referral_code_id: referralCodeId,
+        referred_profile_id: userId,
+        booking_id: booking.id,
+        status: 'pending',
+      });
+    }
+
     return jsonResponse({
       bookingReference: booking.reference_code,
       bookingId: booking.id,
@@ -231,6 +269,7 @@ Deno.serve(async (req) => {
       paymentIntentId: paymentIntent.id,
       holdAmountDollars: hold,
       holdMode: quote.mode,
+      holdExpiresAt,
       message:
         'Confirm your card for the $100 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
     });

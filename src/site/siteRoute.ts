@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { cityFromPath } from './seo';
+import { blogSlugFromPath } from '../services/blog';
 
 export type SitePage =
   | 'home'
@@ -16,9 +17,12 @@ export type SitePage =
   | 'coverage'
   | 'performance'
   | 'faq'
-  | 'city';
+  | 'blog'
+  | 'blogPost'
+  | 'city'
+  | 'referral';
 
-const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city'>, string> = {
+const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>, string> = {
   home: '',
   about: 'about',
   services: 'services',
@@ -33,13 +37,14 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city'>, string> = {
   coverage: 'coverage',
   performance: 'performance',
   faq: 'faq',
+  blog: 'blog',
 };
 
-const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'home'>> = Object.fromEntries(
-  (Object.entries(PAGE_SEGMENTS) as [Exclude<SitePage, 'city'>, string][])
+const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>> = Object.fromEntries(
+  (Object.entries(PAGE_SEGMENTS) as [Exclude<SitePage, 'city' | 'blogPost' | 'referral'>, string][])
     .filter(([, seg]) => seg)
     .map(([page, seg]) => [seg, page])
-) as Record<string, Exclude<SitePage, 'city' | 'home'>>;
+) as Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>>;
 
 /** Legacy homepage anchors → page routes */
 const HASH_TO_PAGE: Record<string, SitePage> = {
@@ -60,6 +65,7 @@ const HASH_TO_PAGE: Record<string, SitePage> = {
   train: 'learn',
   training: 'learn',
   faq: 'faq',
+  blog: 'blog',
 };
 
 function basePrefix(): string {
@@ -78,23 +84,47 @@ function normalizePath(pathname: string): string {
   return path;
 }
 
-export function sitePath(page: SitePage, hash?: string): string {
+export type NavigateOpts = { hash?: string; replace?: boolean; slug?: string };
+
+export function sitePath(page: SitePage, hashOrOpts?: string | NavigateOpts): string {
+  const opts: NavigateOpts =
+    typeof hashOrOpts === 'string' ? { hash: hashOrOpts } : hashOrOpts || {};
   const base = import.meta.env.BASE_URL || '/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+
   if (page === 'city') {
     const cleaned = normalizedBase.replace(/\/+/g, '/');
-    return hash ? `${cleaned}#${hash}` : cleaned;
+    return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
   }
-  const seg = PAGE_SEGMENTS[page];
+
+  if (page === 'blogPost' && opts.slug) {
+    const path = `${normalizedBase}blog/${opts.slug}`.replace(/\/+/g, '/');
+    return opts.hash ? `${path}#${opts.hash}` : path;
+  }
+
+  if (page === 'referral' && opts.slug) {
+    const path = `${normalizedBase}r/${opts.slug}`.replace(/\/+/g, '/');
+    return opts.hash ? `${path}#${opts.hash}` : path;
+  }
+
+  const seg =
+    page === 'blogPost'
+      ? 'blog'
+      : page === 'referral'
+        ? ''
+        : PAGE_SEGMENTS[page as Exclude<SitePage, 'city' | 'blogPost' | 'referral'>];
   const path = seg ? `${normalizedBase}${seg}` : normalizedBase;
   const cleaned = path.replace(/\/+/g, '/');
-  return hash ? `${cleaned}#${hash}` : cleaned;
+  return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
 }
 
 export function readSitePage(): SitePage {
   if (typeof window === 'undefined') return 'home';
   const path = normalizePath(window.location.pathname);
   if (cityFromPath(path)) return 'city';
+  if (/^\/r\/[A-Za-z0-9_-]{4,16}\/?$/.test(path)) return 'referral';
+  if (blogSlugFromPath(path)) return 'blogPost';
+  if (path === '/blog') return 'blog';
   if (path === '/' || path === '') {
     const hash = window.location.hash.replace(/^#/, '');
     if (hash && HASH_TO_PAGE[hash]) return HASH_TO_PAGE[hash];
@@ -127,8 +157,8 @@ export function useSitePathname(): string {
   return useSyncExternalStore(subscribeToRoute, readPathname, () => '/');
 }
 
-export function navigateSite(page: SitePage, opts?: { hash?: string; replace?: boolean }) {
-  const url = sitePath(page, opts?.hash);
+export function navigateSite(page: SitePage, opts?: NavigateOpts) {
+  const url = sitePath(page, opts);
   if (opts?.replace) {
     window.history.replaceState({}, '', url);
   } else {

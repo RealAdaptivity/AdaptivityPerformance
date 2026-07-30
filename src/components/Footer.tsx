@@ -97,6 +97,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">DFW / Fort Worth coverage</SiteLink></li>
             <li><SiteLink to="performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</SiteLink></li>
             <li><SiteLink to="faq" className="hover:text-orange-400 transition-colors">FAQ</SiteLink></li>
+            <li><SiteLink to="blog" className="hover:text-orange-400 transition-colors">Blog</SiteLink></li>
             <li><button onClick={onOpenTracker} className="text-orange-400 hover:underline">Track Live Repair / Dispatch</button></li>
           </ul>
         </div>

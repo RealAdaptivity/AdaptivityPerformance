@@ -7,13 +7,17 @@ import {
   subscribeBookingReference,
   type TrackedBooking,
 } from '../../services/trackBooking';
-import { fetchJobPhotosByReference, type JobPhoto } from '../../services/jobPhotos';
+import { fetchJobPhotosByReference, uploadJobPhoto, type JobPhoto } from '../../services/jobPhotos';
 import { openStreetMapEmbedUrl } from '../../config/stripeDashboard';
 import {
   formatPreferredSchedule,
   PREFERRED_TIME_WINDOWS,
   todayISODate,
 } from '../../services/scheduleWindows';
+import { GOOGLE_REVIEW_URL } from '../../site/seo';
+import { JobChatPanel } from '../../components/JobChatPanel';
+import { supabase } from '../../services/supabaseClient';
+import { formatLiveEta, etaMinutesFromGps } from '../../services/liveEta';
 
 const STATUS_LABEL: Record<string, string> = {
   UNASSIGNED: 'Finding your technician',
@@ -41,6 +45,11 @@ export const CustomerTrackTab: React.FC = () => {
   const [showReschedule, setShowReschedule] = useState(false);
   const [rescheduleDate, setRescheduleDate] = useState(todayISODate());
   const [rescheduleWindow, setRescheduleWindow] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
+  const [selfId, setSelfId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void supabase.auth.getUser().then(({ data }) => setSelfId(data.user?.id ?? null));
+  }, []);
 
   const load = useCallback(async (ref: string) => {
     setLoading(true);
@@ -78,6 +87,25 @@ export const CustomerTrackTab: React.FC = () => {
     booking.paymentStatus !== 'refunded';
 
   const canReschedule = Boolean(canCancel);
+  const canAddBeforePhoto =
+    Boolean(booking?.id) &&
+    (booking?.status === 'UNASSIGNED' || booking?.status === 'EN_ROUTE');
+
+  const handleAddBeforePhoto = async (file: File | null) => {
+    if (!booking?.id || !file) return;
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      await uploadJobPhoto({ bookingId: booking.id, file, kind: 'before', caption: 'Customer photo' });
+      setActionMsg('Photo shared with your technician.');
+      const pics = await fetchJobPhotosByReference(booking.referenceCode).catch(() => []);
+      setPhotos(pics);
+    } catch (e: unknown) {
+      setActionMsg(e instanceof Error ? e.message : 'Photo upload failed');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleCancel = async () => {
     if (!booking || !confirm('Cancel this booking and release the card hold?')) return;
@@ -188,13 +216,32 @@ export const CustomerTrackTab: React.FC = () => {
                 className="w-full h-48 rounded-xl border border-white/10"
                 loading="lazy"
               />
-              {booking.status === 'EN_ROUTE' && (
+              {(booking.status === 'EN_ROUTE' || booking.status === 'ON_SITE') && (
                 <p className="text-[11px] text-emerald-400">
-                  Live tech location · ETA ~{booking.etaMinutes} min
+                  {formatLiveEta(
+                    etaMinutesFromGps({
+                      techLat: booking.dispatchLat,
+                      techLng: booking.dispatchLng,
+                      fallbackEtaMinutes: booking.etaMinutes,
+                    }).minutes,
+                    booking.dispatchLat != null ? 'gps' : 'stored'
+                  )}
+                  {booking.distanceMiles ? ` · ~${booking.distanceMiles} mi` : ''}
                 </p>
               )}
             </div>
           )}
+          {booking.status === 'EN_ROUTE' &&
+            (booking.dispatchLat == null || booking.dispatchLng == null) && (
+              <p className="text-[11px] text-sky-300">ETA ~{booking.etaMinutes} min (updating…)</p>
+            )}
+
+          {booking.id &&
+            booking.status !== 'COMPLETED' &&
+            booking.status !== 'CANCELED' &&
+            selfId && (
+              <JobChatPanel bookingId={booking.id} selfId={selfId} title="Message your tech" />
+            )}
 
           {(booking.quoteStatus === 'awaiting_diagnostic' || booking.status === 'ON_SITE') &&
             booking.paymentStatus !== 'captured' && (
@@ -224,6 +271,17 @@ export const CustomerTrackTab: React.FC = () => {
                 </p>
               </div>
             )}
+
+          {booking.status === 'COMPLETED' && (
+            <a
+              href={GOOGLE_REVIEW_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full text-center py-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-200 text-xs font-bold"
+            >
+              ★ Leave a Google review — it helps a lot
+            </a>
+          )}
 
           {booking.paymentStatus === 'captured' && booking.status !== 'CANCELED' && (
             <div className="space-y-2 border border-white/10 rounded-xl p-3">
@@ -346,20 +404,38 @@ export const CustomerTrackTab: React.FC = () => {
             <p className="text-xs text-slate-400">Diagnostic visit only — $100 applied.</p>
           )}
 
-          {photos.length > 0 && (
+          {(canAddBeforePhoto || photos.length > 0) && (
             <div className="space-y-2">
               <p className="text-[11px] font-bold text-slate-300 uppercase">Job photos</p>
-              <div className="grid grid-cols-2 gap-2">
-                {photos.map((p) => (
-                  <a key={p.id} href={p.publicUrl} target="_blank" rel="noreferrer">
-                    <img
-                      src={p.publicUrl}
-                      alt={p.caption || p.kind}
-                      className="w-full h-24 object-cover rounded-lg border border-white/10"
-                    />
-                  </a>
-                ))}
-              </div>
+              {canAddBeforePhoto && (
+                <label className="block w-full text-center py-2.5 rounded-xl border border-orange-500/40 text-orange-300 text-xs font-bold cursor-pointer disabled:opacity-50">
+                  {busy ? 'Uploading…' : 'Add photo for tech'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={busy}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      e.target.value = '';
+                      void handleAddBeforePhoto(f);
+                    }}
+                  />
+                </label>
+              )}
+              {photos.length > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  {photos.map((p) => (
+                    <a key={p.id} href={p.publicUrl} target="_blank" rel="noreferrer">
+                      <img
+                        src={p.publicUrl}
+                        alt={p.caption || p.kind}
+                        className="w-full h-24 object-cover rounded-lg border border-white/10"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

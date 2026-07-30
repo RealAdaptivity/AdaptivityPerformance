@@ -34,6 +34,16 @@ import {
 } from '../services/adminApi';
 import { FORM_1099_NEC_NOTICE, FORM_1099_NEC_THRESHOLD_DOLLARS } from '../content/taxForms';
 import { techCanClaimServices } from '../services/serviceCatalog';
+import {
+  CANCEL_REASON_PRESETS,
+  NO_SHOW_REASON_PRESETS,
+  suggestedRefundForCancelReason,
+} from '../services/adminAnalytics';
+import {
+  autoAssignNearestSpecialtyMatch,
+  SLA_UNCLAIMED_ALERT_MINUTES,
+  unclaimedAgeMinutes,
+} from '../services/adminOpsExtras';
 
 type TabId = 'dispatch' | 'map' | 'payments' | 'techs';
 type StatusFilter = 'ALL' | JobStatus;
@@ -108,6 +118,15 @@ export const DispatchConsole: React.FC = () => {
     return bookings.filter((b) => b.status === statusFilter);
   }, [bookings, statusFilter]);
 
+  const slaBreaches = useMemo(
+    () =>
+      bookings.filter((b) => {
+        const age = unclaimedAgeMinutes(b);
+        return age != null && age >= SLA_UNCLAIMED_ALERT_MINUTES;
+      }).length,
+    [bookings]
+  );
+
   const selected = bookings.find((b) => b.id === selectedId) ?? null;
 
   const handlePatch = async (
@@ -118,7 +137,7 @@ export const DispatchConsole: React.FC = () => {
     setActionError(null);
     try {
       if (patch.status === 'CANCELED') {
-        await adminCancelBookingHold(referenceCode, true);
+        await adminCancelBookingHold(referenceCode, true, patch.cancelReason || undefined);
       } else {
         await adminPatchBooking(referenceCode, patch);
       }
@@ -130,7 +149,7 @@ export const DispatchConsole: React.FC = () => {
     }
   };
 
-  const handleCancelHold = async (referenceCode: string) => {
+  const handleCancelHold = async (referenceCode: string, cancelReason?: string) => {
     if (
       !window.confirm(
         'Cancel the Stripe card hold and release this job to the open pool? This cannot undo a captured payment.'
@@ -141,7 +160,7 @@ export const DispatchConsole: React.FC = () => {
     setSaving(true);
     setActionError(null);
     try {
-      await adminCancelBookingHold(referenceCode, true);
+      await adminCancelBookingHold(referenceCode, true, cancelReason);
       await load();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Cancel hold failed');
@@ -214,6 +233,11 @@ export const DispatchConsole: React.FC = () => {
                 </button>
               ))}
               <span className="ml-auto text-[10px] text-slate-500">{filtered.length} jobs</span>
+              {slaBreaches > 0 && (
+                <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded px-1.5 py-0.5">
+                  {slaBreaches} SLA &gt;{SLA_UNCLAIMED_ALERT_MINUTES}m
+                </span>
+              )}
             </div>
 
             <div className="overflow-auto flex-1">
@@ -225,7 +249,10 @@ export const DispatchConsole: React.FC = () => {
                 <p className="text-sm text-slate-500 text-center py-16">No bookings match this filter.</p>
               ) : (
                 <ul className="divide-y divide-white/5">
-                  {filtered.map((b) => (
+                  {filtered.map((b) => {
+                    const age = unclaimedAgeMinutes(b);
+                    const slaHot = age != null && age >= SLA_UNCLAIMED_ALERT_MINUTES;
+                    return (
                     <li key={b.id}>
                       <button
                         type="button"
@@ -239,7 +266,12 @@ export const DispatchConsole: React.FC = () => {
                             <p className="text-sm font-bold text-white">{b.id}</p>
                             <p className="text-xs text-slate-400 mt-0.5">{b.customerName}</p>
                           </div>
-                          {statusBadge(b.status)}
+                          <div className="flex flex-col items-end gap-1">
+                            {statusBadge(b.status)}
+                            {slaHot && (
+                              <span className="text-[9px] font-bold text-amber-300">{age}m unclaimed</span>
+                            )}
+                          </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1 truncate">{b.vehicle}</p>
                         <p className="text-[11px] text-slate-500">
@@ -247,7 +279,8 @@ export const DispatchConsole: React.FC = () => {
                         </p>
                       </button>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -264,11 +297,11 @@ export const DispatchConsole: React.FC = () => {
                 actionError={actionError}
                 onPatch={handlePatch}
                 onCancelHold={handleCancelHold}
-                onAdjustCapture={async (ref, amount, markCompleted) => {
+                onAdjustCapture={async (ref, amount, markCompleted, noShowReason) => {
                   setSaving(true);
                   setActionError(null);
                   try {
-                    await adminAdjustCapture(ref, amount, markCompleted);
+                    await adminAdjustCapture(ref, amount, markCompleted, noShowReason);
                     await load();
                   } catch (e) {
                     setActionError(e instanceof Error ? e.message : 'Capture failed');
@@ -518,8 +551,13 @@ type BookingDetailProps = {
   saving: boolean;
   actionError: string | null;
   onPatch: (ref: string, patch: Parameters<typeof adminPatchBooking>[1]) => Promise<void>;
-  onCancelHold: (ref: string) => Promise<void>;
-  onAdjustCapture: (ref: string, amount: number, markCompleted: boolean) => Promise<void>;
+  onCancelHold: (ref: string, cancelReason?: string) => Promise<void>;
+  onAdjustCapture: (
+    ref: string,
+    amount: number,
+    markCompleted: boolean,
+    noShowReason?: string
+  ) => Promise<void>;
   onRefund: (ref: string, amount?: number, forceAfterPayout?: boolean) => Promise<void>;
   onRetryTransfer: (ref: string) => Promise<void>;
 };
@@ -539,18 +577,68 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const [partialCapture, setPartialCapture] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [forceAfterPayout, setForceAfterPayout] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>('customer_request');
+  const [noShowReason, setNoShowReason] = useState<string>('no_answer');
+  const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
   const canCancelHold =
     booking.paymentIntentId &&
     booking.paymentStatus !== 'captured' &&
     booking.paymentStatus !== 'canceled' &&
     booking.paymentStatus !== 'refunded';
 
+  const age = unclaimedAgeMinutes(booking);
+  const suggestedRefund = suggestedRefundForCancelReason(cancelReason);
+
+  const handleAutoAssign = async () => {
+    setAutoAssignMsg(null);
+    try {
+      const result = await autoAssignNearestSpecialtyMatch(booking, techs);
+      if (!result) {
+        setAutoAssignMsg('No specialty-matched tech available.');
+        return;
+      }
+      setAutoAssignMsg(`Assigned ${result.techName}`);
+      await onPatch(booking.id, { mechanicId: result.techId, status: 'EN_ROUTE', etaMinutes: 30 });
+    } catch (e) {
+      setAutoAssignMsg(e instanceof Error ? e.message : 'Auto-assign failed');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div>
         <p className="text-lg font-extrabold text-white">{booking.id}</p>
         <p className="text-xs text-slate-500">{booking.dateCreated}</p>
+        {age != null && (
+          <p
+            className={`text-[11px] mt-1 font-bold ${
+              age >= SLA_UNCLAIMED_ALERT_MINUTES ? 'text-amber-300' : 'text-slate-400'
+            }`}
+          >
+            Unclaimed {age} min
+            {age >= SLA_UNCLAIMED_ALERT_MINUTES ? ` · SLA alert (>${SLA_UNCLAIMED_ALERT_MINUTES}m)` : ''}
+          </p>
+        )}
+        {booking.holdExpiresAt && booking.status !== 'COMPLETED' && booking.status !== 'CANCELED' && (
+          <p className="text-[11px] text-slate-500 mt-1">
+            Hold expires {new Date(booking.holdExpiresAt).toLocaleString()}
+          </p>
+        )}
       </div>
+
+      {booking.status === 'UNASSIGNED' && (
+        <div className="space-y-1">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => void handleAutoAssign()}
+            className="w-full text-xs font-bold text-sky-300 border border-sky-500/30 rounded-lg py-2 hover:bg-sky-500/10 disabled:opacity-50"
+          >
+            Auto-assign specialty match
+          </button>
+          {autoAssignMsg && <p className="text-[11px] text-slate-400">{autoAssignMsg}</p>}
+        </div>
+      )}
 
       {actionError && (
         <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
@@ -637,14 +725,30 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
       </div>
 
       {canCancelHold && (
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => void onCancelHold(booking.id)}
-          className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2 hover:bg-red-500/10 disabled:opacity-50"
-        >
-          Cancel card hold & release job
-        </button>
+        <div className="space-y-2">
+          <label className="block space-y-1">
+            <span className="text-[10px] uppercase font-bold text-slate-500">Cancel reason</span>
+            <select
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
+            >
+              {CANCEL_REASON_PRESETS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => void onCancelHold(booking.id, cancelReason)}
+            className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            Cancel card hold & release job
+          </button>
+        </div>
       )}
 
       {booking.paymentStatus === 'authorized' ||
@@ -671,6 +775,20 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           >
             Capture amount (hold)
           </button>
+          <label className="block space-y-1">
+            <span className="text-[10px] uppercase font-bold text-slate-500">No-show reason</span>
+            <select
+              value={noShowReason}
+              onChange={(e) => setNoShowReason(e.target.value)}
+              className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-sm"
+            >
+              {NO_SHOW_REASON_PRESETS.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             type="button"
             disabled={saving}
@@ -682,7 +800,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
               ) {
                 return;
               }
-              void onAdjustCapture(booking.id, 100, true);
+              void onAdjustCapture(booking.id, 100, true, noShowReason);
             }}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2"
           >
@@ -730,6 +848,32 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
                 ${amt}
               </button>
             ))}
+            {suggestedRefund != null && ![25, 50, 100].includes(suggestedRefund) && (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  setRefundAmount(String(suggestedRefund));
+                  void onRefund(booking.id, suggestedRefund, forceAfterPayout);
+                }}
+                className="px-2.5 py-1.5 text-[11px] font-bold text-orange-300 border border-orange-500/30 rounded-lg"
+              >
+                ${suggestedRefund} (reason)
+              </button>
+            )}
+            {suggestedRefund != null && [25, 50, 100].includes(suggestedRefund) && (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  setRefundAmount(String(suggestedRefund));
+                  void onRefund(booking.id, suggestedRefund, forceAfterPayout);
+                }}
+                className="px-2.5 py-1.5 text-[11px] font-bold text-orange-300 border border-orange-500/30 rounded-lg"
+              >
+                Reason → ${suggestedRefund}
+              </button>
+            )}
             <button
               type="button"
               disabled={saving}
@@ -742,6 +886,9 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
               Full
             </button>
           </div>
+          <p className="text-[10px] text-slate-500">
+            Cancel reason preset suggests ${suggestedRefund ?? '—'} (set reason above when canceling).
+          </p>
           <label className="flex items-center gap-2 text-[11px] text-slate-400">
             <input
               type="checkbox"
@@ -772,7 +919,14 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         <select
           value={booking.status}
           disabled={saving}
-          onChange={(e) => void onPatch(booking.id, { status: e.target.value as JobStatus })}
+          onChange={(e) => {
+            const next = e.target.value as JobStatus;
+            if (next === 'CANCELED') {
+              void onPatch(booking.id, { status: next, cancelReason });
+            } else {
+              void onPatch(booking.id, { status: next });
+            }
+          }}
           className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
         >
           {STATUS_OPTIONS.map((s) => (
@@ -782,6 +936,25 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           ))}
         </select>
       </label>
+
+      {booking.status !== 'CANCELED' && !canCancelHold && (
+        <label className="block space-y-1">
+          <span className="text-[10px] uppercase font-bold text-slate-500">
+            Cancel reason (if canceling via status)
+          </span>
+          <select
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
+          >
+            {CANCEL_REASON_PRESETS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <label className="block space-y-1">
         <span className="text-[10px] uppercase font-bold text-slate-500">Assigned technician</span>

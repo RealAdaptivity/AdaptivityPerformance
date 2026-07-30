@@ -23,6 +23,16 @@ export function googleMapsSearchUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
+/** Google Maps directions to a lat/lng destination. */
+export function googleMapsDestinationUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
+
+/** OpenStreetMap pin / marker deep link. */
+export function openStreetMapMarkerUrl(lat: number, lng: number, zoom = 15): string {
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=${zoom}/${lat}/${lng}`;
+}
+
 export function openStreetMapEmbedUrl(lat: number, lng: number, zoom = 11): string {
   const delta = 0.08 / (zoom / 10);
   const minLon = lng - delta;

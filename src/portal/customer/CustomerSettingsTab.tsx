@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
 import { supabase } from '../../services/supabaseClient';
+import { ensureReferralCode, getCreditBalance } from '../../services/referrals';
+import { SITE_ORIGIN, shareAdaptivity } from '../../site/seo';
 
 type Props = {
   profile: PortalProfile;
@@ -19,6 +21,27 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
   const [pwMsg, setPwMsg] = useState<string | null>(null);
   const [pwError, setPwError] = useState<string | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
+
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [creditCents, setCreditCents] = useState(0);
+  const [referralMsg, setReferralMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [code, balance] = await Promise.all([ensureReferralCode(), getCreditBalance()]);
+        if (cancelled) return;
+        setReferralCode(code);
+        setCreditCents(balance);
+      } catch {
+        if (!cancelled) setReferralCode(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const saveProfile = async () => {
     setProfileError(null);
@@ -70,6 +93,29 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
     }
   };
 
+  const shareReferral = async () => {
+    if (!referralCode) return;
+    setReferralMsg(null);
+    const result = await shareAdaptivity({
+      title: 'Adaptivity Performance',
+      text: `Use my Adaptivity referral link ${SITE_ORIGIN}/r/${referralCode} — we both get $25 credit after your first completed job.`,
+      url: `${SITE_ORIGIN}/r/${referralCode}`,
+    });
+    setReferralMsg(
+      result === 'shared' ? 'Shared!' : result === 'copied' ? 'Copied to clipboard.' : 'Could not share.'
+    );
+  };
+
+  const copyReferral = async () => {
+    if (!referralCode) return;
+    try {
+      await navigator.clipboard.writeText(`${SITE_ORIGIN}/r/${referralCode}`);
+      setReferralMsg('Referral link copied.');
+    } catch {
+      setReferralMsg('Could not copy.');
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-md">
       <div className="space-y-3">
@@ -100,6 +146,40 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
         >
           {saved ? 'Saved ✓' : 'Save profile'}
         </button>
+      </div>
+
+      <div className="space-y-3 border-t border-white/10 pt-4">
+        <p className="text-xs font-bold text-slate-300">Refer a friend — $25 / $25</p>
+        <p className="text-[11px] text-slate-500 leading-relaxed">
+          Share your code. When a friend books with it, you both earn $25 credit after their completed job.
+        </p>
+        {referralCode ? (
+          <>
+            <p className="font-mono text-lg text-orange-400 font-bold tracking-wider">{referralCode}</p>
+            <p className="text-xs text-emerald-400">
+              Credit balance: ${(creditCents / 100).toFixed(2)}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => void copyReferral()}
+                className="flex-1 py-2.5 border border-white/15 text-slate-200 rounded-xl text-xs font-bold"
+              >
+                Copy code
+              </button>
+              <button
+                type="button"
+                onClick={() => void shareReferral()}
+                className="flex-1 py-2.5 bg-orange-500/20 border border-orange-500/40 text-orange-300 rounded-xl text-xs font-bold"
+              >
+                Share
+              </button>
+            </div>
+            {referralMsg && <p className="text-xs text-slate-400">{referralMsg}</p>}
+          </>
+        ) : (
+          <p className="text-xs text-slate-500">Sign in to load your referral code.</p>
+        )}
       </div>
 
       <div className="space-y-3 border-t border-white/10 pt-4">

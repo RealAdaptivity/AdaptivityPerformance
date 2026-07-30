@@ -91,6 +91,17 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
     description: 'Hands-on learning paths for aspiring mobile and shop technicians.',
     path: '/learn',
   },
+  blog: {
+    title: 'Blog | Mobile Mechanic Tips — Adaptivity Performance',
+    description:
+      'DFW mobile repair guides: brake pricing, Justin vs dealership, and local service tips for Northlake and beyond.',
+    path: '/blog',
+  },
+  blogPost: {
+    title: 'Article | Adaptivity Performance Blog',
+    description: 'Mobile mechanic tips and local auto repair guides from Adaptivity Performance.',
+    path: '/blog',
+  },
 };
 
 export type CityLanding = {
@@ -173,6 +184,30 @@ export const CITY_LANDINGS: CityLanding[] = [
     neighborhoods: 'Haslet Town Center, Sendera Ranch',
     blurb:
       'Haslet and Sendera Ranch mobile service — brakes, oil, batteries, and diagnostics at your driveway.',
+  },
+  {
+    slug: 'keller',
+    city: 'Keller',
+    zips: ['76248', '76262'],
+    neighborhoods: 'Keller Town Center, Hidden Lakes, Solana',
+    blurb:
+      'Mobile mechanic for Keller — driveway brakes, oil, batteries, and diagnostics with a $100 hold and on-site pricing.',
+  },
+  {
+    slug: 'flower-mound',
+    city: 'Flower Mound',
+    zips: ['75022', '75028'],
+    neighborhoods: 'Flower Mound, Lakeside, Bridlewood corridor',
+    blurb:
+      'Flower Mound mobile auto repair without the shop wait. Book online for same-day driveway service across DFW north.',
+  },
+  {
+    slug: 'southlake',
+    city: 'Southlake',
+    zips: ['76092'],
+    neighborhoods: 'Southlake Town Square, Timarron, Westlake edge',
+    blurb:
+      'Southlake driveway service from Adaptivity — ASE-level mobile techs, transparent labor + parts after inspection.',
   },
 ];
 

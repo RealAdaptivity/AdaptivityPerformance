@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status'
+        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, vehicle_description, services, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -225,6 +225,20 @@ Deno.serve(async (req) => {
       totalChargeCents = holdCents + repairsCents;
     }
 
+    // Apply available account credit (ledger sum) up to this charge
+    let creditAppliedCents = 0;
+    if (booking.customer_id && Number(booking.credit_applied_cents || 0) <= 0) {
+      const { data: creditRows } = await supabase
+        .from('customer_credits')
+        .select('amount_cents')
+        .eq('profile_id', booking.customer_id);
+      const balance = (creditRows || []).reduce(
+        (sum, r) => sum + (Number(r.amount_cents) || 0),
+        0
+      );
+      creditAppliedCents = Math.max(0, Math.min(balance, totalChargeCents));
+    }
+
     // Invoice/audit row (not a customer-approval gate)
     await supabase
       .from('booking_quotes')
@@ -247,6 +261,9 @@ Deno.serve(async (req) => {
           mode === 'charge' && customerAgreedOnSite === true
             ? 'Customer agreed to on-site price before charge.'
             : '',
+          creditAppliedCents > 0
+            ? `Account credit applied: $${(creditAppliedCents / 100).toFixed(2)}`
+            : '',
         ]
           .filter(Boolean)
           .join(' '),
@@ -265,6 +282,7 @@ Deno.serve(async (req) => {
       paymentIntentId,
       holdCents,
       totalChargeCents,
+      creditAppliedCents,
       source:
         mode === 'no_show'
           ? 'tech_no_show'
@@ -272,6 +290,85 @@ Deno.serve(async (req) => {
             ? 'tech_diagnostic_only'
             : 'tech_set_price',
     });
+
+    if (creditAppliedCents > 0 && booking.customer_id) {
+      await supabase.from('customer_credits').insert({
+        profile_id: booking.customer_id,
+        amount_cents: -creditAppliedCents,
+        reason: `Applied to job ${booking.reference_code}`,
+        booking_id: booking.id,
+      });
+    }
+
+    // Earn referral credits when a referred job completes
+    if (booking.referral_code_used && booking.customer_id) {
+      const { data: pending } = await supabase
+        .from('referral_redemptions')
+        .select('id, referral_code_id, referrer_credit_cents, referred_credit_cents')
+        .eq('booking_id', booking.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      let redemption = pending;
+      if (!redemption) {
+        const { data: codeRow } = await supabase
+          .from('referral_codes')
+          .select('id, profile_id, credit_cents')
+          .eq('code', booking.referral_code_used)
+          .eq('active', true)
+          .maybeSingle();
+        if (codeRow?.id && codeRow.profile_id !== booking.customer_id) {
+          const { data: created } = await supabase
+            .from('referral_redemptions')
+            .insert({
+              referral_code_id: codeRow.id,
+              referred_profile_id: booking.customer_id,
+              booking_id: booking.id,
+              referrer_credit_cents: codeRow.credit_cents ?? 2500,
+              referred_credit_cents: codeRow.credit_cents ?? 2500,
+              status: 'pending',
+            })
+            .select('id, referral_code_id, referrer_credit_cents, referred_credit_cents')
+            .single();
+          redemption = created;
+        }
+      }
+
+      if (redemption?.id) {
+        const { data: codeMeta } = await supabase
+          .from('referral_codes')
+          .select('profile_id')
+          .eq('id', redemption.referral_code_id)
+          .maybeSingle();
+        const referrerId = codeMeta?.profile_id as string | undefined;
+        const referrerCredit = Number(redemption.referrer_credit_cents) || 2500;
+        const referredCredit = Number(redemption.referred_credit_cents) || 2500;
+
+        await supabase
+          .from('referral_redemptions')
+          .update({ status: 'earned', earned_at: new Date().toISOString() })
+          .eq('id', redemption.id);
+
+        if (referrerId) {
+          await supabase.from('customer_credits').insert({
+            profile_id: referrerId,
+            amount_cents: referrerCredit,
+            reason: `Referral reward — friend completed ${booking.reference_code}`,
+            booking_id: booking.id,
+            referral_redemption_id: redemption.id,
+          });
+        }
+        await supabase.from('customer_credits').insert({
+          profile_id: booking.customer_id,
+          amount_cents: referredCredit,
+          reason: `Welcome credit — completed referred job ${booking.reference_code}`,
+          booking_id: booking.id,
+          referral_redemption_id: redemption.id,
+        });
+      }
+    }
+
+    const reviewAskDueAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 
     await supabase
       .from('bookings')
@@ -281,8 +378,10 @@ Deno.serve(async (req) => {
         recommended_total_cents: totalChargeCents,
         payment_status: 'captured',
         captured_amount_cents: result.capturedCents,
+        credit_applied_cents: result.creditAppliedCents || creditAppliedCents,
         total_estimate: result.capturedCents / 100,
         status: 'COMPLETED',
+        review_ask_due_at: reviewAskDueAt,
         updated_at: new Date().toISOString(),
       })
       .eq('id', booking.id);
@@ -297,8 +396,35 @@ Deno.serve(async (req) => {
         .eq('id', quote.id);
     }
 
+    // Draft a Google Business post from this completed job city (best-effort)
+    try {
+      const zip = String(
+        (await supabase.from('bookings').select('zip_code').eq('id', booking.id).maybeSingle())
+          .data?.zip_code || ''
+      );
+      const cityHint =
+        zip.startsWith('76247') || /justin/i.test(String(booking.customer_address || ''))
+          ? 'justin'
+          : zip.startsWith('76226') || zip.startsWith('76262')
+            ? 'northlake'
+            : null;
+      const cityLabel = cityHint === 'justin' ? 'Justin' : cityHint === 'northlake' ? 'Northlake' : 'DFW';
+      await supabase.from('gbp_post_drafts').insert({
+        city_slug: cityHint,
+        booking_id: booking.id,
+        caption: `Another driveway job wrapped in ${cityLabel}, TX — mobile brakes, diagnostics, and more. Book a $100 diagnostic hold at adaptivityperformance.com. #MobileMechanic #${cityLabel}TX`,
+        status: 'draft',
+      });
+    } catch (e) {
+      console.warn('[capture-booking-payment] gbp draft failed', e);
+    }
+
     // Push when customer has Expo token. Receipt SMS is tech device composer (Twilio deferred).
     const capturedDollars = (result.capturedCents / 100).toFixed(2);
+    const creditNote =
+      result.creditAppliedCents > 0
+        ? ` Credit applied: $${(result.creditAppliedCents / 100).toFixed(2)}.`
+        : '';
     if (booking.customer_id) {
       try {
         const { data: tokens } = await supabase
@@ -311,7 +437,7 @@ Deno.serve(async (req) => {
         if (pushTokens.length) {
           await sendExpoPush(pushTokens, {
             title: 'Payment complete',
-            body: `$${capturedDollars} charged for job ${booking.reference_code}.`,
+            body: `$${capturedDollars} charged for job ${booking.reference_code}.${creditNote}`,
             data: { bookingReference: booking.reference_code, type: 'capture' },
           });
         }
@@ -327,6 +453,7 @@ Deno.serve(async (req) => {
       bookingReference: booking.reference_code,
       quoteId: quote?.id ?? null,
       capturedAmountDollars: result.capturedCents / 100,
+      creditAppliedDollars: (result.creditAppliedCents || 0) / 100,
       remainderDollars: result.remainderCents / 100,
       diagnosticFeeDollars: holdCents / 100,
       repairsDollars: repairsCents / 100,
@@ -335,6 +462,7 @@ Deno.serve(async (req) => {
       transferId: result.transferId,
       transferWarning: result.transferError,
       connectAccountId: result.techStripeAccountId,
+      reviewAskDueAt,
       message:
         mode === 'no_show'
           ? 'No-show hold charged. Job complete.'

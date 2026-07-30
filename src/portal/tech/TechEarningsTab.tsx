@@ -8,6 +8,7 @@ import {
   type TechPayoutRow,
 } from '../../services/techDispatch';
 import { countsTowardLedgerPending, formatTechPayoutLabel } from '../../services/payoutStatusLabels';
+import { openWeeklyEarningsPrintWindow } from '../../services/weeklyEarningsPdf';
 
 type CashOutChoice = 'instant' | 'standard';
 
@@ -119,6 +120,15 @@ export const TechEarningsTab: React.FC = () => {
   const heroCashable =
     method === 'instant' ? Math.max(instantDollars, availableDollars) : availableDollars;
 
+  const openWeeklyPdf = () => {
+    try {
+      openWeeklyEarningsPrintWindow(rows);
+    } catch (e: unknown) {
+      setMsgIsError(true);
+      setMsg(e instanceof Error ? e.message : 'Could not open weekly PDF');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-5">
@@ -229,7 +239,17 @@ export const TechEarningsTab: React.FC = () => {
           <p className={`text-[11px] mt-2 ${msgIsError ? 'text-red-400' : 'text-emerald-400'}`}>{msg}</p>
         )}
       </div>
-      <h3 className="text-sm font-bold text-white">Recent job payouts</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-bold text-white">Recent job payouts</h3>
+        <button
+          type="button"
+          onClick={openWeeklyPdf}
+          disabled={loading}
+          className="px-3 py-1.5 bg-orange-500/90 rounded-lg text-[10px] font-bold text-white disabled:opacity-60"
+        >
+          Weekly summary PDF
+        </button>
+      </div>
       {rows.length === 0 && !loading && <p className="text-xs text-slate-500">Completed captures appear here.</p>}
       {rows.map((row) => (
         <div key={row.id} className="bg-[#12141c] border border-white/10 rounded-xl p-3 text-xs gap-2">

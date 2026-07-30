@@ -1,10 +1,31 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Mail } from 'lucide-react';
 import {
   approveTechApplication,
   fetchTechApplications,
   rejectTechApplication,
   type TechApplicationRow,
 } from '../services/techApplications';
+
+const PORTAL_URL = 'https://adaptivityperformance.com/portal';
+
+export function techInviteMailto(email: string, fullName: string): string {
+  const subject = encodeURIComponent("You're approved — Adaptivity Tech onboarding");
+  const body = encodeURIComponent(
+    `Hi ${fullName || 'there'},\n\n` +
+      `You've been approved as an Adaptivity technician.\n\n` +
+      `Please:\n` +
+      `1. Create your Tech account at ${PORTAL_URL}\n` +
+      `2. Finish Stripe Connect payout setup\n` +
+      `3. Complete your W-9\n\n` +
+      `Welcome aboard,\nAdaptivity Performance`
+  );
+  return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+}
+
+function openTechInvite(email: string, fullName: string) {
+  window.location.href = techInviteMailto(email, fullName);
+}
 
 export const TechApplicationsAdmin: React.FC = () => {
   const [rows, setRows] = useState<TechApplicationRow[]>([]);
@@ -32,8 +53,12 @@ export const TechApplicationsAdmin: React.FC = () => {
     setBusyId(id);
     setMessage(null);
     try {
+      const row = rows.find((r) => r.id === id);
       const result = await approveTechApplication(id, { markToolsVerified });
       setMessage(result.nextStep || 'Technician approved.');
+      if (row?.email) {
+        openTechInvite(row.email, row.fullName);
+      }
       await load();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Approve failed');
@@ -102,6 +127,7 @@ export const TechApplicationsAdmin: React.FC = () => {
 
       {visible.map((row) => {
         const toolsOn = Object.entries(row.tools).filter(([, v]) => v).map(([k]) => k);
+        const needsInvite = row.status === 'approved' && !row.profileId;
         return (
           <div
             key={row.id}
@@ -171,6 +197,18 @@ export const TechApplicationsAdmin: React.FC = () => {
                 >
                   Reject
                 </button>
+              </div>
+            )}
+
+            {needsInvite && (
+              <div className="pt-1">
+                <a
+                  href={techInviteMailto(row.email, row.fullName)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 text-orange-300 text-xs font-bold hover:bg-orange-500/10"
+                >
+                  <Mail className="w-3 h-3" />
+                  Email invite
+                </a>
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ import { fetchApprovedPartners, type PartnerLocation } from '../services/partner
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../content/contractorLiability';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
 import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
+import { applyReferralCodeOnBooking } from '../services/referrals';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ interface BookingModalProps {
     totalEstimate?: number;
     calculatedDistanceMiles?: number;
     partnerLocationId?: string;
+    referralCode?: string;
+    preferredMechanicId?: string;
   };
   onBookingSubmitted?: (result: {
     bookingReference: string;
@@ -49,6 +52,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [referralInput, setReferralInput] = useState('');
   const [bookingRef, setBookingRef] = useState('');
   const [holdAmount, setHoldAmount] = useState(0);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -84,6 +88,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       if (initialEstimateData.partnerLocationId) {
         setPartnerLocationId(initialEstimateData.partnerLocationId);
         setServiceMode('shop');
+      }
+      if (initialEstimateData.referralCode) {
+        setReferralInput(initialEstimateData.referralCode.toUpperCase());
       }
     }
   }, [initialEstimateData]);
@@ -151,6 +158,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         preferredDate,
         preferredTimeWindow: preferredTime,
         customerNotes: notes.trim() || undefined,
+        preferredMechanicId: initialEstimateData?.preferredMechanicId || undefined,
+        ...applyReferralCodeOnBooking(referralInput),
       });
 
       setBookingRef(hold.bookingReference);
@@ -432,6 +441,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   onChange={e => setNotes(e.target.value)}
                   className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none"
                   placeholder="e.g. Parked on left side driveway, key will be under mat."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Referral code (optional)</label>
+                <input
+                  value={referralInput}
+                  onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-orange-500 focus:outline-none"
+                  placeholder="Friend's code"
+                  autoCapitalize="characters"
                 />
               </div>
 

@@ -18,6 +18,7 @@ import {
   type TechW9Status,
 } from '../../services/techDispatch';
 import { TECH_SPECIALTIES, type TechSpecialty } from '../../services/techSpecialties';
+import { TechOpsExtrasPanel } from './TechOpsExtrasPanel';
 import {
   FORM_1099_NEC_NOTICE,
   FORM_1099_NEC_PLATFORM_NOTE,
@@ -276,6 +277,8 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         </div>
         {capacityMsg && <p className="text-[11px] text-slate-400">{capacityMsg}</p>}
       </div>
+
+      <TechOpsExtrasPanel specialties={specialties} />
 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-white">IRS Form W-9 (required before first job)</h3>

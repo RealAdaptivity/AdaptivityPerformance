@@ -34,6 +34,10 @@ export interface Booking {
   distanceMiles: number;
   etaMinutes: number;
   dateCreated: string;
+  /** ISO created_at for SLA timers. */
+  createdAtIso?: string;
+  preferredMechanicId?: string | null;
+  holdExpiresAt?: string | null;
   /** Supabase row UUID (for authenticated updates). */
   supabaseId?: string;
   paymentIntentId?: string | null;

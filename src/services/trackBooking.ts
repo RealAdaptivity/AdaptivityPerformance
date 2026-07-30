@@ -9,6 +9,7 @@ export type QuoteLineItem = {
 };
 
 export type TrackedBooking = {
+  id: string;
   referenceCode: string;
   customerName: string;
   customerAddress: string;
@@ -40,6 +41,7 @@ function mapRow(row: Record<string, unknown>): TrackedBooking {
     ? (row.quote_line_items as QuoteLineItem[])
     : [];
   return {
+    id: row.id as string,
     referenceCode: row.reference_code as string,
     customerName: row.customer_name as string,
     customerAddress: row.customer_address as string,

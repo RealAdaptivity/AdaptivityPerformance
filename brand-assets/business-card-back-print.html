@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Adaptivity — Business Card Back</title>
+  <style>
+    @page { size: 3.5in 2in; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #111; }
+    .hint { max-width: 3.5in; margin: 16px auto; color: #94a3b8; font-size: 12px; text-align: center; }
+    .card {
+      width: 3.5in; height: 2in; margin: 0 auto 20px; background: #0b0c10; color: #fff;
+      border-right: 0.055in solid #f97316;
+      /* ~0.2" safe inset all sides (clear of stripe) */
+      padding: 0.2in 0.28in 0.18in 0.22in;
+      box-shadow: 0 8px 28px rgba(0,0,0,.4);
+    }
+    .h { color: #f97316; font-size: 7.5pt; font-weight: 900; letter-spacing: 0.1em; }
+    .offer { margin-top: 0.07in; font-size: 8pt; font-weight: 800; }
+    .sub { margin-top: 0.02in; font-size: 6pt; color: #94a3b8; }
+    .cat { margin-top: 0.07in; color: #f97316; font-size: 6pt; font-weight: 800; }
+    .line { font-size: 5.8pt; color: #e2e8f0; margin-top: 0.015in; line-height: 1.2; }
+    .web { margin-top: 0.09in; font-size: 7.5pt; font-weight: 700; }
+    .foot { margin-top: 0.03in; font-size: 5.8pt; color: #94a3b8; }
+    @media print {
+      body { background: #0b0c10; }
+      .hint { display: none; }
+      .card { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <p class="hint">Card back — safe-area padded · upload <code>business-card-back-walgreens.jpg</code></p>
+  <div class="card">
+    <div class="h">WHAT WE OFFER</div>
+    <div class="offer">$100 diagnostic hold</div>
+    <div class="sub">On-site labor + parts — you approve before charge</div>
+    <div class="cat">MECHANICAL</div>
+    <div class="line">Diagnostics · Oil · Brakes · Battery · A/C · Suspension · Fluids</div>
+    <div class="cat">TIRES · GLASS · BODY</div>
+    <div class="line">Mount / flats · Auto glass · Dent / body · Detailing · Ceramic</div>
+    <div class="cat">TINT · WRAP · AUDIO · PERFORMANCE</div>
+    <div class="line">Window tint · Vinyl / PPF · Car audio · Tunes · Upgrades</div>
+    <div class="cat">PARTNERS</div>
+    <div class="line">Techs 70/30 · Shop hosts · Referrals $25/$25</div>
+    <div class="web">AdaptivityPerformance.com</div>
+    <div class="foot">Mobile + Justin hub · 24/7 · DFW · 12-mo warranty</div>
+  </div>
+</body>
+</html>

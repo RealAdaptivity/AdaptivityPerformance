@@ -1,10 +1,24 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Mail } from 'lucide-react';
 import {
   approvePartnerApplication,
   fetchPartnerApplications,
   rejectPartnerApplication,
   type PartnerApplicationRow,
 } from '../services/partners';
+import { PartnerReport } from './PartnerReport';
+
+function partnerInviteMailto(email: string, contactName: string, businessName: string): string {
+  const subject = encodeURIComponent(`You're approved — ${businessName} partner listing`);
+  const body = encodeURIComponent(
+    `Hi ${contactName || 'there'},\n\n` +
+      `Your shop/garage partnership application for ${businessName} has been approved.\n\n` +
+      `Customers can now book jobs hosted at your location through Adaptivity.\n` +
+      `Portal: https://adaptivityperformance.com/portal\n\n` +
+      `Welcome aboard,\nAdaptivity Performance`
+  );
+  return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+}
 
 export const PartnersAdmin: React.FC = () => {
   const [rows, setRows] = useState<PartnerApplicationRow[]>([]);
@@ -31,8 +45,12 @@ export const PartnersAdmin: React.FC = () => {
     setBusyId(id);
     setMessage(null);
     try {
+      const row = rows.find((r) => r.id === id);
       await approvePartnerApplication(id);
       setMessage('Partner approved and listed for shop bookings.');
+      if (row?.email) {
+        window.location.href = partnerInviteMailto(row.email, row.contactName, row.businessName);
+      }
       await load();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Approve failed');
@@ -58,60 +76,78 @@ export const PartnersAdmin: React.FC = () => {
   if (loading) return <p className="text-xs text-slate-500">Loading partner applications…</p>;
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-slate-400">
-        Shop / garage partnership applications. Approving creates a host location customers can book.
-      </p>
-      {message && (
-        <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
-          {message}
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <p className="text-xs text-slate-400">
+          Shop / garage partnership applications. Approving creates a host location customers can book.
         </p>
-      )}
-      {rows.length === 0 && <p className="text-xs text-slate-500 py-6 text-center">No applications yet.</p>}
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-2 text-sm"
-        >
-          <div className="flex justify-between gap-2">
-            <p className="font-bold text-white">{row.businessName}</p>
-            <span className="text-[10px] font-bold uppercase text-slate-400">{row.status}</span>
-          </div>
-          <p className="text-xs text-slate-400">
-            {row.contactName} · {row.email}
-            {row.phone ? ` · ${row.phone}` : ''}
+        {message && (
+          <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+            {message}
           </p>
-          <p className="text-xs text-slate-500">
-            {[row.address, row.city, row.zipCode].filter(Boolean).join(', ') || 'Address TBD'}
-          </p>
-          <p className="text-[11px] text-slate-500">
-            Lift: {row.hasLift ? 'Yes' : 'No'}
-            {row.bayCount != null ? ` · ${row.bayCount} bays` : ''}
-            {row.hoursNote ? ` · ${row.hoursNote}` : ''}
-          </p>
-          {row.notes && <p className="text-xs text-slate-400">{row.notes}</p>}
-          {row.status === 'submitted' && (
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void approve(row.id)}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold disabled:opacity-50"
-              >
-                Approve & list
-              </button>
-              <button
-                type="button"
-                disabled={busyId === row.id}
-                onClick={() => void reject(row.id)}
-                className="px-3 py-1.5 rounded-lg border border-white/15 text-slate-300 text-xs font-bold disabled:opacity-50"
-              >
-                Reject
-              </button>
+        )}
+        {rows.length === 0 && <p className="text-xs text-slate-500 py-6 text-center">No applications yet.</p>}
+        {rows.map((row) => (
+          <div
+            key={row.id}
+            className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-2 text-sm"
+          >
+            <div className="flex justify-between gap-2">
+              <p className="font-bold text-white">{row.businessName}</p>
+              <span className="text-[10px] font-bold uppercase text-slate-400">{row.status}</span>
             </div>
-          )}
-        </div>
-      ))}
+            <p className="text-xs text-slate-400">
+              {row.contactName} · {row.email}
+              {row.phone ? ` · ${row.phone}` : ''}
+            </p>
+            <p className="text-xs text-slate-500">
+              {[row.address, row.city, row.zipCode].filter(Boolean).join(', ') || 'Address TBD'}
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Lift: {row.hasLift ? 'Yes' : 'No'}
+              {row.bayCount != null ? ` · ${row.bayCount} bays` : ''}
+              {row.hoursNote ? ` · ${row.hoursNote}` : ''}
+            </p>
+            {row.notes && <p className="text-xs text-slate-400">{row.notes}</p>}
+            {row.status === 'submitted' && (
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={busyId === row.id}
+                  onClick={() => void approve(row.id)}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold disabled:opacity-50"
+                >
+                  Approve & list
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === row.id}
+                  onClick={() => void reject(row.id)}
+                  className="px-3 py-1.5 rounded-lg border border-white/15 text-slate-300 text-xs font-bold disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </div>
+            )}
+            {row.status === 'approved' && row.email && (
+              <div className="pt-1">
+                <a
+                  href={partnerInviteMailto(row.email, row.contactName, row.businessName)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-sky-500/40 text-sky-300 text-xs font-bold hover:bg-sky-500/10"
+                >
+                  <Mail className="w-3 h-3" />
+                  Email invite
+                </a>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <h2 className="text-sm font-extrabold text-white mb-3">Partner payout report</h2>
+        <PartnerReport />
+      </div>
     </div>
   );
 };

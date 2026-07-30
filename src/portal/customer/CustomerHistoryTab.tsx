@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { openReceiptPrintWindow } from '../../services/receiptPdf';
+import { openReceiptEmail } from '../../services/receiptEmail';
+import { addFavoriteTech, submitWarrantyClaim } from '../../services/customerExtras';
 
-type Props = { onBookService: () => void; customerId: string };
+export type RebookPrefill = {
+  vehicleDescription?: string;
+  services?: string[];
+  preferredMechanicId?: string;
+};
+
+type Props = {
+  onBookService: (prefill?: RebookPrefill) => void;
+  customerId: string;
+};
 
 type HistoryRow = {
   id: string;
@@ -16,12 +27,14 @@ type HistoryRow = {
   customer_name: string;
   customer_address: string;
   created_at: string;
+  mechanic_id: string | null;
 };
 
 export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId }) => {
   const [rows, setRows] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,7 +44,7 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
       const { data, error: qErr } = await supabase
         .from('bookings')
         .select(
-          'id, reference_code, vehicle_description, services, total_estimate, captured_amount_cents, payment_status, status, customer_name, customer_address, created_at'
+          'id, reference_code, vehicle_description, services, total_estimate, captured_amount_cents, payment_status, status, customer_name, customer_address, created_at, mechanic_id'
         )
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
@@ -55,12 +68,12 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
     };
   }, [customerId]);
 
-  const printReceipt = (row: HistoryRow) => {
+  const receiptData = (row: HistoryRow) => {
     const total =
       row.captured_amount_cents != null
         ? row.captured_amount_cents / 100
         : Number(row.total_estimate) || 0;
-    openReceiptPrintWindow({
+    return {
       referenceCode: row.reference_code,
       customerName: row.customer_name,
       vehicle: row.vehicle_description,
@@ -69,7 +82,34 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
       paymentStatus: row.payment_status || row.status,
       dateLabel: new Date(row.created_at).toLocaleDateString(),
       address: row.customer_address,
-    });
+    };
+  };
+
+  const handleWarranty = async (row: HistoryRow) => {
+    const description = window.prompt(
+      'Describe the warranty issue (what failed, when you noticed it):'
+    );
+    if (!description?.trim()) return;
+    setMsg(null);
+    try {
+      await submitWarrantyClaim(row.id, description);
+      setMsg(`Warranty claim opened for ${row.reference_code}. We’ll follow up.`);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Could not submit claim');
+    }
+  };
+
+  const handleFavorite = async (row: HistoryRow) => {
+    if (!row.mechanic_id) {
+      setMsg('No technician on this job to save.');
+      return;
+    }
+    try {
+      await addFavoriteTech(row.mechanic_id);
+      setMsg('Technician saved — request them next time you book.');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Could not save tech');
+    }
   };
 
   return (
@@ -78,6 +118,7 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
         <h3 className="text-sm font-bold text-white mb-3">Past services</h3>
         {loading && <p className="text-xs text-slate-500">Loading…</p>}
         {error && <p className="text-xs text-red-400">{error}</p>}
+        {msg && <p className="text-xs text-emerald-400">{msg}</p>}
         {!loading && !error && rows.length === 0 && (
           <p className="text-xs text-slate-500">No bookings yet. Book a service to see history here.</p>
         )}
@@ -105,10 +146,48 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
                 <p className="text-sm font-bold text-emerald-400">${total.toFixed(2)}</p>
                 <button
                   type="button"
-                  onClick={() => printReceipt(row)}
-                  className="text-[11px] font-bold text-orange-400 hover:underline"
+                  onClick={() =>
+                    onBookService({
+                      vehicleDescription: row.vehicle_description,
+                      services: row.services,
+                      preferredMechanicId: row.mechanic_id || undefined,
+                    })
+                  }
+                  className="block w-full text-[11px] font-bold text-orange-300 hover:underline"
+                >
+                  Rebook →
+                </button>
+                {row.status === 'COMPLETED' && row.mechanic_id && (
+                  <button
+                    type="button"
+                    onClick={() => void handleFavorite(row)}
+                    className="block w-full text-[11px] font-bold text-sky-300 hover:underline"
+                  >
+                    Save tech
+                  </button>
+                )}
+                {row.status === 'COMPLETED' && (
+                  <button
+                    type="button"
+                    onClick={() => void handleWarranty(row)}
+                    className="block w-full text-[11px] font-bold text-amber-300 hover:underline"
+                  >
+                    Warranty claim
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => openReceiptPrintWindow(receiptData(row))}
+                  className="block w-full text-[11px] font-bold text-orange-400 hover:underline"
                 >
                   Receipt PDF →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openReceiptEmail(receiptData(row))}
+                  className="block w-full text-[11px] font-bold text-slate-400 hover:underline"
+                >
+                  Email receipt →
                 </button>
               </div>
             </div>
@@ -119,14 +198,14 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
         <h3 className="text-sm font-bold text-white mb-3">Book again</h3>
         <button
           type="button"
-          onClick={onBookService}
+          onClick={() => onBookService()}
           className="w-full py-3 bg-orange-500/15 border border-orange-500/40 text-orange-400 text-xs font-bold rounded-xl"
         >
           Schedule another mobile visit →
         </button>
       </section>
       <p className="text-[10px] text-slate-600">
-        Receipt opens a print dialog — choose “Save as PDF” in your browser.
+        Receipt PDF opens print dialog. Email opens your mail app with a plain-text copy.
       </p>
     </div>
   );

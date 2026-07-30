@@ -28,19 +28,32 @@ import {
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
+import { BlogPostPage } from './pages/BlogPostPage';
+import { ReferralLandingPage, referralCodeFromPath } from './pages/ReferralLandingPage';
+import { blogSlugFromPath } from './services/blog';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
   const page = useSitePage();
   const pathname = useSitePathname();
   const cityLanding = cityFromPath(pathname);
+  const blogSlug = blogSlugFromPath(pathname);
+  const referralCode = referralCodeFromPath(pathname);
 
   useEffect(() => {
     if (page === 'city' && cityLanding) {
       applyDocumentSeo(citySeo(cityLanding));
       return;
     }
-    applyDocumentSeo(PAGE_SEO[page] || PAGE_SEO.home);
+    if (page === 'blogPost') {
+      // BlogPostPage applies post-specific SEO once loaded
+      applyDocumentSeo(PAGE_SEO.blogPost);
+      return;
+    }
+    if (page === 'referral') {
+      return;
+    }
+    applyDocumentSeo(PAGE_SEO[page as keyof typeof PAGE_SEO] || PAGE_SEO.home);
   }, [page, cityLanding]);
 
   const isNativeTechApp =
@@ -106,8 +119,11 @@ function MainAppContent() {
     return <StandaloneTechApp />;
   }
 
-  const openBooking = () => {
-    setEstimateDataForBooking(null);
+  const openBooking = (opts?: { referralCode?: string }) => {
+    setEstimateDataForBooking({
+      locationType: 'mobile',
+      ...(opts?.referralCode ? { referralCode: opts.referralCode } : {}),
+    });
     setIsBookingOpen(true);
   };
 
@@ -225,6 +241,10 @@ function MainAppContent() {
           />
         ) : page === 'city' && cityLanding ? (
           <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
+        ) : page === 'referral' && referralCode ? (
+          <ReferralLandingPage onOpenBooking={openBooking} />
+        ) : page === 'blogPost' && blogSlug ? (
+          <BlogPostPage slug={blogSlug} />
         ) : (
           renderMarketingPage(page, pageActions)
         )}

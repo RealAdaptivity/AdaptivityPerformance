@@ -7,21 +7,46 @@ import { computeHoldQuote } from '../../services/holdPricing';
 import { loadGarageVehicles, vehicleLabel } from './garageStorage';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../../content/contractorLiability';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../../services/scheduleWindows';
+import { applyReferralCodeOnBooking } from '../../services/referrals';
+import type { RebookPrefill } from './CustomerHistoryTab';
+import { matchCatalogFromLabel } from '../../services/serviceCatalog';
 
 type Props = {
   profile: PortalProfile;
   preselectedVehicleId?: string;
+  prefill?: RebookPrefill;
   onGoTrack: () => void;
 };
 
-export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId, onGoTrack }) => {
+function catalogIdsFromTitles(titles: string[] | undefined): string[] {
+  if (!titles?.length) return ['diagnostic'];
+  const ids = titles
+    .map((t) => matchCatalogFromLabel(t)?.id || SERVICE_CATALOG.find((s) => s.title === t)?.id)
+    .filter((id): id is string => Boolean(id));
+  return ids.length ? [...new Set(ids)] : ['diagnostic'];
+}
+
+export const CustomerBookTab: React.FC<Props> = ({
+  profile,
+  preselectedVehicleId,
+  prefill,
+  onGoTrack,
+}) => {
   const vehicles = useMemo(() => loadGarageVehicles(), []);
-  const [vehicleId, setVehicleId] = useState(preselectedVehicleId || vehicles[0]?.id || '');
-  const [selected, setSelected] = useState<string[]>(['diagnostic']);
+  const matchedVehicle = useMemo(() => {
+    if (!prefill?.vehicleDescription) return undefined;
+    const needle = prefill.vehicleDescription.toLowerCase();
+    return vehicles.find((v) => vehicleLabel(v).toLowerCase() === needle);
+  }, [vehicles, prefill?.vehicleDescription]);
+  const [vehicleId, setVehicleId] = useState(
+    preselectedVehicleId || matchedVehicle?.id || vehicles[0]?.id || ''
+  );
+  const [selected, setSelected] = useState<string[]>(() => catalogIdsFromTitles(prefill?.services));
   const [address, setAddress] = useState('1234 Canyon Falls Dr, Northlake, TX 76226');
   const [zip, setZip] = useState('76226');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [referralInput, setReferralInput] = useState('');
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [step, setStep] = useState<'form' | 'card' | 'done'>('form');
@@ -72,6 +97,8 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
         preferredDate,
         preferredTimeWindow: preferredTime,
         customerNotes: notes.trim() || undefined,
+        ...applyReferralCodeOnBooking(referralInput),
+        preferredMechanicId: prefill?.preferredMechanicId || undefined,
       });
       setHoldAmount(hold.holdAmountDollars ?? quote.holdDollars);
       setBookingRef(hold.bookingReference);
@@ -231,6 +258,13 @@ export const CustomerBookTab: React.FC<Props> = ({ profile, preselectedVehicleId
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
         className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-xs"
+      />
+      <input
+        placeholder="Referral code (optional)"
+        value={referralInput}
+        onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+        className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm font-mono"
+        autoCapitalize="characters"
       />
       <div className="rounded-xl bg-[#0b0c10] border border-white/10 p-3 space-y-1">
         <p className="text-sm text-white font-bold">

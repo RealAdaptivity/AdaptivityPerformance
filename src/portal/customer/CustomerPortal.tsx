@@ -4,7 +4,7 @@ import type { PortalProfile } from '../portalAuth';
 import { CustomerGarageTab } from './CustomerGarageTab';
 import { CustomerBookTab } from './CustomerBookTab';
 import { CustomerTrackTab } from './CustomerTrackTab';
-import { CustomerHistoryTab } from './CustomerHistoryTab';
+import { CustomerHistoryTab, type RebookPrefill } from './CustomerHistoryTab';
 import { CustomerSettingsTab } from './CustomerSettingsTab';
 
 const TABS = [
@@ -30,9 +30,11 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
 }) => {
   const [tab, setTab] = useState('garage');
   const [bookVehicleId, setBookVehicleId] = useState<string | undefined>();
+  const [bookPrefill, setBookPrefill] = useState<RebookPrefill | undefined>();
 
-  const goBook = (vehicleId?: string) => {
+  const goBook = (vehicleId?: string, prefill?: RebookPrefill) => {
     setBookVehicleId(vehicleId);
+    setBookPrefill(prefill);
     setTab('book');
   };
 
@@ -43,24 +45,34 @@ export const CustomerPortal: React.FC<CustomerPortalProps> = ({
       badge="Customer"
       tabs={TABS}
       activeTab={tab}
-      onTabChange={setTab}
+      onTabChange={(id) => {
+        if (id !== 'book') {
+          setBookPrefill(undefined);
+          setBookVehicleId(undefined);
+        }
+        setTab(id);
+      }}
       onSignOut={onSignOut}
       adminViewAs={adminViewAs}
       onSwitchAdminView={onSwitchAdminView}
     >
       {tab === 'garage' && (
-        <CustomerGarageTab customerId={profile.id} onBookVehicle={goBook} />
+        <CustomerGarageTab customerId={profile.id} onBookVehicle={(id) => goBook(id)} />
       )}
       {tab === 'book' && (
         <CustomerBookTab
           profile={profile}
           preselectedVehicleId={bookVehicleId}
+          prefill={bookPrefill}
           onGoTrack={() => setTab('track')}
         />
       )}
       {tab === 'track' && <CustomerTrackTab />}
       {tab === 'history' && (
-        <CustomerHistoryTab customerId={profile.id} onBookService={goBook} />
+        <CustomerHistoryTab
+          customerId={profile.id}
+          onBookService={(prefill) => goBook(undefined, prefill)}
+        />
       )}
       {tab === 'settings' && <CustomerSettingsTab profile={profile} onSignOut={onSignOut} />}
     </PortalLayout>

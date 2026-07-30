@@ -32,6 +32,15 @@ interface NavbarProps {
   onOpenMembership: () => void;
 }
 
+function MenuSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="pt-1">
+      <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</p>
+      <div className="flex flex-col">{children}</div>
+    </div>
+  );
+}
+
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenBooking,
   onOpenTracker,
@@ -42,11 +51,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMembership,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const page = useSitePage();
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen) {
+      setMoreOpen(false);
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
     };
@@ -65,6 +78,8 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const close = () => setMenuOpen(false);
 
+  const itemClass =
+    'px-3 py-2 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5 text-left w-full';
   const linkClass = (id: string) =>
     `transition-colors px-2.5 py-1.5 rounded-lg hover:bg-white/5 ${
       page === id ? 'text-orange-400' : 'hover:text-orange-400'
@@ -112,23 +127,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <UserPlus className="w-3.5 h-3.5" />
               Join as Tech
             </SiteLink>
-            <SiteLink
-              to="learn"
-              className={`inline-flex items-center gap-1.5 ${linkClass('learn')} ${
-                page === 'learn' ? 'text-amber-400' : 'hover:text-amber-300'
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              Want to Learn
-            </SiteLink>
-            <SiteLink
-              to="wantToTeach"
-              className={`inline-flex items-center gap-1.5 ${linkClass('wantToTeach')} ${
-                page === 'wantToTeach' ? 'text-violet-300' : 'hover:text-violet-300'
-              }`}
-            >
-              Want to Teach
-            </SiteLink>
             <SiteLink to="careers" className={linkClass('careers')}>
               Careers
             </SiteLink>
@@ -154,204 +152,153 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,20rem)] bg-[#12141c] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 p-2 z-50">
+            <div className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,19rem)] max-h-[min(80vh,32rem)] overflow-y-auto bg-[#12141c] border border-white/10 rounded-2xl shadow-2xl shadow-black/50 p-2 z-50">
               <div className="flex flex-col text-sm font-medium text-slate-300">
-                <SiteLink
-                  to="home"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
+                <MenuSection label="Main">
+                  <SiteLink to="services" onNavigate={close} className={itemClass}>
+                    <Wrench className="w-4 h-4 text-orange-400" /> Services
+                  </SiteLink>
+                  <SiteLink to="quotes" onNavigate={close} className={itemClass}>
+                    <Calculator className="w-4 h-4 text-sky-400" /> Price Estimate
+                  </SiteLink>
+                  <SiteLink to="about" onNavigate={close} className={itemClass}>
+                    About
+                  </SiteLink>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenTracker();
+                      close();
+                    }}
+                    className={itemClass}
+                  >
+                    <Truck className="w-4 h-4 text-orange-400" /> Track Dispatch
+                  </button>
+                </MenuSection>
+
+                <MenuSection label="Work with us">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateSite('join');
+                      onOpenRecruitment();
+                      close();
+                    }}
+                    className={`${itemClass} text-emerald-300`}
+                  >
+                    <UserPlus className="w-4 h-4 text-emerald-400" /> Join as Tech
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onOpenPartnerApply();
+                      close();
+                    }}
+                    className={`${itemClass} text-sky-300`}
+                  >
+                    <Building2 className="w-4 h-4 text-sky-400" /> Partner your shop
+                  </button>
+                  <SiteLink to="careers" onNavigate={close} className={itemClass}>
+                    Careers
+                  </SiteLink>
+                </MenuSection>
+
+                <MenuSection label="Account">
+                  <a href={portalPath()} onClick={close} className={`${itemClass} text-orange-300 font-semibold`}>
+                    <LogIn className="w-4 h-4" /> Client / Tech Login
+                  </a>
+                  <a href="tel:2146203244" onClick={close} className={itemClass}>
+                    <Phone className="w-4 h-4 text-orange-400" /> (214) 620-3244
+                  </a>
+                </MenuSection>
+
+                <div className="my-1 border-t border-white/10" />
+
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((o) => !o)}
+                  aria-expanded={moreOpen}
+                  className="px-3 py-2 rounded-xl hover:bg-white/5 flex items-center justify-between text-slate-400 text-xs font-bold uppercase tracking-wider"
                 >
-                  Home
-                </SiteLink>
-                <SiteLink
-                  to="services"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
-                >
-                  <Wrench className="w-4 h-4 text-orange-400" /> Services
-                </SiteLink>
-                <SiteLink
-                  to="about"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
-                >
-                  About Us
-                </SiteLink>
-                <SiteLink
-                  to="quotes"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
-                >
-                  <Calculator className="w-4 h-4 text-sky-400" /> Price Estimate
-                </SiteLink>
-                <SiteLink
-                  to="join"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-emerald-300"
-                >
-                  <UserPlus className="w-4 h-4 text-emerald-400" /> Join as Tech
-                </SiteLink>
-                <SiteLink
-                  to="learn"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-amber-300"
-                >
-                  <GraduationCap className="w-4 h-4 text-amber-400" /> Want to Learn
-                </SiteLink>
-                <SiteLink
-                  to="wantToTeach"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-violet-300"
-                >
-                  <GraduationCap className="w-4 h-4 text-violet-300" /> Want to Teach
-                </SiteLink>
-                <SiteLink
-                  to="careers"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400 flex items-center gap-2.5"
-                >
-                  Careers
-                </SiteLink>
+                  <span>More</span>
+                  <span className="text-slate-500">{moreOpen ? '−' : '+'}</span>
+                </button>
+
+                {moreOpen && (
+                  <div className="flex flex-col pb-1">
+                    <SiteLink
+                      to="membership"
+                      onNavigate={() => {
+                        close();
+                        onOpenMembership();
+                      }}
+                      className={`${itemClass} text-orange-300`}
+                    >
+                      <ShieldCheck className="w-4 h-4 text-orange-400" /> VIP Shield
+                    </SiteLink>
+                    <SiteLink to="diagnostics" onNavigate={close} className={itemClass}>
+                      Symptom Checker
+                    </SiteLink>
+                    <SiteLink to="partners" onNavigate={close} className={itemClass}>
+                      <Building2 className="w-4 h-4 text-sky-400" /> Partner locations
+                    </SiteLink>
+                    <SiteLink to="coverage" onNavigate={close} className={itemClass}>
+                      <MapPin className="w-4 h-4 text-orange-400" /> Service area
+                    </SiteLink>
+                    <SiteLink to="performance" onNavigate={close} className={itemClass}>
+                      Performance builds
+                    </SiteLink>
+                    <SiteLink to="learn" onNavigate={close} className={`${itemClass} text-amber-300`}>
+                      <GraduationCap className="w-4 h-4 text-amber-400" /> Want to Learn
+                    </SiteLink>
+                    <SiteLink to="wantToTeach" onNavigate={close} className={`${itemClass} text-violet-300`}>
+                      <GraduationCap className="w-4 h-4 text-violet-300" /> Want to Teach
+                    </SiteLink>
+                    <SiteLink to="faq" onNavigate={close} className={itemClass}>
+                      FAQ
+                    </SiteLink>
+                    <SiteLink
+                      to="blog"
+                      onNavigate={close}
+                      className={`${itemClass} ${
+                        page === 'blog' || page === 'blogPost' ? 'text-orange-400' : ''
+                      }`}
+                    >
+                      Blog
+                    </SiteLink>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenGarage();
+                        close();
+                      }}
+                      className={`${itemClass} text-amber-300`}
+                    >
+                      <Car className="w-4 h-4 text-orange-400" /> My Garage
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenInspection();
+                        close();
+                      }}
+                      className={`${itemClass} text-blue-300`}
+                    >
+                      <FileCheck className="w-4 h-4 text-blue-400" /> DVI Report
+                    </button>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
                     onOpenBooking();
                     close();
                   }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-orange-300 sm:hidden"
-                >
-                  <Calendar className="w-4 h-4 text-orange-400" /> Schedule Service
-                </button>
-
-                <div className="my-1 border-t border-white/10" />
-
-                <SiteLink
-                  to="membership"
-                  onNavigate={() => {
-                    close();
-                    onOpenMembership();
-                  }}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-orange-300"
-                >
-                  <ShieldCheck className="w-4 h-4 text-orange-400" /> VIP Shield
-                </SiteLink>
-                <SiteLink
-                  to="diagnostics"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
-                >
-                  Symptom Checker
-                </SiteLink>
-                <SiteLink
-                  to="partners"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-sky-300"
-                >
-                  <Building2 className="w-4 h-4 text-sky-400" /> Partner locations
-                </SiteLink>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenPartnerApply();
-                    close();
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-sky-300"
-                >
-                  <Building2 className="w-4 h-4 text-sky-400" /> Partner your shop
-                </button>
-                <SiteLink
-                  to="coverage"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5"
-                >
-                  <MapPin className="w-4 h-4 text-orange-400" /> Service area
-                </SiteLink>
-                <SiteLink
-                  to="performance"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
-                >
-                  Performance builds
-                </SiteLink>
-                <SiteLink
-                  to="faq"
-                  onNavigate={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 hover:text-orange-400"
-                >
-                  FAQ
-                </SiteLink>
-
-                <div className="my-1 border-t border-white/10" />
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenGarage();
-                    close();
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-amber-300"
-                >
-                  <Car className="w-4 h-4 text-orange-400" /> My Garage
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenInspection();
-                    close();
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-blue-300"
-                >
-                  <FileCheck className="w-4 h-4 text-blue-400" /> DVI Report
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenTracker();
-                    close();
-                  }}
-                  className="text-left px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5"
-                >
-                  <Truck className="w-4 h-4 text-orange-400" /> Track Live Dispatch
-                </button>
-
-                <div className="my-1 border-t border-white/10" />
-
-                <a
-                  href={portalPath()}
-                  onClick={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5 text-orange-300 font-semibold"
-                >
-                  <LogIn className="w-4 h-4" /> Client / Tech Login
-                </a>
-                <a
-                  href="tel:2146203244"
-                  onClick={close}
-                  className="px-3 py-2.5 rounded-xl hover:bg-white/5 flex items-center gap-2.5"
-                >
-                  <Phone className="w-4 h-4 text-orange-400" /> (214) 620-3244
-                </a>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onOpenBooking();
-                    close();
-                  }}
-                  className="mt-1 mx-1 mb-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-orange-500/25"
+                  className="mt-2 mx-1 mb-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-orange-500/25"
                 >
                   <Calendar className="w-4 h-4" />
                   Schedule Service
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigateSite('join');
-                    onOpenRecruitment();
-                    close();
-                  }}
-                  className="mx-1 mb-1 flex items-center justify-center gap-2 border border-emerald-500/40 text-emerald-300 font-semibold py-2.5 rounded-xl hover:bg-emerald-500/10"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Open tech application
                 </button>
               </div>
             </div>

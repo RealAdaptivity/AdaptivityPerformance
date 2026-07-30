@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Adaptivity — Business Card Front</title>
+  <style>
+    @page { size: 3.5in 2in; margin: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #111; }
+    .hint { max-width: 3.5in; margin: 16px auto; color: #94a3b8; font-size: 12px; text-align: center; }
+    .card {
+      width: 3.5in; height: 2in; margin: 0 auto 20px; background: #0b0c10; color: #fff;
+      border-left: 0.05in solid #f97316;
+      padding: 0.22in 0.24in 0.2in 0.2in;
+      display: flex; align-items: center; gap: 0.14in;
+      box-shadow: 0 8px 28px rgba(0,0,0,.4);
+    }
+    .logo { width: 0.68in; height: 0.68in; flex-shrink: 0; }
+    .copy { min-width: 0; }
+    .company { font-size: 8.5pt; font-weight: 900; letter-spacing: 0.04em; line-height: 1.15; text-transform: uppercase; }
+    .name { margin-top: 0.08in; font-size: 9pt; font-weight: 700; }
+    .title { margin-top: 0.03in; color: #f97316; font-size: 8pt; font-weight: 700; }
+    .phone { margin-top: 0.1in; font-size: 9pt; font-weight: 600; }
+    .email { margin-top: 0.04in; font-size: 6.5pt; color: #d1d5db; }
+    .web { margin-top: 0.03in; color: #f97316; font-size: 7.5pt; font-weight: 700; }
+    @media print {
+      body { background: #0b0c10; }
+      .hint { display: none; }
+      .card { margin: 0; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <p class="hint">Front — safe-area padded · upload <code>business-card-walgreens.jpg</code></p>
+  <div class="card">
+    <img class="logo" src="logo-mark-on-transparent.png" alt="Adaptivity Performance" />
+    <div class="copy">
+      <div class="company">Adaptivity<br />Performance</div>
+      <div class="name">Michael Smith</div>
+      <div class="title">Owner / Operator</div>
+      <div class="phone">214-620-3244</div>
+      <div class="email">Owner@adaptivityperformance.com</div>
+      <div class="web">AdaptivityPerformance.com</div>
+    </div>
+  </div>
+</body>
+</html>

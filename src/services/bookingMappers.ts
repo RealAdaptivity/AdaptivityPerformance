@@ -26,6 +26,8 @@ export type BookingRow = {
   preferred_date?: string | null;
   preferred_time_window?: string | null;
   customer_notes?: string | null;
+  preferred_mechanic_id?: string | null;
+  hold_expires_at?: string | null;
   mechanic?: {
     id: string;
     full_name: string | null;
@@ -75,6 +77,9 @@ export function rowToBooking(row: BookingRow): Booking {
       hour: '2-digit',
       minute: '2-digit',
     }),
+    createdAtIso: row.created_at,
+    preferredMechanicId: row.preferred_mechanic_id ?? null,
+    holdExpiresAt: row.hold_expires_at ?? null,
     supabaseId: row.id,
     paymentIntentId: row.payment_intent_id ?? null,
     paymentStatus: row.payment_status ?? 'none',
