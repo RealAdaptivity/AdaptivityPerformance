@@ -20,6 +20,7 @@ import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
 import { BnplBanner } from '../components/BnplBanner';
 import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
 import { VinDecoderWidget } from '../components/VinDecoderWidget';
+import { FactoryWarrantySection } from '../components/FactoryWarrantySection';
 import { SiteLink } from '../site/SiteLink';
 import type { SitePage } from '../site/siteRoute';
 
@@ -135,6 +136,8 @@ export const HomePage: React.FC<Props> = ({
       />
 
       <ComparisonTable onOpenBooking={onOpenBooking} />
+
+      <FactoryWarrantySection onOpenBooking={onOpenBooking} />
 
       <FleetHOASection onOpenBooking={onOpenBooking} onOpenPartnerApply={onOpenPartnerApply} />
 
