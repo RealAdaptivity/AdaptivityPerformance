@@ -20,13 +20,15 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
   const [memberName, setMemberName] = useState('');
   const [memberPhone, setMemberPhone] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
-  const [vehicleInfo, setVehicleInfo] = useState('2021 Ford F-150 SuperCrew');
+  const [vehicleInfo, setVehicleInfo] = useState('');
   const [isActivated, setIsActivated] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedPlan(initialPlanId || 'vip');
       setIsActivated(false);
+      setSubmitError(null);
     }
   }, [isOpen, initialPlanId]);
 
@@ -53,7 +55,31 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
 
   const handleEnrollSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsActivated(true);
+    setSubmitError(null);
+    const planLabel = selectedPlan.toUpperCase();
+    const cycleLabel = billingCycle === 'annual' ? 'annual' : 'monthly';
+    const subject = encodeURIComponent(`Adaptivity Shield enrollment — ${planLabel} (${cycleLabel})`);
+    const body = encodeURIComponent(
+      [
+        'New Adaptivity Shield membership request',
+        '',
+        `Plan: ${planLabel}`,
+        `Billing: ${cycleLabel} ($${priceDisplay})`,
+        `Name: ${memberName.trim()}`,
+        `Phone: ${memberPhone.trim()}`,
+        `Email: ${memberEmail.trim()}`,
+        `Vehicle: ${vehicleInfo.trim()}`,
+        `Estimated visits/year: ${annualVisits}`,
+        '',
+        'Please follow up to complete Stripe payment and activate member perks.',
+      ].join('\n')
+    );
+    try {
+      window.location.href = `mailto:hello@adaptivityperformance.com?subject=${subject}&body=${body}`;
+      setIsActivated(true);
+    } catch {
+      setSubmitError('Could not open email. Call or text us to enroll, or email hello@adaptivityperformance.com.');
+    }
   };
 
   return (
@@ -94,9 +120,12 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
               <div className="w-16 h-16 bg-amber-500/20 border border-amber-500/40 rounded-full flex items-center justify-center mx-auto text-amber-400 animate-bounce">
                 <ShieldCheck className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-heading font-black text-white">Welcome to Adaptivity Shield VIP!</h3>
+              <h3 className="text-2xl font-heading font-black text-white">Enrollment request sent</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Member Badge Activated for <strong>{memberName}</strong> ({vehicleInfo}). Your <strong>{selectedPlan.toUpperCase()} Plan</strong> benefits (including $0 travel fees & labor discounts) are now linked to your phone number: <strong>{memberPhone}</strong>.
+                Thanks <strong>{memberName}</strong>. We received your interest in the{' '}
+                <strong>{selectedPlan.toUpperCase()}</strong> plan for <strong>{vehicleInfo}</strong>.
+                Complete the email draft (or call us) and we will send a Stripe payment link to activate
+                member perks on <strong>{memberPhone}</strong>. Online self-checkout is coming next.
               </p>
               <div className="pt-4">
                 <button
@@ -292,7 +321,10 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
 
               {/* Member Enrollment Form */}
               <form onSubmit={handleEnrollSubmit} className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 space-y-4">
-                <h4 className="font-heading font-extrabold text-sm text-white">Enrollment Member Information</h4>
+                <h4 className="font-heading font-extrabold text-sm text-white">Request membership enrollment</h4>
+                <p className="text-[11px] text-slate-400 -mt-2">
+                  Opens your email to hello@adaptivityperformance.com with plan details. We activate perks after payment.
+                </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>
                     <label className="block text-slate-300 font-semibold mb-1">Primary Member Full Name</label>
@@ -343,10 +375,15 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                   </div>
                 </div>
 
+                {submitError && (
+                  <p className="text-[11px] text-red-400 border border-red-500/30 rounded-lg px-3 py-2">{submitError}</p>
+                )}
+
                 <div className="pt-2 flex items-center justify-between border-t border-white/10">
                   <div className="text-xs">
-                    <span className="text-slate-400 block">Total Billed Today</span>
+                    <span className="text-slate-400 block">Plan price</span>
                     <span className="text-lg font-bold text-white font-mono">${priceDisplay}</span>
+                    <span className="text-[10px] text-slate-500 block">Billed after we send your payment link</span>
                   </div>
 
                   <button
@@ -354,7 +391,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                     className="px-7 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-xs shadow-lg shadow-amber-500/25 flex items-center space-x-2"
                   >
                     <Zap className="w-4 h-4 fill-white" />
-                    <span>Activate Adaptivity Shield Badge</span>
+                    <span>Request Adaptivity Shield enrollment</span>
                   </button>
                 </div>
               </form>
