@@ -10,11 +10,19 @@ interface VinDecodeResult {
   make: string;
   model: string;
   trim: string;
+  series: string;
   engine: string;
+  fuelType: string;
+  transmission: string;
   driveType: string;
   bodyClass: string;
+  gvwr: string;
+  brakeSystem: string;
+  doors: string;
   plantCountry: string;
+  plantCity: string;
   vin: string;
+  fullTechSpecString: string;
 }
 
 export const VinDecoderWidget: React.FC<VinDecoderWidgetProps> = ({ onBookWithVehicle }) => {
@@ -50,16 +58,43 @@ export const VinDecoderWidget: React.FC<VinDecoderWidgetProps> = ({ onBookWithVe
           throw new Error('VIN not found in NHTSA database. Double check character entry.');
         }
 
+        const engineSpec = [
+          result.DisplacementL ? `${result.DisplacementL}L` : '',
+          result.EngineConfiguration,
+          result.EngineCylinders ? `${result.EngineCylinders}-Cyl` : '',
+          result.EngineModel ? `(${result.EngineModel})` : '',
+        ].filter(Boolean).join(' ') || 'Standard Powertrain';
+
+        const fullSpecs = [
+          `${result.ModelYear} ${result.Make} ${result.Model}`,
+          result.Trim ? `Trim: ${result.Trim}` : '',
+          result.Series ? `Series: ${result.Series}` : '',
+          `Engine: ${engineSpec}`,
+          result.FuelTypePrimary ? `Fuel: ${result.FuelTypePrimary}` : '',
+          result.TransmissionStyle ? `Trans: ${result.TransmissionStyle}` : '',
+          result.DriveType ? `Drivetrain: ${result.DriveType}` : '',
+          result.BrakeSystemType ? `Brakes: ${result.BrakeSystemType}` : '',
+          `VIN: ${cleanVin}`
+        ].filter(Boolean).join(' | ');
+
         const decoded: VinDecodeResult = {
           year: result.ModelYear || 'N/A',
           make: result.Make || 'N/A',
           model: result.Model || 'N/A',
-          trim: result.Trim || result.Series || '',
-          engine: `${result.DisplacementL ? result.DisplacementL + 'L' : ''} ${result.EngineConfiguration || ''} ${result.EngineCylinders ? result.EngineCylinders + '-Cyl' : ''}`.trim() || 'Standard Powertrain',
+          trim: result.Trim || 'N/A',
+          series: result.Series || 'N/A',
+          engine: engineSpec,
+          fuelType: result.FuelTypePrimary || 'Gasoline',
+          transmission: result.TransmissionStyle || 'Automatic',
           driveType: result.DriveType || 'N/A',
           bodyClass: result.BodyClass || 'Vehicle',
+          gvwr: result.GVWR || 'Standard Class',
+          brakeSystem: result.BrakeSystemType || 'Hydraulic Disc/Drum',
+          doors: result.Doors || '4-Door',
           plantCountry: result.PlantCountry || 'USA',
+          plantCity: result.PlantCity || 'N/A',
           vin: cleanVin,
+          fullTechSpecString: fullSpecs,
         };
 
         setDecodedData(decoded);
@@ -150,27 +185,47 @@ export const VinDecoderWidget: React.FC<VinDecoderWidgetProps> = ({ onBookWithVe
                 </span>
               </div>
 
-              {/* Grid Specifications */}
+              {/* Full Technician Specification Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Engine / Powertrain</span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Trim & Package</span>
+                  <p className="text-amber-300 font-bold truncate">{decodedData.trim !== 'N/A' ? decodedData.trim : (decodedData.series !== 'N/A' ? decodedData.series : 'Base Trim')}</p>
+                </div>
+                <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Engine Specs</span>
                   <p className="text-white font-medium truncate">{decodedData.engine}</p>
+                </div>
+                <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Transmission</span>
+                  <p className="text-white font-medium truncate">{decodedData.transmission}</p>
+                </div>
+                <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Fuel Type</span>
+                  <p className="text-white font-medium truncate">{decodedData.fuelType}</p>
                 </div>
                 <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
                   <span className="text-[10px] text-slate-500 font-bold uppercase">Drivetrain</span>
                   <p className="text-white font-medium truncate">{decodedData.driveType}</p>
                 </div>
                 <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">Body Style</span>
-                  <p className="text-white font-medium truncate">{decodedData.bodyClass}</p>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Brake System</span>
+                  <p className="text-white font-medium truncate">{decodedData.brakeSystem}</p>
+                </div>
+                <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">Body / Doors</span>
+                  <p className="text-white font-medium truncate">{decodedData.bodyClass} ({decodedData.doors})</p>
+                </div>
+                <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
+                  <span className="text-[10px] text-slate-500 font-bold uppercase">GVWR Rating</span>
+                  <p className="text-white font-medium truncate">{decodedData.gvwr}</p>
                 </div>
                 <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5">
                   <span className="text-[10px] text-slate-500 font-bold uppercase">Assembly Plant</span>
-                  <p className="text-white font-medium truncate">{decodedData.plantCountry}</p>
+                  <p className="text-white font-medium truncate">{decodedData.plantCity !== 'N/A' ? `${decodedData.plantCity}, ` : ''}{decodedData.plantCountry}</p>
                 </div>
-                <div className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-0.5 sm:col-span-2">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase">VIN Verified</span>
-                  <p className="text-amber-300 font-mono font-bold truncate">{decodedData.vin}</p>
+                <div className="bg-[#0b0c10] p-3 rounded-xl border border-orange-500/30 space-y-0.5 sm:col-span-3">
+                  <span className="text-[10px] text-orange-400 font-bold uppercase">Technician Dispatch Payload (Full VIN Spec String)</span>
+                  <p className="text-slate-300 font-mono text-[11px] font-semibold tracking-wide break-all leading-snug">{decodedData.fullTechSpecString}</p>
                 </div>
               </div>
 
