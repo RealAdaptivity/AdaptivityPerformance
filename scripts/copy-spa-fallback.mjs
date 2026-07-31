@@ -11,4 +11,12 @@ if (!fs.existsSync(index)) {
 }
 
 fs.copyFileSync(index, fallback);
-console.log('Copied index.html → 404.html for SPA deep links (GitHub Pages /admin)');
+
+// GitHub Pages / custom domain: /portal and /admin must be real directories or they hard-404.
+for (const route of ['portal', 'admin', 'login']) {
+  const dir = path.join(dist, route);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.copyFileSync(index, path.join(dir, 'index.html'));
+}
+
+console.log('Copied index.html → 404.html + portal/admin/login for SPA deep links');

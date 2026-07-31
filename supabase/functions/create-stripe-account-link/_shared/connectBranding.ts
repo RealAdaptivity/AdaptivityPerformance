@@ -6,8 +6,8 @@ export const ADAPTIVITY_BRAND = {
   supportPhone: '2146203244',
 } as const;
 
-/** Public marketing / portal host (GitHub Pages). */
-export const DEFAULT_PLATFORM_SITE = 'https://realadaptivity.github.io/AdaptivityPerformance';
+/** Public marketing / portal host (custom domain). */
+export const DEFAULT_PLATFORM_SITE = 'https://adaptivityperformance.com';
 
 function stripPortalPath(pathname: string): string {
   return pathname.replace(/\/portal\/?$/i, '').replace(/\/$/, '') || '/';

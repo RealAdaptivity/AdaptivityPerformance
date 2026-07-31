@@ -1,7 +1,7 @@
 import { portalPath } from '../portal/portalRoute';
 
 /** Stripe Connect Express return/refresh URLs (must be absolute HTTPS). */
-export const PROD_PORTAL_SITE = 'https://realadaptivity.github.io/AdaptivityPerformance';
+export const PROD_PORTAL_SITE = 'https://adaptivityperformance.com';
 
 function portalAbsoluteUrl(): string {
   if (typeof window === 'undefined') {
