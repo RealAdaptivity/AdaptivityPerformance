@@ -116,16 +116,14 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
       if (isMounted) {
         if (fetched && fetched.length > 0) {
           setAvailableModels(fetched);
-          setSelectedModel(fetched[0]);
         }
         setModelsLoading(false);
       }
     }
 
-    const brandEngines = getEnginesForMake(selectedMake);
-    const brandTrims = getTrimsForMake(selectedMake);
-    if (brandEngines.length > 0) setSelectedEngine(brandEngines[0]);
-    if (brandTrims.length > 0) setSelectedTrim(brandTrims[0]);
+    setSelectedModel('');
+    setSelectedTrim('');
+    setSelectedEngine('');
 
     loadModels();
     return () => { isMounted = false; };
@@ -458,9 +456,10 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                       <select 
                         value={selectedModel} 
                         onChange={e => setSelectedModel(e.target.value)}
-                        disabled={modelsLoading}
+                        disabled={modelsLoading || !selectedMake}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-sm font-bold text-white focus:border-orange-500 focus:outline-none disabled:opacity-50"
                       >
+                        <option value="">-- Select Model --</option>
                         {availableModels.map(mod => <option key={mod} value={mod}>{mod}</option>)}
                       </select>
                       
@@ -477,12 +476,16 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                   {/* Row 3: Trim & Engine Customization */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Trim Level / Package ({selectedMake})</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Trim Level / Package {selectedMake ? `(${selectedMake})` : ''}
+                      </label>
                       <select 
                         value={selectedTrim} 
                         onChange={e => setSelectedTrim(e.target.value)}
-                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-orange-500 focus:outline-none mb-1.5"
+                        disabled={!selectedMake}
+                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-orange-500 focus:outline-none mb-1.5 disabled:opacity-50"
                       >
+                        <option value="">-- Select Trim Level --</option>
                         {getTrimsForMake(selectedMake).map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                       <input 
@@ -495,12 +498,16 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Engine Size & Fuel Specs ({selectedMake})</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">
+                        Engine Size & Fuel Specs {selectedMake ? `(${selectedMake})` : ''}
+                      </label>
                       <select 
                         value={selectedEngine} 
                         onChange={e => setSelectedEngine(e.target.value)}
-                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-xs font-semibold text-amber-400 focus:border-orange-500 focus:outline-none mb-1.5"
+                        disabled={!selectedMake}
+                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-xs font-semibold text-amber-400 focus:border-orange-500 focus:outline-none mb-1.5 disabled:opacity-50"
                       >
+                        <option value="">-- Select Engine Specs --</option>
                         {getEnginesForMake(selectedMake).map(eng => <option key={eng} value={eng}>{eng}</option>)}
                       </select>
                       <input 
