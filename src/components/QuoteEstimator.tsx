@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Truck, Home, Calendar, Shield, Info, ArrowRight, Navigation, Search, AlertCircle, CheckCircle2, Award, MapPin } from 'lucide-react';
-import { ALL_MAKES_2002_2026, getVehicleTierKey, fetchModelsForMakeAndYear } from '../services/nhtsaVehicleApi';
+import { ALL_MAKES_2002_2026, getVehicleTierKey, fetchModelsForMakeAndYear, getEnginesForMake } from '../services/nhtsaVehicleApi';
 
 interface QuoteEstimatorProps {
   onBookWithEstimate: (estimateDetails: any) => void;
@@ -47,7 +47,7 @@ const VEHICLE_TIERS: Record<string, { name: string; multiplier: number; badge: s
   exotic: { name: 'Exotic / High-End Performance', multiplier: 1.50, badge: 'EXOTIC / HIGH-END (+50%)', desc: 'Specialized low-clearance lift equipment, custom torque & track-line parts.' },
 };
 
-// Common Trims & Engine Options for Quick Dropdown Assistance
+// Common Trims for Quick Dropdown Assistance
 const COMMON_TRIMS = [
   'XL / Base', 'XLT', 'Lariat', 'King Ranch', 'Platinum', 'Limited', 'Raptor', 'Tremor',
   'LS / LT', 'LTZ', 'High Country', 'Z71 Off-Road', 'Trail Boss', 'RS', 'SS',
@@ -56,17 +56,6 @@ const COMMON_TRIMS = [
   'Tradesman', 'Big Horn', 'Laramie', 'Longhorn', 'Limited (RAM)', 'Rebel', 'TRX',
   'Sport (Jeep)', 'Sahara', 'Rubicon', 'Mojave', 'Overland',
   'Standard / Base', 'M Sport / AMG Line / S Line', 'Performance / Track Pack'
-];
-const COMMON_ENGINES = [
-  '2.7L V6 EcoBoost Turbo', '3.3L V6 PFDI', '3.5L V6 EcoBoost Twin-Turbo', '3.5L PowerBoost Full Hybrid', '5.0L V8 Coyote', '6.2L V8 Boss', '6.7L PowerStroke V8 Turbo Diesel', '7.3L V8 Godzilla',
-  '2.7L Turbo High-Output 4-Cyl', '4.3L EcoTec3 V6', '5.3L V8 EcoTec3 (L83/L84)', '6.2L V8 EcoTec3 (L87)', '6.6L V8 L8T Gas', '6.6L Duramax V8 Turbo Diesel (L5P)',
-  '3.6L V6 Pentastar', '5.7L V8 HEMI MDS', '6.4L V8 SRT HEMI 392', '6.2L Supercharged HEMI V8 (Hellcat / TRX)', '3.0L EcoDiesel V6', '6.7L Cummins Turbo Diesel I6',
-  '3.4L V6 i-FORCE Twin-Turbo', '3.4L V6 i-FORCE MAX Hybrid', '3.5L V6 2GR-FE / 2GR-FKS', '4.0L V6 1GR-FE', '4.6L / 5.7L V8 i-FORCE', '2.4L Turbo T24A-FTS',
-  '1.5L / 2.0L Turbo 4-Cylinder (K20)', '3.5L V6 J35',
-  '2.0L / 3.0L Inline-4 / Inline-6 Turbo (B48 / B58)', '4.4L Twin-Turbo V8 (S63 / N63)',
-  '2.0L Turbo 4-Cyl / 3.0L V6 Biturbo (M274 / M256)', '4.0L V8 Biturbo (M177)',
-  '2.0L TFSI 4-Cyl', '3.0L TFSI V6', '4.0L TFSI Twin-Turbo V8',
-  '2.0L / 2.5L DOHC 4-Cylinder', '2.5L Turbo Boxer 4-Cyl (EJ25 / FA24)', '5.6L V8 Endurance (Nissan VK56)'
 ];
 
 // Known Local Addresses for Fast Presets
@@ -497,13 +486,13 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Engine Size & Fuel Specs</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Engine Size & Fuel Specs ({selectedMake})</label>
                       <select 
                         value={selectedEngine} 
                         onChange={e => setSelectedEngine(e.target.value)}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-xs font-semibold text-amber-400 focus:border-orange-500 focus:outline-none mb-1.5"
                       >
-                        {COMMON_ENGINES.map(eng => <option key={eng} value={eng}>{eng}</option>)}
+                        {getEnginesForMake(selectedMake).map(eng => <option key={eng} value={eng}>{eng}</option>)}
                       </select>
                       <input 
                         type="text"

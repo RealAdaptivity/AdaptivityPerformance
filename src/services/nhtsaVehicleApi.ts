@@ -81,3 +81,112 @@ export async function fetchModelsForMakeAndYear(make: string, year: string): Pro
 
   return [`${clean} Standard Series`, `${clean} Sport Edition`, `${clean} Custom Model`];
 }
+
+// Brand-Specific OEM Engine Map to prevent showing incorrect engines for selected make
+export function getEnginesForMake(make: string): string[] {
+  const m = make.toUpperCase();
+
+  if (m.includes('FORD') || m.includes('LINCOLN')) {
+    return [
+      '2.7L V6 EcoBoost Turbo',
+      '3.3L V6 PFDI',
+      '3.5L V6 EcoBoost Twin-Turbo',
+      '3.5L PowerBoost Full Hybrid',
+      '5.0L V8 Coyote',
+      '6.2L V8 Boss',
+      '6.7L PowerStroke V8 Turbo Diesel',
+      '7.3L V8 Godzilla'
+    ];
+  }
+
+  if (m.includes('CHEVROLET') || m.includes('GMC') || m.includes('CADILLAC') || m.includes('BUICK')) {
+    return [
+      '2.7L Turbo High-Output 4-Cyl',
+      '4.3L EcoTec3 V6',
+      '5.3L V8 EcoTec3 (L83/L84)',
+      '6.2L V8 EcoTec3 (L87)',
+      '6.6L V8 L8T Gas',
+      '6.6L Duramax V8 Turbo Diesel (L5P)'
+    ];
+  }
+
+  if (m.includes('RAM') || m.includes('DODGE') || m.includes('JEEP') || m.includes('CHRYSLER')) {
+    return [
+      '3.6L V6 Pentastar',
+      '5.7L V8 HEMI MDS',
+      '6.4L V8 SRT HEMI 392',
+      '6.2L Supercharged HEMI V8 (Hellcat / TRX)',
+      '3.0L EcoDiesel V6',
+      '6.7L Cummins Turbo Diesel I6'
+    ];
+  }
+
+  if (m.includes('TOYOTA') || m.includes('LEXUS')) {
+    return [
+      '2.4L Turbo T24A-FTS',
+      '2.5L 4-Cylinder Dynamic Force',
+      '3.4L V6 i-FORCE Twin-Turbo',
+      '3.4L V6 i-FORCE MAX Hybrid',
+      '3.5L V6 2GR-FKS',
+      '4.0L V6 1GR-FE',
+      '5.7L V8 i-FORCE'
+    ];
+  }
+
+  if (m.includes('HONDA') || m.includes('ACURA')) {
+    return [
+      '1.5L Turbo 4-Cylinder',
+      '2.0L Turbo 4-Cylinder (K20C1)',
+      '2.4L / 2.5L DOHC 4-Cylinder',
+      '3.5L V6 J35'
+    ];
+  }
+
+  if (m.includes('BMW')) {
+    return [
+      '2.0L Inline-4 Turbo (B48)',
+      '3.0L Inline-6 Turbo (B58 / S58)',
+      '4.4L Twin-Turbo V8 (S63 / N63)'
+    ];
+  }
+
+  if (m.includes('MERCEDES')) {
+    return [
+      '2.0L Inline-4 Turbo (M274)',
+      '3.0L Inline-6 Turbo (M256)',
+      '4.0L Biturbo V8 (M177 / M178)'
+    ];
+  }
+
+  if (m.includes('AUDI') || m.includes('VOLKSWAGEN') || m.includes('PORSCHE')) {
+    return [
+      '2.0L TFSI Turbo 4-Cyl',
+      '3.0L TFSI V6',
+      '4.0L TFSI Twin-Turbo V8'
+    ];
+  }
+
+  if (m.includes('SUBARU')) {
+    return [
+      '2.0L / 2.5L DOHC Boxer 4-Cyl',
+      '2.4L / 2.5L Turbo Boxer 4-Cyl (FA24 / EJ25)'
+    ];
+  }
+
+  if (m.includes('NISSAN') || m.includes('INFINITI')) {
+    return [
+      '2.5L DOHC 4-Cylinder',
+      '3.0L Twin-Turbo V6 (VR30DDTT)',
+      '3.8L Twin-Turbo V6 (VR38DETT)',
+      '5.6L V8 Endurance (VK56)'
+    ];
+  }
+
+  return [
+    '2.0L Turbo 4-Cylinder',
+    '2.5L DOHC 4-Cylinder',
+    '3.0L V6 Engine',
+    '3.5L V6 Engine',
+    '5.0L / 5.7L V8 Engine'
+  ];
+}
