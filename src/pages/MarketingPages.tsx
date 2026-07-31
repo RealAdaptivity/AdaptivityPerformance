@@ -8,6 +8,7 @@ import { PartnerNetworkSection } from '../components/PartnerNetworkSection';
 import { ServiceAreaChecker } from '../components/ServiceAreaChecker';
 import { PerformanceSection } from '../components/PerformanceSection';
 import { SEOContentBlock } from '../components/SEOContentBlock';
+import { ScrollReveal } from '../components/ScrollReveal';
 import { JoinAsTechPage } from './JoinAsTechPage';
 import { CareersPage } from './CareersPage';
 import { WantToLearnPage } from './WantToLearnPage';
@@ -31,10 +32,14 @@ type SharedActions = {
   activeServiceMode: 'mobile' | 'shop';
 };
 
+function reveal(node: React.ReactNode, variant: 'up' | 'fade' | 'scale' = 'up') {
+  return <ScrollReveal variant={variant}>{node}</ScrollReveal>;
+}
+
 export function renderMarketingPage(page: SitePage, actions: SharedActions): React.ReactNode {
   switch (page) {
     case 'about':
-      return (
+      return reveal(
         <AboutUsSection
           onOpenBooking={actions.onOpenBooking}
           onOpenRecruitment={actions.onOpenRecruitment}
@@ -42,62 +47,64 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
         />
       );
     case 'services':
-      return (
+      return reveal(
         <ServicesSection
           onOpenBooking={actions.onOpenBooking}
           onBookService={actions.onBookService}
-        />
+        />,
+        'scale'
       );
     case 'quotes':
-      return (
+      return reveal(
         <QuoteEstimator
           defaultMode={actions.activeServiceMode}
           onBookWithEstimate={actions.onBookWithEstimate}
         />
       );
     case 'membership':
-      return <MembershipSection onOpenMembership={actions.onOpenMembership} />;
+      return reveal(<MembershipSection onOpenMembership={actions.onOpenMembership} />);
     case 'diagnostics':
-      return (
+      return reveal(
         <DiagnosticAssistant onSelectRecommendedService={actions.onSelectRecommendedService} />
       );
     case 'join':
-      return (
+      return reveal(
         <JoinAsTechPage
           onOpenRecruitment={actions.onOpenRecruitment}
           onOpenPartnerApply={actions.onOpenPartnerApply}
         />
       );
     case 'wantToTeach':
-      return <WantToTeachPage onOpenRecruitment={actions.onOpenRecruitment} />;
+      return reveal(<WantToTeachPage onOpenRecruitment={actions.onOpenRecruitment} />);
     case 'learn':
-      return <WantToLearnPage onOpenRecruitment={actions.onOpenRecruitment} />;
+      return reveal(<WantToLearnPage onOpenRecruitment={actions.onOpenRecruitment} />);
     case 'careers':
-      return (
+      return reveal(
         <CareersPage
           onOpenRecruitment={actions.onOpenRecruitment}
           onOpenPartnerApply={actions.onOpenPartnerApply}
         />
       );
     case 'partners':
-      return (
+      return reveal(
         <PartnerNetworkSection
           onOpenPartnerApply={actions.onOpenPartnerApply}
           onBookAtShop={actions.onBookAtShop}
-        />
+        />,
+        'scale'
       );
     case 'coverage':
-      return <ServiceAreaChecker onBookMobile={actions.onBookMobileZip} />;
+      return reveal(<ServiceAreaChecker onBookMobile={actions.onBookMobileZip} />);
     case 'performance':
-      return <PerformanceSection onOpenBooking={actions.onOpenBooking} />;
+      return reveal(<PerformanceSection onOpenBooking={actions.onOpenBooking} />);
     case 'faq':
-      return <SEOContentBlock />;
+      return reveal(<SEOContentBlock />, 'fade');
     case 'blog':
-      return <BlogIndexPage />;
+      return reveal(<BlogIndexPage />);
     case 'terms':
-      return <TermsPrivacyPage />;
+      return reveal(<TermsPrivacyPage />, 'fade');
     case 'privacy':
-      return <PrivacyPolicyPage />;
+      return reveal(<PrivacyPolicyPage />, 'fade');
     case 'notFound':
       return <NotFoundPage />;
     case 'blogPost':

@@ -128,3 +128,54 @@ body {
   border-color: rgba(255, 85, 0, 0.4);
 }
 
+/* Smooth in-page anchors */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scroll-triggered reveals */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  filter: blur(2px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+.scroll-reveal--fade {
+  transform: none;
+  filter: none;
+}
+
+.scroll-reveal--left {
+  transform: translateX(-24px);
+  filter: blur(2px);
+}
+
+.scroll-reveal--scale {
+  transform: translateY(16px) scale(0.97);
+  filter: blur(1px);
+}
+
+.scroll-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+}
+

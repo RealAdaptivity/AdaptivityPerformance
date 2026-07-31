@@ -23,6 +23,7 @@ import { VinDecoderWidget } from '../components/VinDecoderWidget';
 import { FactoryWarrantySection } from '../components/FactoryWarrantySection';
 import { SiteLink } from '../site/SiteLink';
 import { ContactSection } from '../components/ContactSection';
+import { ScrollReveal } from '../components/ScrollReveal';
 import type { SitePage } from '../site/siteRoute';
 
 type Props = {
@@ -128,106 +129,127 @@ export const HomePage: React.FC<Props> = ({
     <>
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
 
-      <BnplBanner onOpenBooking={onOpenBooking} />
+      <ScrollReveal>
+        <BnplBanner onOpenBooking={onOpenBooking} />
+      </ScrollReveal>
 
-      <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
+      <ScrollReveal delayMs={60} variant="scale">
+        <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
+      </ScrollReveal>
 
-      <VinDecoderWidget
-        onBookWithVehicle={() => {
-          onOpenBooking();
-        }}
-      />
+      <ScrollReveal delayMs={40}>
+        <VinDecoderWidget
+          onBookWithVehicle={() => {
+            onOpenBooking();
+          }}
+        />
+      </ScrollReveal>
 
-      <ComparisonTable onOpenBooking={onOpenBooking} />
+      <ScrollReveal variant="left">
+        <ComparisonTable onOpenBooking={onOpenBooking} />
+      </ScrollReveal>
 
-      <FactoryWarrantySection onOpenBooking={onOpenBooking} />
+      <ScrollReveal>
+        <FactoryWarrantySection onOpenBooking={onOpenBooking} />
+      </ScrollReveal>
 
-      <FleetHOASection onOpenBooking={onOpenBooking} onOpenPartnerApply={onOpenPartnerApply} />
+      <ScrollReveal delayMs={50} variant="scale">
+        <FleetHOASection onOpenBooking={onOpenBooking} onOpenPartnerApply={onOpenPartnerApply} />
+      </ScrollReveal>
 
       <section className="py-16 bg-[#0c0d12] border-t border-white/10">
         <div className="container mx-auto px-4 space-y-8">
-          <div className="max-w-2xl mx-auto text-center space-y-3">
+          <ScrollReveal className="max-w-2xl mx-auto text-center space-y-3">
             <h2 className="font-heading text-2xl sm:text-3xl font-black text-white">
               Explore Adaptivity
             </h2>
             <p className="text-sm text-slate-400">
               Everything lives on its own page now — pick where you want to go.
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-            {LINKS.map((item) => (
-              <SiteLink
-                key={item.to}
-                to={item.to}
-                className="group rounded-2xl border border-white/10 bg-[#12141c] p-5 text-left hover:border-orange-500/40 transition-colors space-y-3 hover-lift"
-              >
-                <div
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center ${item.accent}`}
+            {LINKS.map((item, index) => (
+              <ScrollReveal key={item.to} delayMs={Math.min(index * 55, 330)} variant="up">
+                <SiteLink
+                  to={item.to}
+                  className="group rounded-2xl border border-white/10 bg-[#12141c] p-5 text-left hover:border-orange-500/40 transition-colors space-y-3 hover-lift block h-full"
                 >
-                  {item.icon}
-                </div>
-                <div>
-                  <h3 className="font-heading font-extrabold text-white group-hover:text-orange-300 transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.blurb}</p>
-                </div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-400">
-                  Open page <ArrowRight className="w-3.5 h-3.5" />
-                </span>
-              </SiteLink>
+                  <div
+                    className={`w-10 h-10 rounded-xl border flex items-center justify-center ${item.accent}`}
+                  >
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-extrabold text-white group-hover:text-orange-300 transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">{item.blurb}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-400">
+                    Open page <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </SiteLink>
+              </ScrollReveal>
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onOpenBooking}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-bold shadow-lg hover:scale-105 transition-transform"
-            >
-              Schedule / Call for Quote
-            </button>
-            <SiteLink
-              to="join"
-              className="px-6 py-3 rounded-xl border border-emerald-500/40 text-emerald-300 text-sm font-bold hover:bg-emerald-500/10"
-            >
-              Join as Tech
-            </SiteLink>
-            <SiteLink
-              to="wantToTeach"
-              className="px-6 py-3 rounded-xl border border-violet-500/40 text-violet-300 text-sm font-bold hover:bg-violet-500/10"
-            >
-              Want to Teach
-            </SiteLink>
-            <button
-              type="button"
-              onClick={onOpenRecruitment}
-              className="px-6 py-3 rounded-xl border border-orange-500/40 text-orange-300 text-sm font-bold hover:bg-orange-500/10"
-            >
-              Apply as Tech
-            </button>
-            <SiteLink
-              to="performance"
-              className="px-6 py-3 rounded-xl border border-white/15 text-slate-200 text-sm font-bold hover:bg-white/5"
-            >
-              Performance builds
-            </SiteLink>
-            <SiteLink
-              to="faq"
-              className="px-6 py-3 rounded-xl border border-white/15 text-slate-200 text-sm font-bold hover:bg-white/5"
-            >
-              FAQ
-            </SiteLink>
-          </div>
+          <ScrollReveal delayMs={80} variant="fade">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onOpenBooking}
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-bold shadow-lg hover:scale-105 transition-transform"
+              >
+                Schedule / Call for Quote
+              </button>
+              <SiteLink
+                to="join"
+                className="px-6 py-3 rounded-xl border border-emerald-500/40 text-emerald-300 text-sm font-bold hover:bg-emerald-500/10"
+              >
+                Join as Tech
+              </SiteLink>
+              <SiteLink
+                to="wantToTeach"
+                className="px-6 py-3 rounded-xl border border-violet-500/40 text-violet-300 text-sm font-bold hover:bg-violet-500/10"
+              >
+                Want to Teach
+              </SiteLink>
+              <button
+                type="button"
+                onClick={onOpenRecruitment}
+                className="px-6 py-3 rounded-xl border border-orange-500/40 text-orange-300 text-sm font-bold hover:bg-orange-500/10"
+              >
+                Apply as Tech
+              </button>
+              <SiteLink
+                to="performance"
+                className="px-6 py-3 rounded-xl border border-white/15 text-slate-200 text-sm font-bold hover:bg-white/5"
+              >
+                Performance builds
+              </SiteLink>
+              <SiteLink
+                to="faq"
+                className="px-6 py-3 rounded-xl border border-white/15 text-slate-200 text-sm font-bold hover:bg-white/5"
+              >
+                FAQ
+              </SiteLink>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
-      <DiagnosticCreditBanner onOpenBooking={onOpenBooking} />
+      <ScrollReveal>
+        <DiagnosticCreditBanner onOpenBooking={onOpenBooking} />
+      </ScrollReveal>
 
-      <ContactSection onOpenBooking={onOpenBooking} />
+      <ScrollReveal variant="left">
+        <ContactSection onOpenBooking={onOpenBooking} />
+      </ScrollReveal>
 
-      <Testimonials />
+      <ScrollReveal delayMs={40} variant="scale">
+        <Testimonials />
+      </ScrollReveal>
     </>
   );
 };
