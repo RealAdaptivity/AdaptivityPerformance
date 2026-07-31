@@ -18,19 +18,19 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
 
   return (
     <section className="relative pt-12 pb-20 overflow-hidden bg-[#0b0c10]">
-      {/* Background ambient glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-600/10 blur-[130px] rounded-full pointer-events-none"></div>
-      <div className="absolute top-10 right-10 w-72 h-72 bg-amber-500/5 blur-[90px] rounded-full pointer-events-none"></div>
+      {/* Background ambient glows with smooth pulsing */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-orange-600/10 blur-[130px] rounded-full pointer-events-none animate-pulse-glow"></div>
+      <div className="absolute top-10 right-10 w-72 h-72 bg-amber-500/5 blur-[90px] rounded-full pointer-events-none animate-float"></div>
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative z-10 animate-fade-in">
         {/* Top Pills */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-          <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-orange-500/10 border border-orange-500/30 text-orange-400">
+          <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-orange-500/10 border border-orange-500/30 text-orange-400 shadow-sm hover:scale-105 transition-transform">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
             <span>Serving DFW & Fort Worth Areas</span>
           </span>
-          <span className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800/80 border border-slate-700/60 text-slate-300">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          <span className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800/80 border border-slate-700/60 text-slate-300 shadow-sm hover:scale-105 transition-transform">
+            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400 animate-spin-slow" />
             <span>4.9 Star Local Mechanic Rating</span>
           </span>
         </div>
@@ -164,28 +164,28 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
 
           {/* Trust Guarantees */}
           <div className="pt-8 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-left max-w-4xl mx-auto">
-            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02]">
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02] border border-white/5 hover-lift">
               <ShieldCheck className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-white uppercase">12-Mo / 12k Warranty</h4>
                 <p className="text-[11px] text-slate-400">All parts & labor backed</p>
               </div>
             </div>
-            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02]">
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02] border border-white/5 hover-lift">
               <Zap className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-white uppercase">Same-Day Service</h4>
                 <p className="text-[11px] text-slate-400">Fast response across DFW / Fort Worth</p>
               </div>
             </div>
-            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02]">
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02] border border-white/5 hover-lift">
               <MapPin className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-white uppercase">No Travel Fee local</h4>
                 <p className="text-[11px] text-slate-400">Free first 15 mi from Justin hub</p>
               </div>
             </div>
-            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02]">
+            <div className="flex items-start space-x-3 p-3 rounded-lg bg-white/[0.02] border border-white/5 hover-lift">
               <Wrench className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-xs font-bold text-white uppercase">Upfront Pricing</h4>

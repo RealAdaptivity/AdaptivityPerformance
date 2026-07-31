@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { Hero } from '../components/Hero';
 import { Testimonials } from '../components/Testimonials';
+import { ComparisonTable } from '../components/ComparisonTable';
+import { FleetHOASection } from '../components/FleetHOASection';
 import { SiteLink } from '../site/SiteLink';
 import type { SitePage } from '../site/siteRoute';
 
@@ -21,6 +23,7 @@ type Props = {
   onOpenBooking: () => void;
   onSelectServiceMode: (mode: 'mobile' | 'shop') => void;
   onOpenRecruitment: () => void;
+  onOpenPartnerApply?: () => void;
 };
 
 const LINKS: {
@@ -113,10 +116,15 @@ export const HomePage: React.FC<Props> = ({
   onOpenBooking,
   onSelectServiceMode,
   onOpenRecruitment,
+  onOpenPartnerApply = () => {},
 }) => {
   return (
     <>
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
+
+      <ComparisonTable onOpenBooking={onOpenBooking} />
+
+      <FleetHOASection onOpenBooking={onOpenBooking} onOpenPartnerApply={onOpenPartnerApply} />
 
       <section className="py-16 bg-[#0c0d12] border-t border-white/10">
         <div className="container mx-auto px-4 space-y-8">
@@ -134,7 +142,7 @@ export const HomePage: React.FC<Props> = ({
               <SiteLink
                 key={item.to}
                 to={item.to}
-                className="group rounded-2xl border border-white/10 bg-[#12141c] p-5 text-left hover:border-orange-500/40 transition-colors space-y-3"
+                className="group rounded-2xl border border-white/10 bg-[#12141c] p-5 text-left hover:border-orange-500/40 transition-colors space-y-3 hover-lift"
               >
                 <div
                   className={`w-10 h-10 rounded-xl border flex items-center justify-center ${item.accent}`}
@@ -158,7 +166,7 @@ export const HomePage: React.FC<Props> = ({
             <button
               type="button"
               onClick={onOpenBooking}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-bold"
+              className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-bold shadow-lg hover:scale-105 transition-transform"
             >
               Schedule Service
             </button>
@@ -201,3 +209,4 @@ export const HomePage: React.FC<Props> = ({
     </>
   );
 };
+

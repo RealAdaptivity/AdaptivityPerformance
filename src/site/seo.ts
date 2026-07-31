@@ -1,13 +1,13 @@
 /** Site SEO helpers — document title, meta, city landings. */
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
-export const SITE_PHONE_DISPLAY = '(214) 620-3244';
-export const SITE_PHONE_TEL = '+12146203244';
+export const SITE_PHONE_DISPLAY = '(940) 278-8099';
+export const SITE_PHONE_TEL = '+19402788099';
 
 /** Swap for your live Google Business “Write a review” URL when ready. */
 export const GOOGLE_REVIEW_URL =
   (import.meta.env.VITE_GOOGLE_REVIEW_URL as string | undefined)?.trim() ||
-  'https://www.google.com/search?q=Adaptivity+Performance+Justin+TX+reviews';
+  'https://g.page/r/CaIynDu9Qo0SEBM/review';
 
 export type SeoMeta = {
   title: string;

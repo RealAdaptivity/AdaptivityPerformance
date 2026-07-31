@@ -9,6 +9,10 @@ import { TechRecruitmentModal } from './components/TechRecruitmentModal';
 import { PartnerApplyModal } from './components/PartnerApplyModal';
 import { MembershipModal } from './components/MembershipModal';
 import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
+import { DiagnosticCreditBanner } from './components/DiagnosticCreditBanner';
+import { BnplBanner } from './components/BnplBanner';
+import { WarrantyModal } from './components/WarrantyModal';
+import { ReferralModal } from './components/ReferralModal';
 import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
 import { Capacitor } from '@capacitor/core';
@@ -67,6 +71,8 @@ function MainAppContent() {
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
   const [isPartnerApplyOpen, setIsPartnerApplyOpen] = useState(false);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
+  const [isWarrantyOpen, setIsWarrantyOpen] = useState(false);
+  const [isReferralOpen, setIsReferralOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutBooking, setCheckoutBooking] = useState<Booking | null>(null);
   const [selectedMembershipPlan, setSelectedMembershipPlan] = useState<'basic' | 'vip' | 'fleet'>('vip');
@@ -232,13 +238,18 @@ function MainAppContent() {
         }}
       />
 
-      <main className="flex-grow">
+      <main className="flex-grow pb-16 md:pb-0">
         {page === 'home' ? (
-          <HomePage
-            onOpenBooking={openBooking}
-            onSelectServiceMode={setActiveServiceMode}
-            onOpenRecruitment={() => setIsRecruitmentOpen(true)}
-          />
+          <>
+            <HomePage
+              onOpenBooking={openBooking}
+              onSelectServiceMode={setActiveServiceMode}
+              onOpenRecruitment={() => setIsRecruitmentOpen(true)}
+              onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
+            />
+            <DiagnosticCreditBanner onOpenBooking={openBooking} />
+            <BnplBanner onOpenBooking={openBooking} />
+          </>
         ) : page === 'city' && cityLanding ? (
           <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
         ) : page === 'referral' && referralCode ? (
@@ -251,6 +262,20 @@ function MainAppContent() {
       </main>
 
       <Footer onOpenBooking={openBooking} onOpenTracker={() => setIsTrackerOpen(true)} />
+
+      <StickyMobileActionBar onOpenBooking={openBooking} />
+
+      <WarrantyModal
+        isOpen={isWarrantyOpen}
+        onClose={() => setIsWarrantyOpen(false)}
+        onOpenBooking={openBooking}
+      />
+
+      <ReferralModal
+        isOpen={isReferralOpen}
+        onClose={() => setIsReferralOpen(false)}
+        onOpenBooking={openBooking}
+      />
 
       <BookingModal
         isOpen={isBookingOpen}
