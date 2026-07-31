@@ -74,18 +74,17 @@ export async function updateMyJobCapacity(capacity: TechJobCapacity) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Not signed in');
-  await ensureTechProfile();
-  const { error } = await supabase
-    .from('mechanic_details')
-    .update({ job_capacity: capacity })
-    .eq('profile_id', user.id);
-  if (error) throw error;
+  const { data, error } = await supabase.rpc('set_my_job_capacity', {
+    p_capacity: capacity,
+  });
+  if (error) throw new Error(error.message || 'Could not save work style');
+  return (data as string) === 'standalone' ? 'standalone' : 'multi';
 }
 
 export async function claimBookingRow(referenceCode: string, mechanicId: string) {
   const { data: detail } = await supabase
     .from('mechanic_details')
-    .select('job_capacity, w9_completed_at, contractor_agreement_signed_at')
+    .select('job_capacity, w9_completed_at, contractor_agreement_signed_at, contractor_agreement_signature_path')
     .eq('profile_id', mechanicId)
     .maybeSingle();
 
@@ -97,7 +96,12 @@ export async function claimBookingRow(referenceCode: string, mechanicId: string)
 
   if (!detail?.contractor_agreement_signed_at) {
     throw new Error(
-      'Accept the Independent Contractor Agreement in Settings (print/save PDF) before claiming your first job.'
+      'Sign the Independent Contractor Agreement in Settings (digital signature) before claiming your first job.'
+    );
+  }
+  if (!detail?.contractor_agreement_signature_path) {
+    throw new Error(
+      'Complete a digital signature on the Independent Contractor Agreement in Settings (name + drawn signature) before claiming.'
     );
   }
 
@@ -492,6 +496,14 @@ export async function markTechW9Complete(): Promise<string> {
   return String(data);
 }
 
+/** @deprecated Use signContractorAgreement from contractorAgreement.ts */
+export async function markContractorAgreementSigned(): Promise<string> {
+  const { data, error } = await supabase.rpc('mark_contractor_agreement_signed');
+  if (error) throw error;
+  return String(data);
+}
+
+/** @deprecated Use fetchContractorAgreementStatus from contractorAgreement.ts */
 export async function fetchContractorAgreementStatus(): Promise<{
   signed: boolean;
   signedAt: string | null;
@@ -509,12 +521,6 @@ export async function fetchContractorAgreementStatus(): Promise<{
     signed: Boolean(data?.contractor_agreement_signed_at),
     signedAt: (data?.contractor_agreement_signed_at as string) || null,
   };
-}
-
-export async function markContractorAgreementSigned(): Promise<string> {
-  const { data, error } = await supabase.rpc('mark_contractor_agreement_signed');
-  if (error) throw error;
-  return String(data);
 }
 
 /** Calendar-year tech share paid (for 1099-NEC $600 tracking). */

@@ -7,15 +7,23 @@ import {
 } from '../content/contractorLiability';
 import { FORM_1099_NEC_NOTICE } from '../content/taxForms';
 import { openPrintableHtmlWindow } from './openPrintableHtml';
+import { CONTRACTOR_AGREEMENT_VERSION } from './contractorAgreement';
 
 export function buildContractorAgreementHtml(opts?: {
   signerName?: string;
   signedAt?: string | null;
+  signatureImageUrl?: string | null;
+  agreementVersion?: string | null;
 }): string {
   const name = escapeHtml(opts?.signerName?.trim() || '________________________');
   const signed = opts?.signedAt
     ? escapeHtml(new Date(opts.signedAt).toLocaleString())
     : '________________________';
+  const version = escapeHtml(opts?.agreementVersion || CONTRACTOR_AGREEMENT_VERSION);
+  const sigImg = opts?.signatureImageUrl
+    ? `<img src="${escapeHtml(opts.signatureImageUrl)}" alt="Signature" style="max-width:280px;max-height:90px;display:block;margin:8px 0;border-bottom:1px solid #111"/>`
+    : `<div style="height:72px;border-bottom:1px solid #111;margin:8px 0 4px"></div>`;
+
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><title>Adaptivity Independent Contractor Agreement</title>
 <style>
@@ -25,10 +33,11 @@ export function buildContractorAgreementHtml(opts?: {
   .sub{color:#555;font-size:12px;margin:0 0 24px}
   p{margin:0 0 10px;color:#111}
   .sign{margin-top:36px;border-top:1px solid #ddd;padding-top:16px}
+  .esign{font-size:11px;color:#555;margin-top:12px}
   @media print{body{margin:12px}}
 </style></head><body>
   <h1>Independent Contractor Agreement</h1>
-  <p class="sub">Adaptivity Performance LLC · 1099 contractor terms</p>
+  <p class="sub">Adaptivity Performance LLC · 1099 contractor terms · Version ${version}</p>
 
   <h2>1. Relationship</h2>
   <p>You are an independent contractor (1099), not an employee. You control your tools, methods, and schedule within platform dispatch rules.</p>
@@ -48,17 +57,21 @@ export function buildContractorAgreementHtml(opts?: {
   <p>Customer payments are processed through Adaptivity. Revenue-share techs keep 70% of labor billed (30% platform) plus 100% of tips, subject to Stripe Connect payouts. Side cash / Zelle for Adaptivity jobs is prohibited.</p>
 
   <div class="sign">
-    <p><strong>Contractor name:</strong> ${name}</p>
-    <p><strong>Date accepted:</strong> ${signed}</p>
-    <p style="margin-top:16px;font-size:12px;color:#555">Accepted electronically in the Adaptivity tech portal / application.</p>
+    <p><strong>Electronic signature</strong></p>
+    ${sigImg}
+    <p><strong>Contractor legal name:</strong> ${name}</p>
+    <p><strong>Date signed:</strong> ${signed}</p>
+    <p class="esign">By signing, you agree this electronic signature is the legal equivalent of your handwritten signature under the federal E-SIGN Act (15 U.S.C. § 7001) and applicable Texas law. Record retained by Adaptivity Performance LLC.</p>
   </div>
-  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},250)});</script>
+  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});</script>
 </body></html>`;
 }
 
 export function openContractorAgreementPrintWindow(opts?: {
   signerName?: string;
   signedAt?: string | null;
+  signatureImageUrl?: string | null;
+  agreementVersion?: string | null;
 }) {
   openPrintableHtmlWindow(buildContractorAgreementHtml(opts));
 }

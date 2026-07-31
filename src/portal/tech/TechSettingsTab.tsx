@@ -6,8 +6,6 @@ import {
   fetchMyTechSpecialties,
   fetchTechW9Status,
   fetchTechYearToDateCompensation,
-  fetchContractorAgreementStatus,
-  markContractorAgreementSigned,
   markTechW9Complete,
   openExpressDashboard,
   openStripePayoutSetup,
@@ -18,6 +16,13 @@ import {
   type TechJobCapacity,
   type TechW9Status,
 } from '../../services/techDispatch';
+import {
+  CONTRACTOR_AGREEMENT_VERSION,
+  fetchContractorAgreementStatus,
+  getContractorAgreementSignatureUrl,
+  type ContractorAgreementStatus,
+} from '../../services/contractorAgreement';
+import { ContractorAgreementSignModal } from './ContractorAgreementSignModal';
 import { TECH_SPECIALTIES, type TechSpecialty } from '../../services/techSpecialties';
 import { TechOpsExtrasPanel } from './TechOpsExtrasPanel';
 import {
@@ -56,9 +61,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [w9, setW9] = useState<TechW9Status | null>(null);
   const [w9Busy, setW9Busy] = useState(false);
   const [w9Msg, setW9Msg] = useState<string | null>(null);
-  const [agreement, setAgreement] = useState<{ signed: boolean; signedAt: string | null } | null>(null);
-  const [agreementBusy, setAgreementBusy] = useState(false);
+  const [agreement, setAgreement] = useState<ContractorAgreementStatus | null>(null);
   const [agreementMsg, setAgreementMsg] = useState<string | null>(null);
+  const [signOpen, setSignOpen] = useState(false);
   const [ytd, setYtd] = useState<{
     year: number;
     totalDollars: number;
@@ -407,61 +412,86 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-white">Independent Contractor Agreement</h3>
         <p className="text-xs text-slate-400 leading-relaxed">
-          Review and accept the 1099 contractor terms (liability, workers’ comp notice, tax forms, payouts).
-          Required before claiming your first job. Print/save as PDF from the browser print dialog.
+          Digitally sign the 1099 contractor terms (liability, workers’ comp, tax, payouts). Required before claiming
+          your first job. We store your name, signature image, and timestamp for Adaptivity records.
         </p>
-        {agreement?.signed ? (
+        {agreement?.signed && agreement.signaturePath ? (
           <p className="text-[11px] text-emerald-400 leading-relaxed">
-            Accepted
-            {agreement.signedAt ? ` · ${new Date(agreement.signedAt).toLocaleDateString()}` : ''}.
+            Signed
+            {agreement.signerName ? ` by ${agreement.signerName}` : ''}
+            {agreement.signedAt ? ` · ${new Date(agreement.signedAt).toLocaleString()}` : ''}.
+          </p>
+        ) : agreement?.signed && !agreement.signaturePath ? (
+          <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
+            Accepted earlier without a drawn signature. Complete the digital signature below so we have a signed copy
+            on file.
           </p>
         ) : (
           <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
-            Not accepted yet. Open the agreement, then confirm acceptance below.
+            Not signed yet. Open the signer, type your legal name, draw your signature, and save.
           </p>
         )}
         {agreementMsg && <p className="text-[11px] text-slate-400">{agreementMsg}</p>}
         <button
           type="button"
           onClick={() => {
-            try {
-              openContractorAgreementPrintWindow({
-                signedAt: agreement?.signedAt,
-              });
-            } catch (e: unknown) {
-              setAgreementMsg(e instanceof Error ? e.message : 'Could not open agreement');
-            }
+            void (async () => {
+              try {
+                let signatureImageUrl: string | null = null;
+                if (agreement?.signaturePath) {
+                  signatureImageUrl = await getContractorAgreementSignatureUrl(agreement.signaturePath);
+                }
+                openContractorAgreementPrintWindow({
+                  signerName: agreement?.signerName || undefined,
+                  signedAt: agreement?.signedAt,
+                  signatureImageUrl,
+                  agreementVersion: agreement?.agreementVersion,
+                });
+              } catch (e: unknown) {
+                setAgreementMsg(e instanceof Error ? e.message : 'Could not open agreement');
+              }
+            })();
           }}
           className="w-full py-3 border border-white/15 text-slate-200 rounded-xl text-xs font-bold"
         >
-          View / print agreement (PDF)
+          View / print signed PDF
         </button>
-        {!agreement?.signed && (
+        {(!agreement?.signed || !agreement.signaturePath) && (
           <button
             type="button"
-            disabled={agreementBusy}
-            onClick={() => {
-              void (async () => {
-                setAgreementBusy(true);
-                setAgreementMsg(null);
-                try {
-                  const signedAt = await markContractorAgreementSigned();
-                  setAgreement({ signed: true, signedAt });
-                  openContractorAgreementPrintWindow({ signedAt });
-                  setAgreementMsg('Agreement accepted. You can claim jobs once W-9 is also complete.');
-                } catch (e: unknown) {
-                  setAgreementMsg(e instanceof Error ? e.message : 'Could not record acceptance');
-                } finally {
-                  setAgreementBusy(false);
-                }
-              })();
-            }}
-            className="w-full py-3 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold disabled:opacity-50"
+            onClick={() => setSignOpen(true)}
+            className="w-full py-3 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold"
           >
-            {agreementBusy ? 'Saving…' : 'I accept the Independent Contractor Agreement'}
+            {agreement?.signed && !agreement.signaturePath
+              ? 'Complete digital signature →'
+              : 'Sign agreement digitally →'}
           </button>
         )}
       </div>
+
+      <ContractorAgreementSignModal
+        open={signOpen}
+        onClose={() => setSignOpen(false)}
+        onSigned={(result) => {
+          setAgreement({
+            signed: true,
+            signedAt: result.signedAt,
+            signerName: result.signerName,
+            signaturePath: result.signaturePath,
+            agreementVersion: CONTRACTOR_AGREEMENT_VERSION,
+          });
+          setAgreementMsg('Agreement signed and saved. You can claim jobs once W-9 is also complete.');
+          void (async () => {
+            const signatureImageUrl = await getContractorAgreementSignatureUrl(result.signaturePath);
+            openContractorAgreementPrintWindow({
+              signerName: result.signerName,
+              signedAt: result.signedAt,
+              signatureImageUrl,
+              agreementVersion: CONTRACTOR_AGREEMENT_VERSION,
+            });
+          })();
+        }}
+      />
 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
         <h3 className="text-sm font-bold text-white">Form 1099-NEC</h3>

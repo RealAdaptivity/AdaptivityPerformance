@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Building2,
+  FileText,
   LineChart,
   Loader2,
   LogOut,
@@ -27,8 +28,9 @@ import { PartsExpensesAdmin } from './PartsExpensesAdmin';
 import { PnLDashboard } from './PnLDashboard';
 import { GrowthAdmin } from './GrowthAdmin';
 import { TechApplicationsAdmin } from './TechApplicationsAdmin';
+import { AdminContractorAgreementsTab } from './AdminContractorAgreementsTab';
 
-type AdminTab = 'dispatch' | 'techs' | 'partners' | 'pnl' | 'expenses' | 'growth';
+type AdminTab = 'dispatch' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth';
 
 export const AdminApp: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -140,6 +142,12 @@ export const AdminApp: React.FC = () => {
       activeClass: 'bg-sky-600 text-white',
     },
     {
+      id: 'agreements',
+      label: 'Agreements',
+      icon: <FileText className="w-3 h-3" />,
+      activeClass: 'bg-teal-600 text-white',
+    },
+    {
       id: 'pnl',
       label: 'P&L',
       icon: <LineChart className="w-3 h-3" />,
@@ -241,6 +249,10 @@ export const AdminApp: React.FC = () => {
         <div className="max-w-4xl mx-auto w-full px-4 py-6">
           <h1 className="text-lg font-extrabold text-white mb-4">Shop & garage partners</h1>
           <PartnersAdmin />
+        </div>
+      ) : adminTab === 'agreements' ? (
+        <div className="max-w-4xl mx-auto w-full px-4 py-6">
+          <AdminContractorAgreementsTab />
         </div>
       ) : adminTab === 'pnl' ? (
         <div className="max-w-4xl mx-auto w-full px-4 py-6">
