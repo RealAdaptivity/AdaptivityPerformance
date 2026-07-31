@@ -47,15 +47,6 @@ const VEHICLE_TIERS: Record<string, { name: string; multiplier: number; badge: s
   exotic: { name: 'Exotic / High-End Performance', multiplier: 1.50, badge: 'EXOTIC / HIGH-END (+50%)', desc: 'Specialized low-clearance lift equipment, custom torque & track-line parts.' },
 };
 
-// Known Local Addresses for Fast Presets
-const QUICK_SAMPLE_ADDRESSES = [
-  { label: 'Canyon Falls (Northlake)', address: '1234 Canyon Falls Dr, Northlake, TX 76226', estMiles: 5.2 },
-  { label: 'Harvest (Justin)', address: '500 Harvest Way, Justin, TX 76247', estMiles: 3.8 },
-  { label: 'Pecan Square (Northlake)', address: '800 Pecan Square Blvd, Northlake, TX 76226', estMiles: 4.5 },
-  { label: 'Argyle Country Club', address: '100 Country Club Rd, Argyle, TX 76227', estMiles: 17.4 },
-  { label: 'Denton Square', address: '110 W Hickory St, Denton, TX 76201', estMiles: 21.6 },
-];
-
 function calculateHaversineMiles(lat1: number, lon1: number, lat2: number = 33.0904, lon2: number = -97.2964): number {
   const R = 3958.8;
   const dLat = (lat1 - lat2) * Math.PI / 180;
@@ -167,14 +158,8 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
           setAddressSuccessMsg(`Address Verified: ${miles} Miles from Justin Hub → Mobile Travel Fee: $${fee.toFixed(2)}`);
         }
       } else {
-        const preset = QUICK_SAMPLE_ADDRESSES.find(p => targetAddress.toLowerCase().includes(p.label.toLowerCase()) || targetAddress.toLowerCase().includes(p.address.toLowerCase()));
-        if (preset) {
-          setCalculatedDistance(preset.estMiles);
-          setAddressSuccessMsg(`Address Verified: ${preset.estMiles} Miles from Justin Hub`);
-        } else {
-          setCalculatedDistance(10);
-          setAddressSuccessMsg(`Address Verified: ~10 Miles from Justin Hub → FREE Dispatch ($0)`);
-        }
+        setCalculatedDistance(10);
+        setAddressSuccessMsg(`Address Verified: ~10 Miles from Justin Hub → FREE Dispatch ($0)`);
       }
     } catch (err) {
       setAddressError('Could not verify address automatically. Defaulting to local Justin/Northlake radius.');
@@ -332,24 +317,6 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                       </>
                     )}
                   </button>
-                </div>
-
-                {/* Sample Preset Addresses */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[10px] text-slate-500">Test Sample Addresses:</span>
-                  {QUICK_SAMPLE_ADDRESSES.map((sample, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        setAddressInput(sample.address);
-                        handleCalculateAddressDistance(sample.address);
-                      }}
-                      className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-white/5 font-medium"
-                    >
-                      {sample.label}
-                    </button>
-                  ))}
                 </div>
 
                 {addressError && (
