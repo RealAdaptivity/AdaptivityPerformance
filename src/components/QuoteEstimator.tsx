@@ -73,36 +73,27 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
   const [vehicleSelectionMethod, setVehicleSelectionMethod] = useState<'dropdown' | 'vin'>('dropdown');
   
   // 2002 - 2026 Dynamic Cascading States
-  const [selectedYear, setSelectedYear] = useState('2021');
-  const [selectedMake, setSelectedMake] = useState('Ford');
-  const [availableModels, setAvailableModels] = useState<string[]>(['F-150', 'F-250 Super Duty', 'Mustang', 'Explorer', 'Bronco']);
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedMake, setSelectedMake] = useState('');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   
-  const [selectedModel, setSelectedModel] = useState('F-150');
-  const [selectedTrim, setSelectedTrim] = useState('XLT SuperCrew');
-  const [selectedEngine, setSelectedEngine] = useState('3.5L V6 EcoBoost Twin-Turbo');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [selectedTrim, setSelectedTrim] = useState('');
+  const [selectedEngine, setSelectedEngine] = useState('');
   const [vehicleTierKey, setVehicleTierKey] = useState<string>('standard');
 
   // Address & Distance States
-  const [addressInput, setAddressInput] = useState('1234 Canyon Falls Dr, Northlake, TX 76226');
+  const [addressInput, setAddressInput] = useState('');
   const [addressLoading, setAddressLoading] = useState(false);
-  const [calculatedDistance, setCalculatedDistance] = useState<number>(5.2);
-  const [addressSuccessMsg, setAddressSuccessMsg] = useState<string>('Distance verified: 5.2 Miles from Justin Hub ($0 FREE Travel)');
+  const [calculatedDistance, setCalculatedDistance] = useState<number>(0);
+  const [addressSuccessMsg, setAddressSuccessMsg] = useState<string>('');
   const [addressError, setAddressError] = useState<string>('');
 
   // VIN Decoder States
-  const [vinInput, setVinInput] = useState('1FTFW1E84MKD12345');
+  const [vinInput, setVinInput] = useState('');
   const [vinLoading, setVinLoading] = useState(false);
-  const [vinDecodedData, setVinDecodedData] = useState<any>({
-    year: '2021',
-    make: 'Ford',
-    model: 'F-150',
-    engine: '3.5L V6 EcoBoost Twin-Turbo',
-    drive: '4WD',
-    trim: 'XLT SuperCrew',
-    status: 'success',
-    tierKey: 'standard'
-  });
+  const [vinDecodedData, setVinDecodedData] = useState<any>(null);
   const [vinError, setVinError] = useState('');
 
   const [serviceLocation, setServiceLocation] = useState<'mobile' | 'shop'>(defaultMode);
@@ -110,6 +101,14 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
 
   // Fetch models whenever Year or Make changes & reset Trim/Engine to current make defaults
   useEffect(() => {
+    if (!selectedMake) {
+      setAvailableModels([]);
+      setSelectedModel('');
+      setSelectedTrim('');
+      setSelectedEngine('');
+      return;
+    }
+
     let isMounted = true;
     async function loadModels() {
       setModelsLoading(true);
@@ -430,6 +429,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                         onChange={e => setSelectedYear(e.target.value)}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white font-bold focus:border-orange-500 focus:outline-none"
                       >
+                        <option value="">-- Select Year --</option>
                         {YEARS_2002_2026.map(y => <option key={y} value={y}>{y}</option>)}
                       </select>
                     </div>
@@ -441,6 +441,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                         onChange={e => setSelectedMake(e.target.value)}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-sm font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
                       >
+                        <option value="">-- Select Make / Brand --</option>
                         {ALL_MAKES_2002_2026.map(m => <option key={m} value={m}>{m}</option>)}
                       </select>
                     </div>
@@ -763,14 +764,26 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                 </div>
 
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-400">Adjusted Subtotal Labor</span>
-                  <span className="font-bold text-slate-200">${adjustedLaborCost}</span>
+                  <span className="text-slate-400">Base Subtotal Labor</span>
+                  <span className="font-bold text-slate-200">${rawLaborCost}</span>
                 </div>
 
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-400">Adjusted Subtotal Parts</span>
-                  <span className="font-bold text-slate-200">${adjustedPartsCost}</span>
+                  <span className="text-slate-400">Base Subtotal Parts</span>
+                  <span className="font-bold text-slate-200">${rawPartsCost}</span>
                 </div>
+
+                {currentTier.multiplier > 1.0 && (
+                  <div className="flex justify-between items-center text-xs bg-orange-500/10 p-2 rounded-lg border border-orange-500/30">
+                    <span className="text-orange-300 font-bold flex items-center gap-1">
+                      <Award className="w-3.5 h-3.5 text-orange-400" />
+                      {currentTier.name} ({Math.round((currentTier.multiplier - 1) * 100)}% Specialty Surcharge)
+                    </span>
+                    <span className="font-extrabold text-orange-400">
+                      +${subtotalBeforeTax - (rawLaborCost + rawPartsCost)}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center text-xs pt-1 border-t border-white/5">
                   <span className="text-slate-400">
