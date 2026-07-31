@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 export const TermsPrivacyPage: React.FC = () => {
@@ -11,13 +11,13 @@ export const TermsPrivacyPage: React.FC = () => {
         <div className="text-center space-y-3 border-b border-white/10 pb-8">
           <div className="inline-flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" />
-            <span>Texas Consumer Protection & Comprehensive Legal Exclusions</span>
+            <span>Texas Consumer Protection & Comprehensive Legal Disclosures</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-            Terms of Service & Non-Liability Disclosures
+            Terms of Service & Operational Policies
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Complete breakdown of service authorizations, liability limitations, non-covered items, pre-existing vehicle conditions, and Texas operational disclosures.
+            Adaptivity Performance LLC • Complete master agreement governing mobile dispatch, performance modifications, safety disclaimers, chargebacks, severability, and Denton County jurisdiction.
           </p>
         </div>
 
@@ -145,11 +145,11 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 2: Property Access & Weather Rescheduling */}
+        {/* Section 2: Property Access, Safety & Performance Upgrades */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
             <KeyRound className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">2. Driveway Property Access & Weather Safety</h2>
+            <h2 className="font-heading text-xl font-bold text-white">2. Driveway Property Access, Safety & Performance Tuning</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
@@ -160,6 +160,24 @@ export const TermsPrivacyPage: React.FC = () => {
                 </div>
                 <p className="text-slate-300 leading-relaxed">
                   You authorize technicians to enter your designated driveway, parking space, or residential location. Customers are responsible for providing clear 4-foot clearance around vehicle work zones and ensuring pets are secured.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-rose-400">
+                  <UserX className="w-4 h-4" /> Zero Tolerance for Tech Safety Hazards
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Technicians reserve the right to immediately terminate dispatch or suspend service if subjected to physical threats, verbal abuse, weapon displays, or un-secured aggressive pets at customer premises.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-orange-400">
+                  <Cpu className="w-4 h-4" /> Performance Upgrades & ECU Tuning Disclaimer
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Custom aftermarket modifications (lift kits, performance exhausts, ECU remapping, turbo upgrades) are performed for off-road/track application. Customer acknowledges aftermarket modifications may affect factory warranty coverage or emissions compliance.
                 </p>
               </div>
 
@@ -205,11 +223,11 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 4: Cancellation Policy & Mechanics' Lien */}
+        {/* Section 4: Cancellation Policy, Chargebacks & Mechanics' Lien */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-orange-400 border-b border-white/5 pb-4">
             <Clock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">4. Dispatch Cancellation & Texas Mechanics' Lien</h2>
+            <h2 className="font-heading text-xl font-bold text-white">4. Cancellation, Chargeback Indemnity & Texas Mechanics' Lien</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
@@ -229,6 +247,15 @@ export const TermsPrivacyPage: React.FC = () => {
                 </div>
                 <p className="text-slate-300 leading-relaxed">
                   Pursuant to Texas Property Code Chapter 70 (§ 70.001), Adaptivity Performance retains a statutory mechanic's possessory lien on all vehicles for authorized labor, materials, and parts provided until invoice amounts are satisfied in full.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2 md:col-span-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-rose-400">
+                  <CreditCard className="w-4 h-4" /> Credit Card Chargeback & Dispute Indemnity
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Customer agrees that initiating an unauthorized or fraudulent credit card chargeback following completed repair services constitutes a breach of contract. Customer shall be liable for all bank chargeback fees ($75 administrative fee), collection expenses, and legal attorney fees incurred to recover valid funds.
                 </p>
               </div>
             </div>
@@ -265,11 +292,11 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 6: Limitation of Liability & Jurisdiction */}
+        {/* Section 6: Limitation of Liability, Severability & Jurisdiction */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
             <Scale className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">6. Limitation of Liability & Denton County Jurisdiction</h2>
+            <h2 className="font-heading text-xl font-bold text-white">6. Limitation of Liability, Severability & Denton County Jurisdiction</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
@@ -285,10 +312,19 @@ export const TermsPrivacyPage: React.FC = () => {
 
               <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
                 <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
-                  <MapPin className="w-4 h-4" /> Governing Law: Denton County, TX
+                  <FileCheck className="w-4 h-4" /> Severability & Master Agreement
                 </div>
                 <p className="text-slate-300 leading-relaxed">
-                  These terms are governed strictly by the laws of the State of Texas. Any legal action, dispute, or arbitration shall be brought exclusively in state or federal courts located in Denton County, Texas.
+                  If any provision of these terms is declared invalid or unenforceable by a court of competent jurisdiction in Denton County, Texas, all remaining provisions shall remain in 100% full force and effect.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2 md:col-span-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                  <MapPin className="w-4 h-4" /> Governing Law: Denton County, TX Jurisdiction
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  These terms are governed strictly by the laws of the State of Texas. Any legal action, dispute, or binding arbitration shall be brought exclusively in state or federal courts located in Denton County, Texas.
                 </p>
               </div>
             </div>
