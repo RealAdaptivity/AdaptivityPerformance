@@ -186,7 +186,7 @@ export const HomePage: React.FC<Props> = ({
               onClick={onOpenBooking}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white text-sm font-bold shadow-lg hover:scale-105 transition-transform"
             >
-              Schedule Service
+              Schedule / Call for Quote
             </button>
             <SiteLink
               to="join"

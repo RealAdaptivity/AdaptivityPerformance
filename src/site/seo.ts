@@ -230,6 +230,8 @@ export function citySeo(city: CityLanding): SeoMeta {
 }
 
 export const SITE_FAQS = [
+
+  // PRICING & PAYMENT
   {
     q: 'How does mobile mechanic service work in Justin and Northlake, TX?',
     a: 'Our certified mobile technicians drive directly to your driveway, office parking lot, or roadside location in Justin (76247) and Northlake (76226 / 76262). We bring professional lift jacks, OEM parts, and diagnostic equipment to perform brakes, oil changes, batteries, starters, and diagnostics on-site.',
@@ -240,15 +242,103 @@ export const SITE_FAQS = [
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',
-    a: 'Adaptivity Performance operates on a flat, transparent labor rate of $125 per hour for both mobile and in-shop repairs. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements.',
+    a: 'Adaptivity Performance operates on a flat, transparent labor rate of $125 per hour for both mobile and in-shop repairs. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.',
   },
   {
-    q: 'What warranty is included with mobile repairs?',
-    a: 'All parts and labor provided by Adaptivity Performance come with a 12-Month / 12,000-Mile Nationwide Warranty. If any issue arises, we return to service your vehicle at zero additional cost.',
+    q: 'Do you charge a diagnostic fee?',
+    a: 'Yes. A $100 diagnostic fee applies to all vehicle inspections and check engine light scans. This fee is fully credited toward any repair we perform on the same visit — so if you approve the repair, the diagnostic effectively costs you nothing. If you decline the repair, the $100 covers the technician\'s time and equipment usage.',
+  },
+  {
+    q: 'Do you offer financing or payment plans?',
+    a: 'Yes! We partner with Affirm, Klarna, and Afterpay to offer 0% APR Pay-in-4 installment plans on qualifying repair totals. Select your financing option at checkout before confirming your booking. Subject to lender approval and credit terms.',
+  },
+  {
+    q: 'Do you accept cash?',
+    a: 'No. Adaptivity Performance is a cashless business. We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover) processed securely via Stripe. We also accept Zelle for applicable balances. A card on file is required at booking to place a $100 authorization hold. Cash payments are not accepted under any circumstances.',
+  },
+  {
+    q: 'Why is a credit card hold required before my appointment?',
+    a: 'The $100 pre-authorization hold secures your appointment slot and covers our technician\'s drive time to your location. The hold is not a charge — it is released automatically if you cancel within the allowable window. If you approve a repair, the hold is applied toward your final invoice. This protects both you and our technicians from no-shows.',
+  },
+  {
+    q: 'What happens if I need to cancel or reschedule my appointment?',
+    a: 'Cancellations made more than 2 hours before the scheduled appointment window are fully refunded with no penalty. Cancellations within 2 hours of the appointment forfeit the $100 diagnostic hold as a late cancellation fee. Same-day no-shows without notice forfeit the full hold. Rescheduling more than 2 hours in advance is always free.',
+  },
+
+  // SERVICES
+  {
+    q: 'What services can be performed mobile vs. requiring the shop?',
+    a: 'Our mobile units handle: oil changes, brake pad/rotor replacements, battery swaps, starter/alternator replacements, serpentine belts, spark plugs, diagnostic scans, tire rotations, fluid flushes, and most bolt-on repairs. Services requiring the shop include: engine overhauls, transmission rebuilds, full wheel alignments, frame/body work, and truck suspension lifts with alignment.',
+  },
+  {
+    q: 'Do you work on diesel trucks?',
+    a: 'Absolutely. We service diesel-powered trucks including Ford Power Stroke, GM Duramax, and RAM Cummins platforms. Our technicians are experienced with DPF systems, EGR components, DEF systems, and high-pressure fuel systems. A heavy-duty labor multiplier applies for diesel-specific work — your tech will quote this before beginning any work.',
+  },
+  {
+    q: 'Do you service European and luxury vehicles (BMW, Mercedes, Audi, Porsche, Land Rover)?',
+    a: 'Yes. We specialize in European and luxury vehicles with factory-spec OEM parts and coding tools. BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Jaguar, and Land Rover are all within our scope. A 1.35x European specialty multiplier applies to account for manufacturer-specific fluid standards, coding procedures, and parts procurement. All service is reported to CARFAX.',
+  },
+  {
+    q: 'Do you perform Texas state vehicle inspections?',
+    a: 'Yes. We perform Texas DPS-compliant vehicle safety inspections at our Justin garage hub location. Mobile state inspections are not available — the vehicle must be brought to our shop at 410 FM 156, Justin TX 76247. Inspections cover all required safety and emissions items per Texas Transportation Code.',
+  },
+  {
+    q: 'Can you service my vehicle at my workplace or apartment complex?',
+    a: 'Yes! Any accessible paved parking lot with reasonable overhead clearance works for mobile service. We have served vehicles at office campuses, HOA communities, apartment complexes, and retail parking lots across Justin, Northlake, and DFW. We need the property owner or management permission for the location.',
+  },
+  {
+    q: 'Do you offer fleet or HOA community service contracts?',
+    a: 'Yes. We offer fleet maintenance contracts for businesses with multiple vehicles and HOA/community partnerships for residential neighborhoods. Fleet pricing includes priority scheduling, discounted labor rates, and monthly invoicing. Contact us directly to discuss a custom fleet or community contract.',
+  },
+
+  // BOOKING PROCESS
+  {
+    q: 'How do I book an appointment?',
+    a: 'Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place a $100 card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at (940) 278-8099.',
+  },
+  {
+    q: 'How long does a typical mobile repair take?',
+    a: 'Most common services take between 30 minutes and 2.5 hours on-site: oil changes run 30–45 min, brake pad and rotor replacements take 1.5–2 hrs, battery swaps take 30–45 min, and full diagnostics take 45–90 min. Complex repairs or multi-system jobs may require same-day or next-day shop follow-up. Your tech will give you a time estimate before starting.',
+  },
+  {
+    q: 'What if my vehicle is not driveable — do you offer towing?',
+    a: 'Yes. We coordinate certified flatbed towing to our Justin shop for non-driveable vehicles. Towing is arranged through our licensed transport partners and billed separately at market rate. You will authorize towing in writing before dispatch. We manage the full coordination so you do not have to make multiple calls.',
+  },
+  {
+    q: 'Will I receive a digital inspection report after my service?',
+    a: 'Yes. Every completed service includes a digital multi-point inspection report with technician notes, photos of key findings, parts used with part numbers, labor time, and the final invoice. Reports are sent via email and SMS and are also accessible through your Customer Portal at adaptivityperformance.com/portal.',
+  },
+
+  // WARRANTY & LEGAL
+  {
+    q: 'What does the 12-Month / 12,000-Mile Warranty cover?',
+    a: 'Our warranty covers all parts supplied and labor performed by Adaptivity Performance for 12 months or 12,000 miles from the date of service, whichever comes first. If the repaired system fails due to the same issue within the warranty period, we return and repair it at no charge. The warranty does not cover pre-existing unrelated damage, misuse, overheating from unrelated causes, or parts supplied by the customer.',
+  },
+  {
+    q: 'What happens if a part fails after my repair?',
+    a: 'Contact us immediately. If the failure is within the 12-month / 12,000-mile warranty window and related to our repair, we dispatch a technician or schedule shop time to fix it at no additional cost. For parts that carry manufacturer warranties beyond 12 months, we assist you in filing a claim with the parts distributor.',
+  },
+  {
+    q: 'Will mobile repairs affect my factory warranty on a new vehicle?',
+    a: 'Generally, no. Under the federal Magnuson-Moss Warranty Act, car manufacturers cannot void your factory warranty simply because you used an independent mechanic — they must prove the independent repair caused the issue. We always use OEM-quality or better parts and document everything. We recommend reviewing your specific manufacturer warranty terms for any special conditions.',
+  },
+  {
+    q: 'Do you report completed service history to CARFAX?',
+    a: 'Yes. Adaptivity Performance is a CARFAX and Experian AutoCheck certified reporting shop. Every completed repair order is reported using your vehicle VIN within 7–14 days, adding a verified service record to your vehicle history. This increases your vehicle resale value and provides buyer confidence.',
+  },
+
+  // SPECIALTY
+  {
+    q: 'Do you service electric or hybrid vehicles (EV/PHEV)?',
+    a: 'Yes, for non-high-voltage systems. We service EV and hybrid vehicles for standard maintenance: 12V battery service, tire rotations, brake service including regenerative braking systems, cabin air filters, wiper blades, and software diagnostic reads. We do not perform high-voltage battery pack replacement, inverter repair, or high-voltage wiring work — those require manufacturer-certified EV facilities.',
+  },
+  {
+    q: 'Do you do truck lifts, leveling kits, and performance upgrades?',
+    a: 'Yes — that is a core specialty at our Justin garage hub. We install leveling kits, suspension lifts (2 to 8 inch), coilover upgrades, custom exhaust systems, cold air intakes, programmer tunes, upgraded brake packages, and other bolt-on performance modifications. All lift work requires a post-install alignment. We service trucks, SUVs, and off-road vehicles.',
   },
   {
     q: 'What is the difference between your mobile service and shop garage location?',
-    a: 'Our mobile unit handles on-site services like brake pad/rotor swaps, oil changes, battery replacements, starter/alternator swaps, and computer scans. For major engine overhauls, transmission swaps, truck lifts, and performance upgrades, we drop off your vehicle at our fully equipped Justin garage hub.',
+    a: 'Our mobile unit handles on-site services like brake pad/rotor swaps, oil changes, battery replacements, starter/alternator swaps, and computer scans. For major engine overhauls, transmission swaps, truck lifts, and performance upgrades, we service your vehicle at our fully equipped Justin garage hub at 410 FM 156, Justin TX 76247.',
   },
 ];
 

@@ -292,7 +292,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             onClick={onOpenBooking}
             className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-sm font-bold shadow-lg shadow-orange-500/25 inline-flex items-center justify-center gap-2"
           >
-            Schedule Service
+            Schedule / Call for Quote
             <ArrowRight className="w-4 h-4" />
           </button>
           <SiteLink

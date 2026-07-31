@@ -136,7 +136,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
               onClick={onOpenBooking}
               className="w-full sm:w-auto flex items-center justify-center space-x-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-base px-8 py-4 rounded-xl shadow-xl shadow-orange-500/25 hover:shadow-orange-500/40 transition-all transform hover:-translate-y-0.5 active:scale-95"
             >
-              <span>Schedule Service Now</span>
+              <span>Schedule / Call for Quote</span>
               <ArrowRight className="w-5 h-5" />
             </button>
 

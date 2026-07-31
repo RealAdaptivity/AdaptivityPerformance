@@ -21,20 +21,23 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ isOpen, onClose, o
           <X className="w-5 h-5" />
         </button>
 
-        {/* Header Icon */}
+        {/* Header Icon & Gold Certificate Seal */}
         <div className="flex flex-col items-center text-center space-y-3 mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-xl shadow-orange-500/25">
-            <Award className="w-8 h-8" />
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-amber-600 p-1 shadow-2xl shadow-amber-500/30 animate-pulse">
+            <div className="w-full h-full rounded-full bg-[#0d0e14] flex flex-col items-center justify-center text-amber-400 border border-amber-400/40">
+              <Award className="w-8 h-8 text-amber-400" />
+              <span className="text-[8px] font-black uppercase tracking-widest text-amber-300 mt-0.5">ASE Certified</span>
+            </div>
           </div>
           <div>
-            <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-orange-500/10 border border-orange-500/30 text-orange-400">
-              Official Quality Certificate
+            <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+              🛡️ Official DFW Service Certificate
             </span>
             <h3 className="font-heading text-2xl sm:text-3xl font-extrabold text-white mt-2">
               12-Month / 12,000-Mile Guarantee
             </h3>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Complete peace of mind backed by Adaptivity Performance across DFW & North Texas.
+              Parts, Labor & Driveway Warranty backed by Adaptivity Performance & CARFAX VIN Sync.
             </p>
           </div>
         </div>

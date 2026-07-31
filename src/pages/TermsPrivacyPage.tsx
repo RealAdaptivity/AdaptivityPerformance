@@ -6,7 +6,7 @@ export const TermsPrivacyPage: React.FC = () => {
   return (
     <div className="py-16 bg-[#08090d] text-slate-300 min-h-screen">
       <div className="container mx-auto px-4 max-w-4xl space-y-12">
-        
+
         {/* Page Header */}
         <div className="text-center space-y-3 border-b border-white/10 pb-8">
           <div className="inline-flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
@@ -32,7 +32,7 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            
+
             {/* 1. Pre-existing vehicle defects */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">

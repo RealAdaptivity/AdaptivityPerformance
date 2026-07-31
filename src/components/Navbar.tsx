@@ -138,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="hidden sm:inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/25"
           >
             <Calendar className="w-4 h-4" />
-            Schedule Service
+            Schedule / Call for Quote
           </button>
 
           <button
@@ -298,7 +298,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="mt-2 mx-1 mb-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-orange-500/25"
                 >
                   <Calendar className="w-4 h-4" />
-                  Schedule Service
+                  Schedule / Call for Quote
                 </button>
               </div>
             </div>
