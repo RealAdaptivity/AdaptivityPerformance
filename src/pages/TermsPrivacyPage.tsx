@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 export const TermsPrivacyPage: React.FC = () => {
@@ -17,7 +17,7 @@ export const TermsPrivacyPage: React.FC = () => {
             Terms of Service & Complete Non-Liability Disclosures
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Complete master agreement governing mobile vehicle dispatch, warranty exclusions, tamper voiding, E-SIGN Act compliance, mechanics' liens, and Denton County jurisdiction.
+            Adaptivity Performance LLC • Complete master agreement governing mobile vehicle dispatch, warranty exclusions, contactless key drops, module reflashing, road test hazards, mechanics' liens, and Denton County jurisdiction.
           </p>
         </div>
 
@@ -63,7 +63,37 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 4. Customer-supplied parts failure */}
+            {/* 4. Contactless Key Drop Risk */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Key className="w-4 h-4" /> Contactless Key Drop & Unattended Keys
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for lost, stolen, or misplaced keys left outside under doormats, tires, or lockboxes prior to technician arrival for contactless mobile dispatch appointments.
+              </p>
+            </div>
+
+            {/* 5. Pre-existing ECU & Module Reflashing Risk */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Zap className="w-4 h-4" /> Pre-Existing Corrupted ECU Module Coding
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for pre-existing internal module failure or software bricking on aged factory electronic control units (ECUs/BCMs) caused by pre-existing voltage spikes or factory software corruptions during diagnostic programming.
+              </p>
+            </div>
+
+            {/* 6. Test Drive Road Hazards */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Car className="w-4 h-4" /> Test Drive Road Hazards (Flying Debris & Nails)
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for sudden highway road hazards (flying gravel/rock windshield chips, road debris, or nail tire punctures) occurring during authorized diagnostic or safety test drives on DFW public roads.
+              </p>
+            </div>
+
+            {/* 7. Customer-supplied parts failure */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <ShieldOff className="w-4 h-4" /> Customer-Supplied & Aftermarket Parts
@@ -73,7 +103,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 5. Pre-existing TPMS & Key Fobs */}
+            {/* 8. Pre-existing TPMS & Key Fobs */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Radio className="w-4 h-4" /> TPMS Sensors, Dry-Rot & Aged Key Fobs
@@ -83,7 +113,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 6. Driveway surface condition */}
+            {/* 9. Driveway surface condition */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Car className="w-4 h-4" /> Pre-Existing Driveway Oil Stains & Asphalt
@@ -93,7 +123,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 7. Loss of contents & valuables */}
+            {/* 10. Loss of contents & valuables */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <ShieldCheck className="w-4 h-4" /> Personal Property Left Inside Vehicles
@@ -103,17 +133,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 8. Indirect & Consequential damages */}
-            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
-              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                <AlertOctagon className="w-4 h-4" /> Rental Cars, Towing & Missed Work
-              </div>
-              <p className="text-slate-300 leading-relaxed">
-                We are <strong>NOT responsible</strong> for indirect, incidental, or consequential expenses including rental car fees, towing expenses, hotel stays, lost business income, or missed work shifts while a vehicle is undergoing service or awaiting parts.
-              </p>
-            </div>
-
-            {/* 9. Misfueling & Bad Gas */}
+            {/* 11. Contaminated Fuel & Customer Mis-Fueling */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Fuel className="w-4 h-4" /> Contaminated Fuel & Customer Mis-Fueling
@@ -123,7 +143,17 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 10. Thermal & Track Exclusions */}
+            {/* 12. Indirect & Consequential damages */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <AlertOctagon className="w-4 h-4" /> Rental Cars, Towing & Missed Work
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for indirect, incidental, or consequential expenses including rental car fees, towing expenses, hotel stays, lost business income, or missed work shifts while a vehicle is undergoing service or awaiting parts.
+              </p>
+            </div>
+
+            {/* 12. Thermal & Track Exclusions */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Flame className="w-4 h-4" /> Extreme Track Use & Overheating Abuse
