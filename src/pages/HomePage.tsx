@@ -38,94 +38,96 @@ const LINKS: {
   icon: React.ReactNode;
   accent: string;
 }[] = [
-  {
-    to: 'about',
-    title: 'About Us',
-    blurb: 'How we serve customers, shops, techs, and the community — plus Pay in 4 / 8.',
-    icon: <Users className="w-5 h-5" />,
-    accent: 'text-orange-400 bg-orange-500/15 border-orange-500/30',
-  },
-  {
-    to: 'services',
-    title: 'Services',
-    blurb: 'Diagnostics, brakes, audio, tint, detailing, performance, and more.',
-    icon: <Wrench className="w-5 h-5" />,
-    accent: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
-  },
-  {
-    to: 'quotes',
-    title: 'Price Estimate',
-    blurb: 'Rough ballpark only — your tech sets the final labor + parts price on site.',
-    icon: <Calculator className="w-5 h-5" />,
-    accent: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
-  },
-  {
-    to: 'membership',
-    title: 'VIP Membership',
-    blurb: 'Adaptivity Shield — $0 travel fees and member discounts.',
-    icon: <ShieldCheck className="w-5 h-5" />,
-    accent: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
-  },
-  {
-    to: 'diagnostics',
-    title: 'Symptom Checker',
-    blurb: 'Tell us what’s wrong — get a recommended service path.',
-    icon: <Stethoscope className="w-5 h-5" />,
-    accent: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
-  },
-  {
-    to: 'join',
-    title: 'Join as Tech',
-    blurb: 'Ready to claim jobs — multi-job or standalone, keep most of the labor + tips.',
-    icon: <UserPlus className="w-5 h-5" />,
-    accent: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
-  },
-  {
-    to: 'learn',
-    title: 'Want to Learn',
-    blurb: 'Paid training for students & beginners — path to full tech with us.',
-    icon: <GraduationCap className="w-5 h-5" />,
-    accent: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
-  },
-  {
-    to: 'wantToTeach',
-    title: 'Want to Teach',
-    blurb: 'Mechanics & techs with us can coach learners and get paid to teach.',
-    icon: <GraduationCap className="w-5 h-5" />,
-    accent: 'text-violet-300 bg-violet-500/15 border-violet-500/30',
-  },
-  {
-    to: 'careers',
-    title: 'Careers',
-    blurb: 'Open tech & partner roles now — support & dispatch admin coming later.',
-    icon: <Briefcase className="w-5 h-5" />,
-    accent: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
-  },
-  {
-    to: 'partners',
-    title: 'Partner Shops',
-    blurb: 'Host a bay or garage — we send booked customers your way.',
-    icon: <Building2 className="w-5 h-5" />,
-    accent: 'text-sky-300 bg-sky-500/10 border-sky-500/30',
-  },
-  {
-    to: 'coverage',
-    title: 'Service Area',
-    blurb: 'DFW / Fort Worth mobile coverage from our Justin hub.',
-    icon: <MapPin className="w-5 h-5" />,
-    accent: 'text-orange-300 bg-orange-500/10 border-orange-500/30',
-  },
-];
+    {
+      to: 'about',
+      title: 'About Us',
+      blurb: 'How we serve customers, shops, techs, and the community — plus Pay in 4 / 8.',
+      icon: <Users className="w-5 h-5" />,
+      accent: 'text-orange-400 bg-orange-500/15 border-orange-500/30',
+    },
+    {
+      to: 'services',
+      title: 'Services',
+      blurb: 'Diagnostics, brakes, audio, tint, detailing, performance, and more.',
+      icon: <Wrench className="w-5 h-5" />,
+      accent: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+    },
+    {
+      to: 'quotes',
+      title: 'Price Estimate',
+      blurb: 'Rough ballpark only — your tech sets the final labor + parts price on site.',
+      icon: <Calculator className="w-5 h-5" />,
+      accent: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
+    },
+    {
+      to: 'membership',
+      title: 'VIP Membership',
+      blurb: 'Adaptivity Shield — $0 travel fees and member discounts.',
+      icon: <ShieldCheck className="w-5 h-5" />,
+      accent: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+    },
+    {
+      to: 'diagnostics',
+      title: 'Symptom Checker',
+      blurb: 'Tell us what’s wrong — get a recommended service path.',
+      icon: <Stethoscope className="w-5 h-5" />,
+      accent: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+    },
+    {
+      to: 'join',
+      title: 'Join as Tech',
+      blurb: 'Ready to claim jobs — multi-job or standalone, keep most of the labor + tips.',
+      icon: <UserPlus className="w-5 h-5" />,
+      accent: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
+    },
+    {
+      to: 'learn',
+      title: 'Want to Learn',
+      blurb: 'Paid training for students & beginners — path to full tech with us.',
+      icon: <GraduationCap className="w-5 h-5" />,
+      accent: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+    },
+    {
+      to: 'wantToTeach',
+      title: 'Want to Teach',
+      blurb: 'Mechanics & techs with us can coach learners and get paid to teach.',
+      icon: <GraduationCap className="w-5 h-5" />,
+      accent: 'text-violet-300 bg-violet-500/15 border-violet-500/30',
+    },
+    {
+      to: 'careers',
+      title: 'Careers',
+      blurb: 'Open tech & partner roles now — support & dispatch admin coming later.',
+      icon: <Briefcase className="w-5 h-5" />,
+      accent: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
+    },
+    {
+      to: 'partners',
+      title: 'Partner Shops',
+      blurb: 'Host a bay or garage — we send booked customers your way.',
+      icon: <Building2 className="w-5 h-5" />,
+      accent: 'text-sky-300 bg-sky-500/10 border-sky-500/30',
+    },
+    {
+      to: 'coverage',
+      title: 'Service Area',
+      blurb: 'DFW / Fort Worth mobile coverage from our Justin hub.',
+      icon: <MapPin className="w-5 h-5" />,
+      accent: 'text-orange-300 bg-orange-500/10 border-orange-500/30',
+    },
+  ];
 
 export const HomePage: React.FC<Props> = ({
   onOpenBooking,
   onSelectServiceMode,
   onOpenRecruitment,
-  onOpenPartnerApply = () => {},
+  onOpenPartnerApply = () => { },
 }) => {
   return (
     <>
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
+
+      <BnplBanner onOpenBooking={onOpenBooking} />
 
       <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
 
