@@ -48,8 +48,21 @@ const VEHICLE_TIERS: Record<string, { name: string; multiplier: number; badge: s
 };
 
 // Common Trims & Engine Options for Quick Dropdown Assistance
-const COMMON_TRIMS = ['Standard / Base', 'Sport / Premium Package', 'Luxury / Executive Trim', 'Off-Road 4x4 / Trail Edition', 'Performance M / AMG / RS / Type R', 'Heavy Duty Work Truck'];
-const COMMON_ENGINES = ['2.0L Turbo 4-Cylinder', '2.5L 4-Cylinder DOHC', '3.0L Turbo Inline-6 / V6', '3.5L EcoBoost / V6 DOHC', '5.0L / 5.3L / 5.7L V8 Gas', '6.2L / 6.4L V8 High Output', '3.0L / 6.6L / 6.7L Turbo Diesel'];
+const COMMON_TRIMS = [
+  'XL / Base', 'XLT', 'Lariat', 'King Ranch', 'Platinum', 'Limited', 'Raptor', 'Tremor',
+  'LS / LT', 'LTZ', 'High Country', 'Z71 Off-Road', 'Trail Boss', 'RS', 'SS',
+  'SR / SR5', 'TRD Sport', 'TRD Off-Road', 'TRD Pro', 'Limited (Toyota)', '1794 Edition', 'Capstone',
+  'LX / EX', 'EX-L', 'Touring', 'Sport (Honda/Nissan)', 'Type R',
+  'Tradesman', 'Big Horn', 'Laramie', 'Longhorn', 'Limited (RAM)', 'Rebel', 'TRX',
+  'Sport (Jeep)', 'Sahara', 'Rubicon', 'Mojave', 'Overland',
+  'Standard / Base', 'M Sport / AMG Line / S Line', 'Performance / Track Pack'
+];
+const COMMON_ENGINES = [
+  '2.0L Turbo 4-Cylinder', '2.4L / 2.5L 4-Cylinder DOHC', '3.0L Turbo Inline-6',
+  '3.5L V6 EcoBoost Twin-Turbo', '3.6L V6 Pentastar / DOHC',
+  '5.0L V8 Coyote', '5.3L V8 EcoTec3', '5.7L V8 HEMI', '6.2L V8 L87 / LT1',
+  '3.0L PowerStroke / Duramax Diesel', '6.6L Duramax Turbo Diesel', '6.7L Cummins / PowerStroke Turbo Diesel'
+];
 
 // Known Local Addresses for Fast Presets
 const QUICK_SAMPLE_ADDRESSES = [
