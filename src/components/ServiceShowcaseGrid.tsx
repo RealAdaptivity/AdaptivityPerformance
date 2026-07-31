@@ -12,8 +12,9 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       title: 'Mobile Repair & Diagnostics',
       subtitle: 'Driveway & On-Site Service',
       description: 'We bring full shop diagnostics, brake replacement, oil changes, starters, and batteries directly to your home or office.',
-      icon: <Wrench className="w-6 h-6 text-orange-400" />,
-      accent: 'border-orange-500/30 hover:border-orange-500/60',
+      icon: <Wrench className="w-6 h-6 text-orange-500 drop-shadow-[0_0_8px_rgba(255,85,0,0.5)]" />,
+      accent: 'border-orange-500/30 hover:border-orange-500/60 hover:shadow-[0_0_25px_rgba(255,85,0,0.15)]',
+      iconBg: 'bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-orange-500/30',
       badge: 'Free 15-Mi Dispatch',
       badgeColor: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
       items: ['Brake Pad & Rotor Swaps', 'Check Engine OBD Scans', 'Synthetic Oil Changes', 'Starter & Battery Swaps'],
@@ -24,10 +25,11 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       title: 'Mobile Detailing & Protection',
       subtitle: 'Showroom Shine at Your Driveway',
       description: 'Complete interior deep cleaning, exterior ceramic coating, paint correction, and headlight restoration on-location.',
-      icon: <Sparkles className="w-6 h-6 text-amber-400" />,
-      accent: 'border-amber-500/30 hover:border-amber-500/60',
+      icon: <Sparkles className="w-6 h-6 text-orange-400 drop-shadow-[0_0_8px_rgba(251,146,60,0.5)]" />,
+      accent: 'border-orange-500/30 hover:border-orange-500/60 hover:shadow-[0_0_25px_rgba(255,85,0,0.15)]',
+      iconBg: 'bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-orange-500/30',
       badge: 'Mobile Water & Power Equipped',
-      badgeColor: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+      badgeColor: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
       items: ['Full Synthetic Ceramic Coating', 'Interior Steam & Leather Detail', 'Paint Correction & Buffing', 'Headlight Restoration'],
       primaryService: 'Mobile Detailing & Ceramic Protection',
     },
@@ -36,10 +38,11 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       title: 'Custom Audio, Tint & Wraps',
       subtitle: 'Style & Electronics Upgrade',
       description: 'Custom window tinting, dash cam installs, premium audio speaker upgrades, subwoofers, and vinyl color wraps.',
-      icon: <Volume2 className="w-6 h-6 text-sky-400" />,
-      accent: 'border-sky-500/30 hover:border-sky-500/60',
+      icon: <Volume2 className="w-6 h-6 text-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]" />,
+      accent: 'border-amber-500/30 hover:border-amber-500/60 hover:shadow-[0_0_25px_rgba(245,158,11,0.15)]',
+      iconBg: 'bg-gradient-to-br from-amber-500/20 to-orange-500/10 border-amber-500/30',
       badge: 'Lifetime Tint Warranty',
-      badgeColor: 'bg-sky-500/10 border-sky-500/30 text-sky-400',
+      badgeColor: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
       items: ['Ceramic Window Tinting', 'Custom Audio & Subwoofer Rigs', 'Dash Cam & Radar Installs', 'Vinyl Accents & Full Wraps'],
       primaryService: 'Custom Audio & Window Tinting',
     },
@@ -48,10 +51,11 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       title: 'Shop Performance & Builds',
       subtitle: 'Justin Garage Hub Facility',
       description: 'Advanced garage facility for heavy suspension lifts, custom exhaust systems, cold air intakes, and engine overhauls.',
-      icon: <Flame className="w-6 h-6 text-rose-400" />,
-      accent: 'border-rose-500/30 hover:border-rose-500/60',
+      icon: <Flame className="w-6 h-6 text-orange-500 drop-shadow-[0_0_8px_rgba(255,85,0,0.5)]" />,
+      accent: 'border-orange-500/30 hover:border-orange-500/60 hover:shadow-[0_0_25px_rgba(255,85,0,0.15)]',
+      iconBg: 'bg-gradient-to-br from-orange-500/20 to-amber-500/10 border-orange-500/30',
       badge: 'Heavy Lift Garage Facility',
-      badgeColor: 'bg-rose-500/10 border-rose-500/30 text-rose-400',
+      badgeColor: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
       items: ['Truck Suspension Lifts & Lowering', 'Custom Exhaust & Headers', 'Cold Air Intakes & Tuning', 'Engine & Transmission Swaps'],
       primaryService: 'Performance Upgrade & Garage Build',
     },
@@ -81,7 +85,7 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
+                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${cat.iconBg}`}>
                     {cat.icon}
                   </div>
                   <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${cat.badgeColor}`}>
