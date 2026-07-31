@@ -22,6 +22,7 @@ import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
 import { VinDecoderWidget } from '../components/VinDecoderWidget';
 import { FactoryWarrantySection } from '../components/FactoryWarrantySection';
 import { SiteLink } from '../site/SiteLink';
+import { ContactSection } from '../components/ContactSection';
 import type { SitePage } from '../site/siteRoute';
 
 type Props = {
@@ -224,7 +225,7 @@ export const HomePage: React.FC<Props> = ({
 
       <DiagnosticCreditBanner onOpenBooking={onOpenBooking} />
 
-      <BnplBanner onOpenBooking={onOpenBooking} />
+      <ContactSection onOpenBooking={onOpenBooking} />
 
       <Testimonials />
     </>
