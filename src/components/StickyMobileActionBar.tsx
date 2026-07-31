@@ -1,6 +1,6 @@
 import React from 'react';
-import { Phone, MessageSquare, Calendar, ShieldCheck, Zap } from 'lucide-react';
-import { SITE_PHONE_TEL, SITE_PHONE_DISPLAY } from '../site/seo';
+import { Phone, MessageSquare, Calendar } from 'lucide-react';
+import { SITE_PHONE_TEL } from '../site/seo';
 
 interface StickyMobileActionBarProps {
   onOpenBooking: () => void;

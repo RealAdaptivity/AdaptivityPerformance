@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { X, Gift, Share2, Copy, Check, Sparkles, MessageCircle } from 'lucide-react';
+import { X, Gift, Share2, Copy, Check } from 'lucide-react';
 import { shareAdaptivity } from '../site/seo';
 
 interface ReferralModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenBooking: () => void;
 }
 
-export const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose, onOpenBooking }) => {
+export const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose }) => {
   const [copied, setCopied] = useState(false);
   const [referralLink] = useState('https://adaptivityperformance.com/r/DFW25');
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, CreditCard, Clock, Sparkles } from 'lucide-react';
+import { CreditCard, Sparkles } from 'lucide-react';
 
 interface BnplBannerProps {
   onOpenBooking: () => void;

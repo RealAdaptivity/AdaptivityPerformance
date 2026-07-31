@@ -9,10 +9,9 @@ import { TechRecruitmentModal } from './components/TechRecruitmentModal';
 import { PartnerApplyModal } from './components/PartnerApplyModal';
 import { MembershipModal } from './components/MembershipModal';
 import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
-import { DiagnosticCreditBanner } from './components/DiagnosticCreditBanner';
-import { BnplBanner } from './components/BnplBanner';
 import { WarrantyModal } from './components/WarrantyModal';
 import { ReferralModal } from './components/ReferralModal';
+import { StickyMobileActionBar } from './components/StickyMobileActionBar';
 import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
 import { Capacitor } from '@capacitor/core';
@@ -270,7 +269,6 @@ function MainAppContent() {
       <ReferralModal
         isOpen={isReferralOpen}
         onClose={() => setIsReferralOpen(false)}
-        onOpenBooking={openBooking}
       />
 
       <BookingModal

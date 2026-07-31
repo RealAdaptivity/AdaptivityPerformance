@@ -1,12 +1,11 @@
 import React from 'react';
-import { Wrench, Sparkles, Volume2, Flame, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Wrench, Sparkles, Volume2, Flame, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface ServiceShowcaseGridProps {
-  onOpenBooking: () => void;
   onBookService: (serviceName: string) => void;
 }
 
-export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onOpenBooking, onBookService }) => {
+export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBookService }) => {
   const categories = [
     {
       id: 'mobile-repair',

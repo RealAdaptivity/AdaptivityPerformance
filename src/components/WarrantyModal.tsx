@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ShieldCheck, CheckCircle2, Award, Calendar, FileText, Wrench } from 'lucide-react';
+import { X, CheckCircle2, Award } from 'lucide-react';
 
 interface WarrantyModalProps {
   isOpen: boolean;

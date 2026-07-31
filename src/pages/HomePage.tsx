@@ -125,7 +125,7 @@ export const HomePage: React.FC<Props> = ({
     <>
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
 
-      <ServiceShowcaseGrid onOpenBooking={onOpenBooking} onBookService={(service) => onOpenBooking()} />
+      <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
 
       <ComparisonTable onOpenBooking={onOpenBooking} />
 
