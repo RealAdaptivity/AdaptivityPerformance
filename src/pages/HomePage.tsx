@@ -18,6 +18,7 @@ import { ComparisonTable } from '../components/ComparisonTable';
 import { FleetHOASection } from '../components/FleetHOASection';
 import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
 import { BnplBanner } from '../components/BnplBanner';
+import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
 import { SiteLink } from '../site/SiteLink';
 import type { SitePage } from '../site/siteRoute';
 
@@ -123,6 +124,8 @@ export const HomePage: React.FC<Props> = ({
   return (
     <>
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
+
+      <ServiceShowcaseGrid onOpenBooking={onOpenBooking} onBookService={(service) => onOpenBooking()} />
 
       <ComparisonTable onOpenBooking={onOpenBooking} />
 
