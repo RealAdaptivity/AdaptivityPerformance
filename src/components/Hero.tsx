@@ -38,7 +38,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
         {/* Main Heading */}
         <div className="max-w-4xl mx-auto text-center space-y-6">
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.15]">
-            Auto Repair <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500">Built Around You</span>
+            Complete Automotive Care <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500">& Performance</span>
             <br />
             <span className="text-slate-300 font-bold text-3xl sm:text-4xl lg:text-5xl mt-2 block">
               At Your Doorstep or In Our Shop.
@@ -46,7 +46,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
           </h1>
 
           <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Adaptivity Performance handles almost anything car-related — diagnostics & repair, tires, glass, body work, detailing, audio, tint, wraps, mods, and performance — at your driveway across DFW / Fort Worth, or heavy builds at our Justin garage hub.
+            Adaptivity Performance handles <strong className="text-white">everything car & truck related</strong> — on-site diagnostics, repairs, tires, glass, bodywork, detailing, audio, tint, wraps, and custom shop builds across DFW / Fort Worth.
           </p>
 
           {/* Interactive Mode Switcher Container */}
