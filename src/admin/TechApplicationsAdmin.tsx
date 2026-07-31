@@ -3,29 +3,10 @@ import { Mail } from 'lucide-react';
 import {
   approveTechApplication,
   fetchTechApplications,
+  inviteApprovedTech,
   rejectTechApplication,
   type TechApplicationRow,
 } from '../services/techApplications';
-
-const PORTAL_URL = 'https://adaptivityperformance.com/portal';
-
-export function techInviteMailto(email: string, fullName: string): string {
-  const subject = encodeURIComponent("You're approved — Adaptivity Tech onboarding");
-  const body = encodeURIComponent(
-    `Hi ${fullName || 'there'},\n\n` +
-      `You've been approved as an Adaptivity technician.\n\n` +
-      `Please:\n` +
-      `1. Create your Tech account at ${PORTAL_URL}\n` +
-      `2. Finish Stripe Connect payout setup\n` +
-      `3. Complete your W-9\n\n` +
-      `Welcome aboard,\nAdaptivity Performance`
-  );
-  return `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
-}
-
-function openTechInvite(email: string, fullName: string) {
-  window.location.href = techInviteMailto(email, fullName);
-}
 
 export const TechApplicationsAdmin: React.FC = () => {
   const [rows, setRows] = useState<TechApplicationRow[]>([]);
@@ -53,15 +34,25 @@ export const TechApplicationsAdmin: React.FC = () => {
     setBusyId(id);
     setMessage(null);
     try {
-      const row = rows.find((r) => r.id === id);
-      const result = await approveTechApplication(id, { markToolsVerified });
-      setMessage(result.nextStep || 'Technician approved.');
-      if (row?.email) {
-        openTechInvite(row.email, row.fullName);
-      }
+      const result = await approveTechApplication(id, { markToolsVerified, sendInvite: true });
+      setMessage(result.nextStep || 'Technician approved — password setup email sent.');
       await load();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Approve failed');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const resendInvite = async (id: string) => {
+    setBusyId(id);
+    setMessage(null);
+    try {
+      const invite = await inviteApprovedTech(id);
+      setMessage(invite.message || `Password setup emailed to ${invite.email}.`);
+      await load();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Could not resend invite');
     } finally {
       setBusyId(null);
     }
@@ -90,8 +81,8 @@ export const TechApplicationsAdmin: React.FC = () => {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-slate-400">
-          Join-as-Tech applications. Approve links an existing account by email, or invites them to sign up at{' '}
-          <code className="text-orange-300">/portal</code>.
+          Approve sends a <strong className="text-slate-300">password setup email</strong> (invite or
+          reset). Techs set a password, then sign in on the Technician tab — no self-serve signup.
         </p>
         <div className="flex rounded-lg border border-white/10 p-0.5 bg-[#0b0c10] text-[11px] font-bold">
           <button
@@ -127,7 +118,7 @@ export const TechApplicationsAdmin: React.FC = () => {
 
       {visible.map((row) => {
         const toolsOn = Object.entries(row.tools).filter(([, v]) => v).map(([k]) => k);
-        const needsInvite = row.status === 'approved' && !row.profileId;
+        const canResend = row.status === 'approved';
         return (
           <div
             key={row.id}
@@ -179,7 +170,7 @@ export const TechApplicationsAdmin: React.FC = () => {
                   onClick={() => void approve(row.id, false)}
                   className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold disabled:opacity-50"
                 >
-                  Approve
+                  Approve + email password setup
                 </button>
                 <button
                   type="button"
@@ -200,15 +191,17 @@ export const TechApplicationsAdmin: React.FC = () => {
               </div>
             )}
 
-            {needsInvite && (
+            {canResend && (
               <div className="pt-1">
-                <a
-                  href={techInviteMailto(row.email, row.fullName)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 text-orange-300 text-xs font-bold hover:bg-orange-500/10"
+                <button
+                  type="button"
+                  disabled={busyId === row.id}
+                  onClick={() => void resendInvite(row.id)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-orange-500/40 text-orange-300 text-xs font-bold hover:bg-orange-500/10 disabled:opacity-50"
                 >
                   <Mail className="w-3 h-3" />
-                  Email invite
-                </a>
+                  Resend password setup email
+                </button>
               </div>
             )}
           </div>

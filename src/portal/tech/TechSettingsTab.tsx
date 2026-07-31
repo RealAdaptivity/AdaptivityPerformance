@@ -11,6 +11,7 @@ import {
   markTechW9Complete,
   openExpressDashboard,
   openStripePayoutSetup,
+  resetStaleStripeConnectLink,
   updateMyJobCapacity,
   updateMyTechSpecialties,
   type TechConnectStatus,
@@ -25,6 +26,7 @@ import {
   FORM_1099_NEC_THRESHOLD_DOLLARS,
 } from '../../content/taxForms';
 import {
+  clearCachedTechConnectStatus,
   linkedAccountId,
   readCachedTechConnectStatus,
   stripeStatusLabel,
@@ -40,6 +42,7 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [localStripeId, setLocalStripeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [openingDash, setOpeningDash] = useState(false);
   const [showDebitModal, setShowDebitModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -63,11 +66,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     meetsNecThreshold: boolean;
   } | null>(null);
 
+  /** Prefer same-tab after async — popup blockers often kill window.open post-await. */
   const openStripeUrl = (url: string) => {
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
-    if (!opened) {
-      window.location.assign(url);
-    }
+    window.location.assign(url);
   };
 
   const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
@@ -155,16 +156,22 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     if (stripeReturnSync) void refresh();
   }, [stripeReturnSync, refresh]);
 
-  const connect = async () => {
+  const connect = async (opts?: { forceReset?: boolean }) => {
     setLinking(true);
     setConnectError(null);
     try {
+      if (opts?.forceReset || adminPreview) {
+        // Admin preview + Live cutover: always clear a dead/test acct_ before create.
+        await resetStaleStripeConnectLink().catch(() => undefined);
+        clearCachedTechConnectStatus();
+        setLocalStripeId(null);
+      }
       const result = await openStripePayoutSetup();
       if (result.accountId) writeCachedTechConnectStatus(result);
       setStatus(result);
-      setLocalStripeId(result.accountId);
+      setLocalStripeId(result.accountId?.startsWith('acct_') ? result.accountId : null);
       if (!result.onboardingUrl?.startsWith('http')) {
-        throw new Error('Stripe onboarding URL missing — try again or check edge function deploy.');
+        throw new Error('Stripe onboarding URL missing — try Reset Stripe link, then Connect again.');
       }
       openStripeUrl(result.onboardingUrl);
     } catch (e: unknown) {
@@ -173,9 +180,36 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         msg +=
           ' Deploy the latest create-stripe-account-link edge function (localhost needs HTTPS business URL + http redirect URLs).';
       }
+      if (/technician profile required|not a tech/i.test(msg)) {
+        msg =
+          'This login is not a tech account. Sign out and use Technician login (or finish Join as Tech approval), then Connect Stripe.';
+      }
       setConnectError(msg);
     } finally {
       setLinking(false);
+    }
+  };
+
+  const resetConnect = async () => {
+    setResetting(true);
+    setConnectError(null);
+    try {
+      await resetStaleStripeConnectLink();
+      clearCachedTechConnectStatus();
+      setLocalStripeId(null);
+      setStatus({
+        accountId: null,
+        detailsSubmitted: false,
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        readyForPayouts: false,
+      });
+      setConnectError(null);
+      await refresh({ quiet: true });
+    } catch (e: unknown) {
+      setConnectError(e instanceof Error ? e.message : 'Could not reset Stripe link');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -186,7 +220,13 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
       const result = await openExpressDashboard();
       if (result.accountId) writeCachedTechConnectStatus(result);
       setStatus(result);
+      setLocalStripeId(result.accountId?.startsWith('acct_') ? result.accountId : null);
       openStripeUrl(result.loginUrl);
+      if (result.openedOnboarding) {
+        setConnectError(
+          'No Live Express account yet — opened Stripe onboarding instead. Finish that, then return here for the Dashboard.'
+        );
+      }
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : 'Could not open Express Dashboard');
     } finally {
@@ -194,16 +234,29 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     }
   };
 
-  const acctId = linkedAccountId(status, localStripeId);
+  // Only trust edge sync for Dashboard — never a stale local/cached test acct_
+  const acctId = linkedAccountId(status, localStripeId, { allowLocalFallback: false });
   const label = stripeStatusLabel(status, acctId, loading);
 
   return (
     <div className="space-y-4 max-w-md">
       {adminPreview && (
-        <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2">
-          Admin preview: Stripe Connect saves to <strong>your admin login</strong>, not a technician account.
-          Sign in with a real tech user to test payouts end-to-end.
-        </p>
+        <div className="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/40 rounded-xl px-3 py-3 space-y-2">
+          <p className="font-bold text-amber-100">Admin preview — not a tech login</p>
+          <p className="text-amber-100/90 leading-relaxed">
+            Express Dashboard will keep failing until <strong>this admin account</strong> finishes Live
+            Connect (or you sign out and use a real tech user). Stripe never attaches to “the tech
+            dashboard view” — only to whoever is signed in.
+          </p>
+          <button
+            type="button"
+            disabled={linking || resetting}
+            onClick={() => void connect({ forceReset: true })}
+            className="w-full py-3 bg-orange-500 rounded-xl text-xs font-bold text-white disabled:opacity-60"
+          >
+            {linking ? 'Opening Stripe…' : 'Start Live Stripe Connect (admin account) →'}
+          </button>
+        </div>
       )}
 
       <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3">
@@ -488,7 +541,7 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
             Add Instant debit card →
           </button>
         )}
-        {acctId && (
+        {acctId && status?.detailsSubmitted && !adminPreview && (
           <button
             type="button"
             disabled={openingDash}
@@ -498,18 +551,35 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
             {openingDash ? 'Opening…' : 'Open Express Dashboard (bank / balance)'}
           </button>
         )}
-        <button
-          type="button"
-          disabled={linking}
-          onClick={() => void connect()}
-          className="w-full py-3 border border-orange-500/40 text-orange-400 rounded-xl text-xs font-bold disabled:opacity-60"
-        >
-          {linking
-            ? 'Opening Stripe…'
-            : acctId
-              ? 'Update identity / bank setup →'
-              : 'Connect Stripe Express →'}
-        </button>
+        {!adminPreview && (
+          <button
+            type="button"
+            disabled={linking || resetting}
+            onClick={() => void connect()}
+            className="w-full py-3 border border-orange-500/40 text-orange-400 rounded-xl text-xs font-bold disabled:opacity-60"
+          >
+            {linking
+              ? 'Opening Stripe…'
+              : acctId
+                ? 'Update identity / bank setup →'
+                : 'Connect Stripe Express →'}
+          </button>
+        )}
+        <p className="text-[10px] text-slate-500 leading-relaxed">
+          {adminPreview
+            ? 'Use the orange admin button above. Express Dashboard stays hidden in admin preview until Connect is finished on this login.'
+            : 'Express Dashboard only works after you finish Connect Stripe Express (Live). If Connect fails, use Reset Stripe link below, then Connect again.'}
+        </p>
+        {!status?.readyForPayouts && (
+          <button
+            type="button"
+            disabled={linking || resetting}
+            onClick={() => void resetConnect()}
+            className="w-full py-2.5 border border-white/10 text-slate-400 rounded-xl text-[11px] font-semibold disabled:opacity-60"
+          >
+            {resetting ? 'Resetting…' : 'Reset Stripe link (fix→Live cutover)'}
+          </button>
+        )}
       </div>
       <button type="button" onClick={onSignOut} className="w-full py-3 text-xs text-rose-300 border border-rose-500/30 rounded-xl">
         Sign out

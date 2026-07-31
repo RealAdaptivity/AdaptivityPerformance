@@ -16,20 +16,43 @@ export function readCachedTechConnectStatus(): TechConnectStatus | null {
 }
 
 export function writeCachedTechConnectStatus(status: TechConnectStatus | null) {
-  if (typeof sessionStorage === 'undefined' || !status?.accountId?.startsWith('acct_')) return;
+  if (typeof sessionStorage === 'undefined') return;
   try {
+    if (!status?.accountId?.startsWith('acct_')) {
+      sessionStorage.removeItem(CACHE_KEY);
+      return;
+    }
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(status));
   } catch {
     /* quota / private mode */
   }
 }
 
+export function clearCachedTechConnectStatus() {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.removeItem(CACHE_KEY);
+  } catch {
+    /* */
+  }
+}
+
+/**
+ * Prefer the last successful edge sync. Do not resurface a local/cached test-mode
+ * acct_ after Live sync returned null — that falsely enables Express Dashboard.
+ */
 export function linkedAccountId(
   status: TechConnectStatus | null | undefined,
-  localStripeId: string | null | undefined
+  localStripeId: string | null | undefined,
+  opts?: { allowLocalFallback?: boolean }
 ): string | null {
   const a = status?.accountId;
   if (a?.startsWith('acct_')) return a;
+  // Explicit null from sync means "not linked on Live" — ignore stale local/cache.
+  if (status && (status.accountId === null || status.accountId === '')) {
+    return null;
+  }
+  if (opts?.allowLocalFallback === false) return null;
   if (localStripeId?.startsWith('acct_')) return localStripeId;
   return readCachedTechConnectStatus()?.accountId ?? null;
 }

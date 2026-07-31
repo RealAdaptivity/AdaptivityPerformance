@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { invokeEdgeFunction } from './edgeFunctionErrors';
 
 const TRADE_TO_SPECIALTY: Record<string, string> = {
   'Mechanical / ASE': 'mechanical',
@@ -153,11 +154,22 @@ export type ApproveTechResult = {
   profileId?: string | null;
   email?: string;
   nextStep?: string;
+  inviteSent?: boolean;
+  inviteMode?: 'invite' | 'recovery';
 };
+
+export async function inviteApprovedTech(applicationId: string): Promise<{
+  ok: boolean;
+  email?: string;
+  mode?: 'invite' | 'recovery';
+  message?: string;
+}> {
+  return invokeEdgeFunction('invite-approved-tech', { applicationId });
+}
 
 export async function approveTechApplication(
   applicationId: string,
-  opts?: { markToolsVerified?: boolean; adminNotes?: string }
+  opts?: { markToolsVerified?: boolean; adminNotes?: string; sendInvite?: boolean }
 ): Promise<ApproveTechResult> {
   const { data, error } = await supabase.rpc('approve_tech_application', {
     p_application_id: applicationId,
@@ -165,7 +177,28 @@ export async function approveTechApplication(
     p_admin_notes: opts?.adminNotes?.trim() || null,
   });
   if (error) throw error;
-  return (data || { ok: true }) as ApproveTechResult;
+  const result = (data || { ok: true }) as ApproveTechResult;
+
+  if (opts?.sendInvite === false) return result;
+
+  try {
+    const invite = await inviteApprovedTech(applicationId);
+    return {
+      ...result,
+      inviteSent: true,
+      inviteMode: invite.mode,
+      nextStep:
+        invite.message ||
+        `Approved — password setup emailed to ${invite.email || result.email || 'the applicant'}.`,
+    };
+  } catch (inviteErr: unknown) {
+    const msg = inviteErr instanceof Error ? inviteErr.message : 'Invite email failed';
+    return {
+      ...result,
+      inviteSent: false,
+      nextStep: `${result.nextStep || 'Approved.'} Password email failed: ${msg}. Use Resend invite.`,
+    };
+  }
 }
 
 export async function rejectTechApplication(applicationId: string, adminNotes?: string) {

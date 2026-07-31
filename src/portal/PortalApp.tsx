@@ -14,6 +14,28 @@ import { PortalLogin } from './PortalLogin';
 import { AdminPortalChooser } from './AdminPortalChooser';
 import { CustomerPortal } from './customer/CustomerPortal';
 import { TechPortal } from './tech/TechPortal';
+import { TechSetPassword } from './TechSetPassword';
+import { linkApprovedTechApplication } from '../services/techApplications';
+
+function readTechInviteFlag(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (new URLSearchParams(window.location.search).get('techInvite') === '1') return true;
+  const hash = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const type = new URLSearchParams(hash).get('type')?.toLowerCase();
+  return type === 'invite' || type === 'recovery' || type === 'signup';
+}
+
+function clearTechInviteFlag() {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('techInvite')) return;
+  params.delete('techInvite');
+  const qs = params.toString();
+  const path = window.location.pathname;
+  window.history.replaceState({}, '', qs ? `${path}?${qs}` : path);
+}
 
 export const PortalApp: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,6 +44,7 @@ export const PortalApp: React.FC = () => {
   const [adminView, setAdminView] = useState<PortalRole | null>(() => getPortalViewMode());
   const [stripeNotice, setStripeNotice] = useState<string | null>(null);
   const [techInitialTab, setTechInitialTab] = useState('jobs');
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(() => readTechInviteFlag());
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -33,6 +56,9 @@ export const PortalApp: React.FC = () => {
     } else if (setup === 'refresh') {
       setStripeNotice('Stripe link expired — open Connect Stripe again from Settings.');
       setTechInitialTab('settings');
+    }
+    if (params.get('techInvite') === '1') {
+      setNeedsPasswordSetup(true);
     }
     if (setup) {
       params.delete('stripeSetup');
@@ -49,8 +75,13 @@ export const PortalApp: React.FC = () => {
     });
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        if (readTechInviteFlag() || event === 'PASSWORD_RECOVERY') {
+          setNeedsPasswordSetup(true);
+        }
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -61,7 +92,14 @@ export const PortalApp: React.FC = () => {
       setAdminView(null);
       return;
     }
-    void fetchPortalProfile(user.id).then(setProfile);
+    void (async () => {
+      try {
+        await linkApprovedTechApplication();
+      } catch {
+        /* optional */
+      }
+      setProfile(await fetchPortalProfile(user.id));
+    })();
   }, [user]);
 
   useEffect(() => {
@@ -72,6 +110,8 @@ export const PortalApp: React.FC = () => {
 
   const handleSignOut = async () => {
     clearPortalViewMode();
+    clearTechInviteFlag();
+    setNeedsPasswordSetup(false);
     await signOutPortal();
     setUser(null);
     setProfile(null);
@@ -83,11 +123,39 @@ export const PortalApp: React.FC = () => {
     setAdminView(mode);
   };
 
+  const finishPasswordSetup = async () => {
+    clearTechInviteFlag();
+    setNeedsPasswordSetup(false);
+    if (user) {
+      try {
+        await linkApprovedTechApplication();
+      } catch {
+        /* */
+      }
+      setProfile(await fetchPortalProfile(user.id));
+    }
+    setPortalViewMode('tech');
+    setAdminView('tech');
+    setTechInitialTab('settings');
+    setStripeNotice('Password saved. Connect Stripe Express next to get paid.');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#090a0f] flex items-center justify-center text-slate-400 text-sm">
         Loading portal…
       </div>
+    );
+  }
+
+  if (user && needsPasswordSetup) {
+    return (
+      <TechSetPassword
+        email={user.email}
+        onDone={() => {
+          void finishPasswordSetup();
+        }}
+      />
     );
   }
 

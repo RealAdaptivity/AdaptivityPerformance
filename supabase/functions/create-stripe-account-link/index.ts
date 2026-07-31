@@ -269,6 +269,20 @@ Deno.serve(async (req) => {
     const statusOnly = body.action === 'status' || body.action === 'sync';
     const expressLogin =
       body.action === 'express_login' || body.action === 'express_dashboard';
+    const forceRecreate =
+      body.forceRecreate === true || body.action === 'reset' || body.action === 'force_recreate';
+
+    if (forceRecreate) {
+      await clearStoredStripeAccountId(supabase, user.id);
+      accountId = undefined;
+      if (statusOnly || body.action === 'reset') {
+        return jsonResponse({
+          ...accountStatusPayload(null),
+          reset: true,
+          message: 'Cleared saved Connect account. Tap Connect Stripe Express to start Live onboarding.',
+        });
+      }
+    }
 
     const reconcileCanonicalAccount = async (): Promise<string | undefined> => {
       const canonical = await recoverConnectAccountForProfile(user.id, techEmail);
@@ -323,14 +337,37 @@ Deno.serve(async (req) => {
       accountId = account.id as string;
       await persistStripeAccountId(supabase, user.id, accountId, techName);
     } else {
-      await stripeRequest(`/accounts/${accountId}`, 'POST', {
-        ...expressAccountBrandingUpdate(businessSite),
-        ...expressAccountCapabilityRequest(),
-        metadata: {
-          adaptivity_profile_id: user.id,
-          tech_name: techName,
-        },
-      });
+      try {
+        await stripeRequest(`/accounts/${accountId}`, 'POST', {
+          ...expressAccountBrandingUpdate(businessSite),
+          ...expressAccountCapabilityRequest(),
+          metadata: {
+            adaptivity_profile_id: user.id,
+            tech_name: techName,
+          },
+        });
+      } catch (brandErr) {
+        const brandMsg = brandErr instanceof Error ? brandErr.message : String(brandErr);
+        // Test-mode acct_ left in DB after Live cutover, or deleted Express account.
+        if (/no such account|resource_missing|similar object exists in test mode/i.test(brandMsg)) {
+          await clearStoredStripeAccountId(supabase, user.id);
+          if (statusOnly) {
+            return jsonResponse(accountStatusPayload(null));
+          }
+          const account = await stripeRequest(
+            '/accounts',
+            'POST',
+            expressAccountCreatePayload(businessSite, techEmail, {
+              adaptivity_profile_id: user.id,
+              tech_name: techName,
+            })
+          );
+          accountId = account.id as string;
+          await persistStripeAccountId(supabase, user.id, accountId, techName);
+        } else {
+          throw brandErr;
+        }
+      }
     }
 
     const account = (await stripeRequest(`/accounts/${accountId}`, 'GET')) as StripeAccount;

@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
 import { techStripeConnectUrls } from '../config/stripeConnectReturn';
 import {
+  clearCachedTechConnectStatus,
   readCachedTechConnectStatus,
   writeCachedTechConnectStatus,
 } from './techConnectCache';
@@ -279,29 +280,60 @@ export async function fetchLocalMechanicStripeId(): Promise<string | null> {
   return typeof id === 'string' && id.startsWith('acct_') ? id : null;
 }
 
+export async function clearMyStripeConnectAccountId(): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const { error } = await supabase
+    .from('mechanic_details')
+    .update({ stripe_account_id: null })
+    .eq('profile_id', user.id);
+  if (error) throw error;
+  clearCachedTechConnectStatus();
+}
+
+/**
+ * After test→live Stripe cutover, DB may still hold a test-mode acct_ that Live cannot open.
+ * Clears the saved id so the next Connect call creates a fresh Live Express account.
+ */
+export async function resetStaleStripeConnectLink(): Promise<void> {
+  await ensureTechProfile();
+  await clearMyStripeConnectAccountId();
+  try {
+    await invokeEdgeFunction<TechConnectStatus>('create-stripe-account-link', {
+      action: 'reset',
+    });
+  } catch {
+    /* edge reset is best-effort; local clear is enough to unblock onboarding */
+  }
+  clearCachedTechConnectStatus();
+}
+
 export async function fetchTechConnectStatus(): Promise<TechConnectStatus | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const localId = await fetchLocalMechanicStripeId();
   const cached = readCachedTechConnectStatus();
 
   try {
     const remote = await invokeEdgeFunction<TechConnectStatus>('create-stripe-account-link', {
       action: 'sync',
     });
-    const merged: TechConnectStatus = {
+    // Trust the edge sync result — do not re-attach a local/cached acct_ that Live already rejected.
+    if (remote?.accountId?.startsWith('acct_')) {
+      writeCachedTechConnectStatus(remote);
+      return remote;
+    }
+    clearCachedTechConnectStatus();
+    return {
       ...remote,
-      accountId:
-        remote?.accountId?.startsWith('acct_')
-          ? remote.accountId
-          : localId ?? cached?.accountId ?? null,
+      accountId: null,
     };
-    if (merged.accountId) writeCachedTechConnectStatus(merged);
-    return merged;
   } catch {
+    const localId = await fetchLocalMechanicStripeId();
     if (cached?.accountId) return cached;
     if (localId) {
       return {
@@ -319,15 +351,55 @@ export async function fetchTechConnectStatus(): Promise<TechConnectStatus | null
 export async function openStripePayoutSetup(): Promise<TechConnectStatus & { onboardingUrl: string }> {
   await ensureTechProfile();
   const urls = techStripeConnectUrls();
-  const data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
-    'create-stripe-account-link',
-    urls
-  );
+
+  // Heal test→live leftovers: clear a saved acct_ the Live platform does not know.
+  const localId = await fetchLocalMechanicStripeId();
+  if (localId) {
+    try {
+      const sync = await invokeEdgeFunction<TechConnectStatus>('create-stripe-account-link', {
+        action: 'sync',
+      });
+      if (!sync?.accountId?.startsWith('acct_')) {
+        await clearMyStripeConnectAccountId();
+      }
+    } catch {
+      // Sync often 500s on a test-mode acct_ with Live keys — clear so create can run.
+      await clearMyStripeConnectAccountId();
+    }
+  }
+
+  let data: (TechConnectStatus & { onboardingUrl: string }) | null = null;
+  try {
+    data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
+      'create-stripe-account-link',
+      urls
+    );
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/no such account|resource_missing|similar object exists in test mode|not a valid/i.test(msg)) {
+      await clearMyStripeConnectAccountId();
+      data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
+        'create-stripe-account-link',
+        { ...urls, forceRecreate: true }
+      );
+    } else {
+      throw e;
+    }
+  }
+
   if (!data?.onboardingUrl) {
-    throw new Error(
-      'Stripe did not return an onboarding link. Your saved Connect id may be invalid — redeploy create-stripe-account-link or clear mechanic_details.stripe_account_id.'
+    await clearMyStripeConnectAccountId();
+    data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
+      'create-stripe-account-link',
+      { ...urls, forceRecreate: true }
     );
   }
+  if (!data?.onboardingUrl) {
+    throw new Error(
+      'Stripe did not return an onboarding link. Tap “Reset Stripe link” then Connect again, or confirm STRIPE_SECRET_KEY on Supabase is the Live key.'
+    );
+  }
+  writeCachedTechConnectStatus(data);
   return data;
 }
 
@@ -341,22 +413,49 @@ export async function attachTechDebitCard(token: string) {
   }>('attach-tech-debit-card', { token });
 }
 
-/** Express Dashboard login (bank settings). Debit cards: use attachTechDebitCard in portal. */
-export async function openExpressDashboard(): Promise<{ loginUrl: string } & TechConnectStatus> {
+/**
+ * Express Dashboard login (bank / debit). Requires a Live Express account.
+ * If none exists yet (common after test→Live cutover), starts onboarding instead
+ * and returns `onboardingUrl` so the UI can open that.
+ */
+export async function openExpressDashboard(): Promise<
+  { loginUrl: string } & TechConnectStatus & { onboardingUrl?: string; openedOnboarding?: boolean }
+> {
   await ensureTechProfile();
-  const data = await invokeEdgeFunction<TechConnectStatus & { loginUrl?: string; expressDashboardUrl?: string }>(
-    'create-stripe-account-link',
-    { action: 'express_login' }
-  );
-  const loginUrl = data.loginUrl || data.expressDashboardUrl;
-  if (!loginUrl?.startsWith('http')) {
+
+  try {
+    const data = await invokeEdgeFunction<
+      TechConnectStatus & { loginUrl?: string; expressDashboardUrl?: string; error?: string }
+    >('create-stripe-account-link', { action: 'express_login' });
+    const loginUrl = data.loginUrl || data.expressDashboardUrl;
+    if (loginUrl?.startsWith('http')) {
+      return { ...data, loginUrl };
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // Fall through to onboarding for "not linked yet" / dead test acct_
+    if (
+      !/connect stripe|finish connect|no such account|resource_missing|test mode|express first/i.test(
+        msg
+      )
+    ) {
+      throw e;
+    }
+    await clearMyStripeConnectAccountId().catch(() => undefined);
+  }
+
+  const onboard = await openStripePayoutSetup();
+  if (!onboard.onboardingUrl?.startsWith('http')) {
     throw new Error(
-      data && 'error' in data && typeof (data as { error?: string }).error === 'string'
-        ? (data as { error: string }).error
-        : 'Could not open Express Dashboard. Finish Connect Stripe Express first.'
+      'No Live Stripe Express account yet. Tap Connect Stripe Express to finish onboarding first.'
     );
   }
-  return { ...data, loginUrl };
+  return {
+    ...onboard,
+    loginUrl: onboard.onboardingUrl,
+    onboardingUrl: onboard.onboardingUrl,
+    openedOnboarding: true,
+  };
 }
 
 export type TechW9Status = {

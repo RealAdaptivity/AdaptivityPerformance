@@ -11,13 +11,7 @@ import {
   type PortalRole,
 } from './portalAuth';
 import { navigateToMarketingSite } from './portalRoute';
-import { TECH_SPECIALTIES, type TechSpecialty } from '../services/techSpecialties';
-import {
-  TECH_INSURANCE_RECOMMENDATION,
-  TECH_LIABILITY_ACK_LABEL,
-  TECH_LIABILITY_SUMMARY,
-  TECH_WORKERS_COMP_NOTICE,
-} from '../content/contractorLiability';
+import { sitePath } from '../site/siteRoute';
 
 export const PortalLogin: React.FC = () => {
   const [portalRole, setPortalRole] = useState<PortalRole>('customer');
@@ -25,43 +19,30 @@ export const PortalLogin: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [vanNumber, setVanNumber] = useState('');
-  const [specialties, setSpecialties] = useState<TechSpecialty[]>(['mechanical']);
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState('');
   const [showReset, setShowReset] = useState(false);
-  const [acceptedLiability, setAcceptedLiability] = useState(false);
-
-  const toggleSpecialty = (id: TechSpecialty) => {
-    setSpecialties((prev) => {
-      if (prev.includes(id)) {
-        const next = prev.filter((s) => s !== id);
-        return next.length ? next : prev;
-      }
-      return [...prev, id];
-    });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
+      // Technician portal is login-only — accounts come from approved Join as Tech.
+      if (isSignUp && portalRole === 'tech') {
+        throw new Error('Technician accounts are invite/approval only. Apply via Join as Tech, then sign in here.');
+      }
+
       if (isSignUp) {
         if (!fullName.trim()) throw new Error('Full name is required.');
-        if (portalRole === 'tech' && !acceptedLiability) {
-          throw new Error('Confirm the liability & insurance acknowledgment to create a tech account.');
-        }
-        const { error: signUpError } = await signUpPortal(portalRole, email, password, fullName, {
+        const { error: signUpError } = await signUpPortal('customer', email, password, fullName, {
           phone,
-          vanNumber,
-          specialties: portalRole === 'tech' ? specialties : undefined,
         });
         if (signUpError) throw signUpError;
         setError(null);
-        alert('Account created. Confirm your email if required, then sign in on the Tech tab.');
+        alert('Account created. Confirm your email if required, then sign in.');
         setIsSignUp(false);
         return;
       }
@@ -79,11 +60,6 @@ export const PortalLogin: React.FC = () => {
         return;
       }
 
-      if (portalRole === 'tech' && profile.role === 'customer') {
-        await ensureTechProfile(vanNumber, specialties);
-        profile = (await fetchPortalProfile(userId)) ?? profile;
-      }
-
       if (portalRole === 'tech') {
         try {
           const { linkApprovedTechApplication } = await import('../services/techApplications');
@@ -99,11 +75,11 @@ export const PortalLogin: React.FC = () => {
         throw new Error(
           portalRole === 'customer'
             ? 'This account is registered as a technician. Switch to the Tech tab to sign in.'
-            : 'This account is a customer account. Switch to the Customer tab to sign in.'
+            : 'No technician account for this login. Apply via Join as Tech and wait for approval, then sign in here.'
         );
       }
       if (portalRole === 'tech') {
-        await ensureTechProfile(vanNumber);
+        await ensureTechProfile();
       }
       setPortalViewMode(portalRole);
     } catch (err: unknown) {
@@ -145,7 +121,9 @@ export const PortalLogin: React.FC = () => {
               {portalRole === 'customer' ? 'Customer portal' : 'Technician portal'}
             </h1>
             <p className="text-xs text-slate-400">
-              Same experience as the mobile apps — garage, booking, dispatch & payouts.
+              {portalRole === 'tech'
+                ? 'Approved techs: use the password from your invite email (or Forgot password).'
+                : 'Same experience as the mobile apps — garage, booking, dispatch & payouts.'}
             </p>
           </div>
 
@@ -166,6 +144,7 @@ export const PortalLogin: React.FC = () => {
               type="button"
               onClick={() => {
                 setPortalRole('tech');
+                setIsSignUp(false);
                 setError(null);
               }}
               className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
@@ -185,78 +164,23 @@ export const PortalLogin: React.FC = () => {
 
           {!showReset ? (
             <form onSubmit={handleSubmit} className="space-y-3 text-sm">
-              {isSignUp && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Full name</label>
-                  <input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 outline-none"
-                  />
-                </div>
-              )}
               {isSignUp && portalRole === 'customer' && (
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Phone (optional)</label>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 outline-none"
-                  />
-                </div>
-              )}
-              {isSignUp && portalRole === 'tech' && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">Van / unit #</label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Full name</label>
                     <input
-                      value={vanNumber}
-                      onChange={(e) => setVanNumber(e.target.value)}
-                      placeholder="Mobile Unit 4"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
                       className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Your trade(s)
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {TECH_SPECIALTIES.map((s) => {
-                        const on = specialties.includes(s.id);
-                        return (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => toggleSpecialty(s.id)}
-                            className={`text-left rounded-xl border px-2.5 py-2 transition-all ${
-                              on
-                                ? 'border-orange-500 bg-orange-500/15 text-orange-200'
-                                : 'border-white/10 bg-[#0b0c10] text-slate-400'
-                            }`}
-                          >
-                            <span className="block text-[11px] font-bold">{s.shortLabel}</span>
-                            <span className="block text-[10px] opacity-80 leading-snug mt-0.5">
-                              {s.description}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 space-y-2">
-                    <p className="text-[11px] text-amber-100/90 leading-relaxed">{TECH_LIABILITY_SUMMARY}</p>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_INSURANCE_RECOMMENDATION}</p>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{TECH_WORKERS_COMP_NOTICE}</p>
-                    <label className="flex items-start gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={acceptedLiability}
-                        onChange={(e) => setAcceptedLiability(e.target.checked)}
-                        className="mt-0.5 rounded border-white/20"
-                        required
-                      />
-                      <span className="text-[11px] text-slate-200 leading-relaxed">{TECH_LIABILITY_ACK_LABEL}</span>
-                    </label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Phone (optional)</label>
+                    <input
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white focus:border-orange-500 outline-none"
+                    />
                   </div>
                 </>
               )}
@@ -282,11 +206,11 @@ export const PortalLogin: React.FC = () => {
               </div>
               <button
                 type="submit"
-                disabled={loading || (isSignUp && portalRole === 'tech' && !acceptedLiability)}
+                disabled={loading}
                 className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-extrabold text-xs rounded-xl shadow-lg disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 <Lock className="w-4 h-4" />
-                {loading ? 'Please wait…' : isSignUp ? 'Create account' : 'Sign in'}
+                {loading ? 'Please wait…' : isSignUp && portalRole === 'customer' ? 'Create account' : 'Sign in'}
               </button>
             </form>
           ) : (
@@ -313,13 +237,15 @@ export const PortalLogin: React.FC = () => {
 
           {!showReset && (
             <div className="flex flex-col gap-2 text-xs text-center">
-              <button
-                type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-orange-400 font-semibold hover:underline"
-              >
-                {isSignUp ? 'Already have an account? Sign in' : 'New here? Create an account'}
-              </button>
+              {portalRole === 'customer' && (
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-orange-400 font-semibold hover:underline"
+                >
+                  {isSignUp ? 'Already have an account? Sign in' : 'New here? Create an account'}
+                </button>
+              )}
               {!isSignUp && (
                 <button type="button" onClick={() => setShowReset(true)} className="text-slate-500 hover:text-slate-300">
                   Forgot password
@@ -331,7 +257,13 @@ export const PortalLogin: React.FC = () => {
           {portalRole === 'tech' && (
             <p className="text-[10px] text-slate-500 flex items-start gap-1">
               <UserPlus className="w-3 h-3 mt-0.5 shrink-0" />
-              Technician accounts require approved onboarding. Use the same credentials as the Adaptivity Tech app.
+              <span>
+                Login only. New techs apply via{' '}
+                <a href={sitePath('join')} className="text-orange-400 hover:underline">
+                  Join as Tech
+                </a>
+                , get approved, then sign in with the same credentials as the Adaptivity Tech app.
+              </span>
             </p>
           )}
         </div>

@@ -94,6 +94,11 @@ const functions = [
     verify_jwt: true,
   },
   { name: 'bootstrap-admin', shared: ['stripe.ts'], verify_jwt: false },
+  {
+    name: 'invite-approved-tech',
+    shared: ['stripe.ts', 'adminAuth.ts'],
+    verify_jwt: true,
+  },
   { name: 'cancel-booking-hold', shared: ['stripe.ts', 'cancelHold.ts'], verify_jwt: true },
   { name: 'reschedule-booking', shared: ['stripe.ts'], verify_jwt: true },
   {

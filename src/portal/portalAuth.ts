@@ -56,25 +56,23 @@ export async function signUpPortal(
   fullName: string,
   extras?: { phone?: string; vanNumber?: string; specialties?: string[] }
 ) {
-  const metadata =
-    portal === 'tech'
-      ? {
-          role: 'tech',
-          full_name: fullName.trim(),
-          van_number: extras?.vanNumber?.trim() || 'Mobile Unit',
-          role_title: 'ASE Technician',
-          specialties: extras?.specialties?.length ? extras.specialties : ['mechanical'],
-        }
-      : {
-          role: 'customer',
-          full_name: fullName.trim(),
-          phone: extras?.phone?.trim() || '',
-        };
+  // Tech accounts are approval-only (Join as Tech → admin approve). Portal signup is customers only.
+  if (portal === 'tech') {
+    throw new Error(
+      'Technician accounts are approval-only. Apply via Join as Tech, then sign in on the Technician tab.'
+    );
+  }
 
   return supabase.auth.signUp({
     email: email.trim(),
     password,
-    options: { data: metadata },
+    options: {
+      data: {
+        role: 'customer',
+        full_name: fullName.trim(),
+        phone: extras?.phone?.trim() || '',
+      },
+    },
   });
 }
 
