@@ -19,6 +19,7 @@ import { FleetHOASection } from '../components/FleetHOASection';
 import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
 import { BnplBanner } from '../components/BnplBanner';
 import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
+import { VinDecoderWidget } from '../components/VinDecoderWidget';
 import { SiteLink } from '../site/SiteLink';
 import type { SitePage } from '../site/siteRoute';
 
@@ -126,6 +127,12 @@ export const HomePage: React.FC<Props> = ({
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
 
       <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
+
+      <VinDecoderWidget
+        onBookWithVehicle={() => {
+          onOpenBooking();
+        }}
+      />
 
       <ComparisonTable onOpenBooking={onOpenBooking} />
 
