@@ -240,7 +240,9 @@ export async function ensureTechProfile(vanNumber?: string, specialties?: string
     payload.p_specialties = specialties;
   }
   const { error } = await supabase.rpc('ensure_tech_profile', payload);
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message || 'Could not ensure technician profile');
+  }
 }
 
 export async function fetchMyTechSpecialties(): Promise<string[]> {
@@ -289,7 +291,9 @@ export async function clearMyStripeConnectAccountId(): Promise<void> {
     .from('mechanic_details')
     .update({ stripe_account_id: null })
     .eq('profile_id', user.id);
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message || 'Could not clear saved Stripe account');
+  }
   clearCachedTechConnectStatus();
 }
 

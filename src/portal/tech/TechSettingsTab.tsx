@@ -66,13 +66,22 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     meetsNecThreshold: boolean;
   } | null>(null);
 
-  /** Prefer same-tab after async — popup blockers often kill window.open post-await. */
+  /** Prefer same-tab navigation — popup blockers often kill window.open post-await. */
   const openStripeUrl = (url: string) => {
-    try {
-      window.location.assign(url);
-    } catch {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+    // Programmatic <a> click is more reliable than location.assign in some in-app browsers.
+    const a = document.createElement('a');
+    a.href = url;
+    a.rel = 'noopener noreferrer';
+    a.target = '_self';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Fallback if the click was ignored
+    window.setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        window.location.href = url;
+      }
+    }, 400);
   };
 
   const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
@@ -179,7 +188,13 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
       }
       openStripeUrl(result.onboardingUrl);
     } catch (e: unknown) {
-      let msg = e instanceof Error ? e.message : 'Could not open Stripe';
+      const raw =
+        e instanceof Error
+          ? e.message
+          : e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string'
+            ? (e as { message: string }).message
+            : '';
+      let msg = raw.trim() || 'Could not open Stripe — check the browser console Network tab for create-stripe-account-link.';
       if (/not a valid url/i.test(msg)) {
         msg +=
           ' Deploy the latest create-stripe-account-link edge function (localhost needs HTTPS business URL + http redirect URLs).';
@@ -188,6 +203,14 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         msg =
           'This login is not a tech account. Sign out and use Technician login (or finish Join as Tech approval), then Connect Stripe.';
       }
+      if (/STRIPE_SECRET_KEY is not configured/i.test(msg)) {
+        msg = 'Stripe is not configured on the server. Set STRIPE_SECRET_KEY (Live) on Supabase Edge Function secrets.';
+      }
+      if (/failed to (send|fetch)|networkerror|cors|functionsrelay/i.test(msg)) {
+        msg =
+          'Could not reach Stripe Connect edge function. Hard-refresh, confirm you are on adaptivityperformance.com/portal, and try again.';
+      }
+      console.error('[Stripe Connect]', e);
       setConnectError(msg);
     } finally {
       setLinking(false);
@@ -539,7 +562,7 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         <button
           type="button"
           disabled={linking || resetting}
-          onClick={() => void connect({ forceReset: adminPreview || !status?.readyForPayouts })}
+          onClick={() => void connect({ forceReset: Boolean(adminPreview) })}
           className="w-full py-3 bg-orange-500 rounded-xl text-xs font-bold text-white disabled:opacity-60"
         >
           {linking

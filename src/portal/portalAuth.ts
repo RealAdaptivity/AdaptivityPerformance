@@ -89,7 +89,9 @@ export async function ensureTechProfile(vanNumber?: string, specialties?: string
     payload.p_specialties = specialties;
   }
   const { error } = await supabase.rpc('ensure_tech_profile', payload);
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message || 'Could not ensure technician profile');
+  }
   try {
     const { linkApprovedTechApplication } = await import('../services/techApplications');
     await linkApprovedTechApplication();

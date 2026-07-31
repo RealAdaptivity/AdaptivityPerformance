@@ -30,3 +30,14 @@ export async function invokeEdgeFunction<T>(
   }
   return data as T;
 }
+
+/** Normalize Postgrest / Auth / plain objects into Error so UI never shows a blank fallback. */
+export function asError(e: unknown, fallback: string): Error {
+  if (e instanceof Error && e.message.trim()) return e;
+  if (e && typeof e === 'object' && 'message' in e) {
+    const m = String((e as { message: unknown }).message || '').trim();
+    if (m) return new Error(m);
+  }
+  if (typeof e === 'string' && e.trim()) return new Error(e);
+  return new Error(fallback);
+}
