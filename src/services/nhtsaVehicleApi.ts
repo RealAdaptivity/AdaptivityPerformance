@@ -127,14 +127,35 @@ export function getEnginesForMake(make: string): string[] {
     ];
   }
 
-  if (m.includes('RAM') || m.includes('DODGE') || m.includes('JEEP') || m.includes('CHRYSLER')) {
+  if (m.includes('DODGE') || m.includes('CHRYSLER')) {
     return [
       '3.6L V6 Pentastar',
       '5.7L V8 HEMI MDS',
       '6.4L V8 SRT HEMI 392',
-      '6.2L Supercharged HEMI V8 (Hellcat / TRX)',
+      '6.2L Supercharged HEMI V8 (Hellcat / SRT Demon)',
+      'Custom Engine Swap (Diesel / LS / Turbo Swap)',
+      '3.0L EcoDiesel V6 (Custom Swap)'
+    ];
+  }
+
+  if (m.includes('RAM')) {
+    return [
+      '3.6L V6 Pentastar',
+      '5.7L V8 HEMI MDS',
+      '6.4L V8 Heavy Duty HEMI',
+      '6.2L Supercharged HEMI V8 (TRX)',
       '3.0L EcoDiesel V6',
       '6.7L Cummins Turbo Diesel I6'
+    ];
+  }
+
+  if (m.includes('JEEP')) {
+    return [
+      '2.0L Turbo 4-Cylinder (4xe PHEV)',
+      '3.6L V6 Pentastar',
+      '5.7L V8 HEMI MDS',
+      '6.4L V8 SRT HEMI 392 (392 Wrangler)',
+      '3.0L EcoDiesel V6'
     ];
   }
 
