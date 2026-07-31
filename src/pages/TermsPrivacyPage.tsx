@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 export const TermsPrivacyPage: React.FC = () => {
@@ -11,28 +11,119 @@ export const TermsPrivacyPage: React.FC = () => {
         <div className="text-center space-y-3 border-b border-white/10 pb-8">
           <div className="inline-flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" />
-            <span>Texas Consumer Protection & Legal Disclosures</span>
+            <span>Texas Consumer Protection & Comprehensive Legal Exclusions</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-            Terms of Service & Legal Policy
+            Terms of Service & Non-Liability Disclosures
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Official terms governing mobile vehicle dispatch, driveway work authorization, supplemental estimates, mechanics' liens, wheel re-torque warnings, and Denton County jurisdiction.
+            Adaptivity Performance LLC • Complete breakdown of service authorizations, liability limitations, non-covered items, pre-existing vehicle conditions, and Texas operational disclosures.
           </p>
         </div>
+
+        {/* SPECIAL SECTION: WHAT WE ARE NOT RESPONSIBLE FOR */}
+        <section className="bg-gradient-to-b from-rose-950/40 via-[#161824] to-[#12141c] p-6 sm:p-8 rounded-3xl border border-rose-500/40 shadow-2xl space-y-6">
+          <div className="flex items-center space-x-3 text-rose-400 border-b border-rose-500/20 pb-4">
+            <ShieldX className="w-7 h-7 text-rose-500" />
+            <div>
+              <h2 className="font-heading text-xl font-extrabold text-white">Comprehensive Non-Liability & Disclaimer Schedule</h2>
+              <p className="text-xs text-rose-300">Explicit list of items, conditions, and damages Adaptivity Performance is NOT legally or financially responsible for:</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            
+            {/* 1. Pre-existing vehicle defects */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <AlertTriangle className="w-4 h-4" /> Pre-Existing Mechanical & Electrical Defects
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for pre-existing fluid leaks, blown head gaskets, seized engines, cracked exhaust manifolds, corroded wiring harnesses, faulty ECUs/modules, or pre-existing engine transmission slip present prior to service.
+              </p>
+            </div>
+
+            {/* 2. Rusted hardware & brittle plastic */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Wrench className="w-4 h-4" /> Rusted Bolts, Seized Pins & Brittle Plastic
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for pre-existing rusted exhaust studs, seized caliper slider pins, stripped factory wheel locks, or brittle plastic engine covers/vacuum lines that shatter during standard factory disassembly of aged or high-mileage vehicles.
+              </p>
+            </div>
+
+            {/* 3. Customer-supplied parts failure */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <ShieldOff className="w-4 h-4" /> Customer-Supplied & Aftermarket Parts
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for premature failure, defect, fitment issues, noise, or secondary damage caused by customer-supplied parts, eBay/Amazon knockoff components, or unbranded aftermarket items. Labor is for installation only.
+              </p>
+            </div>
+
+            {/* 4. Driveway surface condition */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Car className="w-4 h-4" /> Pre-Existing Driveway Oil Stains & Asphalt
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We use protective catch pans and heavy canvas ground covers, but are <strong>NOT responsible</strong> for pre-existing oil/coolant stains on concrete driveways, cracked asphalt, or soft gravel surfaces at customer premises.
+              </p>
+            </div>
+
+            {/* 5. Loss of contents & valuables */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <ShieldCheck className="w-4 h-4" /> Personal Property Left Inside Vehicles
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for loss, theft, or damage to personal items, valuables, tools, cash, electronics, or firearms left inside customer vehicles during driveway service or shop stay. Customers must remove valuables prior to service.
+              </p>
+            </div>
+
+            {/* 6. Indirect & Consequential damages */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <AlertOctagon className="w-4 h-4" /> Rental Cars, Towing & Missed Work
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for indirect, incidental, or consequential expenses including rental car fees, towing expenses, hotel stays, lost business income, or missed work shifts while a vehicle is undergoing service or awaiting parts.
+              </p>
+            </div>
+
+            {/* 7. Misfueling & Bad Gas */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Fuel className="w-4 h-4" /> Contaminated Fuel & Customer Mis-Fueling
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for fuel system contamination, water in gas tanks, DEF fluid put into diesel fuel tanks, or gasoline put into diesel engines by vehicle owners prior to or after service.
+              </p>
+            </div>
+
+            {/* 8. Acts of God & Severe Weather */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <CloudRain className="w-4 h-4" /> Acts of God, Hail, Rodents & Vandalism
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for vehicle damage caused by acts of God, North Texas hail storms, tornado/high wind debris, rodent wire chewing, or third-party vandalism while parked at customer residences or shop lots.
+              </p>
+            </div>
+
+          </div>
+        </section>
 
         {/* Section 1: Core Terms & Supplemental Estimates */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-orange-400 border-b border-white/5 pb-4">
             <FileText className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">1. Service Authorization & Supplemental Estimate Rule</h2>
+            <h2 className="font-heading text-xl font-bold text-white">1. Service Authorization & Teardown Rule</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-            <p>
-              By requesting mobile mechanic dispatch, booking garage hub repairs, or providing a VIN for estimates, you agree to the following operational authorizations:
-            </p>
-
             <div className="space-y-3 bg-[#0b0c10] p-4 rounded-2xl border border-white/5 text-xs">
               <div className="flex items-start space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
@@ -144,33 +235,11 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 5: Pre-Existing Conditions & Customer-Supplied Parts */}
-        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
-          <div className="flex items-center space-x-3 text-rose-400 border-b border-white/5 pb-4">
-            <Wrench className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">5. Pre-Existing Damage & Customer Parts Disclaimer</h2>
-          </div>
-
-          <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
-            <div className="space-y-3 bg-[#0b0c10] p-4 rounded-2xl border border-white/5 text-xs">
-              <div className="flex items-start space-x-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <span><strong>Pre-Existing Rust & Aged Hardware:</strong> Technicians exercise maximum care, but Adaptivity Performance is not responsible for pre-existing rusted exhaust bolts, seized factory hardware, or brittle plastic engine covers broken during standard disassembly of aged high-mileage vehicles.</span>
-              </div>
-
-              <div className="flex items-start space-x-2">
-                <Wrench className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
-                <span><strong>Customer-Supplied Parts Policy:</strong> If a customer provides their own aftermarket parts, technician labor is covered for initial installation only. The 12-Month / 12,000-Mile Warranty applies exclusively to shop-supplied OEM & premium-grade parts.</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 6: Worksite Documentation & Photo Authorization */}
+        {/* Section 5: Worksite Documentation & Photo Authorization */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-emerald-400 border-b border-white/5 pb-4">
             <Camera className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">6. Photo/Video Inspection & TCEQ Compliance</h2>
+            <h2 className="font-heading text-xl font-bold text-white">5. Photo/Video Inspection & TCEQ Compliance</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
@@ -196,11 +265,11 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 7: Limitation of Liability & Jurisdiction */}
+        {/* Section 6: Limitation of Liability & Jurisdiction */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
             <Scale className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">7. Limitation of Liability & Denton County Jurisdiction</h2>
+            <h2 className="font-heading text-xl font-bold text-white">6. Limitation of Liability & Denton County Jurisdiction</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
