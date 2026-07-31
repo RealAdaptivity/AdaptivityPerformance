@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 export const TermsPrivacyPage: React.FC = () => {
@@ -17,7 +17,7 @@ export const TermsPrivacyPage: React.FC = () => {
             Terms of Service & Complete Non-Liability Disclosures
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Complete master agreement governing mobile vehicle dispatch, warranty exclusions, contactless key drops, module reflashing, road test hazards, mechanics' liens, and Denton County jurisdiction.
+            Adaptivity Performance LLC • Complete master agreement governing mobile vehicle dispatch, core parts, EV high-voltage systems, towing, mechanics' liens, and Denton County jurisdiction.
           </p>
         </div>
 
@@ -53,7 +53,17 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 3. Tampering & 3rd Party Interventions */}
+            {/* 3. Pre-existing EV / Hybrid Battery Systems */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <BatteryCharging className="w-4 h-4" /> Pre-Existing EV & Hybrid Battery Cell Degradation
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for pre-existing high-voltage battery cell degradation, internal thermal runaway, inverter degradation, or pre-existing charging port faults on Electric (EV) or Hybrid vehicles (Tesla, Prius, RAV4 Prime) during routine maintenance.
+              </p>
+            </div>
+
+            {/* 4. Tampering & 3rd Party Interventions */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <RefreshCw className="w-4 h-4" /> 3rd Party Tampering & Self-Repair Alterations
@@ -63,7 +73,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 4. Contactless Key Drop Risk */}
+            {/* 5. Contactless Key Drop Risk */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Key className="w-4 h-4" /> Contactless Key Drop & Unattended Keys
@@ -73,7 +83,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 5. Pre-existing ECU & Module Reflashing Risk */}
+            {/* 6. Pre-existing ECU & Module Reflashing Risk */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Zap className="w-4 h-4" /> Pre-Existing Corrupted ECU Module Coding
@@ -83,7 +93,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 6. Test Drive Road Hazards */}
+            {/* 7. Test Drive Road Hazards */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Car className="w-4 h-4" /> Test Drive Road Hazards (Flying Debris & Nails)
@@ -93,7 +103,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 7. Customer-supplied parts failure */}
+            {/* 8. Customer-supplied parts failure */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <ShieldOff className="w-4 h-4" /> Customer-Supplied & Aftermarket Parts
@@ -103,7 +113,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 8. Pre-existing TPMS & Key Fobs */}
+            {/* 9. Pre-existing TPMS & Key Fobs */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Radio className="w-4 h-4" /> TPMS Sensors, Dry-Rot & Aged Key Fobs
@@ -113,7 +123,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 9. Driveway surface condition */}
+            {/* 10. Driveway surface condition */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Car className="w-4 h-4" /> Pre-Existing Driveway Oil Stains & Asphalt
@@ -123,7 +133,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 10. Loss of contents & valuables */}
+            {/* 11. Loss of contents & valuables */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <ShieldCheck className="w-4 h-4" /> Personal Property Left Inside Vehicles
@@ -133,7 +143,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 11. Contaminated Fuel & Customer Mis-Fueling */}
+            {/* 12. Contaminated Fuel & Mis-Fueling */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Fuel className="w-4 h-4" /> Contaminated Fuel & Customer Mis-Fueling
@@ -143,7 +153,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 12. Indirect & Consequential damages */}
+            {/* 13. Indirect & Consequential damages */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <AlertOctagon className="w-4 h-4" /> Rental Cars, Towing & Missed Work
@@ -153,7 +163,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 12. Thermal & Track Exclusions */}
+            {/* 14. Thermal & Track Exclusions */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Flame className="w-4 h-4" /> Extreme Track Use & Overheating Abuse
@@ -188,8 +198,8 @@ export const TermsPrivacyPage: React.FC = () => {
                 <span><strong>Supplemental Repair Authorization (Texas Teardown Rule):</strong> If hidden damage or additional required worn parts are discovered during teardown, no additional labor or parts will be billed without your explicit prior authorization via phone, SMS, or digital consent.</span>
               </div>
               <div className="flex items-start space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <span><strong>Diagnostic Fee Credit Policy:</strong> The $100 diagnostic fee is 100% credited toward completed repairs approved on-site during the dispatch visit.</span>
+                <Wrench className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <span><strong>Old Parts & Core Charge Credit Rule:</strong> Replaced worn parts requiring a manufacturer core credit (alternators, starters, brake calipers) or hazardous fluid filters are disposed/returned for core credit unless customer explicitly requests old parts prior to teardown.</span>
               </div>
             </div>
           </div>
@@ -199,7 +209,7 @@ export const TermsPrivacyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
             <KeyRound className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">2. Driveway Property Access, Safety & Performance Tuning</h2>
+            <h2 className="font-heading text-xl font-bold text-white">2. Driveway Property Access, Safety & Towing Transport</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
@@ -210,6 +220,15 @@ export const TermsPrivacyPage: React.FC = () => {
                 </div>
                 <p className="text-slate-300 leading-relaxed">
                   You authorize technicians to enter your designated driveway, parking space, or residential location. Customers are responsible for providing clear 4-foot clearance around vehicle work zones and ensuring pets are secured.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-amber-400">
+                  <Truck className="w-4 h-4" /> Towing & Shop Transport Authorization
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  You grant authorization to utilize certified flatbed towing partners to transport non-driveable vehicles to our Justin garage hub if driveway repair cannot be safely completed on-site.
                 </p>
               </div>
 
@@ -228,15 +247,6 @@ export const TermsPrivacyPage: React.FC = () => {
                 </div>
                 <p className="text-slate-300 leading-relaxed">
                   Custom aftermarket modifications (lift kits, performance exhausts, ECU remapping, turbo upgrades) are performed for off-road/track application. Customer acknowledges aftermarket modifications may affect factory warranty coverage or emissions compliance.
-                </p>
-              </div>
-
-              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
-                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
-                  <CloudRain className="w-4 h-4" /> Texas Weather Safety Clause
-                </div>
-                <p className="text-slate-300 leading-relaxed">
-                  Mobile outdoor repairs may be rescheduled without penalty in the event of severe North Texas weather (severe lightning, hail, flash flooding, sub-zero freezes, or dangerous wind conditions).
                 </p>
               </div>
             </div>
@@ -355,7 +365,7 @@ export const TermsPrivacyPage: React.FC = () => {
                 <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
                   <Scale className="w-4 h-4" /> Liability Cap & Consequential Damages
                 </div>
-                <p className="text-slate-300 leading-relaxed">
+                <p className="text-slate-[#slate-300] leading-relaxed">
                   Adaptivity Performance's total aggregate liability for any claim arising from service shall not exceed the total dollar amount paid for the specific repair order. We are not liable for indirect, incidental, or consequential damages (such as lost wages or rental vehicle expenses).
                 </p>
               </div>
