@@ -408,6 +408,19 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
 
               {vehicleSelectionMethod === 'dropdown' ? (
                 <div className="space-y-4">
+                  <div className="bg-[#0b0c10] p-3 rounded-xl border border-orange-500/20 flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-300 font-medium flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-orange-400" /> Have a 17-digit VIN? Instantly pull exact factory trim & engine:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setVehicleSelectionMethod('vin')}
+                      className="text-orange-400 font-extrabold hover:underline text-[11px] flex-shrink-0"
+                    >
+                      VIN Lookup ➔
+                    </button>
+                  </div>
+
                   {/* Row 1: Year (2002 - 2026) & Make (All 35 Brands) */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
