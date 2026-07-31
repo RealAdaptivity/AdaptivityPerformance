@@ -59,10 +59,10 @@ export const FactoryWarrantySection: React.FC<FactoryWarrantySectionProps> = ({ 
             <div className="space-y-3 bg-[#0b0c10]/60 p-5 rounded-2xl border border-white/5">
               <div className="flex items-center space-x-2 text-emerald-400 font-extrabold text-xs uppercase tracking-wider">
                 <FileText className="w-4 h-4" />
-                <span>OEM Parts & Digital Service Logs</span>
+                <span>CARFAX Service Partner & OEM Records</span>
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">
-                We use OEM-specified fluids, factory-grade replacement parts, and record every oil change, brake job, and maintenance event directly into your digital vehicle history log for complete documentation.
+                Every service, oil change, brake overhaul, and diagnostic scan completed by Adaptivity Performance is logged directly to your vehicle's official CARFAX Service History Report via VIN integration.
               </p>
             </div>
           </div>
