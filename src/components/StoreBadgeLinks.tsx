@@ -23,12 +23,31 @@ export const StoreBadgeLinks: React.FC<StoreBadgeLinksProps> = ({
   if (!appStoreLive && !playStoreLive) {
     return (
       <div className={`flex flex-wrap items-center gap-3 ${className}`}>
+        {/* Apple App Store Badge (Coming Soon) */}
         <div
-          className={`inline-flex items-center gap-2.5 ${height} px-4 rounded-xl bg-black/60 border border-white/10 text-slate-400`}
+          className={`inline-flex items-center gap-3 ${height} px-4 rounded-xl bg-[#161822] border border-white/15 text-slate-300 shadow-md relative overflow-hidden`}
         >
+          <AppleLogo className="w-5 h-5 text-white shrink-0" />
           <span className="flex flex-col leading-none text-left">
-            <span className={`${textSub} text-slate-500`}>Customer app</span>
-            <span className={`${textMain} font-semibold text-slate-300`}>Coming soon on iOS & Android</span>
+            <span className={`${textSub} text-slate-400 font-medium`}>Coming Soon on</span>
+            <span className={`${textMain} font-extrabold text-white tracking-tight`}>App Store</span>
+          </span>
+          <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full ml-1">
+            iOS
+          </span>
+        </div>
+
+        {/* Google Play Badge (Coming Soon) */}
+        <div
+          className={`inline-flex items-center gap-3 ${height} px-4 rounded-xl bg-[#161822] border border-white/15 text-slate-300 shadow-md relative overflow-hidden`}
+        >
+          <GooglePlayLogo className="w-5 h-5 shrink-0" />
+          <span className="flex flex-col leading-none text-left">
+            <span className={`${textSub} text-slate-400 font-medium`}>Coming Soon on</span>
+            <span className={`${textMain} font-extrabold text-white tracking-tight`}>Google Play</span>
+          </span>
+          <span className="text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full ml-1">
+            Android
           </span>
         </div>
       </div>
