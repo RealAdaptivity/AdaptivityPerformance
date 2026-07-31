@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 export const TermsPrivacyPage: React.FC = () => {
@@ -11,13 +11,13 @@ export const TermsPrivacyPage: React.FC = () => {
         <div className="text-center space-y-3 border-b border-white/10 pb-8">
           <div className="inline-flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" />
-            <span>Texas Consumer Protection & Comprehensive Legal Disclosures</span>
+            <span>Texas Consumer Protection & Master Legal Agreement</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-            Terms of Service & Operational Policies
+            Terms of Service & Complete Non-Liability Disclosures
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Complete master agreement governing mobile dispatch, performance modifications, safety disclaimers, chargebacks, severability, and Denton County jurisdiction.
+            Adaptivity Performance LLC • Complete master agreement governing mobile vehicle dispatch, warranty exclusions, tamper voiding, E-SIGN Act compliance, mechanics' liens, and Denton County jurisdiction.
           </p>
         </div>
 
@@ -53,7 +53,17 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 3. Customer-supplied parts failure */}
+            {/* 3. Tampering & 3rd Party Interventions */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <RefreshCw className="w-4 h-4" /> 3rd Party Tampering & Self-Repair Alterations
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for service failures or part damage resulting from third-party shop tampering, customer self-repairs, or un-authorized disassembly following our repair visit. Any unauthorized tampering immediately voids all warranty coverage.
+              </p>
+            </div>
+
+            {/* 4. Customer-supplied parts failure */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <ShieldOff className="w-4 h-4" /> Customer-Supplied & Aftermarket Parts
@@ -63,7 +73,17 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 4. Driveway surface condition */}
+            {/* 5. Pre-existing TPMS & Key Fobs */}
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
+              <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+                <Radio className="w-4 h-4" /> TPMS Sensors, Dry-Rot & Aged Key Fobs
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                We are <strong>NOT responsible</strong> for pre-existing battery-dead TPMS sensors, cracked valve stems, dry-rotted tires, cracked plastic key fobs, or worn ignition lock cylinders present prior to service.
+              </p>
+            </div>
+
+            {/* 6. Driveway surface condition */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Car className="w-4 h-4" /> Pre-Existing Driveway Oil Stains & Asphalt
@@ -73,7 +93,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 5. Loss of contents & valuables */}
+            {/* 7. Loss of contents & valuables */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <ShieldCheck className="w-4 h-4" /> Personal Property Left Inside Vehicles
@@ -83,7 +103,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 6. Indirect & Consequential damages */}
+            {/* 8. Indirect & Consequential damages */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <AlertOctagon className="w-4 h-4" /> Rental Cars, Towing & Missed Work
@@ -93,7 +113,7 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 7. Misfueling & Bad Gas */}
+            {/* 9. Misfueling & Bad Gas */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
                 <Fuel className="w-4 h-4" /> Contaminated Fuel & Customer Mis-Fueling
@@ -103,28 +123,32 @@ export const TermsPrivacyPage: React.FC = () => {
               </p>
             </div>
 
-            {/* 8. Acts of God & Severe Weather */}
+            {/* 10. Thermal & Track Exclusions */}
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-rose-500/20 space-y-2">
               <div className="font-extrabold text-rose-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-                <CloudRain className="w-4 h-4" /> Acts of God, Hail, Rodents & Vandalism
+                <Flame className="w-4 h-4" /> Extreme Track Use & Overheating Abuse
               </div>
               <p className="text-slate-300 leading-relaxed">
-                We are <strong>NOT responsible</strong> for vehicle damage caused by acts of God, North Texas hail storms, tornado/high wind debris, rodent wire chewing, or third-party vandalism while parked at customer residences or shop lots.
+                We are <strong>NOT responsible</strong> for engine or transmission thermal failure resulting from customer racing, competition track use, extreme off-road mudding abuse, or driving a vehicle while engine temperature gauges indicate severe overheating.
               </p>
             </div>
 
           </div>
         </section>
 
-        {/* Section 1: Core Terms & Supplemental Estimates */}
+        {/* Section 1: Core Terms & E-SIGN Act Acceptance */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-orange-400 border-b border-white/5 pb-4">
-            <FileText className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">1. Service Authorization & Teardown Rule</h2>
+            <PenTool className="w-6 h-6" />
+            <h2 className="font-heading text-xl font-bold text-white">1. Service Authorization & E-SIGN Act Acceptance</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
             <div className="space-y-3 bg-[#0b0c10] p-4 rounded-2xl border border-white/5 text-xs">
+              <div className="flex items-start space-x-2">
+                <PenTool className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
+                <span><strong>E-SIGN Act Binding Electronic Acceptance (15 U.S.C. § 7001):</strong> Clicking "Book Service", approving SMS text quote estimates, or providing digital signature on technician mobile tablets constitutes a legally binding electronic signature under federal law.</span>
+              </div>
               <div className="flex items-start space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                 <span><strong>Service Authorization & Test Driving:</strong> You grant certified Adaptivity Performance technicians permission to operate, test-drive on DFW public roads, and perform authorized diagnostic scans and mechanical repairs on your vehicle.</span>
@@ -136,10 +160,6 @@ export const TermsPrivacyPage: React.FC = () => {
               <div className="flex items-start space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                 <span><strong>Diagnostic Fee Credit Policy:</strong> The $100 diagnostic fee is 100% credited toward completed repairs approved on-site during the dispatch visit.</span>
-              </div>
-              <div className="flex items-start space-x-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <span><strong>CARFAX & AutoCheck Vehicle History Sync:</strong> Completed repair orders (Date, VIN, Mileage, and Services) are transmitted to CARFAX & Experian AutoCheck to maintain your vehicle's resale value.</span>
               </div>
             </div>
           </div>
