@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, Lock, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf } from 'lucide-react';
+import { ShieldCheck, FileText, Lock, CheckCircle2, AlertTriangle, CloudRain, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 export const TermsPrivacyPage: React.FC = () => {
@@ -11,13 +11,13 @@ export const TermsPrivacyPage: React.FC = () => {
         <div className="text-center space-y-3 border-b border-white/10 pb-8">
           <div className="inline-flex items-center space-x-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" />
-            <span>Texas Consumer Protection & Operational Terms</span>
+            <span>Texas Consumer Protection & Legal Disclosures</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
-            Terms of Service & Legal Disclosures
+            Terms of Service & Legal Policy
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Official terms governing mobile vehicle dispatch, driveway work authorization, parts warranties, pre-existing conditions, and environmental safety.
+            Adaptivity Performance LLC • Official terms governing mobile vehicle dispatch, driveway work authorization, parts warranties, pre-existing conditions, mechanics' liens, and Denton County jurisdiction.
           </p>
         </div>
 
@@ -80,11 +80,41 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 3: Pre-Existing Conditions & Customer-Supplied Parts */}
+        {/* Section 3: Cancellation Policy & Mechanics' Lien */}
+        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+          <div className="flex items-center space-x-3 text-orange-400 border-b border-white/5 pb-4">
+            <Clock className="w-6 h-6" />
+            <h2 className="font-heading text-xl font-bold text-white">3. Dispatch Cancellation & Texas Mechanics' Lien</h2>
+          </div>
+
+          <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-orange-400">
+                  <Clock className="w-4 h-4" /> Late Cancellation & No-Show Policy
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Mobile dispatch appointments canceled with less than 2 hours notice or customer no-shows upon mobile van arrival at customer address are subject to a $50 late dispatch fee to cover technician drive time and fuel.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-amber-400">
+                  <ShieldAlert className="w-4 h-4" /> Texas Mechanics' Lien Notice
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Pursuant to Texas Property Code Chapter 70 (§ 70.001), Adaptivity Performance retains a statutory mechanic's possessory lien on all vehicles for authorized labor, materials, and parts provided until invoice amounts are satisfied in full.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 4: Pre-Existing Conditions & Customer-Supplied Parts */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-rose-400 border-b border-white/5 pb-4">
             <Wrench className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">3. Pre-Existing Damage & Customer Parts Disclaimer</h2>
+            <h2 className="font-heading text-xl font-bold text-white">4. Pre-Existing Damage & Customer Parts Disclaimer</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
@@ -102,11 +132,41 @@ export const TermsPrivacyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* Section 4: Privacy & TCEQ Environmental Compliance */}
+        {/* Section 5: Limitation of Liability & Jurisdiction */}
+        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+          <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
+            <Scale className="w-6 h-6" />
+            <h2 className="font-heading text-xl font-bold text-white">5. Limitation of Liability & Denton County Jurisdiction</h2>
+          </div>
+
+          <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                  <Scale className="w-4 h-4" /> Liability Cap & Consequential Damages
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  Adaptivity Performance's total aggregate liability for any claim arising from service shall not exceed the total dollar amount paid for the specific repair order. We are not liable for indirect, incidental, or consequential damages (such as lost wages or rental vehicle expenses).
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                  <MapPin className="w-4 h-4" /> Governing Law: Denton County, TX
+                </div>
+                <p className="text-slate-300 leading-relaxed">
+                  These terms are governed strictly by the laws of the State of Texas. Any legal action, dispute, or arbitration shall be brought exclusively in state or federal courts located in Denton County, Texas.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Section 6: Privacy & TCEQ Environmental Compliance */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-emerald-400 border-b border-white/5 pb-4">
             <Leaf className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">4. TCEQ Environmental Compliance & Data Privacy</h2>
+            <h2 className="font-heading text-xl font-bold text-white">6. TCEQ Environmental Compliance & Data Privacy</h2>
           </div>
 
           <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
