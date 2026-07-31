@@ -87,15 +87,15 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
             <div className="p-5 text-left bg-gradient-to-b from-slate-900/50 to-[#0b0c10] rounded-xl mt-2 border border-white/5">
               {activeTab === 'mobile' ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
                       <Truck className="w-4 h-4" /> Mobile Mechanic Van Service
                     </span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded font-bold">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded font-bold whitespace-nowrap">
                         $2.00 / mi Travel Rate
                       </span>
-                      <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-medium">
+                      <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-medium whitespace-nowrap">
                         Zero Towing Fees
                       </span>
                     </div>
@@ -110,11 +110,11 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
                       <Wrench className="w-4 h-4" /> Full-Equipped Shop Location
                     </span>
-                    <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-medium">
+                    <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-medium whitespace-nowrap">
                       Specialized Heavy Duty Lift
                     </span>
                   </div>
