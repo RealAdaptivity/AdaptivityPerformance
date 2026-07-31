@@ -14,6 +14,7 @@ import { ReferralModal } from './components/ReferralModal';
 import { StickyMobileActionBar } from './components/StickyMobileActionBar';
 import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Capacitor } from '@capacitor/core';
 import { StandaloneTechApp } from './components/StandaloneTechApp';
 import { AdminApp } from './admin/AdminApp';
@@ -358,6 +359,7 @@ export function App() {
   return (
     <BookingProvider>
       <MainAppContent />
+      <CookieConsentBanner />
     </BookingProvider>
   );
 }

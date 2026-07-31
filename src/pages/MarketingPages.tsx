@@ -14,6 +14,8 @@ import { WantToLearnPage } from './WantToLearnPage';
 import { WantToTeachPage } from './WantToTeachPage';
 import { BlogIndexPage } from './BlogIndexPage';
 import { TermsPrivacyPage } from './TermsPrivacyPage';
+import { PrivacyPolicyPage } from './PrivacyPolicyPage';
+import { NotFoundPage } from './NotFoundPage';
 import type { SitePage } from '../site/siteRoute';
 
 type SharedActions = {
@@ -94,11 +96,15 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return <BlogIndexPage />;
     case 'terms':
       return <TermsPrivacyPage />;
+    case 'privacy':
+      return <PrivacyPolicyPage />;
+    case 'notFound':
+      return <NotFoundPage />;
     case 'blogPost':
     case 'city':
     case 'home':
       return null;
     default:
-      return null;
+      return <NotFoundPage />;
   }
 }

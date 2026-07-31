@@ -21,6 +21,8 @@ export type SitePage =
   | 'blogPost'
   | 'city'
   | 'terms'
+  | 'privacy'
+  | 'notFound'
   | 'referral';
 
 const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>, string> = {
@@ -40,6 +42,8 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>,
   faq: 'faq',
   blog: 'blog',
   terms: 'terms',
+  privacy: 'privacy',
+  notFound: '404',
 };
 
 const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>> = Object.fromEntries(
@@ -47,6 +51,11 @@ const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'r
     .filter(([, seg]) => seg)
     .map(([page, seg]) => [seg, page])
 ) as Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>>;
+
+/** Unknown paths that don't match any segment show the 404 page */
+export function pageFromSegmentOrNotFound(segment: string): SitePage {
+  return SEGMENT_TO_PAGE[segment] || 'notFound';
+}
 
 /** Legacy homepage anchors → page routes */
 const HASH_TO_PAGE: Record<string, SitePage> = {
@@ -133,7 +142,7 @@ export function readSitePage(): SitePage {
     return 'home';
   }
   const segment = path.replace(/^\//, '').split('/')[0] || '';
-  return SEGMENT_TO_PAGE[segment] || 'home';
+  return SEGMENT_TO_PAGE[segment] || 'notFound';
 }
 
 function subscribeToRoute(callback: () => void) {
