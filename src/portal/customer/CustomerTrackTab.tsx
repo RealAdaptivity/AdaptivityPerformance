@@ -257,14 +257,37 @@ export const CustomerTrackTab: React.FC = () => {
                 <p className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">Receipt</p>
                 <ul className="space-y-1.5">
                   {booking.quoteLineItems.map((item, i) => (
-                    <li key={i} className="flex justify-between gap-2 text-xs text-slate-300">
-                      <span>{item.title}</span>
-                      <span className="font-mono text-white shrink-0">
-                        {dollars((item.labor_cents || 0) + (item.parts_cents || 0))}
-                      </span>
+                    <li key={i} className="space-y-0.5">
+                      <div className="flex justify-between gap-2 text-xs text-slate-300">
+                        <span>{item.title}</span>
+                        <span className="font-mono text-white shrink-0">
+                          {dollars((item.labor_cents || 0) + (item.parts_cents || 0))}
+                        </span>
+                      </div>
+                      {(item.labor_cents > 0 || item.parts_cents > 0) &&
+                        !(item.labor_cents > 0 && item.parts_cents === 0 && /diagnostic/i.test(item.title)) && (
+                          <p className="text-[10px] text-slate-500">
+                            {item.labor_cents > 0 ? `Labor ${dollars(item.labor_cents)}` : ''}
+                            {item.labor_cents > 0 && item.parts_cents > 0 ? ' · ' : ''}
+                            {item.parts_cents > 0 ? `Parts ${dollars(item.parts_cents)}` : ''}
+                          </p>
+                        )}
                     </li>
                   ))}
                 </ul>
+                {booking.quoteLineItems.length === 0 && booking.capturedAmountCents != null && (
+                  <p className="text-[11px] text-slate-400">
+                    Total charged (line detail unavailable for this job).
+                  </p>
+                )}
+                {booking.quoteDiagnosticFeeCents != null && booking.quoteDiagnosticFeeCents > 0 && (
+                  <p className="text-[10px] text-slate-500">
+                    Includes {dollars(booking.quoteDiagnosticFeeCents)} diagnostic
+                    {booking.quoteRepairsCents != null && booking.quoteRepairsCents > 0
+                      ? ` + ${dollars(booking.quoteRepairsCents)} repairs`
+                      : ''}
+                  </p>
+                )}
                 <p className="flex justify-between text-white font-bold text-xs pt-1 border-t border-white/10">
                   <span>Total charged</span>
                   <span>{dollars(booking.capturedAmountCents ?? booking.quoteTotalCents)}</span>

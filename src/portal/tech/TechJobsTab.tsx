@@ -178,7 +178,11 @@ export const TechJobsTab: React.FC = () => {
   const sendReceiptSms = async (
     job: DispatchBooking,
     amountDollars: number,
-    kind: 'charge' | 'diagnostic_only' | 'no_show'
+    kind: 'charge' | 'diagnostic_only' | 'no_show',
+    extras?: {
+      lines?: { title: string; laborDollars: number; partsDollars: number }[];
+      diagnosticDollars?: number;
+    }
   ) => {
     if (!job.phone) return;
     const result = await sendChargeReceiptSmsAuto({
@@ -187,6 +191,8 @@ export const TechJobsTab: React.FC = () => {
       referenceCode: job.referenceCode,
       amountDollars,
       kind,
+      lines: extras?.lines,
+      diagnosticDollars: extras?.diagnosticDollars,
     });
     if (result.via === 'twilio') {
       setMessage((prev) => `${prev || 'Done'} · Receipt SMS sent.`);
@@ -310,7 +316,10 @@ export const TechJobsTab: React.FC = () => {
           `Charged $${result.capturedAmountDollars?.toFixed(2)} — your 70% share $${result.techPayoutDollars?.toFixed(2)} to Connect`
         );
       }
-      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge');
+      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge', {
+        lines: lineItems,
+        diagnosticDollars: holdDollars,
+      });
       finishJob();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Charge failed');
@@ -590,10 +599,54 @@ export const TechJobsTab: React.FC = () => {
                 rows={2}
                 className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
               />
-              <p className="text-[10px] text-slate-500">
-                Total charge = ${chargeTotal.toFixed(2)} (${holdDollars.toFixed(0)} diagnostic + $
-                {repairsSubtotal.toFixed(2)} repairs)
-              </p>
+
+              {/* Itemized charge preview — show customer before charging */}
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+                <p className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">
+                  Itemized charge (show customer)
+                </p>
+                <div className="flex justify-between gap-2 text-[11px] text-slate-300">
+                  <span>Mobile diagnostic visit</span>
+                  <span className="font-mono text-white shrink-0">${holdDollars.toFixed(2)}</span>
+                </div>
+                {lines
+                  .map((l) => {
+                    const labor = Number(l.laborDollars) || 0;
+                    const parts = Number(l.partsDollars) || 0;
+                    const title = l.title.trim();
+                    if (!title || labor + parts <= 0) return null;
+                    return { title, labor, parts, total: labor + parts };
+                  })
+                  .filter(Boolean)
+                  .map((row, i) =>
+                    row ? (
+                      <div key={i} className="space-y-0.5">
+                        <div className="flex justify-between gap-2 text-[11px] text-slate-300">
+                          <span>{row.title}</span>
+                          <span className="font-mono text-white shrink-0">${row.total.toFixed(2)}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-500 pl-1">
+                          Labor ${row.labor.toFixed(2)}
+                          {row.parts > 0 ? ` · Parts $${row.parts.toFixed(2)}` : ''}
+                        </p>
+                      </div>
+                    ) : null
+                  )}
+                {repairsSubtotal <= 0 && (
+                  <p className="text-[10px] text-amber-300/90">
+                    Add repair lines above, or use Diagnostic only / No-show below.
+                  </p>
+                )}
+                <div className="flex justify-between gap-2 text-xs font-bold text-white pt-1.5 border-t border-white/10">
+                  <span>Total to charge</span>
+                  <span className="font-mono">${chargeTotal.toFixed(2)}</span>
+                </div>
+                <p className="text-[10px] text-slate-500">
+                  Includes ${holdDollars.toFixed(0)} diagnostic
+                  {repairsSubtotal > 0 ? ` + $${repairsSubtotal.toFixed(2)} repairs` : ''}
+                </p>
+              </div>
+
               <label className="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer">
                 <input
                   type="checkbox"

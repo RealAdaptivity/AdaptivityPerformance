@@ -223,6 +223,17 @@ Deno.serve(async (req) => {
 
       repairsCents = normalized.reduce((sum, i) => sum + i.labor_cents + i.parts_cents, 0);
       totalChargeCents = holdCents + repairsCents;
+
+      // Always show the diagnostic hold as its own invoice line so receipts match the total.
+      normalized = [
+        {
+          title: 'Mobile diagnostic visit',
+          labor_cents: holdCents,
+          parts_cents: 0,
+          notes: 'Diagnostic hold applied toward this visit',
+        },
+        ...normalized,
+      ];
     }
 
     // Apply available account credit (ledger sum) up to this charge
