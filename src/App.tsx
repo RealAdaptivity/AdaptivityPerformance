@@ -240,16 +240,12 @@ function MainAppContent() {
 
       <main className="flex-grow pb-16 md:pb-0">
         {page === 'home' ? (
-          <>
-            <HomePage
-              onOpenBooking={openBooking}
-              onSelectServiceMode={setActiveServiceMode}
-              onOpenRecruitment={() => setIsRecruitmentOpen(true)}
-              onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
-            />
-            <DiagnosticCreditBanner onOpenBooking={openBooking} />
-            <BnplBanner onOpenBooking={openBooking} />
-          </>
+          <HomePage
+            onOpenBooking={openBooking}
+            onSelectServiceMode={setActiveServiceMode}
+            onOpenRecruitment={() => setIsRecruitmentOpen(true)}
+            onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
+          />
         ) : page === 'city' && cityLanding ? (
           <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
         ) : page === 'referral' && referralCode ? (

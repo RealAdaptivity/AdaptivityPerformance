@@ -16,6 +16,8 @@ import { Hero } from '../components/Hero';
 import { Testimonials } from '../components/Testimonials';
 import { ComparisonTable } from '../components/ComparisonTable';
 import { FleetHOASection } from '../components/FleetHOASection';
+import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
+import { BnplBanner } from '../components/BnplBanner';
 import { SiteLink } from '../site/SiteLink';
 import type { SitePage } from '../site/siteRoute';
 
@@ -204,6 +206,10 @@ export const HomePage: React.FC<Props> = ({
           </div>
         </div>
       </section>
+
+      <DiagnosticCreditBanner onOpenBooking={onOpenBooking} />
+
+      <BnplBanner onOpenBooking={onOpenBooking} />
 
       <Testimonials />
     </>
