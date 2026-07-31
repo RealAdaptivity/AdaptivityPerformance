@@ -1,5 +1,7 @@
 /** Weekly tech earnings summary — printable HTML (browser print → PDF). */
 
+import { openPrintableHtmlWindow } from './openPrintableHtml';
+
 export type WeeklyPayoutLine = {
   bookingReference: string | null;
   techTransferCents: number | null;
@@ -60,13 +62,13 @@ export function buildWeeklyEarningsHtml(rows: WeeklyPayoutLine[]): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><title>Weekly earnings summary</title>
 <style>
-  body{font-family:Georgia,serif;max-width:720px;margin:40px auto;color:#111;padding:0 20px;line-height:1.45;font-size:14px}
-  h1{font-size:22px;margin:0 0 8px}
+  body{font-family:Georgia,serif;max-width:720px;margin:40px auto;color:#111;background:#fff;padding:0 20px;line-height:1.45;font-size:14px}
+  h1{font-size:22px;margin:0 0 8px;color:#111}
   .sub{color:#555;font-size:12px;margin:0 0 24px}
   table{width:100%;border-collapse:collapse;margin-top:16px}
-  th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}
+  th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px;color:#111}
   th{background:#f5f5f5}
-  .total{margin-top:20px;font-size:16px;font-weight:700}
+  .total{margin-top:20px;font-size:16px;font-weight:700;color:#111}
   @media print{body{margin:12px}}
 </style></head><body>
   <h1>Weekly earnings summary</h1>
@@ -76,15 +78,10 @@ export function buildWeeklyEarningsHtml(rows: WeeklyPayoutLine[]): string {
     <tbody>${bodyRows}</tbody>
   </table>
   <p class="total">Total tech share: $${total.toFixed(2)}</p>
-  <script>window.onload=()=>window.print()</script>
+  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},250)});</script>
 </body></html>`;
 }
 
 export function openWeeklyEarningsPrintWindow(rows: WeeklyPayoutLine[]) {
-  const html = buildWeeklyEarningsHtml(rows);
-  const w = window.open('', '_blank', 'noopener,noreferrer,width=780,height=960');
-  if (!w) throw new Error('Pop-up blocked — allow pop-ups to print/save the weekly PDF.');
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  openPrintableHtmlWindow(buildWeeklyEarningsHtml(rows));
 }
