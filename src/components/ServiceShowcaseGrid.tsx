@@ -84,11 +84,11 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
               className={`rounded-3xl border bg-[#12141c] p-6 flex flex-col justify-between transition-all duration-300 hover-lift shadow-xl ${cat.accent}`}
             >
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${cat.iconBg}`}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center flex-shrink-0 ${cat.iconBg}`}>
                     {cat.icon}
                   </div>
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${cat.badgeColor}`}>
+                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap ${cat.badgeColor}`}>
                     {cat.badge}
                   </span>
                 </div>
