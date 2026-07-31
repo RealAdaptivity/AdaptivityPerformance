@@ -82,7 +82,17 @@ export async function fetchModelsForMakeAndYear(make: string, year: string): Pro
     Hyundai: ['Elantra', 'Sonata', 'Tucson', 'Santa Fe', 'Palisade', 'Kona', 'Genesis Coupe', 'Veloster'],
     Kia: ['Telluride', 'Sorento', 'Sportage', 'Forte', 'K5', 'Stinger', 'Carnival', 'Soul'],
     Genesis: ['G70', 'G80', 'G90', 'GV70', 'GV80'],
-    BMW: ['3 Series', '5 Series', '7 Series', 'X3', 'X5', 'X7', 'M3', 'M5', 'M4', 'M2', 'Z4'],
+    BMW: [
+      '330i / 330i xDrive', '340i / M340i', '328i / 335i (E90/F30)', '3 Series',
+      '530i / 530i xDrive', '540i / M550i', '528i / 535i / 550i', '5 Series',
+      '740i / 750i / 760i / i7', '7 Series',
+      '430i / 440i / M440i', '4 Series',
+      '228i / 230i / M240i', '2 Series',
+      'X1', 'X2', 'X3 (xDrive30i/M40i)', 'X4', 'X5 (xDrive40i/M50i)', 'X6', 'X7 (xDrive40i/M60i)',
+      'X3 M / X4 M', 'X5 M / X6 M',
+      'M2 (F87 / G87)', 'M3 (E46 / E92 / F80 / G80)', 'M4 (F82 / G82)', 'M5 (E60 / F10 / F90)', 'M8',
+      'Z4 Roadster', 'i4 eDrive40/M50', 'iX xDrive50'
+    ],
     'Mercedes-Benz': ['C-Class', 'E-Class', 'S-Class', 'GLC', 'GLE', 'GLS', 'G-Class', 'AMG GT', 'Sprinter', 'CLA'],
     Audi: ['A4', 'A5', 'A6', 'A8', 'Q5', 'Q7', 'Q8', 'S4', 'S5', 'RS6', 'RS7', 'R8'],
     Porsche: ['911', 'Cayenne', 'Macan', 'Panamera', 'Taycan', '718 Cayman', '718 Boxster'],
