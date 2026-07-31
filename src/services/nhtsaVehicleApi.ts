@@ -39,17 +39,45 @@ export function getVehicleTierKey(make: string, model: string = ''): 'standard' 
 export async function fetchModelsForMakeAndYear(make: string, year: string): Promise<string[]> {
   try {
     const cleanMake = encodeURIComponent(make.trim());
-    const res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsforbyyear/make/${cleanMake}/year/${year}?format=json`);
-    const data = await res.json();
+    // 1. Try querying models by year + make
+    let res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsforbyyear/make/${cleanMake}/year/${year}?format=json`);
+    let data = await res.json();
 
     if (data && data.Results && data.Results.length > 0) {
       const modelNames = Array.from(new Set(data.Results.map((r: any) => String(r.Model_Name).trim()))) as string[];
-      return modelNames.sort();
+      if (modelNames.length > 0) return modelNames.sort();
+    }
+
+    // 2. Fallback: Query all models for make (ignoring year restriction)
+    res = await fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/getmodelsformake/${cleanMake}?format=json`);
+    data = await res.json();
+
+    if (data && data.Results && data.Results.length > 0) {
+      const modelNames = Array.from(new Set(data.Results.map((r: any) => String(r.Model_Name).trim()))) as string[];
+      if (modelNames.length > 0) return modelNames.sort();
     }
   } catch (e) {
-    console.warn('Failed to fetch live models from NHTSA API, using fallback defaults.');
+    console.warn('Failed to fetch live models from NHTSA API:', e);
   }
 
-  // Fallback defaults if offline
-  return ['Base Series', 'Sport Edition', 'Performance Trim', 'Custom Model'];
+  // Fallback realistic defaults per make if offline
+  const fallbackMakeMap: Record<string, string[]> = {
+    Ford: ['F-150', 'F-250 Super Duty', 'F-350', 'Mustang', 'Explorer', 'Bronco', 'Expedition', 'Edge', 'Escape', 'Ranger', 'Maverick', 'Transit'],
+    Chevrolet: ['Silverado 1500', 'Silverado 2500HD', 'Tahoe', 'Suburban', 'Corvette', 'Camaro', 'Equinox', 'Traverse', 'Colorado', 'Blazer'],
+    Toyota: ['Tundra', 'Tacoma', '4Runner', 'RAV4', 'Camry', 'Corolla', 'Highlander', 'Sequoia', 'Supra', 'Land Cruiser'],
+    Honda: ['Civic', 'Accord', 'CR-V', 'Pilot', 'Odyssey', 'Ridgeline', 'Passport', 'HR-V'],
+    RAM: ['1500', '2500', '3500', 'ProMaster', '1500 Classic', 'TRX'],
+    GMC: ['Sierra 1500', 'Sierra 2500HD', 'Yukon', 'Yukon XL', 'Acadia', 'Canyon', 'Terrain'],
+    Jeep: ['Wrangler', 'Grand Cherokee', 'Gladiator', 'Cherokee', 'Compass', 'Renegade', 'Wagoneer'],
+    BMW: ['3 Series', '5 Series', '7 Series', 'X3', 'X5', 'X7', 'M3', 'M5', 'M4', 'Z4'],
+    'Mercedes-Benz': ['C-Class', 'E-Class', 'S-Class', 'GLC', 'GLE', 'GLS', 'G-Class', 'AMG GT', 'Sprinter'],
+    Audi: ['A4', 'A6', 'A8', 'Q5', 'Q7', 'Q8', 'S4', 'S5', 'RS6', 'R8'],
+    Nissan: ['Titan', 'Frontier', 'Altima', 'Rogue', 'Pathfinder', 'Armada', 'Z', 'GT-R', 'Sentra'],
+    Subaru: ['Outback', 'Forester', 'Crosstrek', 'WRX', 'Impreza', 'Ascent', 'BRZ'],
+  };
+
+  const clean = make.trim();
+  if (fallbackMakeMap[clean]) return fallbackMakeMap[clean];
+
+  return [`${clean} Standard Series`, `${clean} Sport Edition`, `${clean} Custom Model`];
 }
