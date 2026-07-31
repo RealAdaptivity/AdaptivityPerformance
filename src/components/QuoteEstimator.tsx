@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Truck, Home, Calendar, Shield, Info, ArrowRight, Navigation, Search, AlertCircle, CheckCircle2, Award, MapPin } from 'lucide-react';
-import { ALL_MAKES_2002_2026, getVehicleTierKey, fetchModelsForMakeAndYear, getEnginesForMake } from '../services/nhtsaVehicleApi';
+import { ALL_MAKES_2002_2026, getVehicleTierKey, fetchModelsForMakeAndYear, getEnginesForMake, getTrimsForMake } from '../services/nhtsaVehicleApi';
 
 interface QuoteEstimatorProps {
   onBookWithEstimate: (estimateDetails: any) => void;
@@ -46,17 +46,6 @@ const VEHICLE_TIERS: Record<string, { name: string; multiplier: number; badge: s
   heavyduty: { name: 'Heavy Duty Truck & Diesel', multiplier: 1.25, badge: 'HEAVY DUTY SPEC (+25%)', desc: 'High fluid volume capacity, heavy rotor torque specs (F-250/350, 2500/3500 HD).' },
   exotic: { name: 'Exotic / High-End Performance', multiplier: 1.50, badge: 'EXOTIC / HIGH-END (+50%)', desc: 'Specialized low-clearance lift equipment, custom torque & track-line parts.' },
 };
-
-// Common Trims for Quick Dropdown Assistance
-const COMMON_TRIMS = [
-  'XL / Base', 'XLT', 'Lariat', 'King Ranch', 'Platinum', 'Limited', 'Raptor', 'Tremor',
-  'LS / LT', 'LTZ', 'High Country', 'Z71 Off-Road', 'Trail Boss', 'RS', 'SS',
-  'SR / SR5', 'TRD Sport', 'TRD Off-Road', 'TRD Pro', 'Limited (Toyota)', '1794 Edition', 'Capstone',
-  'LX / EX', 'EX-L', 'Touring', 'Sport (Honda/Nissan)', 'Type R',
-  'Tradesman', 'Big Horn', 'Laramie', 'Longhorn', 'Limited (RAM)', 'Rebel', 'TRX',
-  'Sport (Jeep)', 'Sahara', 'Rubicon', 'Mojave', 'Overland',
-  'Standard / Base', 'M Sport / AMG Line / S Line', 'Performance / Track Pack'
-];
 
 // Known Local Addresses for Fast Presets
 const QUICK_SAMPLE_ADDRESSES = [
@@ -119,7 +108,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
   const [serviceLocation, setServiceLocation] = useState<'mobile' | 'shop'>(defaultMode);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(['brakes_front']);
 
-  // Fetch models whenever Year or Make changes
+  // Fetch models whenever Year or Make changes & reset Trim/Engine to current make defaults
   useEffect(() => {
     let isMounted = true;
     async function loadModels() {
@@ -133,6 +122,12 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
         setModelsLoading(false);
       }
     }
+
+    const brandEngines = getEnginesForMake(selectedMake);
+    const brandTrims = getTrimsForMake(selectedMake);
+    if (brandEngines.length > 0) setSelectedEngine(brandEngines[0]);
+    if (brandTrims.length > 0) setSelectedTrim(brandTrims[0]);
+
     loadModels();
     return () => { isMounted = false; };
   }, [selectedMake, selectedYear]);
@@ -468,13 +463,13 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                   {/* Row 3: Trim & Engine Customization */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-400 mb-1">Trim Level / Package</label>
+                      <label className="block text-xs font-semibold text-slate-400 mb-1">Trim Level / Package ({selectedMake})</label>
                       <select 
                         value={selectedTrim} 
                         onChange={e => setSelectedTrim(e.target.value)}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:border-orange-500 focus:outline-none mb-1.5"
                       >
-                        {COMMON_TRIMS.map(t => <option key={t} value={t}>{t}</option>)}
+                        {getTrimsForMake(selectedMake).map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                       <input 
                         type="text"

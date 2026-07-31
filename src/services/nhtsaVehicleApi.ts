@@ -190,3 +190,54 @@ export function getEnginesForMake(make: string): string[] {
     '5.0L / 5.7L V8 Engine'
   ];
 }
+
+// Brand-Specific OEM Trim Level Map to ensure exact trims populate per brand
+export function getTrimsForMake(make: string): string[] {
+  const m = make.toUpperCase();
+
+  if (m.includes('FORD') || m.includes('LINCOLN')) {
+    return ['XL / Base', 'XLT', 'Lariat', 'King Ranch', 'Platinum', 'Limited', 'Raptor', 'Tremor', 'ST / RS'];
+  }
+
+  if (m.includes('CHEVROLET') || m.includes('GMC') || m.includes('CADILLAC') || m.includes('BUICK')) {
+    return ['LS / LT', 'LTZ', 'High Country', 'Z71 Off-Road', 'Trail Boss', 'RS / SS', 'Denali', 'AT4', 'V-Series'];
+  }
+
+  if (m.includes('RAM') || m.includes('DODGE') || m.includes('JEEP') || m.includes('CHRYSLER')) {
+    return ['Tradesman', 'Big Horn', 'Laramie', 'Longhorn', 'Limited', 'Rebel', 'TRX', 'R/T / SRT', 'Hellcat', 'Rubicon', 'Sahara', 'Mojave'];
+  }
+
+  if (m.includes('TOYOTA') || m.includes('LEXUS')) {
+    return ['SR / SR5', 'TRD Sport', 'TRD Off-Road', 'TRD Pro', 'Limited', '1794 Edition', 'Capstone', 'F Sport'];
+  }
+
+  if (m.includes('HONDA') || m.includes('ACURA')) {
+    return ['LX / EX', 'EX-L', 'Touring', 'Sport', 'Type R', 'A-Spec', 'Type S'];
+  }
+
+  if (m.includes('AUDI')) {
+    return ['Premium', 'Premium Plus', 'Prestige', 'S Line', 'S Model (S4/S5/SQ5)', 'RS Performance (RS6/RS7/R8)'];
+  }
+
+  if (m.includes('BMW')) {
+    return ['sDrive / xDrive', 'M Sport Package', 'M Performance (M340i/M550i)', 'Full M High Performance (M3/M5/X5M)'];
+  }
+
+  if (m.includes('MERCEDES')) {
+    return ['Base Line', 'AMG Line', 'Exclusive Trim', 'Pinnacle Trim', 'AMG High Performance (AMG 43/53/63)'];
+  }
+
+  if (m.includes('PORSCHE')) {
+    return ['Base', 'S Trim', 'GTS', 'Turbo / Turbo S', 'GT3 / GT3 RS'];
+  }
+
+  if (m.includes('SUBARU')) {
+    return ['Base', 'Premium', 'Limited', 'Touring', 'Wilderness Edition', 'WRX STI'];
+  }
+
+  if (m.includes('NISSAN') || m.includes('INFINITI')) {
+    return ['S', 'SV', 'SL', 'PRO-4X', 'Platinum', 'NISMO', 'LUXE', 'SENSORY'];
+  }
+
+  return ['Base / Standard', 'Sport Package', 'Premium Edition', 'Luxury Trim', 'Performance Spec'];
+}
