@@ -13,6 +13,7 @@ import { CareersPage } from './CareersPage';
 import { WantToLearnPage } from './WantToLearnPage';
 import { WantToTeachPage } from './WantToTeachPage';
 import { BlogIndexPage } from './BlogIndexPage';
+import { TermsPrivacyPage } from './TermsPrivacyPage';
 import type { SitePage } from '../site/siteRoute';
 
 type SharedActions = {
@@ -91,6 +92,8 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return <SEOContentBlock />;
     case 'blog':
       return <BlogIndexPage />;
+    case 'terms':
+      return <TermsPrivacyPage />;
     case 'blogPost':
     case 'city':
     case 'home':

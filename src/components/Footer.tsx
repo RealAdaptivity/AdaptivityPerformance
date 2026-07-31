@@ -171,9 +171,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </span>
         </div>
         <div className="flex items-center space-x-4">
-          <span>Terms of Service</span>
-          <span>Privacy Policy</span>
-          <span>12-Month Warranty</span>
+          <SiteLink to="terms" className="hover:text-orange-400 transition-colors">Terms of Service</SiteLink>
+          <SiteLink to="terms" className="hover:text-orange-400 transition-colors">Privacy Policy</SiteLink>
+          <SiteLink to="about" hash="warranty" className="hover:text-orange-400 transition-colors">12-Month Warranty</SiteLink>
         </div>
       </div>
     </footer>

@@ -20,6 +20,7 @@ export type SitePage =
   | 'blog'
   | 'blogPost'
   | 'city'
+  | 'terms'
   | 'referral';
 
 const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>, string> = {
@@ -38,6 +39,7 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>,
   performance: 'performance',
   faq: 'faq',
   blog: 'blog',
+  terms: 'terms',
 };
 
 const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>> = Object.fromEntries(
