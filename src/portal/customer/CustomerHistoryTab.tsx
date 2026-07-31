@@ -95,13 +95,38 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
     let repairsDollars: number | undefined;
     let techNotes: string | undefined;
 
+    type QuoteRow = {
+      line_items: unknown;
+      diagnostic_fee_cents: number | null;
+      repairs_cents: number | null;
+      tech_notes: string | null;
+    };
+
+    let quote: QuoteRow | null = null;
+
     if (row.active_quote_id) {
-      const { data: quote } = await supabase
+      const { data } = await supabase
         .from('booking_quotes')
         .select('line_items, diagnostic_fee_cents, repairs_cents, tech_notes')
         .eq('id', row.active_quote_id)
         .maybeSingle();
-      const raw = Array.isArray(quote?.line_items) ? (quote!.line_items as QuoteLine[]) : [];
+      quote = (data as QuoteRow | null) ?? null;
+    }
+
+    // Fallback: capture may have saved a quote without linking active_quote_id
+    if (!quote) {
+      const { data } = await supabase
+        .from('booking_quotes')
+        .select('line_items, diagnostic_fee_cents, repairs_cents, tech_notes')
+        .eq('booking_id', row.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      quote = (data as QuoteRow | null) ?? null;
+    }
+
+    if (quote) {
+      const raw = Array.isArray(quote.line_items) ? (quote.line_items as QuoteLine[]) : [];
       lineItems = raw
         .filter((l) => String(l.title || '').trim())
         .map((l) => {
@@ -115,9 +140,13 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
             note: l.notes ? String(l.notes) : undefined,
           };
         });
-      if (quote?.diagnostic_fee_cents != null) diagnosticDollars = Number(quote.diagnostic_fee_cents) / 100;
-      if (quote?.repairs_cents != null) repairsDollars = Number(quote.repairs_cents) / 100;
-      if (quote?.tech_notes) techNotes = String(quote.tech_notes);
+      if (quote.diagnostic_fee_cents != null) {
+        diagnosticDollars = Number(quote.diagnostic_fee_cents) / 100;
+      }
+      if (quote.repairs_cents != null) {
+        repairsDollars = Number(quote.repairs_cents) / 100;
+      }
+      if (quote.tech_notes) techNotes = String(quote.tech_notes);
     }
 
     return {

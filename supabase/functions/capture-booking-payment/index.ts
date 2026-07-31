@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
       .eq('booking_id', booking.id)
       .in('status', ['draft', 'pending']);
 
-    const { data: quote } = await supabase
+    const { data: quote, error: quoteInsertError } = await supabase
       .from('booking_quotes')
       .insert({
         booking_id: booking.id,
@@ -284,6 +284,17 @@ Deno.serve(async (req) => {
       })
       .select('id')
       .single();
+
+    if (quoteInsertError || !quote?.id) {
+      return jsonResponse(
+        {
+          error: `Could not save itemized receipt (labor/parts): ${
+            quoteInsertError?.message || 'quote insert failed'
+          }`,
+        },
+        500
+      );
+    }
 
     const result = await captureHoldAndRemainder({
       supabase,
