@@ -28,6 +28,14 @@ type HistoryRow = {
   customer_address: string;
   created_at: string;
   mechanic_id: string | null;
+  active_quote_id: string | null;
+};
+
+type QuoteLine = {
+  title?: string;
+  labor_cents?: number;
+  parts_cents?: number;
+  notes?: string;
 };
 
 export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId }) => {
@@ -44,7 +52,7 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
       const { data, error: qErr } = await supabase
         .from('bookings')
         .select(
-          'id, reference_code, vehicle_description, services, total_estimate, captured_amount_cents, payment_status, status, customer_name, customer_address, created_at, mechanic_id'
+          'id, reference_code, vehicle_description, services, total_estimate, captured_amount_cents, payment_status, status, customer_name, customer_address, created_at, mechanic_id, active_quote_id'
         )
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false })
@@ -68,11 +76,50 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
     };
   }, [customerId]);
 
-  const receiptData = (row: HistoryRow) => {
+  const receiptData = async (row: HistoryRow) => {
     const total =
       row.captured_amount_cents != null
         ? row.captured_amount_cents / 100
         : Number(row.total_estimate) || 0;
+
+    let lineItems:
+      | {
+          title: string;
+          amountDollars?: number;
+          laborDollars?: number;
+          partsDollars?: number;
+          note?: string;
+        }[]
+      | undefined;
+    let diagnosticDollars: number | undefined;
+    let repairsDollars: number | undefined;
+    let techNotes: string | undefined;
+
+    if (row.active_quote_id) {
+      const { data: quote } = await supabase
+        .from('booking_quotes')
+        .select('line_items, diagnostic_fee_cents, repairs_cents, tech_notes')
+        .eq('id', row.active_quote_id)
+        .maybeSingle();
+      const raw = Array.isArray(quote?.line_items) ? (quote!.line_items as QuoteLine[]) : [];
+      lineItems = raw
+        .filter((l) => String(l.title || '').trim())
+        .map((l) => {
+          const labor = (Number(l.labor_cents) || 0) / 100;
+          const parts = (Number(l.parts_cents) || 0) / 100;
+          return {
+            title: String(l.title).trim(),
+            laborDollars: labor,
+            partsDollars: parts,
+            amountDollars: labor + parts,
+            note: l.notes ? String(l.notes) : undefined,
+          };
+        });
+      if (quote?.diagnostic_fee_cents != null) diagnosticDollars = Number(quote.diagnostic_fee_cents) / 100;
+      if (quote?.repairs_cents != null) repairsDollars = Number(quote.repairs_cents) / 100;
+      if (quote?.tech_notes) techNotes = String(quote.tech_notes);
+    }
+
     return {
       referenceCode: row.reference_code,
       customerName: row.customer_name,
@@ -80,8 +127,16 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
       services: row.services,
       totalDollars: total,
       paymentStatus: row.payment_status || row.status,
-      dateLabel: new Date(row.created_at).toLocaleDateString(),
+      dateLabel: new Date(row.created_at).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
       address: row.customer_address,
+      lineItems,
+      diagnosticDollars,
+      repairsDollars,
+      techNotes,
     };
   };
 
@@ -177,14 +232,30 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
                 )}
                 <button
                   type="button"
-                  onClick={() => openReceiptPrintWindow(receiptData(row))}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        openReceiptPrintWindow(await receiptData(row));
+                      } catch (e) {
+                        setMsg(e instanceof Error ? e.message : 'Could not open receipt');
+                      }
+                    })();
+                  }}
                   className="block w-full text-[11px] font-bold text-orange-400 hover:underline"
                 >
                   Receipt PDF →
                 </button>
                 <button
                   type="button"
-                  onClick={() => openReceiptEmail(receiptData(row))}
+                  onClick={() => {
+                    void (async () => {
+                      try {
+                        openReceiptEmail(await receiptData(row));
+                      } catch (e) {
+                        setMsg(e instanceof Error ? e.message : 'Could not open email receipt');
+                      }
+                    })();
+                  }}
                   className="block w-full text-[11px] font-bold text-slate-400 hover:underline"
                 >
                   Email receipt →
