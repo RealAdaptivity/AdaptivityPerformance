@@ -119,6 +119,8 @@ export async function captureBookingPayment(
   return invokeEdgeFunction<{
     ok: boolean;
     capturedAmountDollars?: number;
+    salesTaxDollars?: number;
+    taxWarning?: string | null;
     techPayoutDollars?: number;
     remainderDollars?: number;
     alreadyCaptured?: boolean;
@@ -453,7 +455,6 @@ export async function fetchTechW9Status(): Promise<TechW9Status> {
   };
 }
 
-/** Certify W-9 after Stripe collected SSN/EIN (or manual ack once tax is on file). */
 /** @deprecated Use signContractorAgreement from contractorAgreement.ts */
 export async function markContractorAgreementSigned(): Promise<string> {
   const { data, error } = await supabase.rpc('mark_contractor_agreement_signed');

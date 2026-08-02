@@ -31,6 +31,7 @@ export async function captureHoldAndRemainder(opts: {
   source: string;
   /** Account credit to refund after capture; tech transfer uses net of this. */
   creditAppliedCents?: number;
+  salesTaxCents?: number;
 }): Promise<CaptureHoldResult & { creditAppliedCents: number; creditRefundId: string | null }> {
   const chargeFromHold = Math.min(opts.holdCents, opts.totalChargeCents);
   const remainderCents = Math.max(0, opts.totalChargeCents - chargeFromHold);
@@ -108,7 +109,10 @@ export async function captureHoldAndRemainder(opts: {
     }
   }
 
-  const netForTransfer = Math.max(0, capturedCents - creditAppliedCents);
+  const netForTransfer = Math.max(
+    0,
+    capturedCents - creditAppliedCents - Math.max(0, Math.round(opts.salesTaxCents ?? 0))
+  );
 
   const chargeId =
     typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;

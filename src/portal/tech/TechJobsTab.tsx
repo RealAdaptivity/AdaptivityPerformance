@@ -186,7 +186,9 @@ export const TechJobsTab: React.FC = () => {
     0
   );
   const holdDollars = (activeJob?.holdAmountCents ?? 1000) / 100;
-  const chargeTotal = holdDollars + repairsSubtotal;
+  const partsSubtotal = lines.reduce((sum, line) => sum + (Number(line.partsDollars) || 0), 0);
+  const estimatedSalesTax = Math.round(partsSubtotal * 0.0825 * 100) / 100;
+  const chargeTotal = holdDollars + repairsSubtotal + estimatedSalesTax;
 
   const finishJob = () => {
     setBusy(false);
@@ -205,6 +207,7 @@ export const TechJobsTab: React.FC = () => {
     extras?: {
       lines?: { title: string; laborDollars: number; partsDollars: number }[];
       diagnosticDollars?: number;
+      salesTaxDollars?: number;
     }
   ) => {
     if (!job.phone) return;
@@ -216,6 +219,7 @@ export const TechJobsTab: React.FC = () => {
       kind,
       lines: extras?.lines,
       diagnosticDollars: extras?.diagnosticDollars,
+      salesTaxDollars: extras?.salesTaxDollars,
     });
     if (result.via === 'twilio') {
       setMessage((prev) => `${prev || 'Done'} · Receipt SMS sent.`);
@@ -357,6 +361,7 @@ export const TechJobsTab: React.FC = () => {
       await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge', {
         lines: lineItems,
         diagnosticDollars: holdDollars,
+        salesTaxDollars: result.salesTaxDollars,
       });
       finishJob();
     } catch (e: unknown) {
@@ -378,7 +383,7 @@ export const TechJobsTab: React.FC = () => {
       setMessage(
         `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
       );
-      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? holdDollars, 'diagnostic_only');
+      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? 100, 'diagnostic_only');
       finishJob();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
@@ -445,9 +450,7 @@ export const TechJobsTab: React.FC = () => {
             )}
             {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
           </div>
-          <span className="text-[10px] text-amber-400 font-bold shrink-0">
-            ${((job.holdAmountCents ?? 1000) / 100).toFixed(0)} hold
-          </span>
+          <span className="text-[10px] text-amber-400 font-bold shrink-0">${holdDollars.toFixed(0)} hold</span>
         </div>
         <div className="flex gap-2">
           <button
@@ -684,6 +687,10 @@ export const TechJobsTab: React.FC = () => {
                     Add repair lines above, or use Diagnostic only / No-show below.
                   </p>
                 )}
+                <div className="flex justify-between gap-2 text-[11px] text-slate-300 pt-1.5 border-t border-white/10">
+                  <span>Estimated sales tax (parts)</span>
+                  <span className="font-mono text-white">${estimatedSalesTax.toFixed(2)}</span>
+                </div>
                 <div className="flex justify-between gap-2 text-xs font-bold text-white pt-1.5 border-t border-white/10">
                   <span>Total to charge</span>
                   <span className="font-mono">${chargeTotal.toFixed(2)}</span>
@@ -691,6 +698,9 @@ export const TechJobsTab: React.FC = () => {
                 <p className="text-[10px] text-slate-500">
                   Includes ${holdDollars.toFixed(0)} diagnostic
                   {repairsSubtotal > 0 ? ` + $${repairsSubtotal.toFixed(2)} repairs` : ''}
+                  {partsSubtotal > 0
+                    ? '. Stripe calculates exact parts tax from the service ZIP when charged.'
+                    : ''}
                 </p>
               </div>
 

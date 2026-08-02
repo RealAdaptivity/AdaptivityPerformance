@@ -17,6 +17,7 @@ export function buildChargeReceiptMessage(opts: {
   /** Optional itemized lines for charge receipts (diagnostic + repairs). */
   lines?: ChargeReceiptLine[];
   diagnosticDollars?: number;
+  salesTaxDollars?: number;
 }): string {
   const first = (opts.customerName || '').trim().split(/\s+/)[0] || 'there';
   const amt = opts.amountDollars.toFixed(2);
@@ -56,6 +57,9 @@ export function buildChargeReceiptMessage(opts: {
     parts.push('Itemized:');
     parts.push(...itemLines);
   }
+  if ((opts.salesTaxDollars || 0) > 0) {
+    parts.push(`Sales tax (parts): $${opts.salesTaxDollars!.toFixed(2)}`);
+  }
   parts.push(`Total charged: $${amt}. Thank you for choosing Adaptivity Performance!`);
   return parts.join('\n');
 }
@@ -68,6 +72,7 @@ export function openChargeReceiptSms(opts: {
   kind: 'charge' | 'diagnostic_only' | 'no_show';
   lines?: ChargeReceiptLine[];
   diagnosticDollars?: number;
+  salesTaxDollars?: number;
 }): boolean {
   const to = normalizePhoneForSms(opts.phone);
   if (!to) return false;
