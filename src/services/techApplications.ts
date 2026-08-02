@@ -147,6 +147,13 @@ export async function fetchTechApplications(): Promise<TechApplicationRow[]> {
   return (data || []).map((row) => mapRow(row as Record<string, unknown>));
 }
 
+export async function updateTechApplicationEmail(applicationId: string, email: string) {
+  return invokeEdgeFunction<{ ok: boolean; email: string; loginUpdated: boolean }>(
+    'update-tech-application-email',
+    { applicationId, email }
+  );
+}
+
 export type ApproveTechResult = {
   ok: boolean;
   alreadyApproved?: boolean;

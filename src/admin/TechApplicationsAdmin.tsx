@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Mail } from 'lucide-react';
+import { Check, Mail, Pencil, X } from 'lucide-react';
 import {
   approveTechApplication,
   fetchTechApplications,
   inviteApprovedTech,
   rejectTechApplication,
+  updateTechApplicationEmail,
   type TechApplicationRow,
 } from '../services/techApplications';
 
@@ -14,6 +15,8 @@ export const TechApplicationsAdmin: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'submitted' | 'all'>('submitted');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingEmail, setEditingEmail] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,6 +70,23 @@ export const TechApplicationsAdmin: React.FC = () => {
       await load();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Reject failed');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const saveEmail = async (row: TechApplicationRow) => {
+    setBusyId(row.id);
+    setMessage(null);
+    try {
+      const result = await updateTechApplicationEmail(row.id, editingEmail);
+      setMessage(result.loginUpdated
+        ? `Email and linked technician login updated to ${result.email}.`
+        : `Application email updated to ${result.email}.`);
+      setEditingId(null);
+      await load();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Could not update email');
     } finally {
       setBusyId(null);
     }
@@ -142,6 +162,27 @@ export const TechApplicationsAdmin: React.FC = () => {
               {row.email} · {row.phone}
               {row.zipCode ? ` · ZIP ${row.zipCode}` : ''}
             </p>
+            {editingId === row.id ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="email"
+                  value={editingEmail}
+                  onChange={(event) => setEditingEmail(event.target.value)}
+                  className="min-w-64 flex-1 rounded-lg border border-white/15 bg-[#0b0c10] px-2.5 py-1.5 text-xs text-white"
+                  aria-label={`Correct email for ${row.fullName}`}
+                />
+                <button type="button" disabled={busyId === row.id || !editingEmail.trim()} onClick={() => void saveEmail(row)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                  <Check className="h-3 w-3" /> Save email
+                </button>
+                <button type="button" onClick={() => setEditingId(null)} className="inline-flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-bold text-slate-300">
+                  <X className="h-3 w-3" /> Cancel
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => { setEditingId(row.id); setEditingEmail(row.email); }} className="inline-flex items-center gap-1 text-xs font-bold text-sky-400 hover:text-sky-300">
+                <Pencil className="h-3 w-3" /> Edit email
+              </button>
+            )}
             <p className="text-xs text-slate-500">
               Exp: {row.yearsExperience || '—'} · Capacity: {row.jobCapacity} · Pay: {row.payPreference}
               {row.hasVehicle ? ' · Has rig' : ' · No vehicle noted'}
