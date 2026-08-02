@@ -1,10 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/stripe.ts';
-import { sendTwilioSms } from '../_shared/twilioSms.ts';
-
-const GENERIC_MESSAGE =
-  'If that phone number matches a recent booking, we sent its tracking ID by text.';
+const GENERIC_MESSAGE = 'No matching booking was found. Check the email and phone used at checkout.';
 
 function digitsOnly(value: unknown) {
   const digits = String(value ?? '').replace(/\D/g, '');
@@ -23,9 +20,13 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
   try {
-    const { phone } = await req.json();
+    const { phone, email } = await req.json();
     const digits = digitsOnly(phone);
     if (digits.length !== 10) return jsonResponse({ error: 'Enter a valid 10-digit phone number.' }, 400);
+    const normalizedEmail = String(email ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return jsonResponse({ error: 'Enter the email address used at checkout.' }, 400);
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -42,30 +43,34 @@ Deno.serve(async (req) => {
     ]);
 
     if ((phoneAttempts ?? 0) >= 3 || (ipAttempts ?? 0) >= 10) {
-      return jsonResponse({ message: GENERIC_MESSAGE });
+      return jsonResponse({ message: GENERIC_MESSAGE, references: [] });
     }
     await supabase.from('tracking_recovery_attempts').insert({ phone_hash: phoneHash, ip_hash: ipHash });
+
+    const { data: paymentRows } = await supabase
+      .from('payments')
+      .select('booking_reference')
+      .ilike('customer_email', normalizedEmail)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    const paidRefs = (paymentRows ?? []).map((row) => row.booking_reference).filter(Boolean);
+    if (paidRefs.length === 0) return jsonResponse({ message: GENERIC_MESSAGE, references: [] });
 
     const { data: bookings } = await supabase
       .from('bookings')
       .select('reference_code, status, created_at')
       .eq('customer_phone_digits', digits)
+      .in('reference_code', paidRefs)
       .order('created_at', { ascending: false })
       .limit(3);
     const matches = bookings ?? [];
-
-    if (matches.length > 0) {
-      const refs = matches.map((row) => `${row.reference_code} (${String(row.status).replaceAll('_', ' ')})`).join(', ');
-      const result = await sendTwilioSms(
-        `+1${digits}`,
-        `Adaptivity Performance tracking ID${matches.length > 1 ? 's' : ''}: ${refs}. Track at https://adaptivityperformance.com/`
-      );
-      if (result.error) console.error('[recover-booking-reference] SMS:', result.error);
-    }
-
-    return jsonResponse({ message: GENERIC_MESSAGE });
+    if (matches.length === 0) return jsonResponse({ message: GENERIC_MESSAGE, references: [] });
+    return jsonResponse({
+      message: 'We found your tracking ID. Select it to open live tracking.',
+      references: matches.map((row) => ({ referenceCode: row.reference_code, status: row.status })),
+    });
   } catch (error) {
     console.error('[recover-booking-reference]', error);
-    return jsonResponse({ message: GENERIC_MESSAGE });
+    return jsonResponse({ message: GENERIC_MESSAGE, references: [] });
   }
 });
