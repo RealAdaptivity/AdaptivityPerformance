@@ -495,6 +495,7 @@ export async function fetchTechYearToDateCompensation(year = new Date().getFullY
   const { data, error } = await supabase
     .from('payments')
     .select('tech_transfer_cents, status, created_at')
+    .eq('is_test', false)
     .gte('created_at', start)
     .lt('created_at', end);
   if (error) throw error;
@@ -527,6 +528,7 @@ export async function fetchTechPayoutHistory(): Promise<TechPayoutRow[]> {
   const { data, error } = await supabase
     .from('payments')
     .select('id, booking_reference, tech_transfer_cents, payout_status, status, payout_error, created_at')
+    .eq('is_test', false)
     .order('created_at', { ascending: false })
     .limit(25);
   if (error) throw error;

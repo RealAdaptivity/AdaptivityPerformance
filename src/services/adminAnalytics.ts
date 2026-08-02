@@ -53,6 +53,7 @@ export async function fetchPnLPaymentSums(days = 30): Promise<PaymentStatusSums>
   const { data, error } = await supabase
     .from('payments')
     .select('amount_cents, status')
+    .eq('is_test', false)
     .gte('created_at', since)
     .limit(5000);
   if (error) throw new Error(error.message);
@@ -161,6 +162,7 @@ export async function fetchPartnerPayoutReport(): Promise<PartnerPayoutRow[]> {
       const { data: pays, error: payErr } = await supabase
         .from('payments')
         .select('booking_id, booking_reference, amount_cents, status')
+        .eq('is_test', false)
         .in('booking_id', chunk)
         .limit(5000);
       if (payErr) {
@@ -195,6 +197,7 @@ export async function fetchPartnerPayoutReport(): Promise<PartnerPayoutRow[]> {
         const { data: pays } = await supabase
           .from('payments')
           .select('booking_reference, amount_cents, status')
+          .eq('is_test', false)
           .in('booking_reference', chunk)
           .limit(5000);
         for (const p of pays || []) {

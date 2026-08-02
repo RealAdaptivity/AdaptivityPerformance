@@ -163,6 +163,7 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
     .select(
       'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, stripe_transfer_id, tech_stripe_account_id, tech_transfer_cents, created_at'
     )
+    .eq('is_test', false)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -191,6 +192,7 @@ export async function fetchAdminNecYtdByStripeAccount(
   const { data, error } = await supabase
     .from('payments')
     .select('tech_stripe_account_id, tech_transfer_cents, status, created_at')
+    .eq('is_test', false)
     .gte('created_at', start)
     .lt('created_at', end)
     .not('tech_stripe_account_id', 'is', null)

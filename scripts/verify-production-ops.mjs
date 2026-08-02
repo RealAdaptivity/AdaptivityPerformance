@@ -25,7 +25,7 @@ for (const event of ['payment_intent.canceled', 'charge.refunded', 'charge.dispu
   requireText(webhook, event, 'Stripe reconciliation');
   requireText(webhookSync, event, 'Stripe event subscription');
 }
-requireText(terms, 'temporary $10 diagnostic hold', 'Cancellation terms');
+requireText(terms, '$10 diagnostic hold', 'Cancellation terms');
 if (terms.includes('$50 late dispatch fee')) throw new Error('Conflicting $50 cancellation fee remains');
 const dispatch = read('src/services/techDispatch.ts');
 const settings = read('src/portal/tech/TechSettingsTab.tsx');

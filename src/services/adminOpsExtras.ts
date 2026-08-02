@@ -162,6 +162,7 @@ export async function fetchFraudFlags(): Promise<FraudFlag[]> {
   const { data: refunds } = await supabase
     .from('payments')
     .select('booking_reference, status, amount_cents')
+    .eq('is_test', false)
     .in('status', ['refunded', 'partially_refunded'])
     .gte('created_at', since)
     .limit(500);
