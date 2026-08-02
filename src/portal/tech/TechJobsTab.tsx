@@ -661,7 +661,7 @@ export const TechJobsTab: React.FC = () => {
               </label>
               <button
                 type="button"
-                disabled={busy || !customerAgreed}
+                disabled={busy}
                 onClick={() => void handleCharge()}
                 className="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
               >
