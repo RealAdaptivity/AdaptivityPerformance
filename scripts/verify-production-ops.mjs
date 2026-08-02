@@ -27,4 +27,16 @@ for (const event of ['payment_intent.canceled', 'charge.refunded', 'charge.dispu
 }
 requireText(terms, 'temporary $10 diagnostic hold', 'Cancellation terms');
 if (terms.includes('$50 late dispatch fee')) throw new Error('Conflicting $50 cancellation fee remains');
+const dispatch = read('src/services/techDispatch.ts');
+const settings = read('src/portal/tech/TechSettingsTab.tsx');
+const w9Migration = read('supabase/migrations/20260802214338_harden_w9_and_job_claims.sql');
+const stripeConnect = read('supabase/functions/create-stripe-account-link/index.ts');
+const taxSync = read('supabase/functions/sync-tech-tax-status/index.ts');
+requireText(dispatch, "supabase.rpc('claim_booking_for_current_tech'", 'Atomic job claim');
+if (dispatch.includes("supabase.rpc('mark_tech_w9_complete'") || settings.includes('markTechW9Complete')) throw new Error('W-9 self-certification remains');
+requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 claim gate');
+requireText(w9Migration, 'and mechanic_id = (select auth.uid())', 'Claim RLS');
+requireText(stripeConnect, 'account.individual?.id_number_provided', 'Stripe individual tax verification');
+requireText(stripeConnect, 'account.company?.tax_id_provided', 'Stripe company tax verification');
+requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
 console.log('Production operations verification passed.');

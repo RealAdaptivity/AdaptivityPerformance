@@ -6,7 +6,6 @@ import {
   fetchMyTechSpecialties,
   fetchTechW9Status,
   fetchTechYearToDateCompensation,
-  markTechW9Complete,
   openExpressDashboard,
   openStripePayoutSetup,
   resetStaleStripeConnectLink,
@@ -60,8 +59,6 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [savingSpecialties, setSavingSpecialties] = useState(false);
   const [specialtyMsg, setSpecialtyMsg] = useState<string | null>(null);
   const [w9, setW9] = useState<TechW9Status | null>(null);
-  const [w9Busy, setW9Busy] = useState(false);
-  const [w9Msg, setW9Msg] = useState<string | null>(null);
   const [agreement, setAgreement] = useState<ContractorAgreementStatus | null>(null);
   const [agreementMsg, setAgreementMsg] = useState<string | null>(null);
   const [signOpen, setSignOpen] = useState(false);
@@ -365,34 +362,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           </p>
         ) : (
           <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
-            Not complete yet. Connect Stripe Express below and submit your SSN or EIN, then tap Mark W-9 complete
-            (or refresh — we auto-detect when Stripe has your tax ID).
+            Not complete yet. Connect Stripe Express below and submit your SSN or EIN. Refresh after onboarding;
+            completion is verified directly with Stripe and cannot be self-certified.
           </p>
-        )}
-        {w9Msg && <p className="text-[11px] text-slate-400">{w9Msg}</p>}
-        {!w9?.completed && (
-          <button
-            type="button"
-            disabled={w9Busy || !(status?.taxIdProvided || status?.detailsSubmitted)}
-            onClick={() => {
-              void (async () => {
-                setW9Busy(true);
-                setW9Msg(null);
-                try {
-                  await markTechW9Complete();
-                  setW9(await fetchTechW9Status());
-                  setW9Msg('W-9 marked complete. You can claim jobs.');
-                } catch (e: unknown) {
-                  setW9Msg(e instanceof Error ? e.message : 'Could not mark W-9 complete');
-                } finally {
-                  setW9Busy(false);
-                }
-              })();
-            }}
-            className="w-full py-3 border border-emerald-500/40 text-emerald-300 rounded-xl text-xs font-bold disabled:opacity-50"
-          >
-            {w9Busy ? 'Saving…' : 'I submitted my tax ID in Stripe — mark W-9 complete'}
-          </button>
         )}
         <a
           href="https://www.irs.gov/pub/irs-pdf/fw9.pdf"

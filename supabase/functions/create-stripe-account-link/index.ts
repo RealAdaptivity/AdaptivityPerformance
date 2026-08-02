@@ -25,6 +25,8 @@ type StripeAccount = {
     currently_due?: string[];
     disabled_reason?: string | null;
   };
+  individual?: { id_number_provided?: boolean } | null;
+  company?: { tax_id_provided?: boolean } | null;
 };
 
 function capabilityIsActive(cap: string | { status?: string } | undefined): boolean {
@@ -100,7 +102,8 @@ function accountStatusPayload(
   }
   const transfersEnabled = transfersCapabilityActive(account);
   const taxIdProvided =
-    Boolean(account.details_submitted) && !taxIdRequirementsOpen(account);
+    Boolean(account.individual?.id_number_provided || account.company?.tax_id_provided) &&
+    !taxIdRequirementsOpen(account);
   return {
     accountId: account.id,
     detailsSubmitted: Boolean(account.details_submitted),
