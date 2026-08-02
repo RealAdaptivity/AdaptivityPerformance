@@ -177,7 +177,7 @@ export const TechJobsTab: React.FC = () => {
     (s, l) => s + (Number(l.laborDollars) || 0) + (Number(l.partsDollars) || 0),
     0
   );
-  const holdDollars = (activeJob?.holdAmountCents ?? 10000) / 100;
+  const holdDollars = (activeJob?.holdAmountCents ?? 1000) / 100;
   const chargeTotal = holdDollars + repairsSubtotal;
 
   const finishJob = () => {
@@ -308,7 +308,22 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && l.laborDollars + l.partsDollars > 0);
 
     if (!lineItems.length) {
-      setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only / No-show.');
+      setBusy(true);
+      setMessage(null);
+      try {
+        const result = await captureBookingPayment(activeJob.referenceCode, {
+          mode: 'diagnostic_only',
+        });
+        setJobPhase('complete');
+        setMessage(
+          `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
+        );
+        await sendReceiptSms(activeJob, result.capturedAmountDollars ?? holdDollars, 'diagnostic_only');
+        finishJob();
+      } catch (e: unknown) {
+        setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
+        setBusy(false);
+      }
       return;
     }
 
@@ -344,7 +359,7 @@ export const TechJobsTab: React.FC = () => {
 
   const handleDiagnosticOnly = async () => {
     if (!activeJob) return;
-    if (!confirm('Charge the $100 diagnostic only and close the job?')) return;
+    if (!confirm(`Charge the $${holdDollars.toFixed(2)} diagnostic only and close the job?`)) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -355,7 +370,7 @@ export const TechJobsTab: React.FC = () => {
       setMessage(
         `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
       );
-      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? 100, 'diagnostic_only');
+      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? holdDollars, 'diagnostic_only');
       finishJob();
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
@@ -365,7 +380,7 @@ export const TechJobsTab: React.FC = () => {
 
   const handleNoShow = async () => {
     if (!activeJob) return;
-    if (!confirm('Customer no-show? Capture the $100 diagnostic hold and close the job.')) return;
+    if (!confirm(`Customer no-show? Capture the $${holdDollars.toFixed(2)} diagnostic hold and close the job.`)) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -422,7 +437,9 @@ export const TechJobsTab: React.FC = () => {
             )}
             {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
           </div>
-          <span className="text-[10px] text-amber-400 font-bold shrink-0">$100 hold</span>
+          <span className="text-[10px] text-amber-400 font-bold shrink-0">
+            ${((job.holdAmountCents ?? 1000) / 100).toFixed(0)} hold
+          </span>
         </div>
         <div className="flex gap-2">
           <button
@@ -508,7 +525,7 @@ export const TechJobsTab: React.FC = () => {
             <p className="text-[11px] text-slate-400">{activeJob.address}</p>
             <p className="text-[11px] text-slate-500">{activeJob.services.join(' · ')}</p>
             <p className="text-[10px] text-amber-400/90 mt-1">
-              $100 diagnostic hold on file — you set labor + parts after diagnosis.
+              ${holdDollars.toFixed(0)} diagnostic hold on file — you set labor + parts after diagnosis.
             </p>
           </div>
 
@@ -688,7 +705,7 @@ export const TechJobsTab: React.FC = () => {
                 onClick={() => void handleDiagnosticOnly()}
                 className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60"
               >
-                Diagnostic only ($100) — no repairs
+                Diagnostic only (${holdDollars.toFixed(0)}) — no repairs
               </button>
               <button
                 type="button"
@@ -696,7 +713,7 @@ export const TechJobsTab: React.FC = () => {
                 onClick={() => void handleNoShow()}
                 className="w-full py-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60"
               >
-                No-show — capture $100 hold
+                No-show — capture ${holdDollars.toFixed(0)} hold
               </button>
             </div>
           )}
