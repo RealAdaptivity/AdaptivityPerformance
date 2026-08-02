@@ -52,6 +52,7 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [showDebitModal, setShowDebitModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [pendingStripeUrl, setPendingStripeUrl] = useState<string | null>(null);
   const [jobCapacity, setJobCapacity] = useState<TechJobCapacity>('multi');
   const [savingCapacity, setSavingCapacity] = useState(false);
   const [capacityMsg, setCapacityMsg] = useState<string | null>(null);
@@ -71,22 +72,15 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     meetsNecThreshold: boolean;
   } | null>(null);
 
-  /** Prefer same-tab navigation — popup blockers often kill window.open post-await. */
+  /** Navigate directly; synthetic link clicks are ignored by some mobile/in-app browsers. */
   const openStripeUrl = (url: string) => {
-    // Programmatic <a> click is more reliable than location.assign in some in-app browsers.
-    const a = document.createElement('a');
-    a.href = url;
-    a.rel = 'noopener noreferrer';
-    a.target = '_self';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    // Fallback if the click was ignored
-    window.setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        window.location.href = url;
-      }
-    }, 400);
+    const parsed = new URL(url);
+    const isStripeHost = parsed.hostname === 'stripe.com' || parsed.hostname.endsWith('.stripe.com');
+    if (parsed.protocol !== 'https:' || !isStripeHost) {
+      throw new Error('Stripe returned an invalid onboarding URL. Please try again.');
+    }
+    setPendingStripeUrl(parsed.toString());
+    window.location.assign(parsed.toString());
   };
 
   const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
@@ -177,6 +171,7 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const connect = async (opts?: { forceReset?: boolean }) => {
     setLinking(true);
     setConnectError(null);
+    setPendingStripeUrl(null);
     try {
       if (opts?.forceReset || adminPreview) {
         // Admin preview + Live cutover: always clear a dead/test acct_ before create.
@@ -570,6 +565,14 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           <p className="text-[11px] text-red-400 leading-relaxed border border-red-500/30 rounded-lg px-3 py-2">
             {connectError}
           </p>
+        )}
+        {pendingStripeUrl && (
+          <a
+            href={pendingStripeUrl}
+            className="block w-full py-3 border border-orange-500/60 text-orange-300 text-center rounded-xl text-xs font-bold"
+          >
+            Open Stripe onboarding manually →
+          </a>
         )}
         {loadError && (
           <p className="text-[11px] text-amber-400 leading-relaxed">
