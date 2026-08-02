@@ -23,6 +23,8 @@ export type DispatchBooking = {
   holdAmountCents: number | null;
   paymentStatus: string;
   preferredDate: string | null;
+  preferredTimeWindow: string | null;
+  customerNotes: string | null;
   mechanicId: string | null;
 };
 
@@ -44,6 +46,8 @@ function mapRow(row: Record<string, unknown>): DispatchBooking {
     holdAmountCents: (row.hold_amount_cents as number | null) ?? null,
     paymentStatus: (row.payment_status as string) || 'none',
     preferredDate: (row.preferred_date as string | null) ?? null,
+    preferredTimeWindow: (row.preferred_time_window as string | null) ?? null,
+    customerNotes: (row.customer_notes as string | null) ?? null,
     mechanicId: (row.mechanic_id as string | null) ?? null,
   };
 }

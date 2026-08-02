@@ -30,6 +30,14 @@ function googleMapsDirectionsUrl(address: string): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 }
 
+function phoneHref(phone: string): string {
+  return `tel:${phone.replace(/[^0-9+]/g, '')}`;
+}
+
+function smsHref(phone: string): string {
+  return `sms:${phone.replace(/[^0-9+]/g, '')}`;
+}
+
 function isTodaysJob(j: DispatchBooking, today: string): boolean {
   return j.preferredDate === today || j.status === 'EN_ROUTE' || j.status === 'ON_SITE';
 }
@@ -522,20 +530,27 @@ export const TechJobsTab: React.FC = () => {
         <div className="rounded-xl border border-orange-500/30 bg-[#12141c] p-4 space-y-3">
           <div>
             <p className="text-sm font-bold text-white">{activeJob.customer}</p>
-            <p className="text-[11px] text-slate-400">{activeJob.address}</p>
-            <p className="text-[11px] text-slate-500">{activeJob.services.join(' · ')}</p>
+            <p className="text-[10px] font-mono text-orange-400">{activeJob.referenceCode}</p>
+            <div className="mt-2 space-y-1 rounded-xl border border-white/10 bg-[#0b0c10] p-3">
+              <p className="text-xs text-white"><span className="text-slate-500">Phone:</span> {activeJob.phone || 'Not provided'}</p>
+              <p className="text-xs text-white"><span className="text-slate-500">Address:</span> {activeJob.address}</p>
+              <p className="text-xs text-white"><span className="text-slate-500">Vehicle:</span> {activeJob.vehicle}</p>
+              {(activeJob.preferredDate || activeJob.preferredTimeWindow) && (
+                <p className="text-xs text-white"><span className="text-slate-500">Scheduled:</span> {[activeJob.preferredDate, activeJob.preferredTimeWindow].filter(Boolean).join(' · ')}</p>
+              )}
+              <p className="text-xs text-white"><span className="text-slate-500">Services:</span> {activeJob.services.join(' · ')}</p>
+              {activeJob.customerNotes && <p className="text-xs text-white"><span className="text-slate-500">Customer notes:</span> {activeJob.customerNotes}</p>}
+            </div>
             <p className="text-[10px] text-amber-400/90 mt-1">
               ${holdDollars.toFixed(0)} diagnostic hold on file — you set labor + parts after diagnosis.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => openNavigate(activeJob.address)}
-            className="w-full py-2.5 bg-blue-700 rounded-xl text-xs font-bold text-white"
-          >
-            Navigate
-          </button>
+          <div className="grid grid-cols-3 gap-2">
+            <a href={phoneHref(activeJob.phone)} aria-disabled={!activeJob.phone} className={`py-2.5 rounded-xl text-center text-xs font-bold text-white ${activeJob.phone ? 'bg-emerald-600' : 'pointer-events-none bg-white/10 opacity-50'}`}>Call</a>
+            <a href={smsHref(activeJob.phone)} aria-disabled={!activeJob.phone} className={`py-2.5 rounded-xl text-center text-xs font-bold text-white ${activeJob.phone ? 'bg-white/10' : 'pointer-events-none bg-white/10 opacity-50'}`}>Text</a>
+            <button type="button" onClick={() => openNavigate(activeJob.address)} className="py-2.5 bg-blue-700 rounded-xl text-xs font-bold text-white">Navigate</button>
+          </div>
 
           <JobChatPanel bookingId={activeJob.id} selfId={null} title="Customer chat" />
 
