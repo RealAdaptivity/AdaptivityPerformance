@@ -74,6 +74,10 @@ export async function fetchBookingByReference(reference: string): Promise<Tracke
   return mapRow(data[0] as Record<string, unknown>);
 }
 
+export async function recoverBookingReferences(phone: string) {
+  return invokeEdgeFunction<{ message: string }>('recover-booking-reference', { phone });
+}
+
 export function subscribeBookingReference(reference: string, onChange: () => void) {
   return supabase
     .channel(`track-${reference}`)

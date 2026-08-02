@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useBookingContext, type Booking } from '../context/BookingContext';
 import { fetchBookingByReference } from '../services/bookingsApi';
+import { recoverBookingReferences } from '../services/trackBooking';
 import { Truck, Phone, ShieldCheck, UserCheck, X, Search } from 'lucide-react';
 
 interface RepairTrackerDemoProps {
@@ -10,21 +11,25 @@ interface RepairTrackerDemoProps {
 }
 
 export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, onClose, onOpenCheckout }) => {
-  const { getBookingById, bookings } = useBookingContext();
-  const [jobSearchInput, setJobSearchInput] = useState('AP-8492');
-  const [searchedBookingId, setSearchedBookingId] = useState('AP-8492');
+  const { getBookingById } = useBookingContext();
+  const [jobSearchInput, setJobSearchInput] = useState('');
+  const [searchedBookingId, setSearchedBookingId] = useState('');
   const [remoteBooking, setRemoteBooking] = useState<Awaited<ReturnType<typeof fetchBookingByReference>>>(null);
+  const [searchError, setSearchError] = useState('');
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryPhone, setRecoveryPhone] = useState('');
+  const [recoveryMessage, setRecoveryMessage] = useState('');
+  const [recovering, setRecovering] = useState(false);
 
   if (!isOpen) return null;
 
-  const currentBooking =
-    remoteBooking ||
-    getBookingById(searchedBookingId) ||
-    bookings[0];
+  const currentBooking = remoteBooking || getBookingById(searchedBookingId) || null;
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const ref = jobSearchInput.trim();
+    if (!ref) return;
+    setSearchError('');
     setSearchedBookingId(ref);
     const remote = await fetchBookingByReference(ref);
     if (remote) {
@@ -32,6 +37,21 @@ export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, on
       setSearchedBookingId(remote.id);
     } else {
       setRemoteBooking(null);
+      setSearchError('No booking found for that tracking ID. Check the ID or recover it by phone.');
+    }
+  };
+
+  const handleRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecovering(true);
+    setRecoveryMessage('');
+    try {
+      const result = await recoverBookingReferences(recoveryPhone);
+      setRecoveryMessage(result.message);
+    } catch (error) {
+      setRecoveryMessage(error instanceof Error ? error.message : 'Unable to send recovery text right now.');
+    } finally {
+      setRecovering(false);
     }
   };
 
@@ -50,7 +70,7 @@ export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, on
                 <h3 className="font-heading text-lg font-bold text-white">Live Customer Repair & Dispatch Tracker</h3>
                 <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">LIVE SYNC</span>
               </div>
-              <p className="text-xs text-slate-400">Job Reference: <span className="text-orange-400 font-mono font-bold">{currentBooking.id}</span></p>
+              <p className="text-xs text-slate-400">Job Reference: <span className="text-orange-400 font-mono font-bold">{currentBooking?.id || 'Enter tracking ID'}</span></p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10">
@@ -74,6 +94,27 @@ export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, on
               Lookup
             </button>
           </form>
+
+          {searchError && <p className="text-xs text-rose-300">{searchError}</p>}
+          <button type="button" onClick={() => setShowRecovery((value) => !value)} className="text-xs font-semibold text-orange-400 hover:text-orange-300">
+            Lost your tracking ID? Get it by text
+          </button>
+          {showRecovery && (
+            <form onSubmit={handleRecovery} className="space-y-2 rounded-xl border border-white/10 bg-[#0b0c10] p-3">
+              <label className="block text-xs text-slate-300">Enter the phone number used when booking.</label>
+              <div className="flex gap-2">
+                <input type="tel" required value={recoveryPhone} onChange={(e) => setRecoveryPhone(e.target.value)} placeholder="(555) 555-1212" className="min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white focus:border-orange-500 focus:outline-none" />
+                <button disabled={recovering} className="rounded-lg bg-orange-500 px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{recovering ? 'Sending…' : 'Text my ID'}</button>
+              </div>
+              {recoveryMessage && <p className="text-xs text-emerald-300">{recoveryMessage}</p>}
+            </form>
+          )}
+
+          {!currentBooking ? (
+            <div className="rounded-2xl border border-white/10 bg-[#0b0c10] p-6 text-center text-sm text-slate-400">
+              Enter your tracking ID above to see live service updates.
+            </div>
+          ) : <>
 
           {/* Mechanic Card */}
           <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/10 flex items-center justify-between">
@@ -204,6 +245,7 @@ export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, on
               </button>
             )}
           </div>
+          </>}
 
         </div>
 
