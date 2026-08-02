@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { attemptTechInstantPayout } from './_shared/instantPayout.ts';
+import { attemptTechInstantPayout } from '../_shared/instantPayout.ts';
 
 const crypto = globalThis.crypto;
 
@@ -224,6 +224,43 @@ Deno.serve(async (req) => {
       .from('payments')
       .update({ status: 'failed', updated_at: new Date().toISOString() })
       .eq('payment_intent_id', pi.id);
+  }
+
+  if (event.type === 'payment_intent.canceled') {
+    const pi = event.data.object;
+    await supabase.from('payments').update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('payment_intent_id', pi.id);
+    await supabase.from('bookings').update({ payment_status: 'canceled', status: 'CANCELED', mechanic_id: null, eta_minutes: 0, distance_miles: 0, updated_at: new Date().toISOString() }).eq('payment_intent_id', pi.id).neq('payment_status', 'captured');
+  }
+
+  if (event.type === 'charge.refunded') {
+    const charge = event.data.object;
+    const paymentIntentId = typeof charge.payment_intent === 'string' ? charge.payment_intent : charge.payment_intent?.id;
+    if (paymentIntentId) {
+      const fullyRefunded = charge.refunded === true || charge.amount_refunded >= charge.amount;
+      const status = fullyRefunded ? 'refunded' : 'partially_refunded';
+      await supabase.from('payments').update({ status, stripe_refund_id: charge.refunds?.data?.[0]?.id ?? null, updated_at: new Date().toISOString() }).eq('payment_intent_id', paymentIntentId);
+      await supabase.from('bookings').update({ payment_status: status, updated_at: new Date().toISOString() }).eq('payment_intent_id', paymentIntentId);
+    }
+  }
+
+  if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.updated') {
+    const dispute = event.data.object;
+    const paymentIntentId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id;
+    if (paymentIntentId) {
+      await supabase.from('payments').update({ status: 'disputed', stripe_dispute_id: dispute.id, dispute_status: dispute.status, payout_status: 'dispute_open', payout_error: `Stripe dispute ${dispute.status}: ${dispute.reason || 'reason unavailable'}`, updated_at: new Date().toISOString() }).eq('payment_intent_id', paymentIntentId);
+      await supabase.from('bookings').update({ payment_status: 'disputed', updated_at: new Date().toISOString() }).eq('payment_intent_id', paymentIntentId);
+    }
+  }
+
+  if (event.type === 'charge.dispute.closed') {
+    const dispute = event.data.object;
+    const paymentIntentId = typeof dispute.payment_intent === 'string' ? dispute.payment_intent : dispute.payment_intent?.id;
+    if (paymentIntentId) {
+      const won = dispute.status === 'won';
+      const status = won ? 'dispute_won' : 'dispute_lost';
+      await supabase.from('payments').update({ status, stripe_dispute_id: dispute.id, dispute_status: dispute.status, payout_status: status, payout_error: won ? null : 'Stripe dispute lost; review technician payout recovery.', updated_at: new Date().toISOString() }).eq('payment_intent_id', paymentIntentId);
+      await supabase.from('bookings').update({ payment_status: status, updated_at: new Date().toISOString() }).eq('payment_intent_id', paymentIntentId);
+    }
   }
 
   if (event.type === 'account.updated') {
