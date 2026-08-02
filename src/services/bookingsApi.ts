@@ -23,7 +23,7 @@ const BOOKING_SELECT = `
     id,
     full_name,
     phone,
-    mechanic_details ( van_number, role_title, rating, stripe_account_id )
+    mechanic_details!mechanic_details_profile_id_fkey ( van_number, role_title, rating, stripe_account_id )
   )
 `;
 

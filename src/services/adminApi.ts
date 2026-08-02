@@ -35,7 +35,7 @@ const ADMIN_BOOKING_SELECT = `
     id,
     full_name,
     phone,
-    mechanic_details ( van_number, role_title, rating, stripe_account_id )
+    mechanic_details!mechanic_details_profile_id_fkey ( van_number, role_title, rating, stripe_account_id )
   )
 `;
 
@@ -94,7 +94,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       full_name,
       phone,
       email,
-      mechanic_details ( van_number, stripe_account_id, tools_verified, specialties )
+      mechanic_details!mechanic_details_profile_id_fkey ( van_number, stripe_account_id, tools_verified, specialties )
     `
     )
     .eq('role', 'tech');
