@@ -60,8 +60,6 @@ export async function fetchDispatchBookings(): Promise<DispatchBooking[]> {
 
 export type TechJobCapacity = 'multi' | 'standalone';
 
-const ACTIVE_JOB_STATUSES = ['EN_ROUTE', 'ON_SITE'] as const;
-
 export async function fetchMyJobCapacity(): Promise<TechJobCapacity> {
   const {
     data: { user },
@@ -87,50 +85,10 @@ export async function updateMyJobCapacity(capacity: TechJobCapacity) {
   return (data as string) === 'standalone' ? 'standalone' : 'multi';
 }
 
-export async function claimBookingRow(referenceCode: string, mechanicId: string) {
-  const { data: detail } = await supabase
-    .from('mechanic_details')
-    .select('job_capacity, w9_completed_at, contractor_agreement_signed_at, contractor_agreement_signature_path')
-    .eq('profile_id', mechanicId)
-    .maybeSingle();
-
-  if (!detail?.w9_completed_at) {
-    throw new Error(
-      'Complete IRS Form W-9 before your first job: open Settings → connect Stripe Express and submit your SSN or EIN (tax ID). We never store your SSN ourselves — Stripe collects it for 1099 reporting.'
-    );
-  }
-
-  if (!detail?.contractor_agreement_signed_at) {
-    throw new Error(
-      'Sign the Independent Contractor Agreement in Settings (digital signature) before claiming your first job.'
-    );
-  }
-  if (!detail?.contractor_agreement_signature_path) {
-    throw new Error(
-      'Complete a digital signature on the Independent Contractor Agreement in Settings (name + drawn signature) before claiming.'
-    );
-  }
-
-  if (detail?.job_capacity === 'standalone') {
-    const { data: active, error: activeErr } = await supabase
-      .from('bookings')
-      .select('id, reference_code')
-      .eq('mechanic_id', mechanicId)
-      .in('status', [...ACTIVE_JOB_STATUSES])
-      .neq('reference_code', referenceCode)
-      .limit(1);
-    if (activeErr) throw activeErr;
-    if (active && active.length > 0) {
-      throw new Error(
-        'You are on Standalone mode (one job at a time). Finish or release your active job, or switch to Multi-job in Settings.'
-      );
-    }
-  }
-
-  const { error } = await supabase
-    .from('bookings')
-    .update({ status: 'EN_ROUTE', mechanic_id: mechanicId, eta_minutes: 20, distance_miles: 8 })
-    .eq('reference_code', referenceCode);
+export async function claimBookingRow(referenceCode: string, _mechanicId: string) {
+  const { error } = await supabase.rpc('claim_booking_for_current_tech', {
+    p_reference: referenceCode.trim(),
+  });
   if (error) throw error;
 }
 
@@ -496,12 +454,6 @@ export async function fetchTechW9Status(): Promise<TechW9Status> {
 }
 
 /** Certify W-9 after Stripe collected SSN/EIN (or manual ack once tax is on file). */
-export async function markTechW9Complete(): Promise<string> {
-  const { data, error } = await supabase.rpc('mark_tech_w9_complete');
-  if (error) throw error;
-  return String(data);
-}
-
 /** @deprecated Use signContractorAgreement from contractorAgreement.ts */
 export async function markContractorAgreementSigned(): Promise<string> {
   const { data, error } = await supabase.rpc('mark_contractor_agreement_signed');
