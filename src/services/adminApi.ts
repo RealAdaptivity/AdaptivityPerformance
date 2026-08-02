@@ -80,6 +80,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       stripe_account_id,
       tools_verified,
       specialties,
+      terminated_at,
       profiles!mechanic_details_profile_id_fkey ( id, full_name, phone, email, role )
     `);
 
@@ -101,10 +102,15 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
   if (roleError) throw new Error(roleError.message);
 
   const byId = new Map<string, DispatchTech>();
+  const terminatedIds = new Set<string>();
 
   for (const row of detailRows ?? []) {
     const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
     if (!profile?.id) continue;
+    if (row.terminated_at) {
+      terminatedIds.add(profile.id as string);
+      continue;
+    }
     const specialties = Array.isArray(row.specialties)
       ? (row.specialties as string[])
       : ['mechanical'];
@@ -121,6 +127,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
   }
 
   for (const row of roleRows ?? []) {
+    if (terminatedIds.has(row.id as string)) continue;
     if (byId.has(row.id as string)) continue;
     const details = Array.isArray(row.mechanic_details)
       ? row.mechanic_details[0]
@@ -141,6 +148,13 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
   }
 
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function terminateTechnician(technicianId: string, reason: string) {
+  return invokeEdgeFunction<{ ok: boolean; email?: string }>('terminate-technician', {
+    technicianId,
+    reason,
+  });
 }
 
 export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]> {
