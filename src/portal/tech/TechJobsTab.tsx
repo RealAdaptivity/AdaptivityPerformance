@@ -94,6 +94,21 @@ export const TechJobsTab: React.FC = () => {
     }
   }, [jobs, activeJob]);
 
+  useEffect(() => {
+    if (activeJob || !mechanicId) return;
+    const assigned = jobs.find(
+      (job) =>
+        job.mechanicId === mechanicId &&
+        (job.status === 'EN_ROUTE' || job.status === 'ON_SITE') &&
+        job.paymentStatus !== 'captured'
+    );
+    if (!assigned) return;
+    setActiveJob(assigned);
+    setFilter('active');
+    setJobPhase(assigned.status === 'ON_SITE' ? 'on_site' : 'en_route');
+    setMessage(`Resumed ${assigned.referenceCode} — the customer authorization is still ready to capture.`);
+  }, [jobs, mechanicId, activeJob]);
+
   const today = todayISODate();
   const available = jobs.filter(
     (j) => j.status === 'UNASSIGNED' && techCanClaimServices(mySpecialties, j.services)
