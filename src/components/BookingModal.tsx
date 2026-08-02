@@ -330,7 +330,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 Card hold at booking:{' '}
                 <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong>
                 <span className="block text-slate-500 mt-1">
-                  {holdQuote.mode === 'direct' ? 'Service hold' : '$100 diagnostic'} —{' '}
+                  {holdQuote.mode === 'direct' ? 'Service hold' : '$10 diagnostic hold'} —{' '}
                   {holdQuote.explanation}
                 </span>
                 <span className="block text-amber-400/90 mt-1.5">
@@ -463,7 +463,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     className="mt-0.5 w-4 h-4 rounded border-slate-700 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0"
                   />
                   <span>
-                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $100 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
+                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including the $10 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
                   </span>
                 </label>
               </div>

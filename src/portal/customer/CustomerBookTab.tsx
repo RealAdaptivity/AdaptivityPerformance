@@ -65,7 +65,7 @@ export const CustomerBookTab: React.FC<Props> = ({
         const next = prev.filter((x) => x !== id);
         return next.length ? next : ['diagnostic'];
       }
-      // Mixing diagnostic with direct-book: keep selection; hold becomes diagnostic ($100)
+      // Mixing diagnostic with direct-book: keep selection; hold becomes the temporary $10 diagnostic.
       return [...prev, id];
     });
   };
@@ -149,7 +149,7 @@ export const CustomerBookTab: React.FC<Props> = ({
       <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 space-y-2">
         <p className="text-[11px] text-orange-200/95 leading-relaxed">
           <strong>How quoting works:</strong> most visits start with a{' '}
-          <strong>$100 diagnostic hold</strong>. Your tech inspects on site, agrees labor + parts pricing
+          <strong>$10 diagnostic hold</strong>. Your tech inspects on site, agrees labor + parts pricing
           with you, then charges through Adaptivity (tech 70% · platform 30%).
         </p>
         <p className="text-[11px] text-slate-400 leading-relaxed">{CUSTOMER_TECH_LIABILITY_NOTICE}</p>
@@ -200,7 +200,7 @@ export const CustomerBookTab: React.FC<Props> = ({
                   {s.description}
                 </span>
               </span>
-              <span className="text-xs font-bold text-amber-400/90 shrink-0">$100 hold</span>
+              <span className="text-xs font-bold text-amber-400/90 shrink-0">$10 diagnostic hold</span>
             </label>
           ))}
         </div>

@@ -1,9 +1,9 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
-import { splitJobTotalCents } from './_shared/revenueSplit.ts';
-import { assertServiceArea, resolveServiceZip } from './_shared/serviceArea.ts';
-import { computeHoldFromServices } from './_shared/holdPricing.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
+import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
+import { computeHoldFromServices } from '../_shared/holdPricing.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Missing required booking fields' }, 400);
     }
 
-    // Server computes hold: $100 diagnostic unless only direct-book services
+    // Server computes the $10 diagnostic hold unless only direct-book services
     // (brakes / oil / transmission oil / differential).
     const quote = computeHoldFromServices(services);
     const hold = quote.holdDollars;
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
       holdMode: quote.mode,
       holdExpiresAt,
       message:
-        'Confirm your card for the $100 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
+        'Confirm your card for the $10 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Booking authorization failed';

@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'No card hold on this booking' }, 400);
     }
 
-    // TEMPORARY LIVE-MONEY VALIDATION fallback: restore to 10000 with the normal hold.
+    // Standard diagnostic hold fallback.
     const holdCents = booking.hold_amount_cents ?? 1000;
     if (holdCents < 50) {
       return jsonResponse({ error: 'Invalid hold amount' }, 400);

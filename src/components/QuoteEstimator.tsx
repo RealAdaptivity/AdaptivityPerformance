@@ -161,7 +161,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
         setCalculatedDistance(10);
         setAddressSuccessMsg(`Address Verified: ~10 Miles from Justin Hub → FREE Dispatch ($0)`);
       }
-    } catch (err) {
+    } catch {
       setAddressError('Could not verify address automatically. Defaulting to local Justin/Northlake radius.');
     } finally {
       setAddressLoading(false);
@@ -208,7 +208,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
           setVinError('VIN not recognized by NHTSA database. Try manual dropdowns below.');
         }
       }
-    } catch (err) {
+    } catch {
       setVinError('Could not connect to VIN service. Utilizing offline vehicle defaults.');
     } finally {
       setVinLoading(false);
@@ -796,7 +796,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                 className="w-full py-3.5 px-4 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40 transition-all flex items-center justify-center space-x-2"
               >
                 <Calendar className="w-4 h-4" />
-                <span>Book $100 diagnostic hold</span>
+                <span>Book $10 diagnostic hold</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 

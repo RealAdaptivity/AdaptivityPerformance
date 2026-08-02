@@ -16,7 +16,7 @@ export type HoldQuote = {
 };
 
 /**
- * All bookings use a $100 diagnostic card hold.
+ * Diagnostic bookings use a $10 card hold.
  * The assigned tech sets labor + parts on site and charges through Adaptivity (70/30).
  */
 export function computeHoldQuote(selectedIdsOrTitles: string[]): HoldQuote {
@@ -25,7 +25,7 @@ export function computeHoldQuote(selectedIdsOrTitles: string[]): HoldQuote {
     holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
     mode: 'diagnostic',
     explanation:
-      '$100 diagnostic hold. Your tech inspects on site, sets labor + parts pricing, and charges through Adaptivity when you agree — tech keeps 70%, platform 30%.',
+      '$10 diagnostic hold. Your tech inspects on site, sets labor + parts pricing, and charges through Adaptivity when you agree — tech keeps 70%, platform 30%.',
     services,
     catalogSubtotal: DIAGNOSTIC_HOLD_DOLLARS,
   };
