@@ -151,7 +151,7 @@ const svg = Buffer.from(`<svg width="${w}" height="${h}" xmlns="http://www.w3.or
   <rect x="${pad}" y="2290" width="${w - pad * 2}" height="380" rx="20" fill="#12141c" stroke="#f97316" stroke-width="3"/>
   <text x="${w / 2}" y="2400" text-anchor="middle" fill="#f97316"
     font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="52" font-weight="900">
-    (214) 620-3244
+    (940) 304-0620
   </text>
   <text x="${w / 2}" y="2475" text-anchor="middle" fill="#ffffff"
     font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">

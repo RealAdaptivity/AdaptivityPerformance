@@ -3,7 +3,7 @@ export const ADAPTIVITY_BRAND = {
   primaryColor: '#f97316',
   secondaryColor: '#0b0c10',
   businessName: 'Adaptivity Performance',
-  supportPhone: '2146203244',
+  supportPhone: '9403040620',
 } as const;
 
 /** Public marketing / portal host (custom domain). */

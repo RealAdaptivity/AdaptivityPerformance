@@ -20,6 +20,7 @@ import {
 import { portalPath } from '../portal/portalRoute';
 import { SiteLink } from '../site/SiteLink';
 import { navigateSite, useSitePage } from '../site/siteRoute';
+import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
@@ -207,8 +208,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <a href={portalPath()} onClick={close} className={`${itemClass} text-orange-300 font-semibold`}>
                     <LogIn className="w-4 h-4" /> Client / Tech Login
                   </a>
-                  <a href="tel:2146203244" onClick={close} className={itemClass}>
-                    <Phone className="w-4 h-4 text-orange-400" /> (214) 620-3244
+                  <a href={SITE_PHONE_TEL} onClick={close} className={itemClass}>
+                    <Phone className="w-4 h-4 text-orange-400" /> {SITE_PHONE_DISPLAY}
                   </a>
                 </MenuSection>
 

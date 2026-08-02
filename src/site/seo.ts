@@ -1,8 +1,13 @@
 /** Site SEO helpers — document title, meta, city landings. */
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
-export const SITE_PHONE_DISPLAY = '(940) 278-8099';
-export const SITE_PHONE_TEL = '+19402788099';
+/** Grasshopper business line — single source of truth for public contact. */
+export const SITE_PHONE_DISPLAY = '(940) 304-0620';
+/** E.164 for schema / SMS / `tel:` construction */
+export const SITE_PHONE_E164 = '+19403040620';
+export const SITE_PHONE_DIGITS = '9403040620';
+/** Ready for href={SITE_PHONE_TEL} */
+export const SITE_PHONE_TEL = `tel:${SITE_PHONE_E164}`;
 
 /** Swap for your live Google Business “Write a review” URL when ready. */
 export const GOOGLE_REVIEW_URL =
@@ -19,7 +24,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   home: {
     title: 'Adaptivity Performance | Mobile Mechanic Justin TX & Northlake Auto Repair',
     description:
-      'Mobile mechanic & auto repair for Justin, Northlake, and DFW. $100 diagnostic hold, on-site pricing, brakes, oil, diagnostics. Call (214) 620-3244.',
+      `Mobile mechanic & auto repair for Justin, Northlake, and DFW. $100 diagnostic hold, on-site pricing, brakes, oil, diagnostics. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/',
   },
   about: {
@@ -294,7 +299,7 @@ export const SITE_FAQS = [
   // BOOKING PROCESS
   {
     q: 'How do I book an appointment?',
-    a: 'Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place a $100 card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at (940) 278-8099.',
+    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place a $100 card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
   },
   {
     q: 'How long does a typical mobile repair take?',

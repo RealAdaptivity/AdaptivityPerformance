@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Truck, Home, Calendar, Shield, Info, ArrowRight, Navigation, Search, AlertCircle, CheckCircle2, Award, MapPin } from 'lucide-react';
 import { ALL_MAKES_2002_2026, getVehicleTierKey, fetchModelsForMakeAndYear, getEnginesForMake, getTrimsForMake } from '../services/nhtsaVehicleApi';
-
+import { SITE_PHONE_DISPLAY } from '../site/seo';
 interface QuoteEstimatorProps {
   onBookWithEstimate: (estimateDetails: any) => void;
   defaultMode?: 'mobile' | 'shop';
@@ -808,7 +808,7 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
 
             <div className="p-4 bg-slate-900/60 rounded-xl border border-white/5 text-xs text-slate-400 flex items-start space-x-3">
               <Info className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
-              <p>Need custom performance tuning, heavy engine overhaul, or a service not listed above? Give our Justin shop a call at <strong className="text-white">(214) 620-3244</strong> for a custom phone diagnostic.</p>
+              <p>Need custom performance tuning, heavy engine overhaul, or a service not listed above? Give our Justin shop a call at <strong className="text-white">{SITE_PHONE_DISPLAY}</strong> for a custom phone diagnostic.</p>
             </div>
 
           </div>

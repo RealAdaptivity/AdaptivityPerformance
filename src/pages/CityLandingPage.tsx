@@ -85,7 +85,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <a
-              href={`tel:${SITE_PHONE_TEL}`}
+              href={SITE_PHONE_TEL}
               className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-white/15 text-sm font-bold text-slate-200 hover:border-white/25"
             >
               <Phone className="w-4 h-4" />

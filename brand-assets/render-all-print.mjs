@@ -56,7 +56,7 @@ const textSvg = Buffer.from(`<svg width="${CW}" height="${CH}" xmlns="http://www
   <text x="400" y="185" fill="#ffffff" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="34" font-weight="900" letter-spacing="2.2">ADAPTIVITY PERFORMANCE</text>
   <text x="400" y="235" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">Michael Smith</text>
   <text x="400" y="280" fill="#f97316" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">Owner / Operator</text>
-  <text x="400" y="350" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="600">214-620-3244</text>
+  <text x="400" y="350" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="600">940-304-0620</text>
   <text x="400" y="400" fill="#d1d5db" font-family="Arial, Helvetica, sans-serif" font-size="22">Owner@adaptivityperformance.com</text>
   <text x="400" y="450" fill="#f97316" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">AdaptivityPerformance.com</text>
 </svg>`);
@@ -154,7 +154,7 @@ async function renderFlyer({ w, h, outPng, outJpg, label }) {
     fill="#12141c" stroke="#f97316" stroke-width="${Math.round(3 * s)}"/>
   <text x="${w / 2}" y="${Math.round(h * 0.855)}" text-anchor="middle" fill="#f97316"
     font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="${Math.round(48 * s)}" font-weight="900">
-    (214) 620-3244
+    (940) 304-0620
   </text>
   <text x="${w / 2}" y="${Math.round(h * 0.89)}" text-anchor="middle" fill="#ffffff"
     font-family="Arial, Helvetica, sans-serif" font-size="${Math.round(26 * s)}" font-weight="700">

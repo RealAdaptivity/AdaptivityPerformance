@@ -86,9 +86,9 @@ CREATE TABLE IF NOT EXISTS public.vip_memberships (
 
 -- Insert Initial Seed Mechanics & Demo Booking
 INSERT INTO public.mechanics (id, name, phone, van_number, stripe_account_id)
-VALUES ('tech-1', 'Alex Vance', '(214) 620-3244', 'Van #4 (Justin)', 'acct_demo123')
+VALUES ('tech-1', 'Alex Vance', '(940) 304-0620', 'Van #4 (Justin)', 'acct_demo123')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.bookings (id, customer_name, customer_phone, customer_address, vehicle, services, total_estimate, status, distance_miles, eta_minutes)
-VALUES ('AP-8492', 'Mark Stevens', '(214) 620-3244', '1234 Canyon Falls Dr, Northlake, TX 76226', '2021 Ford F-150 SuperCrew', ARRAY['Front Ceramic Brake Pads & Rotors'], 280.00, 'UNASSIGNED', 5.2, 15)
+VALUES ('AP-8492', 'Mark Stevens', '(940) 304-0620', '1234 Canyon Falls Dr, Northlake, TX 76226', '2021 Ford F-150 SuperCrew', ARRAY['Front Ceramic Brake Pads & Rotors'], 280.00, 'UNASSIGNED', 5.2, 15)
 ON CONFLICT (id) DO NOTHING;

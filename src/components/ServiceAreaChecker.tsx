@@ -6,7 +6,7 @@ import {
   lookupServiceZip,
   normalizeZip,
 } from '../services/serviceArea';
-
+import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 interface ServiceAreaCheckerProps {
   onBookMobile: (zip: string) => void;
 }
@@ -149,8 +149,8 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
                     Zip {zipInput} isn’t in our DFW / Fort Worth mobile area (TX 750–752, 760–762). We can still
                     quote custom distance or welcome you at the Justin shop.
                   </p>
-                  <a href="tel:2146203244" className="inline-block text-xs font-bold text-orange-400 underline pt-1">
-                    Call (214) 620-3244 for a custom quote
+                  <a href={SITE_PHONE_TEL} className="inline-block text-xs font-bold text-orange-400 underline pt-1">
+                    Call {SITE_PHONE_DISPLAY} for a custom quote
                   </a>
                 </div>
               )}

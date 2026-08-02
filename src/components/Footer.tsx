@@ -2,7 +2,7 @@ import React from 'react';
 import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
-import { CITY_LANDINGS, cityPath } from '../site/seo';
+import { CITY_LANDINGS, cityPath, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -28,11 +28,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <a
-              href="tel:2146203244"
+              href={SITE_PHONE_TEL}
               className="w-full sm:w-auto px-6 py-3.5 bg-black hover:bg-slate-900 text-white font-extrabold text-sm rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2"
             >
               <Phone className="w-4 h-4 text-orange-400" />
-              <span>Call (214) 620-3244</span>
+              <span>Call {SITE_PHONE_DISPLAY}</span>
             </a>
             <button
               onClick={onOpenBooking}
@@ -151,7 +151,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
             <div className="flex items-center space-x-2 pt-2">
               <Phone className="w-4 h-4 text-orange-400 flex-shrink-0" />
-              <a href="tel:2146203244" className="font-bold text-white hover:text-orange-400">(214) 620-3244</a>
+              <a href={SITE_PHONE_TEL} className="font-bold text-white hover:text-orange-400">{SITE_PHONE_DISPLAY}</a>
             </div>
 
             <div className="flex items-center space-x-2">

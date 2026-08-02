@@ -17,7 +17,7 @@ export const FALLBACK_BLOG_POSTS: BlogPost[] = [
     excerpt:
       'Ballpark mobile brake pricing for Canyon Falls, Harvest, and Pecan Square — plus how our $100 diagnostic hold works.',
     body_md:
-      '# How much do brakes cost in Northlake, TX?\n\nMost driveway brake jobs in Northlake (pads + rotors, one axle) land in a transparent labor + parts range after we inspect on site.\n\n## How Adaptivity prices\n\n1. Book a **$100 diagnostic hold**\n2. Tech inspects at your driveway\n3. You agree on labor + parts before we charge\n\nTravel inside our free radius (Justin hub) is $0.\n\n## Book mobile brakes\n\nCall (214) 620-3244 or book online for Northlake / Canyon Falls / Harvest.',
+      '# How much do brakes cost in Northlake, TX?\n\nMost driveway brake jobs in Northlake (pads + rotors, one axle) land in a transparent labor + parts range after we inspect on site.\n\n## How Adaptivity prices\n\n1. Book a **$100 diagnostic hold**\n2. Tech inspects at your driveway\n3. You agree on labor + parts before we charge\n\nTravel inside our free radius (Justin hub) is $0.\n\n## Book mobile brakes\n\nCall (940) 304-0620 or book online for Northlake / Canyon Falls / Harvest.',
     city_slug: 'northlake',
     published_at: '2026-07-28T00:00:00.000Z',
   },
@@ -27,7 +27,7 @@ export const FALLBACK_BLOG_POSTS: BlogPost[] = [
     excerpt:
       'When driveway service saves you a day — and when the Justin shop hub is the better call.',
     body_md:
-      '# Mobile mechanic vs dealership in Justin, TX\n\nDealerships are great for warranty coding and major powertrain work. For brakes, batteries, oil, and diagnostics, a mobile tech at your Justin driveway is usually faster.\n\n## When to choose mobile\n\n- You need brakes / oil / battery today\n- You do not want to sit in a waiting room\n- You want on-site pricing with a $100 hold\n\n## When to choose the Justin shop\n\n- Lifts, exhaust, major engine / transmission\n- Multi-day builds\n\nBook at adaptivityperformance.com or call (214) 620-3244.',
+      '# Mobile mechanic vs dealership in Justin, TX\n\nDealerships are great for warranty coding and major powertrain work. For brakes, batteries, oil, and diagnostics, a mobile tech at your Justin driveway is usually faster.\n\n## When to choose mobile\n\n- You need brakes / oil / battery today\n- You do not want to sit in a waiting room\n- You want on-site pricing with a $100 hold\n\n## When to choose the Justin shop\n\n- Lifts, exhaust, major engine / transmission\n- Multi-day builds\n\nBook at adaptivityperformance.com or call (940) 304-0620.',
     city_slug: 'justin',
     published_at: '2026-07-28T00:00:00.000Z',
   },
@@ -36,7 +36,7 @@ export const FALLBACK_BLOG_POSTS: BlogPost[] = [
     title: 'Google Business review playbook for Adaptivity',
     excerpt: 'Internal growth checklist: ask for reviews, reply fast, post weekly.',
     body_md:
-      '# Google Business review playbook\n\n1. After every completed job, send the review link\n2. Reply to every review within 48 hours\n3. Post a weekly Google Business update (photo from a job + city keyword)\n4. Keep NAP consistent: 410 FM 156, Justin TX 76247 · (214) 620-3244\n\nReview URL: set VITE_GOOGLE_REVIEW_URL in production.',
+      '# Google Business review playbook\n\n1. After every completed job, send the review link\n2. Reply to every review within 48 hours\n3. Post a weekly Google Business update (photo from a job + city keyword)\n4. Keep NAP consistent: 410 FM 156, Justin TX 76247 · (940) 304-0620\n\nReview URL: set VITE_GOOGLE_REVIEW_URL in production.',
     city_slug: null,
     published_at: '2026-07-28T00:00:00.000Z',
   },

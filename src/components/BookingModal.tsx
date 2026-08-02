@@ -416,7 +416,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                    placeholder="(214) 620-3244"
+                    placeholder="(940) 304-0620"
                   />
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown, MapPin, CheckCircle2 } from 'lucide-react';
-import { SITE_FAQS } from '../site/seo';
+import { SITE_FAQS, SITE_PHONE_DISPLAY } from '../site/seo';
 
 const FAQ_JSON_LD_ID = 'adaptivity-faq-jsonld';
 
@@ -63,7 +63,7 @@ export const SEOContentBlock: React.FC = () => {
               suspension tuning, and in-depth engine diagnostics. We charge a flat{' '}
               <strong className="text-white">$125/hr labor rate</strong> with zero hidden fees and
               back every job with a 12-month warranty. Call{' '}
-              <strong className="text-orange-400 font-bold">(214) 620-3244</strong> today.
+              <strong className="text-orange-400 font-bold">{SITE_PHONE_DISPLAY}</strong> today.
             </p>
           </div>
 

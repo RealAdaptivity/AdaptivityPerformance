@@ -91,7 +91,7 @@ async function renderFlyer({ w, h, outPng, outJpg, densityLabel }) {
 
   <text x="${w / 2}" y="${Math.round(h * 0.855)}" text-anchor="middle" fill="${ORANGE}"
     font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="${Math.round(48 * s)}" font-weight="900">
-    (214) 620-3244
+    (940) 304-0620
   </text>
   <text x="${w / 2}" y="${Math.round(h * 0.89)}" text-anchor="middle" fill="#ffffff"
     font-family="Arial, Helvetica, sans-serif" font-size="${Math.round(26 * s)}" font-weight="700">
