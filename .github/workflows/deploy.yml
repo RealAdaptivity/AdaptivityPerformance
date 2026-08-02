@@ -28,7 +28,13 @@ jobs:
           node-version: 22
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Verify production operations
+        run: npm run verify:production-ops
 
       - name: Build Vite Website
         run: npm run build

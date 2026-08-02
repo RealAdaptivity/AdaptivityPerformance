@@ -5,7 +5,7 @@ function readPortalRouteFlag(): boolean {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
   if (path === '/portal' || path.endsWith('/portal')) return true;
   if (path === '/login' || path.endsWith('/login')) return true;
-  return window.location.search.includes('view=portal');
+  return window.location.search.includes('view=portal') || window.location.search.includes('view=tech');
 }
 
 function subscribeToRoute(callback: () => void) {

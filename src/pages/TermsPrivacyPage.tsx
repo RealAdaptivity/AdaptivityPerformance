@@ -297,7 +297,7 @@ export const TermsPrivacyPage: React.FC = () => {
                   <Clock className="w-4 h-4" /> Late Cancellation & No-Show Policy
                 </div>
                 <p className="text-slate-300 leading-relaxed">
-                  Mobile dispatch appointments canceled with less than 2 hours notice or customer no-shows upon mobile van arrival at customer address are subject to a $50 late dispatch fee to cover technician drive time and fuel.
+                  Mobile dispatch appointments canceled with less than 2 hours notice, or customer no-shows after the technician arrives, may forfeit the temporary $10 diagnostic hold as the late cancellation or no-show fee. No additional late-dispatch fee is charged unless the customer separately approves it before service.
                 </p>
               </div>
 

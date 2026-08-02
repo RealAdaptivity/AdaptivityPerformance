@@ -16,7 +16,6 @@ import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Capacitor } from '@capacitor/core';
-import { StandaloneTechApp } from './components/StandaloneTechApp';
 import { AdminApp } from './admin/AdminApp';
 import { useAdminConsoleRoute } from './admin/adminRoute';
 import { PortalApp } from './portal/PortalApp';
@@ -59,10 +58,6 @@ function MainAppContent() {
     }
     applyDocumentSeo(PAGE_SEO[page as keyof typeof PAGE_SEO] || PAGE_SEO.home);
   }, [page, cityLanding]);
-
-  const isNativeTechApp =
-    typeof window !== 'undefined' &&
-    (Capacitor.isNativePlatform() || window.location.search.includes('view=tech'));
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
@@ -120,10 +115,6 @@ function MainAppContent() {
     }, 80);
     return () => window.clearTimeout(t);
   }, [page]);
-
-  if (isNativeTechApp) {
-    return <StandaloneTechApp />;
-  }
 
   const openBooking = (opts?: { referralCode?: string }) => {
     setEstimateDataForBooking({
@@ -346,7 +337,7 @@ function MainAppContent() {
 
 export function App() {
   const isAdmin = useAdminConsoleRoute();
-  const isPortal = usePortalRoute();
+  const isPortal = usePortalRoute() || Capacitor.isNativePlatform();
 
   if (isAdmin) {
     return <AdminApp />;
