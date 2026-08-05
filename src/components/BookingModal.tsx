@@ -17,6 +17,11 @@ import {
   stashPendingGuestBooking,
   updateProfilePhone,
 } from '../services/linkGuestBooking';
+import {
+  extractZipFromAddress,
+  formatServiceAddress,
+  isIncompleteServiceAddress,
+} from '../services/serviceAddress';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -55,8 +60,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [serviceRequested, setServiceRequested] = useState('Mobile Diagnostic Visit');
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
-  const [streetAddress, setStreetAddress] = useState('1234 Canyon Falls Dr');
-  const [zipCode, setZipCode] = useState('76226');
+  const [streetAddress, setStreetAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [zipCode, setZipCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -95,7 +101,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       if (initialEstimateData.vehicle) setVehicle(initialEstimateData.vehicle);
       if (initialEstimateData.vin) setVinNumber(initialEstimateData.vin);
       if (initialEstimateData.locationType) setServiceMode(initialEstimateData.locationType);
-      if (initialEstimateData.serviceAddress) setStreetAddress(initialEstimateData.serviceAddress);
+      if (initialEstimateData.serviceAddress) {
+        setStreetAddress(initialEstimateData.serviceAddress);
+        const z = extractZipFromAddress(initialEstimateData.serviceAddress);
+        if (z) setZipCode(z);
+      }
       if (initialEstimateData.services && initialEstimateData.services.length > 0) {
         setServiceRequested(initialEstimateData.services.join(', '));
       }
@@ -120,6 +130,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setAccountBusy(false);
       setAccountError(null);
       setAccountStatus('idle');
+      setCity('');
       return;
     }
     void fetchApprovedPartners()
@@ -138,7 +149,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const buildAddress = () => {
     if (serviceMode === 'mobile') {
-      return `${streetAddress.trim()}, ${zipCode.trim()}`;
+      return formatServiceAddress({
+        street: streetAddress,
+        city,
+        state: 'TX',
+        zip: zipCode,
+      });
     }
     return selectedPartner
       ? `${selectedPartner.businessName} • ${selectedPartner.address}`
@@ -148,6 +164,17 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const handleContinueToCardHold = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+
+    if (serviceMode === 'mobile') {
+      const assembled = buildAddress();
+      if (isIncompleteServiceAddress(assembled) || isIncompleteServiceAddress(streetAddress)) {
+        setSubmitError(
+          'Enter a full street address with street name and city (not just a house number and zip). Example: 1234 Canyon Falls Dr, Northlake'
+        );
+        return;
+      }
+    }
+
     setIsCreatingHold(true);
     const amount = holdPreview;
     setHoldAmount(amount);
@@ -420,7 +447,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               {serviceMode === 'mobile' ? (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Service Address (Home / Workplace)</label>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      Street address (include street name)
+                    </label>
                     <input
                       type="text"
                       required
@@ -428,19 +457,39 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       onChange={e => setStreetAddress(e.target.value)}
                       className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                       placeholder="e.g. 1234 Canyon Falls Dr"
+                      autoComplete="street-address"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Zip Code (DFW / Fort Worth)</label>
-                    <input
-                      type="text"
-                      required
-                      value={zipCode}
-                      onChange={e => setZipCode(e.target.value)}
-                      className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                      placeholder="76102, 76011, 76247…"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">City</label>
+                      <input
+                        type="text"
+                        required
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
+                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                        placeholder="Northlake"
+                        autoComplete="address-level2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">Zip (DFW)</label>
+                      <input
+                        type="text"
+                        required
+                        value={zipCode}
+                        onChange={e => setZipCode(e.target.value)}
+                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                        placeholder="76226"
+                        autoComplete="postal-code"
+                        inputMode="numeric"
+                      />
+                    </div>
                   </div>
+                  <p className="text-[10px] text-slate-500">
+                    Dispatch needs the full address — house number alone (e.g. 15637, 76177) is not enough.
+                  </p>
                 </>
               ) : (
                 <div className="p-3.5 bg-slate-900 rounded-xl border border-white/10 text-xs text-slate-300 space-y-1">

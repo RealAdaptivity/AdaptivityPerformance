@@ -149,6 +149,16 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
         const lon = parseFloat(place.lon);
         const miles = calculateHaversineMiles(lat, lon);
 
+        // Prefer the geocoder's full place name so dispatch/tech see a real address, not house#+zip.
+        if (typeof place.display_name === 'string' && place.display_name.trim()) {
+          const friendly = place.display_name
+            .split(',')
+            .slice(0, 4)
+            .map((p: string) => p.trim())
+            .join(', ');
+          setAddressInput(friendly);
+        }
+
         setCalculatedDistance(miles);
         const fee = miles <= FREE_RADIUS_MILES ? 0 : Math.round((miles - FREE_RADIUS_MILES) * PER_MILE_RATE * 100) / 100;
         

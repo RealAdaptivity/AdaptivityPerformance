@@ -392,6 +392,8 @@ export const TechJobsTab: React.FC = () => {
             {job.preferredDate && (
               <p className="text-[10px] text-slate-500">Preferred: {job.preferredDate}</p>
             )}
+            <p className="text-[10px] uppercase font-bold text-slate-500 mt-1">Customer address</p>
+            <p className="text-[11px] text-slate-300">{job.address}</p>
             <p className="text-[11px] text-slate-500">{job.services.join(' · ')}</p>
             {match.chips.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-1.5">
@@ -490,6 +492,7 @@ export const TechJobsTab: React.FC = () => {
         <div className="rounded-xl border border-orange-500/30 bg-[#12141c] p-4 space-y-3">
           <div>
             <p className="text-sm font-bold text-white">{activeJob.customer}</p>
+            <p className="text-[10px] uppercase font-bold text-slate-500 mt-1">Customer address</p>
             <p className="text-[11px] text-slate-400">{activeJob.address}</p>
             <p className="text-[11px] text-slate-500">{activeJob.services.join(' · ')}</p>
             <p className="text-[10px] text-amber-400/90 mt-1">

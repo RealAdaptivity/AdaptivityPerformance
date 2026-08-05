@@ -10,6 +10,7 @@ import { PREFERRED_TIME_WINDOWS, todayISODate } from '../../services/scheduleWin
 import { applyReferralCodeOnBooking } from '../../services/referrals';
 import type { RebookPrefill } from './CustomerHistoryTab';
 import { matchCatalogFromLabel } from '../../services/serviceCatalog';
+import { isIncompleteServiceAddress } from '../../services/serviceAddress';
 
 type Props = {
   profile: PortalProfile;
@@ -78,6 +79,12 @@ export const CustomerBookTab: React.FC<Props> = ({
     }
     if (!phone.trim()) {
       setError('Phone is required.');
+      return;
+    }
+    if (isIncompleteServiceAddress(address)) {
+      setError(
+        'Enter a full street address with street name and city (not just a house number and zip).'
+      );
       return;
     }
     setLoading(true);

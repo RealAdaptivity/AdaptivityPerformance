@@ -95,7 +95,7 @@ export function DispatchMap({ bookings, selectedId, onSelect }: DispatchMapProps
                             className="inline-flex items-center gap-1 text-[10px] text-sky-400 hover:underline"
                           >
                             <MapPin className="w-3 h-3" />
-                            OSM pin
+                            Tech GPS pin
                           </a>
                           <a
                             href={googleMapsDestinationUrl(
@@ -108,7 +108,7 @@ export function DispatchMap({ bookings, selectedId, onSelect }: DispatchMapProps
                             className="inline-flex items-center gap-1 text-[10px] text-orange-400 hover:underline"
                           >
                             <ExternalLink className="w-3 h-3" />
-                            Google Maps
+                            Navigate to tech
                           </a>
                         </>
                       ) : (
@@ -120,14 +120,15 @@ export function DispatchMap({ bookings, selectedId, onSelect }: DispatchMapProps
                           className="inline-flex items-center gap-1 text-[10px] text-orange-400 hover:underline"
                         >
                           <ExternalLink className="w-3 h-3" />
-                          Google Maps (address)
+                          Maps (customer address)
                         </a>
                       )}
                     </div>
                     {hasGps && (
                       <p className="text-[10px] text-slate-600 flex items-center gap-1 mt-0.5">
                         <MapPin className="w-3 h-3" />
-                        {(b.dispatchLat as number).toFixed(4)}, {(b.dispatchLng as number).toFixed(4)}
+                        Live tech GPS: {(b.dispatchLat as number).toFixed(4)},{' '}
+                        {(b.dispatchLng as number).toFixed(4)}
                       </p>
                     )}
                   </button>

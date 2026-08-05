@@ -18,6 +18,7 @@ import {
 } from '../config/stripeDashboard';
 import { DispatchMap } from './DispatchMap';
 import type { Booking, JobStatus } from '../context/BookingContext';
+import { isIncompleteServiceAddress } from '../services/serviceAddress';
 import {
   adminCancelBookingHold,
   adminAdjustCapture,
@@ -658,6 +659,9 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         <p className="flex items-start gap-2 text-slate-400">
           <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
+            <span className="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">
+              Customer address
+            </span>
             {booking.customerAddress}
             <a
               href={googleMapsSearchUrl(booking.customerAddress)}
@@ -667,8 +671,22 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             >
               Maps <ExternalLink className="w-3 h-3" />
             </a>
+            {isIncompleteServiceAddress(booking.customerAddress) && (
+              <span className="block text-[10px] text-amber-400 mt-1">
+                Address looks incomplete (house # / zip only). Ask the customer for street name + city.
+              </span>
+            )}
           </span>
         </p>
+        {(booking.dispatchLat != null && booking.dispatchLng != null) && (
+          <p className="flex items-start gap-2 text-slate-500 text-[11px]">
+            <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>
+              Live tech GPS (van location): {booking.dispatchLat.toFixed(4)},{' '}
+              {booking.dispatchLng.toFixed(4)}
+            </span>
+          </p>
+        )}
         {(booking.preferredDate || booking.preferredTimeWindow) && (
           <p className="text-xs text-orange-300 font-semibold">
             Scheduled:{' '}
