@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2, Share2, Star } from 'lucide-react';
+import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
 import { StripeBookingHoldSection } from './StripeBookingHoldSection';
 import { computeHoldQuote } from '../services/holdPricing';
+import { DIAGNOSTIC_HOLD_DOLLARS } from '../services/serviceCatalog';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../content/contractorLiability';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
 import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
 import { applyReferralCodeOnBooking } from '../services/referrals';
+import { signUpPortal } from '../portal/portalAuth';
+import { portalPath } from '../portal/portalRoute';
+import {
+  claimPendingGuestBooking,
+  linkGuestBooking,
+  stashPendingGuestBooking,
+  updateProfilePhone,
+} from '../services/linkGuestBooking';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -60,6 +69,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [isCreatingHold, setIsCreatingHold] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
   const [partnerLocationId, setPartnerLocationId] = useState<string>('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountPasswordConfirm, setAccountPasswordConfirm] = useState('');
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [accountStatus, setAccountStatus] = useState<'idle' | 'created' | 'confirm_email'>('idle');
 
   const selectedPartner = useMemo(
     () => partners.find((p) => p.id === partnerLocationId) || partners[0] || null,
@@ -101,6 +115,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setClientSecret(null);
       setSubmitError(null);
       setBookingRef('');
+      setAccountPassword('');
+      setAccountPasswordConfirm('');
+      setAccountBusy(false);
+      setAccountError(null);
+      setAccountStatus('idle');
       return;
     }
     void fetchApprovedPartners()
@@ -181,6 +200,52 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       vehicle,
     });
     setStep(4);
+  };
+
+  const handleCreateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccountError(null);
+    if (accountPassword.length < 8) {
+      setAccountError('Password must be at least 8 characters.');
+      return;
+    }
+    if (accountPassword !== accountPasswordConfirm) {
+      setAccountError('Passwords do not match.');
+      return;
+    }
+    setAccountBusy(true);
+    try {
+      const { data, error } = await signUpPortal('customer', email, accountPassword, fullName, {
+        phone,
+      });
+      if (error) throw error;
+
+      const userId = data.user?.id;
+      const hasSession = Boolean(data.session?.access_token);
+
+      if (bookingRef) {
+        stashPendingGuestBooking(bookingRef);
+      }
+
+      if (hasSession && userId) {
+        await updateProfilePhone(userId, phone);
+        if (bookingRef) {
+          try {
+            await linkGuestBooking(bookingRef);
+            await claimPendingGuestBooking();
+          } catch (linkErr) {
+            console.warn('[BookingModal] link guest booking', linkErr);
+          }
+        }
+        setAccountStatus('created');
+      } else {
+        setAccountStatus('confirm_email');
+      }
+    } catch (err: unknown) {
+      setAccountError(err instanceof Error ? err.message : 'Could not create account');
+    } finally {
+      setAccountBusy(false);
+    }
   };
 
   return (
@@ -330,7 +395,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 Card hold at booking:{' '}
                 <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong>
                 <span className="block text-slate-500 mt-1">
-                  {holdQuote.mode === 'direct' ? 'Service hold' : '$10 diagnostic hold'} —{' '}
+                  {holdQuote.mode === 'direct' ? 'Service hold' : `$${DIAGNOSTIC_HOLD_DOLLARS} diagnostic`} —{' '}
                   {holdQuote.explanation}
                 </span>
                 <span className="block text-amber-400/90 mt-1.5">
@@ -463,7 +528,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     className="mt-0.5 w-4 h-4 rounded border-slate-700 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0"
                   />
                   <span>
-                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including the $10 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
+                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $85 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
                   </span>
                 </label>
               </div>
@@ -581,6 +646,107 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5">
                 <ShieldCheck className="w-4 h-4" /> 12-Month / 12,000-Mile Warranty Auto-Registered
               </div>
+
+              {accountStatus === 'idle' && (
+                <form
+                  onSubmit={(e) => void handleCreateAccount(e)}
+                  className="max-w-md mx-auto text-left bg-[#0b0c10] border border-orange-500/30 rounded-2xl p-4 space-y-3"
+                >
+                  <div className="flex items-start gap-2">
+                    <UserPlus className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-white">Save your info — create a free account</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Track this job, save your vehicle details, and book faster next time in the customer portal.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5 text-[11px]">
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-500">Name</span>
+                      <span className="text-slate-200 font-medium truncate">{fullName || '—'}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-500">Email</span>
+                      <span className="text-slate-200 font-medium truncate">{email || '—'}</span>
+                    </div>
+                    <div className="flex justify-between gap-2">
+                      <span className="text-slate-500">Phone</span>
+                      <span className="text-slate-200 font-medium truncate">{phone || '—'}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Create password (8+ characters)"
+                      value={accountPassword}
+                      onChange={(e) => setAccountPassword(e.target.value)}
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
+                      required
+                      minLength={8}
+                    />
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Confirm password"
+                      value={accountPasswordConfirm}
+                      onChange={(e) => setAccountPasswordConfirm(e.target.value)}
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                  {accountError && (
+                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
+                      {accountError}
+                    </p>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={accountBusy}
+                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {accountBusy ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Creating account…
+                      </>
+                    ) : (
+                      <>Create free account</>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {accountStatus === 'created' && (
+                <div className="max-w-md mx-auto space-y-2">
+                  <p className="text-xs text-emerald-400 font-semibold">
+                    Account created. Your booking is saved to your portal.
+                  </p>
+                  <a
+                    href={portalPath()}
+                    className="block w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold text-xs rounded-xl text-center"
+                  >
+                    Open customer portal
+                  </a>
+                </div>
+              )}
+
+              {accountStatus === 'confirm_email' && (
+                <div className="max-w-md mx-auto space-y-2 text-left bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-4">
+                  <p className="text-xs text-amber-300 font-semibold">
+                    Account created. Confirm your email if required, then sign in at the customer portal — we&apos;ll
+                    attach appointment #{bookingRef} automatically.
+                  </p>
+                  <a
+                    href={portalPath()}
+                    className="block w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl text-center"
+                  >
+                    Go to customer portal
+                  </a>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
                 <button

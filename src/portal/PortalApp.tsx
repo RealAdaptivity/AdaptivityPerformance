@@ -16,6 +16,7 @@ import { CustomerPortal } from './customer/CustomerPortal';
 import { TechPortal } from './tech/TechPortal';
 import { TechSetPassword } from './TechSetPassword';
 import { linkApprovedTechApplication } from '../services/techApplications';
+import { claimPendingGuestBooking } from '../services/linkGuestBooking';
 
 function readTechInviteFlag(): boolean {
   if (typeof window === 'undefined') return false;
@@ -98,7 +99,11 @@ export const PortalApp: React.FC = () => {
       } catch {
         /* optional */
       }
-      setProfile(await fetchPortalProfile(user.id));
+      const next = await fetchPortalProfile(user.id);
+      setProfile(next);
+      if (next?.role === 'customer') {
+        void claimPendingGuestBooking();
+      }
     })();
   }, [user]);
 

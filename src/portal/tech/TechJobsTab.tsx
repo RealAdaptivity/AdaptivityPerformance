@@ -30,14 +30,6 @@ function googleMapsDirectionsUrl(address: string): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 }
 
-function phoneHref(phone: string): string {
-  return `tel:${phone.replace(/[^0-9+]/g, '')}`;
-}
-
-function smsHref(phone: string): string {
-  return `sms:${phone.replace(/[^0-9+]/g, '')}`;
-}
-
 function isTodaysJob(j: DispatchBooking, today: string): boolean {
   return j.preferredDate === today || j.status === 'EN_ROUTE' || j.status === 'ON_SITE';
 }
@@ -101,21 +93,6 @@ export const TechJobsTab: React.FC = () => {
       if (fresh.status === 'COMPLETED') setJobPhase('complete');
     }
   }, [jobs, activeJob]);
-
-  useEffect(() => {
-    if (activeJob || !mechanicId) return;
-    const assigned = jobs.find(
-      (job) =>
-        job.mechanicId === mechanicId &&
-        (job.status === 'EN_ROUTE' || job.status === 'ON_SITE') &&
-        job.paymentStatus !== 'captured'
-    );
-    if (!assigned) return;
-    setActiveJob(assigned);
-    setFilter('active');
-    setJobPhase(assigned.status === 'ON_SITE' ? 'on_site' : 'en_route');
-    setMessage(`Resumed ${assigned.referenceCode} — the customer authorization is still ready to capture.`);
-  }, [jobs, mechanicId, activeJob]);
 
   const today = todayISODate();
   const available = jobs.filter(
@@ -185,10 +162,8 @@ export const TechJobsTab: React.FC = () => {
     (s, l) => s + (Number(l.laborDollars) || 0) + (Number(l.partsDollars) || 0),
     0
   );
-  const holdDollars = (activeJob?.holdAmountCents ?? 1000) / 100;
-  const partsSubtotal = lines.reduce((sum, line) => sum + (Number(line.partsDollars) || 0), 0);
-  const estimatedSalesTax = Math.round(partsSubtotal * 0.0825 * 100) / 100;
-  const chargeTotal = holdDollars + repairsSubtotal + estimatedSalesTax;
+  const holdDollars = (activeJob?.holdAmountCents ?? 8500) / 100;
+  const chargeTotal = holdDollars + repairsSubtotal;
 
   const finishJob = () => {
     setBusy(false);
@@ -207,7 +182,6 @@ export const TechJobsTab: React.FC = () => {
     extras?: {
       lines?: { title: string; laborDollars: number; partsDollars: number }[];
       diagnosticDollars?: number;
-      salesTaxDollars?: number;
     }
   ) => {
     if (!job.phone) return;
@@ -219,7 +193,6 @@ export const TechJobsTab: React.FC = () => {
       kind,
       lines: extras?.lines,
       diagnosticDollars: extras?.diagnosticDollars,
-      salesTaxDollars: extras?.salesTaxDollars,
     });
     if (result.via === 'twilio') {
       setMessage((prev) => `${prev || 'Done'} · Receipt SMS sent.`);
@@ -320,22 +293,7 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && l.laborDollars + l.partsDollars > 0);
 
     if (!lineItems.length) {
-      setBusy(true);
-      setMessage(null);
-      try {
-        const result = await captureBookingPayment(activeJob.referenceCode, {
-          mode: 'diagnostic_only',
-        });
-        setJobPhase('complete');
-        setMessage(
-          `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
-        );
-        await sendReceiptSms(activeJob, result.capturedAmountDollars ?? holdDollars, 'diagnostic_only');
-        finishJob();
-      } catch (e: unknown) {
-        setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
-        setBusy(false);
-      }
+      setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only / No-show.');
       return;
     }
 
@@ -361,7 +319,6 @@ export const TechJobsTab: React.FC = () => {
       await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge', {
         lines: lineItems,
         diagnosticDollars: holdDollars,
-        salesTaxDollars: result.salesTaxDollars,
       });
       finishJob();
     } catch (e: unknown) {
@@ -372,7 +329,7 @@ export const TechJobsTab: React.FC = () => {
 
   const handleDiagnosticOnly = async () => {
     if (!activeJob) return;
-    if (!confirm(`Charge the $${holdDollars.toFixed(2)} diagnostic only and close the job?`)) return;
+    if (!confirm('Charge the $85 diagnostic only and close the job?')) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -393,7 +350,7 @@ export const TechJobsTab: React.FC = () => {
 
   const handleNoShow = async () => {
     if (!activeJob) return;
-    if (!confirm(`Customer no-show? Capture the $${holdDollars.toFixed(2)} diagnostic hold and close the job.`)) return;
+    if (!confirm('Customer no-show? Capture the $85 diagnostic hold and close the job.')) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -450,7 +407,7 @@ export const TechJobsTab: React.FC = () => {
             )}
             {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
           </div>
-          <span className="text-[10px] text-amber-400 font-bold shrink-0">${holdDollars.toFixed(0)} hold</span>
+          <span className="text-[10px] text-amber-400 font-bold shrink-0">$85 hold</span>
         </div>
         <div className="flex gap-2">
           <button
@@ -533,27 +490,20 @@ export const TechJobsTab: React.FC = () => {
         <div className="rounded-xl border border-orange-500/30 bg-[#12141c] p-4 space-y-3">
           <div>
             <p className="text-sm font-bold text-white">{activeJob.customer}</p>
-            <p className="text-[10px] font-mono text-orange-400">{activeJob.referenceCode}</p>
-            <div className="mt-2 space-y-1 rounded-xl border border-white/10 bg-[#0b0c10] p-3">
-              <p className="text-xs text-white"><span className="text-slate-500">Phone:</span> {activeJob.phone || 'Not provided'}</p>
-              <p className="text-xs text-white"><span className="text-slate-500">Address:</span> {activeJob.address}</p>
-              <p className="text-xs text-white"><span className="text-slate-500">Vehicle:</span> {activeJob.vehicle}</p>
-              {(activeJob.preferredDate || activeJob.preferredTimeWindow) && (
-                <p className="text-xs text-white"><span className="text-slate-500">Scheduled:</span> {[activeJob.preferredDate, activeJob.preferredTimeWindow].filter(Boolean).join(' · ')}</p>
-              )}
-              <p className="text-xs text-white"><span className="text-slate-500">Services:</span> {activeJob.services.join(' · ')}</p>
-              {activeJob.customerNotes && <p className="text-xs text-white"><span className="text-slate-500">Customer notes:</span> {activeJob.customerNotes}</p>}
-            </div>
+            <p className="text-[11px] text-slate-400">{activeJob.address}</p>
+            <p className="text-[11px] text-slate-500">{activeJob.services.join(' · ')}</p>
             <p className="text-[10px] text-amber-400/90 mt-1">
-              ${holdDollars.toFixed(0)} diagnostic hold on file — you set labor + parts after diagnosis.
+              $85 diagnostic hold on file — you set labor + parts after diagnosis.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
-            <a href={phoneHref(activeJob.phone)} aria-disabled={!activeJob.phone} className={`py-2.5 rounded-xl text-center text-xs font-bold text-white ${activeJob.phone ? 'bg-emerald-600' : 'pointer-events-none bg-white/10 opacity-50'}`}>Call</a>
-            <a href={smsHref(activeJob.phone)} aria-disabled={!activeJob.phone} className={`py-2.5 rounded-xl text-center text-xs font-bold text-white ${activeJob.phone ? 'bg-white/10' : 'pointer-events-none bg-white/10 opacity-50'}`}>Text</a>
-            <button type="button" onClick={() => openNavigate(activeJob.address)} className="py-2.5 bg-blue-700 rounded-xl text-xs font-bold text-white">Navigate</button>
-          </div>
+          <button
+            type="button"
+            onClick={() => openNavigate(activeJob.address)}
+            className="w-full py-2.5 bg-blue-700 rounded-xl text-xs font-bold text-white"
+          >
+            Navigate
+          </button>
 
           <JobChatPanel bookingId={activeJob.id} selfId={null} title="Customer chat" />
 
@@ -687,10 +637,6 @@ export const TechJobsTab: React.FC = () => {
                     Add repair lines above, or use Diagnostic only / No-show below.
                   </p>
                 )}
-                <div className="flex justify-between gap-2 text-[11px] text-slate-300 pt-1.5 border-t border-white/10">
-                  <span>Estimated sales tax (parts)</span>
-                  <span className="font-mono text-white">${estimatedSalesTax.toFixed(2)}</span>
-                </div>
                 <div className="flex justify-between gap-2 text-xs font-bold text-white pt-1.5 border-t border-white/10">
                   <span>Total to charge</span>
                   <span className="font-mono">${chargeTotal.toFixed(2)}</span>
@@ -698,9 +644,6 @@ export const TechJobsTab: React.FC = () => {
                 <p className="text-[10px] text-slate-500">
                   Includes ${holdDollars.toFixed(0)} diagnostic
                   {repairsSubtotal > 0 ? ` + $${repairsSubtotal.toFixed(2)} repairs` : ''}
-                  {partsSubtotal > 0
-                    ? '. Stripe calculates exact parts tax from the service ZIP when charged.'
-                    : ''}
                 </p>
               </div>
 
@@ -718,7 +661,7 @@ export const TechJobsTab: React.FC = () => {
               </label>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || !customerAgreed}
                 onClick={() => void handleCharge()}
                 className="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
               >
@@ -730,7 +673,7 @@ export const TechJobsTab: React.FC = () => {
                 onClick={() => void handleDiagnosticOnly()}
                 className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60"
               >
-                Diagnostic only (${holdDollars.toFixed(0)}) — no repairs
+                Diagnostic only ($85) — no repairs
               </button>
               <button
                 type="button"
@@ -738,7 +681,7 @@ export const TechJobsTab: React.FC = () => {
                 onClick={() => void handleNoShow()}
                 className="w-full py-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60"
               >
-                No-show — capture ${holdDollars.toFixed(0)} hold
+                No-show — capture $85 hold
               </button>
             </div>
           )}

@@ -60,7 +60,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, $10 diagnostic holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
+            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, transparent $85 holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
           </p>
 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">

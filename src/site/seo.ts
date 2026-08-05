@@ -24,7 +24,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   home: {
     title: 'Adaptivity Performance | Mobile Mechanic Justin TX & Northlake Auto Repair',
     description:
-      `Mobile mechanic & auto repair for Justin, Northlake, and DFW. $10 diagnostic hold, on-site pricing, brakes, oil, diagnostics. Call ${SITE_PHONE_DISPLAY}.`,
+      `Mobile mechanic & auto repair for Justin, Northlake, and DFW. $85 diagnostic hold, on-site pricing, brakes, oil, diagnostics. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/',
   },
   about: {
@@ -36,12 +36,12 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   services: {
     title: 'Auto Services | Mobile Brakes, Oil, Diagnostics & More — Adaptivity',
     description:
-      'Browse DFW mobile and shop services. On-site labor + parts pricing after a $10 diagnostic hold.',
+      'Browse DFW mobile and shop services. On-site labor + parts pricing after an $85 diagnostic hold.',
     path: '/services',
   },
   quotes: {
     title: 'Rough Estimate Calculator | Adaptivity Performance',
-    description: 'Ballpark labor + parts for DFW mobile service, then book a $10 diagnostic hold.',
+    description: 'Ballpark labor + parts for DFW mobile service, then book an $85 diagnostic hold.',
     path: '/quotes',
   },
   coverage: {
@@ -140,7 +140,7 @@ export const CITY_LANDINGS: CityLanding[] = [
     zips: ['76102', '76177', '76131'],
     neighborhoods: 'Alliance, Downtown, North Fort Worth',
     blurb:
-      'Mobile auto repair for Fort Worth and Alliance. Book a $10 diagnostic hold and get labor + parts priced on site.',
+      'Mobile auto repair for Fort Worth and Alliance. Book an $85 diagnostic hold and get labor + parts priced on site.',
   },
   {
     slug: 'arlington',
@@ -164,7 +164,7 @@ export const CITY_LANDINGS: CityLanding[] = [
     zips: ['76201', '76205', '76209'],
     neighborhoods: 'Downtown Denton, UNT area, south Denton',
     blurb:
-      'Mobile mechanic coverage for Denton. Flat-rate style transparency with a $10 diagnostic hold and on-site repair pricing.',
+      'Mobile mechanic coverage for Denton. Flat-rate style transparency with an $85 diagnostic hold and on-site repair pricing.',
   },
   {
     slug: 'roanoke',
@@ -196,7 +196,7 @@ export const CITY_LANDINGS: CityLanding[] = [
     zips: ['76248', '76262'],
     neighborhoods: 'Keller Town Center, Hidden Lakes, Solana',
     blurb:
-      'Mobile mechanic for Keller — driveway brakes, oil, batteries, and diagnostics with a $10 diagnostic hold and on-site pricing.',
+      'Mobile mechanic for Keller — driveway brakes, oil, batteries, and diagnostics with a $85 hold and on-site pricing.',
   },
   {
     slug: 'flower-mound',
@@ -251,7 +251,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you charge a diagnostic fee?',
-    a: 'A $10 diagnostic fee applies to vehicle inspections and check engine light scans. It is credited toward an approved repair. If you decline the repair, the $10 covers part of the technician\'s time and equipment usage.',
+    a: 'Yes. An $85 diagnostic fee applies to all vehicle inspections and check engine light scans. This fee is fully credited toward any repair we perform on the same visit — so if you approve the repair, the diagnostic effectively costs you nothing. If you decline the repair, the $85 covers the technician\'s time and equipment usage.',
   },
   {
     q: 'Do you offer financing or payment plans?',
@@ -259,15 +259,15 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you accept cash?',
-    a: 'No. Adaptivity Performance is a cashless business. We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover) processed securely via Stripe. We also accept Zelle for applicable balances. A card on file is required at booking to place a $10 diagnostic authorization hold. Cash payments are not accepted under any circumstances.',
+    a: 'No. Adaptivity Performance is a cashless business. We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover) processed securely via Stripe. We also accept Zelle for applicable balances. A card on file is required at booking to place an $85 authorization hold. Cash payments are not accepted under any circumstances.',
   },
   {
     q: 'Why is a credit card hold required before my appointment?',
-    a: 'The $10 diagnostic pre-authorization secures your appointment slot. The hold is not a charge unless captured under the booking terms. If you approve a repair, the hold is applied toward your final invoice.',
+    a: 'The $85 pre-authorization hold secures your appointment slot and covers our technician\'s drive time to your location. The hold is not a charge — it is released automatically if you cancel within the allowable window. If you approve a repair, the hold is applied toward your final invoice. This protects both you and our technicians from no-shows.',
   },
   {
     q: 'What happens if I need to cancel or reschedule my appointment?',
-    a: 'Cancellations made more than 2 hours before the scheduled appointment window release the hold with no penalty. Cancellations within 2 hours of the appointment forfeit the $10 diagnostic hold as a late cancellation fee. Same-day no-shows without notice forfeit the full hold. Rescheduling more than 2 hours in advance is always free.',
+    a: 'Cancellations made more than 2 hours before the scheduled appointment window are fully refunded with no penalty. Cancellations within 2 hours of the appointment forfeit the $85 diagnostic hold as a late cancellation fee. Same-day no-shows without notice forfeit the full hold. Rescheduling more than 2 hours in advance is always free.',
   },
 
   // SERVICES
@@ -299,7 +299,7 @@ export const SITE_FAQS = [
   // BOOKING PROCESS
   {
     q: 'How do I book an appointment?',
-    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place the $10 diagnostic card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
+    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place a $85 card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
   },
   {
     q: 'How long does a typical mobile repair take?',
@@ -382,7 +382,7 @@ export async function shareAdaptivity(opts?: { title?: string; text?: string; ur
   const title = opts?.title || 'Adaptivity Performance';
   const text =
     opts?.text ||
-    `Mobile mechanic for Justin, Northlake & DFW — book a $10 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
+    `Mobile mechanic for Justin, Northlake & DFW — book a $85 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
   const url = opts?.url || SITE_ORIGIN;
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {

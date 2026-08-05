@@ -169,7 +169,7 @@ export const CustomerTrackTab: React.FC = () => {
     <div className="space-y-4">
       <p className="text-xs text-slate-400">
         Enter your job reference from booking confirmation (e.g. AP-8492). Your tech sets the repair price on
-        site after diagnosing — Adaptivity places a $10 diagnostic hold at booking.
+        site after diagnosing — Adaptivity holds $85 at booking.
       </p>
       <input
         value={reference}
@@ -424,7 +424,7 @@ export const CustomerTrackTab: React.FC = () => {
             <p className="text-xs text-emerald-400">Payment captured. Thanks!</p>
           )}
           {booking.quoteStatus === 'quote_declined' && (
-            <p className="text-xs text-slate-400">Diagnostic visit only — booking hold applied.</p>
+            <p className="text-xs text-slate-400">Diagnostic visit only — $100 applied.</p>
           )}
 
           {(canAddBeforePhoto || photos.length > 0) && (

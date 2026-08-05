@@ -56,13 +56,13 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             <h3 className="font-heading text-xl font-extrabold text-white">How we serve customers</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
               Book mobile service to your driveway or drop off at our Justin hub / partner shops. You get
-              tech-set pricing on site, $10 diagnostic holds instead of surprise bills, live job tracking, and
+              tech-set pricing on site, $85 card holds instead of surprise bills, live job tracking, and
               ASE-minded techs across repair, tint, audio, detailing, body work, and more.
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[
                 'Mobile dispatch across DFW / Fort Worth',
-                'Transparent $10 diagnostic holds — tech sets repair price after diagnosis',
+                'Transparent $85 holds — tech sets repair price after diagnosis',
                 'Garage history, receipts, and repair tracking in one place',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">

@@ -41,7 +41,7 @@ export type CatalogService = {
   duration: string;
   icon: string;
   kind: ServiceKind;
-  /** Always false — all bookings use $100 diagnostic hold; tech sets price on site. */
+  /** Always false — all bookings use $85 diagnostic hold; tech sets price on site. */
   directBook: boolean;
   /** Illustrative labor+parts ballpark (not a final bill). */
   typicalMinDollars?: number;
@@ -52,7 +52,7 @@ export type CatalogService = {
 export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
 // Standard diagnostic authorization hold.
-export const DIAGNOSTIC_HOLD_DOLLARS = 10;
+export const DIAGNOSTIC_HOLD_DOLLARS = 85;
 
 function consult(
   id: string,
@@ -88,14 +88,14 @@ export const SERVICE_CATALOG: CatalogService[] = [
     id: 'diagnostic',
     title: 'Mobile Diagnostic Visit',
     description:
-      '$10 diagnostic hold. Tech inspects on site and sets labor + parts pricing before any repair charge.',
+      `$${DIAGNOSTIC_HOLD_DOLLARS} diagnostic hold. Tech inspects on site and sets labor + parts pricing before any repair charge.`,
     price: DIAGNOSTIC_HOLD_DOLLARS,
     duration: '45–60 mins',
     icon: '🔍',
     kind: 'diagnostic',
     directBook: false,
-    typicalMinDollars: 10,
-    typicalMaxDollars: 10,
+    typicalMinDollars: DIAGNOSTIC_HOLD_DOLLARS,
+    typicalMaxDollars: DIAGNOSTIC_HOLD_DOLLARS,
   },
   {
     id: 'oil_change',

@@ -7,7 +7,6 @@ import {
   transferTechShareToConnect,
 } from './_shared/connectTransfer.ts';
 import { sendExpoPush } from './_shared/expoPush.ts';
-import { calculatePartsSalesTax, commitSalesTaxCalculation } from './_shared/salesTax.ts';
 type LineItemIn = {
   title?: string;
   laborDollars?: number;
@@ -89,7 +88,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, zip_code, vehicle_description, services, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
+        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, vehicle_description, services, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -161,8 +160,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'No card hold on this booking' }, 400);
     }
 
-    // Standard diagnostic hold fallback.
-    const holdCents = booking.hold_amount_cents ?? 1000;
+    const holdCents = booking.hold_amount_cents ?? 8500;
     if (holdCents < 50) {
       return jsonResponse({ error: 'Invalid hold amount' }, 400);
     }
@@ -174,8 +172,6 @@ Deno.serve(async (req) => {
       notes: string;
     }> = [];
     let repairsCents = 0;
-    let salesTaxCents = 0;
-    let stripeTaxCalculationId: string | null = null;
     let totalChargeCents = holdCents;
     let quoteStatus: string = 'quote_approved';
 
@@ -219,23 +215,14 @@ Deno.serve(async (req) => {
         return jsonResponse(
           {
             error:
-              'Add labor/parts line items to charge the customer, or use diagnostic_only to charge the $10 visit only.',
+              'Add labor/parts line items to charge the customer, or use diagnostic_only to charge the $85 visit only.',
           },
           400
         );
       }
 
       repairsCents = normalized.reduce((sum, i) => sum + i.labor_cents + i.parts_cents, 0);
-      const taxCalculation = await calculatePartsSalesTax({
-        postalCode: String(booking.zip_code || ''),
-        parts: normalized.map((item) => ({
-          reference: item.title,
-          amountCents: item.parts_cents,
-        })),
-      });
-      salesTaxCents = taxCalculation.taxCents;
-      stripeTaxCalculationId = taxCalculation.id;
-      totalChargeCents = holdCents + repairsCents + salesTaxCents;
+      totalChargeCents = holdCents + repairsCents;
 
       // Always show the diagnostic hold as its own invoice line so receipts match the total.
       normalized = [
@@ -279,8 +266,6 @@ Deno.serve(async (req) => {
         line_items: normalized,
         diagnostic_fee_cents: holdCents,
         repairs_cents: repairsCents,
-        sales_tax_cents: salesTaxCents,
-        stripe_tax_calculation_id: stripeTaxCalculationId,
         total_cents: totalChargeCents,
         tech_notes: [
           typeof techNotes === 'string' ? techNotes.trim() : '',
@@ -320,7 +305,6 @@ Deno.serve(async (req) => {
       holdCents,
       totalChargeCents,
       creditAppliedCents,
-      salesTaxCents,
       source:
         mode === 'no_show'
           ? 'tech_no_show'
@@ -328,30 +312,6 @@ Deno.serve(async (req) => {
             ? 'tech_diagnostic_only'
             : 'tech_set_price',
     });
-
-    let stripeTaxTransactionId: string | null = null;
-    let taxWarning: string | null = null;
-    if (stripeTaxCalculationId) {
-      try {
-        const transaction = await commitSalesTaxCalculation(
-          stripeTaxCalculationId,
-          booking.reference_code
-        );
-        stripeTaxTransactionId = typeof transaction.id === 'string' ? transaction.id : null;
-      } catch (error) {
-        taxWarning = error instanceof Error ? error.message : 'Stripe Tax recording failed';
-        console.error('[capture-booking-payment] tax transaction failed', taxWarning);
-      }
-    }
-
-    await supabase
-      .from('payments')
-      .update({
-        sales_tax_cents: salesTaxCents,
-        stripe_tax_calculation_id: stripeTaxCalculationId,
-        stripe_tax_transaction_id: stripeTaxTransactionId,
-      })
-      .eq('payment_intent_id', paymentIntentId);
 
     if (creditAppliedCents > 0 && booking.customer_id) {
       await supabase.from('customer_credits').insert({
@@ -453,7 +413,6 @@ Deno.serve(async (req) => {
         .from('booking_quotes')
         .update({
           capture_amount_cents: result.capturedCents,
-          stripe_tax_transaction_id: stripeTaxTransactionId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', quote.id);
@@ -475,7 +434,7 @@ Deno.serve(async (req) => {
       await supabase.from('gbp_post_drafts').insert({
         city_slug: cityHint,
         booking_id: booking.id,
-        caption: `Another driveway job wrapped in ${cityLabel}, TX — mobile brakes, diagnostics, and more. Book a $100 diagnostic hold at adaptivityperformance.com. #MobileMechanic #${cityLabel}TX`,
+        caption: `Another driveway job wrapped in ${cityLabel}, TX — mobile brakes, diagnostics, and more. Book a $85 diagnostic hold at adaptivityperformance.com. #MobileMechanic #${cityLabel}TX`,
         status: 'draft',
       });
     } catch (e) {
@@ -520,8 +479,6 @@ Deno.serve(async (req) => {
       remainderDollars: result.remainderCents / 100,
       diagnosticFeeDollars: holdCents / 100,
       repairsDollars: repairsCents / 100,
-      salesTaxDollars: salesTaxCents / 100,
-      taxWarning,
       techPayoutDollars: result.techTransferCents / 100,
       platformFeeDollars: result.platformFeeCents / 100,
       transferId: result.transferId,

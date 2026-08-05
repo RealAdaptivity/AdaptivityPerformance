@@ -8,7 +8,6 @@ import {
   Phone,
   RefreshCw,
   Truck,
-  UserX,
   User,
   Wrench,
 } from 'lucide-react';
@@ -30,7 +29,6 @@ import {
   fetchDispatchTechs,
   fetchAdminNecYtdByStripeAccount,
   subscribeAdminBookings,
-  terminateTechnician,
   type AdminPaymentRow,
   type DispatchTech,
 } from '../services/adminApi';
@@ -84,26 +82,6 @@ export const DispatchConsole: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const terminateTech = async (tech: DispatchTech) => {
-    const reason = window.prompt(
-      `Termination reason for ${tech.name}. This is retained for compliance and cannot be blank:`
-    )?.trim();
-    if (!reason) return;
-    if (!window.confirm(
-      `Terminate ${tech.name} (${tech.email || tech.id})? Their login will be blocked and they will be removed from dispatch.`
-    )) return;
-    setSaving(true);
-    setActionError(null);
-    try {
-      await terminateTechnician(tech.id, reason);
-      await load();
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Termination failed');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const load = useCallback(async () => {
     setError(null);
@@ -556,14 +534,6 @@ export const DispatchConsole: React.FC = () => {
                     ? ` · 1099-NEC required (file + copy by Jan 31)`
                     : ` / $${FORM_1099_NEC_THRESHOLD_DOLLARS}`}
                 </p>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => void terminateTech(t)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-500/35 px-2.5 py-1.5 text-[11px] font-bold text-red-300 hover:bg-red-500/10 disabled:opacity-50"
-                >
-                  <UserX className="h-3.5 w-3.5" /> Terminate technician
-                </button>
               </div>
             );
             })
@@ -825,7 +795,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             onClick={() => {
               if (
                 !window.confirm(
-                  'Capture the booking diagnostic hold for no-show / missed appointment and mark job completed?'
+                  'Capture $85 diagnostic hold for no-show / missed appointment and mark job completed?'
                 )
               ) {
                 return;
@@ -834,7 +804,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             }}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2"
           >
-            No-show — capture hold & complete
+            No-show — capture $85 & complete
           </button>
         </div>
       ) : null}

@@ -1,7 +1,6 @@
 /** Server-side quote hold rules (keep in sync with src/services/holdPricing.ts). Auto-synced. */
 
-// Standard diagnostic authorization hold.
-export const DIAGNOSTIC_HOLD_DOLLARS = 10;
+export const DIAGNOSTIC_HOLD_DOLLARS = 85;
 
 type ServiceKind = string;
 

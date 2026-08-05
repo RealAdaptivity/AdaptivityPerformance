@@ -282,7 +282,7 @@ export const GrowthAdmin: React.FC = () => {
             <div className="space-y-1">
               <p className="text-sm font-bold text-white">Weekly GBP ideas</p>
               <p className="text-xs text-slate-400">
-                Photo + city keyword ({CITY_KEYWORDS}). Tip: “What a $100 diagnostic hold covers.”
+                Photo + city keyword ({CITY_KEYWORDS}). Tip: “What a $85 diagnostic hold covers.”
               </p>
             </div>
           </div>

@@ -45,17 +45,17 @@ export const DiagnosticCreditBanner: React.FC<DiagnosticCreditBannerProps> = ({ 
             </div>
 
             <h3 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500">$10 Diagnostic Fee WAIVED</span> When You Approve The Repair!
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500">$85 Diagnostic Fee WAIVED</span> When You Approve The Repair!
             </h3>
 
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              Book your mobile diagnostic visit within <strong className="text-orange-400">24 hours</strong>. When you approve your repair on-site, your entire $10 diagnostic fee is 100% WAIVED & credited toward your total repair bill!
+              Book your mobile diagnostic visit within <strong className="text-orange-400">24 hours</strong>. When you approve your repair on-site, your entire $85 diagnostic fee is 100% WAIVED & credited toward your total repair bill!
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-semibold text-slate-300 pt-1">
               <div className="flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>$10 Diagnostic Fee 100% WAIVED on repair</span>
+                <span>$85 Diagnostic Fee 100% WAIVED on repair</span>
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
@@ -100,7 +100,7 @@ export const DiagnosticCreditBanner: React.FC<DiagnosticCreditBannerProps> = ({ 
               onClick={onOpenBooking}
               className="w-full inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-sm py-4 px-8 rounded-xl shadow-xl shadow-orange-500/30 hover:scale-105 active:scale-95 transition-all"
             >
-              <span>Waive $10 Diagnostic Fee & Book Now</span>
+              <span>Waive $85 Fee & Book Now</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 

@@ -53,7 +53,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
 
         <div className="grid sm:grid-cols-3 gap-3 text-xs">
           {[
-            ['$10 diagnostic hold', 'Tech sets labor + parts on site'],
+            ['$85 diagnostic hold', 'Tech sets labor + parts on site'],
             ['Driveway dispatch', 'We come to you across DFW'],
             ['12-mo / 12k warranty', 'Parts & labor backed'],
           ].map(([t, d]) => (
@@ -80,7 +80,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
               className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-sm font-bold shadow-lg shadow-orange-500/25"
             >
               <Calendar className="w-4 h-4" />
-              Book {city.city} today — $10 diagnostic hold
+              Book {city.city} today — $85 hold
             </button>
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -96,7 +96,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
               onClick={() => {
                 void shareAdaptivity({
                   title: `Mobile mechanic ${city.city} TX`,
-                  text: `Adaptivity Performance — mobile mechanic in ${city.city}, TX. Book a $10 diagnostic hold.`,
+                  text: `Adaptivity Performance — mobile mechanic in ${city.city}, TX. Book a $85 diagnostic hold.`,
                   url: `https://adaptivityperformance.com${cityPath(city.slug)}`,
                 });
               }}
