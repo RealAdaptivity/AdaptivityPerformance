@@ -41,12 +41,12 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
             Complete Automotive Care <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500">& Performance</span>
             <br />
             <span className="text-slate-300 font-bold text-3xl sm:text-4xl lg:text-5xl mt-2 block">
-              At Your Doorstep or In Our Shop.
+              Directly at Your Doorstep Across DFW.
             </span>
           </h1>
 
           <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Adaptivity Performance handles <strong className="text-white">everything car & truck related</strong> — on-site diagnostics, repairs, tires, glass, bodywork, detailing, audio, tint, wraps, and custom shop builds across DFW / Fort Worth.
+            Adaptivity Performance is <strong className="text-white">100% mobile</strong> — bringing professional on-site diagnostics, brakes, batteries, starters, alternators, oil services, and repairs directly to your driveway or workplace.
           </p>
 
           {/* Interactive Mode Switcher Container */}
@@ -60,9 +60,12 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
                     : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
                 }`}
               >
-                <Truck className="w-5 h-5" />
+                <Truck className="w-5 h-5 text-orange-400" />
                 <div className="text-left">
-                  <div className="leading-tight">We Come To You</div>
+                  <div className="leading-tight flex items-center gap-1.5">
+                    <span>We Come To You</span>
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-bold uppercase">Active</span>
+                  </div>
                   <div className="text-[10px] opacity-80 font-normal">Driveway & On-Site Repairs</div>
                 </div>
               </button>
@@ -75,10 +78,13 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
                     : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
                 }`}
               >
-                <Home className="w-5 h-5" />
+                <Home className="w-5 h-5 text-amber-400" />
                 <div className="text-left">
-                  <div className="leading-tight">In-Shop & Garage Hub</div>
-                  <div className="text-[10px] opacity-80 font-normal">Major Repairs & Upgrades</div>
+                  <div className="leading-tight flex items-center gap-1.5">
+                    <span>Garage Hub</span>
+                    <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-bold uppercase">Soon</span>
+                  </div>
+                  <div className="text-[10px] opacity-80 font-normal">In-Shop Facility Buildout</div>
                 </div>
               </button>
             </div>
@@ -89,7 +95,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2.5">
                     <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-                      <Truck className="w-4 h-4" /> Mobile Mechanic Van Service
+                      <Truck className="w-4 h-4" /> 100% Mobile Mechanic Van Service
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded font-bold whitespace-nowrap">
@@ -111,20 +117,24 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking, onSelectServiceMode }
               ) : (
                 <div className="space-y-4">
                   <div className="flex flex-wrap items-center justify-between gap-2.5">
-                    <span className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
-                      <Wrench className="w-4 h-4" /> Full-Equipped Shop Location
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                      <Wrench className="w-4 h-4" /> Dedicated Performance Garage Hub
                     </span>
-                    <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-medium whitespace-nowrap">
-                      Specialized Heavy Duty Lift
+                    <span className="text-xs bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded font-bold whitespace-nowrap">
+                      Facility Under Buildout · Coming Soon
                     </span>
                   </div>
-                  <h3 className="text-lg font-bold text-white">Advanced garage facility for complex overhauls and performance builds.</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-300">
-                    <div className="flex items-center space-x-2"><CheckCircle2 className="w-4 h-4 text-orange-400 flex-shrink-0" /> <span>Engine & Transmission Diagnostics/Swaps</span></div>
-                    <div className="flex items-center space-x-2"><CheckCircle2 className="w-4 h-4 text-orange-400 flex-shrink-0" /> <span>Suspension Lifts, Lowering & Bushings</span></div>
-                    <div className="flex items-center space-x-2"><CheckCircle2 className="w-4 h-4 text-orange-400 flex-shrink-0" /> <span>Custom Exhaust & Cold Air Intakes</span></div>
-                    <div className="flex items-center space-x-2"><CheckCircle2 className="w-4 h-4 text-orange-400 flex-shrink-0" /> <span>Pre-Purchase In-Depth Vehicle Inspection</span></div>
-                  </div>
+                  <h3 className="text-lg font-bold text-white">Our brick-and-mortar garage hub is currently under construction!</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    We are currently setting up our dedicated shop facility for heavy-duty lifts, custom exhausts, and engine overhauls. In the meantime, <strong className="text-slate-200">100% of our active bookings are completed on-site</strong> with our fully-equipped mobile units.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('mobile')}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-orange-400 hover:text-orange-300 pt-1"
+                  >
+                    <span>Book mobile doorstep service today →</span>
+                  </button>
                 </div>
               )}
             </div>

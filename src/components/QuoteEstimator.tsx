@@ -604,22 +604,20 @@ export const QuoteEstimator: React.FC<QuoteEstimatorProps> = ({ onBookWithEstima
                   <div className="text-xs text-slate-400 mt-1">We bring tools & parts to your address.</div>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setServiceLocation('shop')}
-                  className={`p-4 rounded-xl text-left border transition-all ${
-                    serviceLocation === 'shop'
-                      ? 'border-orange-500 bg-orange-500/10 text-white shadow-md'
-                      : 'border-white/10 bg-[#0b0c10] text-slate-400 hover:border-slate-600'
-                  }`}
+                <div
+                  className="p-4 rounded-xl text-left border border-white/10 bg-[#0b0c10]/60 text-slate-400 relative overflow-hidden opacity-80"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <Home className={`w-5 h-5 ${serviceLocation === 'shop' ? 'text-orange-400' : 'text-slate-500'}`} />
-                    <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded font-bold">GARAGE HUB</span>
+                    <Home className="w-5 h-5 text-amber-500/80" />
+                    <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold uppercase">
+                      BUILD-OUT IN PROGRESS
+                    </span>
                   </div>
-                  <div className="font-bold text-sm text-white">Drop Off at Shop</div>
-                  <div className="text-xs text-slate-400 mt-1">Drop off at our Justin garage hub ($0 travel).</div>
-                </button>
+                  <div className="font-bold text-sm text-slate-300">In-Shop Garage Hub</div>
+                  <div className="text-xs text-amber-400/90 mt-1 font-medium">
+                    Facility coming soon · Mobile service available today!
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -192,7 +192,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
                 </p>
                 <div className="flex items-start gap-2 text-xs text-slate-400">
                   <MapPin className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                  <span>Serving DFW / Fort Worth from our Justin garage hub and partner locations.</span>
+                  <span>Serving DFW / Fort Worth with fully-equipped mobile service vans dispatched daily.</span>
                 </div>
               </div>
               <button
