@@ -1,14 +1,16 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
-import { recoverConnectAccountForProfile } from './_shared/connectAccountRecovery.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { recoverConnectAccountForProfile, tagConnectAccountProfile } from '../_shared/connectAccountRecovery.ts';
+import { expressAccountCreatePayload, stripeBusinessProfileSite } from '../_shared/connectBranding.ts';
 
 /**
- * Account Session for Connect embedded components.
- * Express platforms cannot attach debit cards via /external_accounts API —
- * techs add them through Account Management / Payouts embedded UI instead.
+ * Account Session for Connect embedded components:
+ * - account_onboarding (embedded onboarding & W-9 collection)
+ * - account_management (manage banks, debit cards, identity)
+ * - payouts (view payout history & manage instant debit cards)
  */
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -42,8 +44,11 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     let accountId = details?.stripe_account_id as string | undefined;
-    if (!accountId?.startsWith('acct_') && user.email) {
-      accountId = await recoverConnectAccountForProfile(user.id, user.email);
+    const techName = (user.user_metadata?.full_name as string) || 'Technician';
+    const techEmail = user.email?.trim() || '';
+
+    if (!accountId?.startsWith('acct_') && techEmail) {
+      accountId = await recoverConnectAccountForProfile(user.id, techEmail);
       if (accountId?.startsWith('acct_')) {
         await supabase.from('mechanic_details').upsert(
           { profile_id: user.id, stripe_account_id: accountId },
@@ -52,16 +57,42 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Auto-create Connect account if missing
     if (!accountId?.startsWith('acct_')) {
-      return jsonResponse(
-        { error: 'Connect Stripe Express first (identity + bank), then add a debit card here.' },
-        400
+      if (!techEmail) {
+        return jsonResponse({ error: 'Your account must have an email to set up Stripe payouts.' }, 400);
+      }
+      const businessSite = stripeBusinessProfileSite();
+      const account = (await stripeRequest(
+        '/accounts',
+        'POST',
+        expressAccountCreatePayload(businessSite, techEmail, {
+          adaptivity_profile_id: user.id,
+          tech_name: techName,
+        })
+      )) as { id: string };
+
+      accountId = account.id;
+      await supabase.from('mechanic_details').upsert(
+        { profile_id: user.id, stripe_account_id: accountId },
+        { onConflict: 'profile_id' }
       );
+      try {
+        await tagConnectAccountProfile(accountId, user.id, techName);
+      } catch {
+        /* best-effort tag */
+      }
     }
 
     const session = (await stripeRequest('/account_sessions', 'POST', {
       account: accountId,
       components: {
+        account_onboarding: {
+          enabled: true,
+          features: {
+            external_account_collection: true,
+          },
+        },
         account_management: {
           enabled: true,
           features: {

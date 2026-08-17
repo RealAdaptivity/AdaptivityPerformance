@@ -1,4 +1,3 @@
-revoke all on function public.mark_tech_w9_complete() from authenticated;
 drop function if exists public.mark_tech_w9_complete();
 
 drop policy if exists "bookings_update_tech_or_admin" on public.bookings;

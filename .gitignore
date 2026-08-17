@@ -21,6 +21,7 @@ dist-ssr
 
 # Generated Supabase MCP deploy payloads (run scripts/package-edge-functions.mjs)
 supabase/.edge-deploy/
+supabase/.temp/
 
 # Editor directories and files
 .vscode/*

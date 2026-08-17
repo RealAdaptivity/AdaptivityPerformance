@@ -23,6 +23,8 @@ type StripeAccount = {
   };
   requirements?: {
     currently_due?: string[];
+    past_due?: string[];
+    eventually_due?: string[];
     disabled_reason?: string | null;
   };
   individual?: { id_number_provided?: boolean } | null;
@@ -75,10 +77,9 @@ function taxIdRequirementsOpen(account: StripeAccount | null): boolean {
   ];
   return due.some(
     (f) =>
-      f.includes('id_number') ||
-      f.includes('ssn') ||
-      f.includes('tax_id') ||
-      f === 'individual.verification.document'
+      f === 'individual.id_number' ||
+      f === 'individual.ssn_last_4' ||
+      f === 'company.tax_id'
   );
 }
 
@@ -102,8 +103,11 @@ function accountStatusPayload(
   }
   const transfersEnabled = transfersCapabilityActive(account);
   const taxIdProvided =
-    Boolean(account.individual?.id_number_provided || account.company?.tax_id_provided) &&
-    !taxIdRequirementsOpen(account);
+    Boolean(
+      account.individual?.id_number_provided ||
+      account.company?.tax_id_provided ||
+      account.details_submitted
+    ) && !taxIdRequirementsOpen(account);
   return {
     accountId: account.id,
     detailsSubmitted: Boolean(account.details_submitted),
@@ -173,10 +177,6 @@ async function syncTaxIdAndW9Flag(
   taxIdProvided: boolean
 ) {
   if (!taxIdProvided) {
-    await supabase
-      .from('mechanic_details')
-      .update({ tax_id_provided: false })
-      .eq('profile_id', profileId);
     return;
   }
   // Tax ID collected in Stripe = W-9 purpose satisfied; never store SSN/EIN ourselves.
@@ -218,7 +218,7 @@ async function resolveLiveConnectAccountId(
   }
 }
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
 

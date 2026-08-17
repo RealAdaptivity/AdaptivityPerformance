@@ -1,6 +1,7 @@
 /** Contractor agreement digital signature — upload + record acceptance. */
 
 import { supabase } from './supabaseClient';
+import { ensureTechProfile } from './techDispatch';
 
 export const CONTRACTOR_AGREEMENT_VERSION = '2026-07-v1';
 
@@ -38,13 +39,53 @@ export async function fetchContractorAgreementStatus(): Promise<ContractorAgreem
   if (!user) {
     return { signed: false, signedAt: null, signerName: null, signaturePath: null, agreementVersion: null };
   }
-  const { data } = await supabase
+  
+  // 1. Check mechanic_details
+  const { data, error } = await supabase
     .from('mechanic_details')
     .select(
       'contractor_agreement_signed_at, contractor_agreement_signer_name, contractor_agreement_signature_path, contractor_agreement_version'
     )
     .eq('profile_id', user.id)
     .maybeSingle();
+
+  if (error) {
+    console.warn('[fetchContractorAgreementStatus] mechanic_details:', error.message);
+  }
+
+  if (data?.contractor_agreement_signed_at && data?.contractor_agreement_signature_path) {
+    return {
+      signed: true,
+      signedAt: (data.contractor_agreement_signed_at as string) || null,
+      signerName: (data.contractor_agreement_signer_name as string) || null,
+      signaturePath: (data.contractor_agreement_signature_path as string) || null,
+      agreementVersion: (data.contractor_agreement_version as string) || null,
+    };
+  }
+
+  // 2. Fallback: check contractor_agreement_signatures table
+  const { data: sig, error: sigErr } = await supabase
+    .from('contractor_agreement_signatures')
+    .select('signed_at, signer_name, signature_path, agreement_version')
+    .eq('profile_id', user.id)
+    .order('signed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (sigErr) {
+    console.warn('[fetchContractorAgreementStatus] signatures fallback:', sigErr.message);
+  }
+
+  if (sig?.signed_at && sig?.signature_path) {
+    return {
+      signed: true,
+      signedAt: sig.signed_at as string,
+      signerName: (sig.signer_name as string) || null,
+      signaturePath: (sig.signature_path as string) || null,
+      agreementVersion: (sig.agreement_version as string) || null,
+    };
+  }
+
   return {
     signed: Boolean(data?.contractor_agreement_signed_at),
     signedAt: (data?.contractor_agreement_signed_at as string) || null,
@@ -70,13 +111,19 @@ export async function signContractorAgreement(opts: {
     throw new Error('Draw your signature before submitting');
   }
 
+  // Ensure mechanic_details row exists
+  await ensureTechProfile().catch(() => undefined);
+
   const path = `${user.id}/agreement-${CONTRACTOR_AGREEMENT_VERSION}-${Date.now()}.png`;
   const blob = dataUrlToBlob(opts.signatureDataUrl);
   const { error: upErr } = await supabase.storage.from('contractor-agreements').upload(path, blob, {
     contentType: 'image/png',
-    upsert: false,
+    upsert: true,
   });
-  if (upErr) throw upErr;
+  if (upErr) {
+    console.error('[signContractorAgreement] Storage upload error:', upErr);
+    throw new Error(upErr.message || 'Failed to upload signature image to storage');
+  }
 
   const { data, error } = await supabase.rpc('sign_contractor_agreement', {
     p_signer_name: name,
@@ -84,7 +131,10 @@ export async function signContractorAgreement(opts: {
     p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 400) : null,
     p_agreement_version: CONTRACTOR_AGREEMENT_VERSION,
   });
-  if (error) throw error;
+  if (error) {
+    console.error('[signContractorAgreement] RPC error:', error);
+    throw new Error(error.message || 'Failed to record signature in database');
+  }
 
   return { signedAt: String(data), signaturePath: path };
 }
@@ -114,14 +164,14 @@ export async function fetchSignedContractorAgreements(): Promise<ContractorAgree
 
   const ids = rows.map((r) => r.profile_id as string);
   const { data: profiles } = await supabase.from('profiles').select('id, email, full_name').in('id', ids);
-  const byId = new Map((profiles || []).map((p) => [p.id as string, p]));
+  const byId = new Map((profiles || []).map((p: any) => [p.id as string, p as { email?: string; full_name?: string }]));
 
   return rows.map((row) => {
     const profile = byId.get(row.profile_id as string);
     return {
       profileId: row.profile_id as string,
-      email: (profile?.email as string) || null,
-      fullName: (profile?.full_name as string) || null,
+      email: profile?.email || null,
+      fullName: profile?.full_name || null,
       signedAt: (row.contractor_agreement_signed_at as string) || null,
       signerName: (row.contractor_agreement_signer_name as string) || null,
       signaturePath: (row.contractor_agreement_signature_path as string) || null,

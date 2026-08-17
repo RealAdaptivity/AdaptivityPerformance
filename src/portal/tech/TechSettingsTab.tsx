@@ -38,6 +38,7 @@ import {
 } from '../../services/techConnectCache';
 import { openContractorAgreementPrintWindow } from '../../services/contractorAgreementPdf';
 import { AddInstantDebitCardModal } from './AddInstantDebitCardModal';
+import { EmbeddedStripeOnboardingModal } from './EmbeddedStripeOnboardingModal';
 
 type Props = { onSignOut: () => void; stripeReturnSync?: boolean; adminPreview?: boolean };
 
@@ -45,10 +46,10 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const [status, setStatus] = useState<TechConnectStatus | null>(() => readCachedTechConnectStatus());
   const [localStripeId, setLocalStripeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [linking, setLinking] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [openingDash, setOpeningDash] = useState(false);
   const [showDebitModal, setShowDebitModal] = useState(false);
+  const [showEmbeddedOnboarding, setShowEmbeddedOnboarding] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [pendingStripeUrl, setPendingStripeUrl] = useState<string | null>(null);
@@ -83,23 +84,32 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
   const refresh = useCallback(async (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setLoading(true);
     setLoadError(null);
+
+    // 1. Fast path: Load DB records immediately (~30ms) so W-9 and Agreement status show instantly
     try {
-      const [remote, localId, w9Status, ytdPay, agreementStatus] = await Promise.all([
-        fetchTechConnectStatus(),
-        fetchLocalMechanicStripeId(),
-        fetchTechW9Status(),
+      const [localId, w9Status, agreementStatus, ytdPay] = await Promise.all([
+        fetchLocalMechanicStripeId().catch(() => null),
+        fetchTechW9Status().catch(() => ({ completed: false, completedAt: null, taxIdProvided: false })),
+        fetchContractorAgreementStatus().catch(() => ({ signed: false, signedAt: null, signerName: null, signaturePath: null, agreementVersion: null })),
         fetchTechYearToDateCompensation().catch(() => null),
-        fetchContractorAgreementStatus(),
       ]);
       setLocalStripeId(localId);
       setW9(w9Status);
       setAgreement(agreementStatus);
       if (ytdPay) setYtd(ytdPay);
+    } catch {
+      /* non-blocking */
+    }
+
+    // 2. Background path: Sync live Stripe Connect status via edge function (can take 2-5s)
+    try {
+      const remote = await fetchTechConnectStatus();
       if (remote) {
         setStatus(remote);
         if (remote.accountId) writeCachedTechConnectStatus(remote);
-        if (remote.taxIdProvided && !w9Status.completed) {
-          setW9(await fetchTechW9Status());
+        if (remote.taxIdProvided) {
+          const freshW9 = await fetchTechW9Status();
+          setW9(freshW9);
         }
       }
     } catch (e: unknown) {
@@ -165,53 +175,14 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
     if (stripeReturnSync) void refresh();
   }, [stripeReturnSync, refresh]);
 
-  const connect = async (opts?: { forceReset?: boolean }) => {
-    setLinking(true);
-    setConnectError(null);
-    setPendingStripeUrl(null);
-    try {
-      if (opts?.forceReset || adminPreview) {
-        // Admin preview + Live cutover: always clear a dead/test acct_ before create.
-        await resetStaleStripeConnectLink().catch(() => undefined);
-        clearCachedTechConnectStatus();
-        setLocalStripeId(null);
-      }
-      const result = await openStripePayoutSetup();
-      if (result.accountId) writeCachedTechConnectStatus(result);
-      setStatus(result);
-      setLocalStripeId(result.accountId?.startsWith('acct_') ? result.accountId : null);
-      if (!result.onboardingUrl?.startsWith('http')) {
-        throw new Error('Stripe onboarding URL missing — try Reset Stripe link, then Connect again.');
-      }
-      openStripeUrl(result.onboardingUrl);
-    } catch (e: unknown) {
-      const raw =
-        e instanceof Error
-          ? e.message
-          : e && typeof e === 'object' && 'message' in e && typeof (e as { message: unknown }).message === 'string'
-            ? (e as { message: string }).message
-            : '';
-      let msg = raw.trim() || 'Could not open Stripe — check the browser console Network tab for create-stripe-account-link.';
-      if (/not a valid url/i.test(msg)) {
-        msg +=
-          ' Deploy the latest create-stripe-account-link edge function (localhost needs HTTPS business URL + http redirect URLs).';
-      }
-      if (/technician profile required|not a tech/i.test(msg)) {
-        msg =
-          'This login is not a tech account. Sign out and use Technician login (or finish Join as Tech approval), then Connect Stripe.';
-      }
-      if (/STRIPE_SECRET_KEY is not configured/i.test(msg)) {
-        msg = 'Stripe is not configured on the server. Set STRIPE_SECRET_KEY (Live) on Supabase Edge Function secrets.';
-      }
-      if (/failed to (send|fetch)|networkerror|cors|functionsrelay/i.test(msg)) {
-        msg =
-          'Could not reach Stripe Connect edge function. Hard-refresh, confirm you are on adaptivityperformance.com/portal, and try again.';
-      }
-      console.error('[Stripe Connect]', e);
-      setConnectError(msg);
-    } finally {
-      setLinking(false);
-    }
+  const connect = async (_opts?: { forceReset?: boolean }) => {
+    setShowEmbeddedOnboarding(true);
+    // Background fetch hosted fallback URL
+    void openStripePayoutSetup()
+      .then((res) => {
+        if (res?.onboardingUrl) setPendingStripeUrl(res.onboardingUrl);
+      })
+      .catch(() => undefined);
   };
 
   const resetConnect = async () => {
@@ -355,7 +326,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           <strong className="text-slate-300">Stripe Express</strong> (same as Form W-9) so Adaptivity can issue 1099s.
           We do not store your Social Security number in our database.
         </p>
-        {w9?.completed ? (
+        {w9 === null && loading ? (
+          <p className="text-[11px] text-slate-500 animate-pulse">Checking W-9 status…</p>
+        ) : w9?.completed ? (
           <p className="text-[11px] text-emerald-400 leading-relaxed">
             W-9 / tax ID on file
             {w9.completedAt ? ` · ${new Date(w9.completedAt).toLocaleDateString()}` : ''}. You can claim jobs.
@@ -382,7 +355,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           Digitally sign the 1099 contractor terms (liability, workers’ comp, tax, payouts). Required before claiming
           your first job. We store your name, signature image, and timestamp for Adaptivity records.
         </p>
-        {agreement?.signed && agreement.signaturePath ? (
+        {agreement === null && loading ? (
+          <p className="text-[11px] text-slate-500 animate-pulse">Checking agreement status…</p>
+        ) : agreement?.signed && agreement.signaturePath ? (
           <p className="text-[11px] text-emerald-400 leading-relaxed">
             Signed
             {agreement.signerName ? ` by ${agreement.signerName}` : ''}
@@ -566,15 +541,13 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         )}
         <button
           type="button"
-          disabled={linking || resetting}
+          disabled={resetting}
           onClick={() => void connect({ forceReset: Boolean(adminPreview) })}
           className="w-full py-3 bg-orange-500 rounded-xl text-xs font-bold text-white disabled:opacity-60"
         >
-          {linking
-            ? 'Opening Stripe…'
-            : status?.readyForPayouts
-              ? 'Update Stripe payout setup →'
-              : 'Start Stripe Express onboarding →'}
+          {status?.readyForPayouts
+            ? 'Update Stripe payout setup →'
+            : 'Start Stripe Express onboarding →'}
         </button>
         {acctId && status?.detailsSubmitted && (
           <button
@@ -594,7 +567,7 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         {!status?.readyForPayouts && (
           <button
             type="button"
-            disabled={linking || resetting}
+            disabled={resetting}
             onClick={() => void resetConnect()}
             className="w-full py-2.5 border border-white/10 text-slate-400 rounded-xl text-[11px] font-semibold disabled:opacity-60"
           >
@@ -611,6 +584,16 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           onAdded={() => {
             void refresh({ quiet: true });
           }}
+        />
+      )}
+      {showEmbeddedOnboarding && (
+        <EmbeddedStripeOnboardingModal
+          open={showEmbeddedOnboarding}
+          onClose={() => setShowEmbeddedOnboarding(false)}
+          onCompleted={() => {
+            void refresh({ quiet: true });
+          }}
+          fallbackHostedUrl={pendingStripeUrl}
         />
       )}
     </div>

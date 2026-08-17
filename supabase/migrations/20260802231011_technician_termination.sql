@@ -3,6 +3,7 @@ alter table public.mechanic_details
   add column if not exists termination_reason text,
   add column if not exists terminated_by uuid references public.profiles(id) on delete set null;
 
+alter table public.mechanic_details drop constraint if exists mechanic_details_termination_reason_required;
 alter table public.mechanic_details
   add constraint mechanic_details_termination_reason_required
   check (terminated_at is null or nullif(trim(termination_reason), '') is not null) not valid;

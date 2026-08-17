@@ -117,7 +117,24 @@ BEGIN
   WHERE profile_id = uid;
 
   IF NOT FOUND THEN
-    RAISE EXCEPTION 'Technician profile not found — finish tech signup first';
+    INSERT INTO public.mechanic_details (
+      profile_id, van_number, role_title,
+      contractor_agreement_signed_at, contractor_agreement_signer_name,
+      contractor_agreement_signature_path, contractor_agreement_version,
+      contractor_agreement_user_agent
+    ) VALUES (
+      uid, 'Mobile Unit', 'Technician',
+      signed_at, clean_name, clean_path,
+      coalesce(nullif(trim(p_agreement_version), ''), '2026-07-v1'),
+      nullif(trim(p_user_agent), '')
+    )
+    ON CONFLICT (profile_id) DO UPDATE
+    SET
+      contractor_agreement_signed_at = coalesce(public.mechanic_details.contractor_agreement_signed_at, EXCLUDED.contractor_agreement_signed_at),
+      contractor_agreement_signer_name = EXCLUDED.contractor_agreement_signer_name,
+      contractor_agreement_signature_path = EXCLUDED.contractor_agreement_signature_path,
+      contractor_agreement_version = EXCLUDED.contractor_agreement_version,
+      contractor_agreement_user_agent = EXCLUDED.contractor_agreement_user_agent;
   END IF;
 
   RETURN signed_at;
