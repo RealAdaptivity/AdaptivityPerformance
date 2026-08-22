@@ -105,15 +105,9 @@ export const PartnerNetworkSection: React.FC<PartnerNetworkSectionProps> = ({
                   {p.hoursNote && <span>{p.hoursNote}</span>}
                 </p>
               </div>
-              {onBookAtShop && (
-                <button
-                  type="button"
-                  onClick={() => onBookAtShop(p.id)}
-                  className="shrink-0 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold"
-                >
-                  Book at this shop
-                </button>
-              )}
+              <span className="shrink-0 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-slate-400 text-xs font-semibold">
+                Facility In Progress
+              </span>
             </div>
           ))}
         </div>

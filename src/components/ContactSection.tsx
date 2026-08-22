@@ -103,9 +103,9 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                 <MapPin className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Garage Hub</div>
-                <div className="font-bold text-white text-sm">410 FM 156, Justin TX 76247</div>
-                <div className="text-xs text-slate-500">Mobile dispatch across all of DFW</div>
+                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Service Area</div>
+                <div className="font-bold text-white text-sm">100% Mobile — We Come To You</div>
+                <div className="text-xs text-slate-500">Dispatched across Justin, Northlake, Denton & DFW</div>
               </div>
             </div>
 
