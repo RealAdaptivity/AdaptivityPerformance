@@ -4,12 +4,10 @@ import { fetchApprovedPartners, type PartnerLocation } from '../services/partner
 
 interface PartnerNetworkSectionProps {
   onOpenPartnerApply: () => void;
-  onBookAtShop?: (partnerId: string) => void;
 }
 
 export const PartnerNetworkSection: React.FC<PartnerNetworkSectionProps> = ({
   onOpenPartnerApply,
-  onBookAtShop,
 }) => {
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
   const [loading, setLoading] = useState(true);

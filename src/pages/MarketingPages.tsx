@@ -89,7 +89,6 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return reveal(
         <PartnerNetworkSection
           onOpenPartnerApply={actions.onOpenPartnerApply}
-          onBookAtShop={actions.onBookAtShop}
         />,
         'scale'
       );
