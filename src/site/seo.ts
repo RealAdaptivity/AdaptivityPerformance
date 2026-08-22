@@ -285,7 +285,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you perform Texas state vehicle inspections?',
-    a: 'Yes. We perform Texas DPS-compliant vehicle safety inspections at our Justin garage hub location. Mobile state inspections are not available — the vehicle must be brought to our shop at 410 FM 156, Justin TX 76247. Inspections cover all required safety and emissions items per Texas Transportation Code.',
+    a: 'We specialize in mobile on-site mechanical repairs, diagnostics, brakes, batteries, and maintenance services. State vehicle inspections require fixed lane equipment and will be offered once our physical garage hub location completes buildout.',
   },
   {
     q: 'Can you service my vehicle at my workplace or apartment complex?',
@@ -342,8 +342,8 @@ export const SITE_FAQS = [
     a: 'Yes — that is a core specialty at our Justin garage hub. We install leveling kits, suspension lifts (2 to 8 inch), coilover upgrades, custom exhaust systems, cold air intakes, programmer tunes, upgraded brake packages, and other bolt-on performance modifications. All lift work requires a post-install alignment. We service trucks, SUVs, and off-road vehicles.',
   },
   {
-    q: 'What is the difference between your mobile service and shop garage location?',
-    a: 'Our mobile unit handles on-site services like brake pad/rotor swaps, oil changes, battery replacements, starter/alternator swaps, and computer scans. For major engine overhauls, transmission swaps, truck lifts, and performance upgrades, we service your vehicle at our fully equipped Justin garage hub at 410 FM 156, Justin TX 76247.',
+    q: 'What services do you provide on-site?',
+    a: 'Our fully-equipped mobile service vans handle on-site diagnostics, brake pads & rotors, battery replacements, starter/alternator replacements, fluid flushes, oil services, and multi-point inspections directly in your driveway or workplace parking lot.',
   },
 ];
 
