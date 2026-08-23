@@ -81,32 +81,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               </button>
             </div>
 
-            {/* 4 Call for Quote Service Cards Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
-              {[
-                { title: 'Brakes & Rotors', subtitle: 'Call for Quote', desc: 'Pads, rotors & fluid on-site' },
-                { title: 'Battery & Starting', subtitle: 'Call for Quote', desc: 'AGM swaps, starters & alternators' },
-                { title: 'Diagnostics', subtitle: 'Call for Quote', desc: 'Computer scan & check engine' },
-                { title: 'Maintenance', subtitle: 'Call for Quote', desc: 'Synthetic oil & tune-ups' },
-              ].map((card, idx) => (
-                <a
-                  key={idx}
-                  href={SITE_PHONE_TEL}
-                  className="p-3.5 rounded-2xl bg-[#07080b]/85 border border-white/15 hover:border-orange-500/50 cursor-pointer transition-all hover:-translate-y-0.5 shadow-lg space-y-1 text-left backdrop-blur-md group"
-                >
-                  <div className="text-[11px] font-bold text-slate-300 group-hover:text-orange-400 transition-colors">
-                    {card.title}
-                  </div>
-                  <div className="text-sm font-black text-orange-400 flex items-center gap-1">
-                    <Phone className="w-3 h-3" />
-                    <span>{card.subtitle}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 line-clamp-1">
-                    {card.desc}
-                  </div>
-                </a>
-              ))}
-            </div>
+
 
             {/* Trust Guarantee Badges */}
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-1 font-medium">
