@@ -136,8 +136,8 @@ export async function transferTechShareToConnect(opts: {
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        // Include destination so retries after swapping a deleted Connect acct_ don't collide.
-        'Idempotency-Key': `adaptivity_transfer_${opts.paymentIntentId}_${techStripeAccountId}`,
+        // Include transfer cents and source so retries or parameter adjustments do not collide with previous failed attempts
+        'Idempotency-Key': `adaptivity_transfer_${opts.paymentIntentId}_${techStripeAccountId}_${techTransferCents}`,
       },
       body: new URLSearchParams(
         flattenParams(transferBody) as Record<string, string>
