@@ -1,5 +1,5 @@
 import React from 'react';
-import { Truck, ArrowRight, Calendar, MapPin, Phone, ShieldCheck } from 'lucide-react';
+import { Truck, ArrowRight, Calendar, MapPin, Phone, ShieldCheck, Wrench } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
@@ -23,7 +23,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
         
-        {/* Main Grid: Left Content + Right Van Visual Frame */}
+        {/* Main Grid: Left Content + Right Mechanic Working Visual Frame */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           
           {/* Left Column: Heading, Live Arrival Pill, CTAs, and Upfront Price Cards */}
@@ -40,7 +40,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               </h1>
               <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-xl">
                 Expert certified mechanics come directly to your home or office across DFW. 
-                Emergency roadside dispatch, brakes, batteries, starters, and scheduled maintenance.
+                On-site diagnostics, precision brake repairs, battery swaps, starters, and factory maintenance.
               </p>
             </div>
 
@@ -111,14 +111,14 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
 
           </div>
 
-          {/* Right Column: Correct Driveway Van Image in Rounded Frame */}
+          {/* Right Column: High-Res Technician Working On Car Visual Frame */}
           <div className="lg:col-span-6 relative">
             <div className="absolute inset-0 bg-gradient-to-tr from-orange-600/25 via-amber-500/15 to-transparent blur-3xl rounded-3xl -z-10 scale-105"></div>
             
             <div className="relative rounded-3xl overflow-hidden border border-orange-500/30 shadow-[0_0_60px_rgba(0,0,0,0.8)] bg-[#0c0e14]">
               <img
-                src="/images/hero-van.jpg"
-                alt="Adaptivity Performance Mobile Mechanic Van parked in driveway with tool setup"
+                src="/images/mechanic-working.jpg"
+                alt="Adaptivity Performance certified technician performing mobile brake service in driveway"
                 className="w-full h-[380px] sm:h-[480px] object-cover object-center"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#07080b]/80 via-transparent to-transparent"></div>
@@ -127,16 +127,16 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               <div className="absolute bottom-4 left-4 right-4 p-3.5 rounded-2xl bg-black/80 backdrop-blur-md border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
-                    <Truck className="w-4 h-4" />
+                    <Wrench className="w-4 h-4" />
                   </div>
                   <div className="text-left">
-                    <div className="text-xs font-bold text-white">Full On-Site Mobile Workshop</div>
-                    <div className="text-[10px] text-slate-400">Snap-on Diagnostic Gear & OE Parts</div>
+                    <div className="text-xs font-bold text-white">ASE Master Certified On-Site</div>
+                    <div className="text-[10px] text-slate-400">Torque-Spec Precision · OE Parts · No Towing</div>
                   </div>
                 </div>
                 <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Active</span>
+                  <span>Dispatched</span>
                 </span>
               </div>
             </div>
