@@ -97,14 +97,39 @@ export const TechJobsTab: React.FC = () => {
     }
   }, [jobs, activeJob]);
 
+  // Auto-restore in-progress job for the logged-in technician on page load
+  useEffect(() => {
+    if (!mechanicId || activeJob) return;
+    const myActive = jobs.find(
+      (j) =>
+        j.mechanicId === mechanicId &&
+        (j.status === 'EN_ROUTE' || j.status === 'ON_SITE')
+    );
+    if (myActive) {
+      setActiveJob(myActive);
+      setFilter('active');
+      setJobPhase(myActive.status === 'ON_SITE' ? 'on_site' : 'en_route');
+    }
+  }, [jobs, mechanicId, activeJob]);
+
   const today = todayISODate();
-  const available = jobs.filter(
-    (j) =>
-      (j.status === 'UNASSIGNED' || j.status === 'REQUESTED' || j.status === 'CONFIRMED' || !j.mechanicId) &&
-      j.status !== 'COMPLETED' &&
-      j.status !== 'CANCELED'
-  );
-  const todayJobs = jobs.filter((j) => isTodaysJob(j, today));
+
+  // AVAILABLE: Strictly UNCLAIMED jobs with NO mechanic assigned
+  const available = jobs.filter((j) => {
+    const isUnclaimed = !j.mechanicId || j.status === 'UNASSIGNED';
+    const isFinished = j.status === 'COMPLETED' || j.status === 'CANCELED';
+    return isUnclaimed && !isFinished;
+  });
+
+  // TODAY: Unclaimed jobs for today, OR jobs claimed by THIS logged-in technician
+  const todayJobs = jobs.filter((j) => {
+    const isFinished = j.status === 'COMPLETED' || j.status === 'CANCELED';
+    if (isFinished) return false;
+    const isMine = Boolean(mechanicId && j.mechanicId === mechanicId);
+    const isUnclaimed = !j.mechanicId || j.status === 'UNASSIGNED';
+    if (!isMine && !isUnclaimed) return false; // Claimed by another tech -> Hide!
+    return isTodaysJob(j, today);
+  });
 
   const openNavigate = (address: string) => {
     if (!address?.trim()) {
