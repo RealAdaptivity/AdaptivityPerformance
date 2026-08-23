@@ -87,13 +87,26 @@ export async function updateMyJobCapacity(capacity: TechJobCapacity) {
 
 export async function claimBookingRow(referenceCode: string, mechanicId: string) {
   const cleanRef = referenceCode.trim();
+
+  // 1. Try dedicated claim-booking Edge Function (uses service role, bypasses RLS)
+  try {
+    const result = await invokeEdgeFunction<{ ok: boolean }>('claim-booking', {
+      bookingReference: cleanRef,
+      mechanicId,
+    });
+    if (result?.ok) return;
+  } catch (edgeErr) {
+    console.warn('claim-booking edge function notice:', edgeErr);
+  }
+
+  // 2. Try claim_booking_for_current_tech RPC
   const { error: rpcError } = await supabase.rpc('claim_booking_for_current_tech', {
     p_reference: cleanRef,
   });
 
   if (rpcError) {
     console.warn('claim_booking_for_current_tech RPC notice:', rpcError.message);
-    // If RPC failed, try direct table update as fallback
+    // 3. Fallback direct table update
     const { error: updateError } = await supabase
       .from('bookings')
       .update({
@@ -105,7 +118,7 @@ export async function claimBookingRow(referenceCode: string, mechanicId: string)
       .ilike('reference_code', cleanRef);
 
     if (updateError) {
-      throw new Error(rpcError.message || updateError.message || 'Could not claim job.');
+      throw new Error(rpcError.message || updateError.message || 'Could not claim job in database.');
     }
   }
 }
