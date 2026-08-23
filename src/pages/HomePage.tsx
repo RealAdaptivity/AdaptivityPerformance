@@ -18,7 +18,6 @@ import { DrivewayServicesTabs } from '../components/DrivewayServicesTabs';
 import { Testimonials } from '../components/Testimonials';
 import { ComparisonTable } from '../components/ComparisonTable';
 import { BnplBanner } from '../components/BnplBanner';
-import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
 import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
 import { FactoryWarrantySection } from '../components/FactoryWarrantySection';
 import { FleetHOASection } from '../components/FleetHOASection';
@@ -250,16 +249,8 @@ export const HomePage: React.FC<Props> = ({
         </div>
       </section>
 
-      <ScrollReveal>
-        <DiagnosticCreditBanner onOpenBooking={onOpenBooking} />
-      </ScrollReveal>
-
       <ScrollReveal variant="left">
         <ContactSection onOpenBooking={onOpenBooking} />
-      </ScrollReveal>
-
-      <ScrollReveal delayMs={40} variant="scale">
-        <Testimonials />
       </ScrollReveal>
     </>
   );
