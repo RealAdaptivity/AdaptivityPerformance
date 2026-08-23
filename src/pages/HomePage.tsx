@@ -17,12 +17,11 @@ import { HowItWorksSection } from '../components/HowItWorksSection';
 import { DrivewayServicesTabs } from '../components/DrivewayServicesTabs';
 import { Testimonials } from '../components/Testimonials';
 import { ComparisonTable } from '../components/ComparisonTable';
-import { FleetHOASection } from '../components/FleetHOASection';
-import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
 import { BnplBanner } from '../components/BnplBanner';
+import { DiagnosticCreditBanner } from '../components/DiagnosticCreditBanner';
 import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
-import { VinDecoderWidget } from '../components/VinDecoderWidget';
 import { FactoryWarrantySection } from '../components/FactoryWarrantySection';
+import { FleetHOASection } from '../components/FleetHOASection';
 import { SiteLink } from '../site/SiteLink';
 import { ContactSection } from '../components/ContactSection';
 import { ScrollReveal } from '../components/ScrollReveal';
@@ -155,13 +154,7 @@ export const HomePage: React.FC<Props> = ({
         <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
       </ScrollReveal>
 
-      <ScrollReveal delayMs={30}>
-        <VinDecoderWidget
-          onBookWithVehicle={() => {
-            onOpenBooking();
-          }}
-        />
-      </ScrollReveal>
+
 
       <ScrollReveal>
         <FactoryWarrantySection onOpenBooking={onOpenBooking} />
