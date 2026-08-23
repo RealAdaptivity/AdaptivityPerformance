@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshCw, Phone, MessageSquare, Navigation } from 'lucide-react';
+import { RefreshCw, Phone, MessageSquare, Navigation, AlertCircle } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 import {
   cancelJobWithHold,
@@ -47,7 +47,7 @@ export const TechJobsTab: React.FC = () => {
   const [techNotes, setTechNotes] = useState('');
   const [customerAgreed, setCustomerAgreed] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([
-    { title: '', laborDollars: '', partsDollars: '' },
+    { title: 'Diagnostic & Mechanical Labor', laborDollars: '', partsDollars: '' },
   ]);
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDesc, setExpenseDesc] = useState('');
@@ -310,19 +310,28 @@ export const TechJobsTab: React.FC = () => {
   const handleCharge = async () => {
     if (!activeJob) return;
     if (!customerAgreed) {
-      setMessage('Confirm the customer agreed to this on-site price before charging.');
+      setMessage('⚠️ Please check the box confirming the customer agreed to the on-site price.');
       return;
     }
+
     const lineItems = lines
-      .map((l) => ({
-        title: l.title.trim(),
-        laborDollars: Number(l.laborDollars) || 0,
-        partsDollars: Number(l.partsDollars) || 0,
-      }))
-      .filter((l) => l.title && l.laborDollars + l.partsDollars > 0);
+      .map((l) => {
+        const labor = Number(l.laborDollars) || 0;
+        const parts = Number(l.partsDollars) || 0;
+        let title = l.title.trim();
+        if (!title && (labor > 0 || parts > 0)) {
+          title = labor > 0 && parts > 0 ? 'Mechanical Labor & Parts' : labor > 0 ? 'Mechanical Labor' : 'Replacement Parts';
+        }
+        return {
+          title,
+          laborDollars: labor,
+          partsDollars: parts,
+        };
+      })
+      .filter((l) => l.title && (l.laborDollars > 0 || l.partsDollars > 0));
 
     if (!lineItems.length && !includeDiagnosticFee) {
-      setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only / No-show.');
+      setMessage('⚠️ Please enter a labor or parts dollar amount (or enable the $85 Diagnostic Fee) to charge.');
       return;
     }
 
@@ -345,6 +354,12 @@ export const TechJobsTab: React.FC = () => {
     setBusy(true);
     setMessage(null);
     try {
+      console.log('[TechJobsTab] Charging customer:', {
+        referenceCode: activeJob.referenceCode,
+        chargeTotal,
+        lineItems,
+        includeDiagnosticFee,
+      });
       const result = await captureBookingPayment(activeJob.referenceCode, {
         mode: 'charge',
         lineItems,
@@ -369,6 +384,7 @@ export const TechJobsTab: React.FC = () => {
       });
       finishJob();
     } catch (e: unknown) {
+      console.error('[TechJobsTab handleCharge error]', e);
       setMessage(e instanceof Error ? e.message : 'Charge failed');
       setBusy(false);
     }
@@ -930,6 +946,13 @@ export const TechJobsTab: React.FC = () => {
                   <span className="font-mono">${techShare70.toFixed(2)} (+ tips)</span>
                 </div>
               </div>
+
+              {message && (
+                <div className="p-3 bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs text-amber-200 flex items-start gap-2 shadow-inner">
+                  <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <span className="leading-snug">{message}</span>
+                </div>
+              )}
 
               <label className="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer">
                 <input
