@@ -87,6 +87,7 @@ function MainAppContent() {
       about: 'about',
       future: 'about',
       services: 'services',
+      contact: 'contact',
       estimator: 'quotes',
       membership: 'membership',
       diagnostics: 'diagnostics',

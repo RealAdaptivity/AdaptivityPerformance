@@ -39,6 +39,12 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
       'Browse DFW mobile and shop services. On-site labor + parts pricing after an $85 diagnostic hold.',
     path: '/services',
   },
+  contact: {
+    title: 'Contact Adaptivity Performance | Mobile Mechanic Dispatch DFW',
+    description:
+      `Get in touch with Adaptivity Performance for 24/7 mobile auto repair dispatch, quotes, and customer support. Call ${SITE_PHONE_DISPLAY}.`,
+    path: '/contact',
+  },
   quotes: {
     title: 'Rough Estimate Calculator | Adaptivity Performance',
     description: 'Ballpark labor + parts for DFW mobile service, then book an $85 diagnostic hold.',

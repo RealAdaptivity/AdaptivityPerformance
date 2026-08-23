@@ -12,8 +12,8 @@ if (!fs.existsSync(index)) {
 
 fs.copyFileSync(index, fallback);
 
-// GitHub Pages / custom domain: /portal and /admin must be real directories or they hard-404.
-for (const route of ['portal', 'admin', 'login']) {
+// GitHub Pages / custom domain: routes must be real directories or they hard-404.
+for (const route of ['portal', 'admin', 'login', 'contact', 'services', 'about', 'join']) {
   const dir = path.join(dist, route);
   fs.mkdirSync(dir, { recursive: true });
   fs.copyFileSync(index, path.join(dir, 'index.html'));

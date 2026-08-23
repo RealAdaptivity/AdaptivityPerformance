@@ -14,6 +14,7 @@ const lastmod = new Date().toISOString().slice(0, 10);
 const PAGES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
   { path: '/services', changefreq: 'weekly', priority: '0.9' },
+  { path: '/contact', changefreq: 'weekly', priority: '0.8' },
   { path: '/quotes', changefreq: 'weekly', priority: '0.8' },
   { path: '/coverage', changefreq: 'weekly', priority: '0.8' },
   { path: '/about', changefreq: 'monthly', priority: '0.7' },
