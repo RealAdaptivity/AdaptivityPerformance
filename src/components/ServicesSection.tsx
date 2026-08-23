@@ -44,24 +44,24 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking,
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-full">
             <Wrench className="w-3.5 h-3.5" />
-            Our services
+            Complete Mobile Service Catalog
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-black text-white leading-tight">
-            Almost anything car-related —{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-500">
-              mobile or in shop
+            Full Automotive Care —{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500">
+              Dispatched to Your Driveway
             </span>
           </h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Pick a service to schedule, or browse the full catalog. Most jobs start with a transparent card hold;
-            oil, brakes, transmission, and differential book directly.
+            Select a service below to view transparent pricing and schedule your mobile mechanic. 
+            All jobs are backed by our 12-month nationwide warranty.
           </p>
           <button
             type="button"
             onClick={onOpenBooking}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm shadow-lg shadow-orange-500/20"
           >
-            Schedule service
+            Schedule Mobile Service
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
