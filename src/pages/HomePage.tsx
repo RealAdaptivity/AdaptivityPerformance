@@ -13,6 +13,8 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { Hero } from '../components/Hero';
+import { HowItWorksSection } from '../components/HowItWorksSection';
+import { DrivewayServicesTabs } from '../components/DrivewayServicesTabs';
 import { Testimonials } from '../components/Testimonials';
 import { ComparisonTable } from '../components/ComparisonTable';
 import { FleetHOASection } from '../components/FleetHOASection';
@@ -130,19 +132,11 @@ export const HomePage: React.FC<Props> = ({
       <Hero onOpenBooking={onOpenBooking} onSelectServiceMode={onSelectServiceMode} />
 
       <ScrollReveal>
-        <BnplBanner onOpenBooking={onOpenBooking} />
+        <HowItWorksSection onOpenBooking={onOpenBooking} />
       </ScrollReveal>
 
-      <ScrollReveal delayMs={60} variant="scale">
-        <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
-      </ScrollReveal>
-
-      <ScrollReveal delayMs={40}>
-        <VinDecoderWidget
-          onBookWithVehicle={() => {
-            onOpenBooking();
-          }}
-        />
+      <ScrollReveal delayMs={30}>
+        <DrivewayServicesTabs onOpenBooking={onOpenBooking} />
       </ScrollReveal>
 
       <ScrollReveal variant="left">
@@ -150,11 +144,35 @@ export const HomePage: React.FC<Props> = ({
       </ScrollReveal>
 
       <ScrollReveal>
+        <Testimonials />
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <BnplBanner onOpenBooking={onOpenBooking} />
+      </ScrollReveal>
+
+      <ScrollReveal delayMs={40} variant="scale">
+        <ServiceShowcaseGrid onBookService={() => onOpenBooking()} />
+      </ScrollReveal>
+
+      <ScrollReveal delayMs={30}>
+        <VinDecoderWidget
+          onBookWithVehicle={() => {
+            onOpenBooking();
+          }}
+        />
+      </ScrollReveal>
+
+      <ScrollReveal>
         <FactoryWarrantySection onOpenBooking={onOpenBooking} />
       </ScrollReveal>
 
-      <ScrollReveal delayMs={50} variant="scale">
+      <ScrollReveal delayMs={40} variant="scale">
         <FleetHOASection onOpenBooking={onOpenBooking} onOpenPartnerApply={onOpenPartnerApply} />
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <ContactSection onOpenBooking={onOpenBooking} />
       </ScrollReveal>
 
       <section className="py-16 bg-[#0c0d12] border-t border-white/10">
