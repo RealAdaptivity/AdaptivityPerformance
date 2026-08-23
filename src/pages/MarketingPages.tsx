@@ -1,6 +1,7 @@
 import React from 'react';
 import { AboutUsSection } from '../components/AboutUsSection';
 import { ServicesSection } from '../components/ServicesSection';
+import { ContactSection } from '../components/ContactSection';
 import { MembershipSection } from '../components/MembershipSection';
 import { DiagnosticAssistant } from '../components/DiagnosticAssistant';
 import { PartnerNetworkSection } from '../components/PartnerNetworkSection';
@@ -61,6 +62,8 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
         />,
         'scale'
       );
+    case 'contact':
+      return reveal(<ContactSection onOpenBooking={actions.onOpenBooking} />);
     case 'membership':
       return reveal(<MembershipSection onOpenMembership={actions.onOpenMembership} />);
     case 'diagnostics':

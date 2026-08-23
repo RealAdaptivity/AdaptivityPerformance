@@ -21,7 +21,6 @@ import { ServiceShowcaseGrid } from '../components/ServiceShowcaseGrid';
 import { FactoryWarrantySection } from '../components/FactoryWarrantySection';
 import { FleetHOASection } from '../components/FleetHOASection';
 import { SiteLink } from '../site/SiteLink';
-import { ContactSection } from '../components/ContactSection';
 import { ScrollReveal } from '../components/ScrollReveal';
 import type { SitePage } from '../site/siteRoute';
 
@@ -155,10 +154,6 @@ export const HomePage: React.FC<Props> = ({
         <FleetHOASection onOpenBooking={onOpenBooking} onOpenPartnerApply={onOpenPartnerApply} />
       </ScrollReveal>
 
-      <ScrollReveal>
-        <ContactSection onOpenBooking={onOpenBooking} />
-      </ScrollReveal>
-
       <section className="py-16 bg-[#0c0d12] border-t border-white/10">
         <div className="container mx-auto px-4 space-y-8">
           <ScrollReveal className="max-w-2xl mx-auto text-center space-y-3">
@@ -206,6 +201,12 @@ export const HomePage: React.FC<Props> = ({
                 Schedule / Call for Quote
               </button>
               <SiteLink
+                to="contact"
+                className="px-6 py-3 rounded-xl border border-orange-500/40 text-orange-300 text-sm font-bold hover:bg-orange-500/10"
+              >
+                Contact Us
+              </SiteLink>
+              <SiteLink
                 to="join"
                 className="px-6 py-3 rounded-xl border border-emerald-500/40 text-emerald-300 text-sm font-bold hover:bg-emerald-500/10"
               >
@@ -240,10 +241,6 @@ export const HomePage: React.FC<Props> = ({
           </ScrollReveal>
         </div>
       </section>
-
-      <ScrollReveal variant="left">
-        <ContactSection onOpenBooking={onOpenBooking} />
-      </ScrollReveal>
     </>
   );
 };

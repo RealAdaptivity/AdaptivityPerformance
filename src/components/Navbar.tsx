@@ -118,6 +118,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             <SiteLink to="about" className={linkClass('about')}>
               About
             </SiteLink>
+            <SiteLink to="contact" className={linkClass('contact')}>
+              Contact
+            </SiteLink>
             <SiteLink
               to="join"
               className={`inline-flex items-center gap-1.5 ${linkClass('join')} ${
@@ -165,6 +168,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </SiteLink>
                   <SiteLink to="about" onNavigate={close} className={itemClass}>
                     About
+                  </SiteLink>
+                  <SiteLink to="contact" onNavigate={close} className={itemClass}>
+                    <Phone className="w-4 h-4 text-orange-400" /> Contact
                   </SiteLink>
                   <button
                     type="button"

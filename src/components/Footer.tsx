@@ -87,6 +87,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="about" className="hover:text-orange-400 transition-colors">About Us</SiteLink></li>
             <li><SiteLink to="about" hash="future" className="hover:text-orange-400 transition-colors">Future plans</SiteLink></li>
             <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services</SiteLink></li>
+            <li><SiteLink to="contact" className="hover:text-orange-400 transition-colors">Contact Us</SiteLink></li>
             <li><SiteLink to="diagnostics" className="hover:text-orange-400 transition-colors">Symptom Checker</SiteLink></li>
             <li><SiteLink to="join" className="hover:text-orange-400 transition-colors">Join as Tech</SiteLink></li>
             <li><SiteLink to="learn" className="hover:text-orange-400 transition-colors">Want to Learn</SiteLink></li>

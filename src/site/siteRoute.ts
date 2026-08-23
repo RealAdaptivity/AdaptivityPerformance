@@ -6,6 +6,7 @@ export type SitePage =
   | 'home'
   | 'about'
   | 'services'
+  | 'contact'
   | 'quotes'
   | 'membership'
   | 'diagnostics'
@@ -29,6 +30,7 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>,
   home: '',
   about: 'about',
   services: 'services',
+  contact: 'contact',
   quotes: 'quotes',
   membership: 'membership',
   diagnostics: 'diagnostics',
