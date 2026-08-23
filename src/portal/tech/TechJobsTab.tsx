@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 import {
   cancelJobWithHold,
@@ -12,7 +13,6 @@ import {
 } from '../../services/techDispatch';
 import { sendOnTheWaySmsAuto, sendChargeReceiptSmsAuto } from '../../services/sendSms';
 import { uploadJobPhoto } from '../../services/jobPhotos';
-import { techCanClaimServices } from '../../services/serviceCatalog';
 import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
 import {
   fetchMyPartsExpenseClaims,
@@ -52,6 +52,7 @@ export const TechJobsTab: React.FC = () => {
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDesc, setExpenseDesc] = useState('');
   const [expenseBusy, setExpenseBusy] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [claims, setClaims] = useState<PartsExpenseClaim[]>([]);
 
   const loadClaims = useCallback(async () => {
@@ -64,12 +65,14 @@ export const TechJobsTab: React.FC = () => {
 
   const loadJobs = useCallback(async () => {
     try {
+      setIsRefreshing(true);
       const rows = await fetchDispatchBookings();
       setJobs(rows.filter((j) => j.status !== 'COMPLETED' && j.status !== 'CANCELED'));
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Failed to load jobs');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -96,7 +99,10 @@ export const TechJobsTab: React.FC = () => {
 
   const today = todayISODate();
   const available = jobs.filter(
-    (j) => j.status === 'UNASSIGNED' && techCanClaimServices(mySpecialties, j.services)
+    (j) =>
+      (j.status === 'UNASSIGNED' || j.status === 'REQUESTED' || j.status === 'CONFIRMED' || !j.mechanicId) &&
+      j.status !== 'COMPLETED' &&
+      j.status !== 'CANCELED'
   );
   const todayJobs = jobs.filter((j) => isTodaysJob(j, today));
 
@@ -446,25 +452,37 @@ export const TechJobsTab: React.FC = () => {
         </p>
       )}
 
-      <div className="flex gap-2">
-        {(
-          [
-            ['today', `Today (${todayJobs.length})`],
-            ['available', 'Available'],
-            ['active', 'Active'],
-          ] as const
-        ).map(([f, label]) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase ${
-              filter === f ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex gap-2">
+          {(
+            [
+              ['today', `Today (${todayJobs.length})`],
+              ['available', `Available (${available.length})`],
+              ['active', 'Active'],
+            ] as const
+          ).map(([f, label]) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors ${
+                filter === f ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void loadJobs()}
+          disabled={isRefreshing}
+          className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold flex items-center gap-1.5 border border-white/10 transition-colors"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-orange-400' : 'text-slate-400'}`} />
+          <span>Refresh</span>
+        </button>
       </div>
 
       {filter === 'today' && (
