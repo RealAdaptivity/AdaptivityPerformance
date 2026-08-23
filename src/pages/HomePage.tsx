@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Hero } from '../components/Hero';
 import { HowItWorksSection } from '../components/HowItWorksSection';
-import { DrivewayServicesTabs } from '../components/DrivewayServicesTabs';
 import { Testimonials } from '../components/Testimonials';
 import { ComparisonTable } from '../components/ComparisonTable';
 import { BnplBanner } from '../components/BnplBanner';
@@ -124,9 +123,7 @@ export const HomePage: React.FC<Props> = ({
         <HowItWorksSection onOpenBooking={onOpenBooking} />
       </ScrollReveal>
 
-      <ScrollReveal delayMs={30}>
-        <DrivewayServicesTabs onOpenBooking={onOpenBooking} />
-      </ScrollReveal>
+
 
       <ScrollReveal variant="left">
         <ComparisonTable onOpenBooking={onOpenBooking} />
