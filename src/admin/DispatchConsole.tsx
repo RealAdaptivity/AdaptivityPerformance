@@ -581,6 +581,20 @@ export const DispatchConsole: React.FC = () => {
                     ? ` · 1099-NEC required (file + copy by Jan 31)`
                     : ` / $${FORM_1099_NEC_THRESHOLD_DOLLARS}`}
                 </p>
+                <p className="text-[10px] text-slate-500 flex items-center gap-1 pt-0.5">
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${
+                    t.lastSignInAt &&
+                    Date.now() - new Date(t.lastSignInAt).getTime() < 24 * 60 * 60 * 1000
+                      ? 'bg-emerald-400'
+                      : t.lastSignInAt &&
+                        Date.now() - new Date(t.lastSignInAt).getTime() < 7 * 24 * 60 * 60 * 1000
+                      ? 'bg-amber-400'
+                      : 'bg-slate-600'
+                  }`} />
+                  {t.lastSignInAt
+                    ? `Last login: ${new Date(t.lastSignInAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${new Date(t.lastSignInAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                    : 'Never logged in'}
+                </p>
               </div>
             );
             })

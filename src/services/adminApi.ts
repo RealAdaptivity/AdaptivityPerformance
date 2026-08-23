@@ -48,6 +48,7 @@ export type DispatchTech = {
   stripeAccountId: string | null;
   toolsVerified: boolean;
   specialties: string[];
+  lastSignInAt: string | null;
 };
 
 export type AdminPaymentRow = {
@@ -124,6 +125,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       stripeAccountId: (row.stripe_account_id as string) ?? null,
       toolsVerified: Boolean(row.tools_verified),
       specialties: specialties.length ? specialties : ['mechanical'],
+      lastSignInAt: null,
     });
   }
 
@@ -145,7 +147,20 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       stripeAccountId: (details?.stripe_account_id as string) ?? null,
       toolsVerified: Boolean(details?.tools_verified),
       specialties: specialties.length ? specialties : ['mechanical'],
+      lastSignInAt: null,
     });
+  }
+
+  // Enrich with last login from auth
+  try {
+    const loginData = await invokeEdgeFunction<{ ok: boolean; lastSignIn: Record<string, string | null> }>('admin-get-last-logins', {});
+    if (loginData.ok && loginData.lastSignIn) {
+      for (const tech of byId.values()) {
+        tech.lastSignInAt = loginData.lastSignIn[tech.id] ?? null;
+      }
+    }
+  } catch {
+    // Non-fatal: last login data unavailable
   }
 
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
