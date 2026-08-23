@@ -1,8 +1,9 @@
+/// <reference path="../deno.d.ts" />
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/stripe.ts';
 
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
