@@ -97,8 +97,25 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Booking not found' }, 404);
     }
 
-    if (booking.mechanic_id !== user.id) {
-      return jsonResponse({ error: 'Only the assigned technician can complete payment capture' }, 403);
+    const { data: profile } = await supabaseUser
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    const isAdmin = profile?.role === 'admin';
+    const isAssignedTech = booking.mechanic_id === user.id;
+
+    if (!isAssignedTech && !isAdmin) {
+      if (!booking.mechanic_id) {
+        // Auto-assign the tech completing the work if mechanic_id wasn't populated
+        await supabase
+          .from('bookings')
+          .update({ mechanic_id: user.id })
+          .eq('id', booking.id);
+        booking.mechanic_id = user.id;
+      } else {
+        return jsonResponse({ error: 'Only the assigned technician can complete payment capture' }, 403);
+      }
     }
 
     if (booking.status === 'CANCELED') {
