@@ -10,6 +10,10 @@ import {
   Truck,
   User,
   Wrench,
+  Receipt,
+  Plus,
+  Trash2,
+  Send,
 } from 'lucide-react';
 import {
   stripeConnectAccountDashboardUrl,
@@ -33,6 +37,8 @@ import {
   type AdminPaymentRow,
   type DispatchTech,
 } from '../services/adminApi';
+import { captureBookingPayment } from '../services/techDispatch';
+import { sendChargeReceiptSmsAuto } from '../services/sendSms';
 import { FORM_1099_NEC_NOTICE, FORM_1099_NEC_THRESHOLD_DOLLARS } from '../content/taxForms';
 import { techCanClaimServices } from '../services/serviceCatalog';
 import {
@@ -589,12 +595,121 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   onRetryTransfer,
 }) => {
   const mechanicId = booking.claimedBy?.id ?? '';
-  const [partialCapture, setPartialCapture] = useState('');
   const [refundAmount, setRefundAmount] = useState('');
   const [forceAfterPayout, setForceAfterPayout] = useState(false);
   const [cancelReason, setCancelReason] = useState<string>('customer_request');
   const [noShowReason, setNoShowReason] = useState<string>('no_answer');
   const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
+
+  // Dispatch Invoice & Transaction state
+  const [laborLines, setLaborLines] = useState<Array<{ title: string; amount: string }>>([
+    { title: 'Diagnostic & Mechanical Labor', amount: '' },
+  ]);
+  const [partsLines, setPartsLines] = useState<Array<{ title: string; amount: string }>>([
+    { title: 'Replacement Parts', amount: '' },
+  ]);
+  const [mileageFee, setMileageFee] = useState('');
+  const [dispatchInvoiceNotes, setDispatchInvoiceNotes] = useState('');
+  const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
+  const [isChargingInvoice, setIsChargingInvoice] = useState(false);
+
+  const holdDollars = (booking.holdAmountCents ?? 8500) / 100;
+  const laborTotal = laborLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
+  const partsTotal = partsLines.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+  const mileageTotal = Number(mileageFee) || 0;
+  const invoiceGrandTotal = holdDollars + laborTotal + partsTotal + mileageTotal;
+
+  const handleDispatchFinalCharge = async () => {
+    if (
+      !window.confirm(
+        `Charge customer $${invoiceGrandTotal.toFixed(
+          2
+        )} (including $${holdDollars.toFixed(0)} diagnostic hold) and complete job?`
+      )
+    ) {
+      return;
+    }
+    setIsChargingInvoice(true);
+    setInvoiceMsg(null);
+    try {
+      const lineItems: Array<{ title: string; laborDollars: number; partsDollars: number }> = [];
+
+      for (const l of laborLines) {
+        const amt = Number(l.amount) || 0;
+        if (amt > 0 && l.title.trim()) {
+          lineItems.push({ title: l.title.trim(), laborDollars: amt, partsDollars: 0 });
+        }
+      }
+      for (const p of partsLines) {
+        const amt = Number(p.amount) || 0;
+        if (amt > 0 && p.title.trim()) {
+          lineItems.push({ title: p.title.trim(), laborDollars: 0, partsDollars: amt });
+        }
+      }
+      if (mileageTotal > 0) {
+        lineItems.push({
+          title: 'Dispatch Travel & Mileage',
+          laborDollars: mileageTotal,
+          partsDollars: 0,
+        });
+      }
+
+      if (lineItems.length === 0 && invoiceGrandTotal === holdDollars) {
+        // Diagnostic only charge
+        await captureBookingPayment(booking.id, { mode: 'diagnostic_only' });
+      } else {
+        await captureBookingPayment(booking.id, {
+          mode: 'charge',
+          lineItems,
+          techNotes: dispatchInvoiceNotes,
+          customerAgreedOnSite: true,
+        });
+      }
+
+      // Automatically send digital receipt SMS to customer
+      if (booking.customerPhone) {
+        await sendChargeReceiptSmsAuto({
+          phone: booking.customerPhone,
+          customerName: booking.customerName,
+          referenceCode: booking.id,
+          amountDollars: invoiceGrandTotal,
+          kind: 'charge',
+          lines: lineItems,
+          diagnosticDollars: holdDollars,
+        });
+      }
+
+      setInvoiceMsg(`Successfully charged $${invoiceGrandTotal.toFixed(2)} and sent receipt!`);
+      await onPatch(booking.id, { status: 'COMPLETED' });
+    } catch (err: unknown) {
+      setInvoiceMsg(err instanceof Error ? err.message : 'Charge failed');
+    } finally {
+      setIsChargingInvoice(false);
+    }
+  };
+
+  const handleSendReceiptOnly = async () => {
+    if (!booking.customerPhone) {
+      setInvoiceMsg('No customer phone on file to send receipt.');
+      return;
+    }
+    try {
+      const capturedAmount =
+        booking.capturedAmountCents ? booking.capturedAmountCents / 100 : invoiceGrandTotal;
+      await sendChargeReceiptSmsAuto({
+        phone: booking.customerPhone,
+        customerName: booking.customerName,
+        referenceCode: booking.id,
+        amountDollars: capturedAmount,
+        kind: 'charge',
+        diagnosticDollars: holdDollars,
+      });
+      setInvoiceMsg('Receipt SMS sent to customer!');
+    } catch (err: unknown) {
+      setInvoiceMsg(err instanceof Error ? err.message : 'Failed to send receipt SMS');
+    }
+  };
+
   const canCancelHold =
     booking.paymentIntentId &&
     booking.paymentStatus !== 'captured' &&
@@ -783,30 +898,240 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </div>
       )}
 
+      {/* DISPATCH FINAL INVOICE & TRANSACTION CENTER */}
+      {booking.status !== 'CANCELED' && booking.status !== 'COMPLETED' && (
+        <div className="rounded-2xl border border-orange-500/30 bg-[#0d0e14] p-4 space-y-4 shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center">
+                <Receipt className="w-4 h-4 text-orange-400" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase text-white tracking-wider">
+                  Dispatch Final Invoice & Charge
+                </p>
+                <p className="text-[10px] text-slate-400">Parts, Labor & Mileage final charge</p>
+              </div>
+            </div>
+            <span className="text-xs font-black text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+              ${invoiceGrandTotal.toFixed(2)}
+            </span>
+          </div>
+
+          {invoiceMsg && (
+            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5">
+              {invoiceMsg}
+            </p>
+          )}
+
+          {/* 1. Diagnostic Visit (Base Hold) */}
+          <div className="flex items-center justify-between text-xs bg-white/5 rounded-xl px-3 py-2.5 border border-white/5">
+            <span className="font-semibold text-slate-300">🔍 Mobile Diagnostic Visit (Hold on file)</span>
+            <span className="font-mono font-bold text-white">${holdDollars.toFixed(2)}</span>
+          </div>
+
+          {/* 2. Labor Lines */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase font-bold text-slate-400">Labor Charges</p>
+              <button
+                type="button"
+                onClick={() => setLaborLines([...laborLines, { title: '', amount: '' }])}
+                className="text-[10px] font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> Add Labor
+              </button>
+            </div>
+            {laborLines.map((line, idx) => (
+              <div key={idx} className="flex gap-2 items-center">
+                <input
+                  placeholder="Labor description (e.g. Brake pad & rotor swap)"
+                  value={line.title}
+                  onChange={(e) => {
+                    const next = [...laborLines];
+                    next[idx].title = e.target.value;
+                    setLaborLines(next);
+                  }}
+                  className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                />
+                <div className="w-24 relative">
+                  <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={line.amount}
+                    onChange={(e) => {
+                      const next = [...laborLines];
+                      next[idx].amount = e.target.value;
+                      setLaborLines(next);
+                    }}
+                    className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
+                  />
+                </div>
+                {laborLines.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setLaborLines(laborLines.filter((_, i) => i !== idx))}
+                    className="text-slate-500 hover:text-red-400 p-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 3. Parts Lines */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase font-bold text-slate-400">Parts & Supplies</p>
+              <button
+                type="button"
+                onClick={() => setPartsLines([...partsLines, { title: '', amount: '' }])}
+                className="text-[10px] font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> Add Part
+              </button>
+            </div>
+            {partsLines.map((line, idx) => (
+              <div key={idx} className="flex gap-2 items-center">
+                <input
+                  placeholder="Part title (e.g. Duralast Ceramic Pads)"
+                  value={line.title}
+                  onChange={(e) => {
+                    const next = [...partsLines];
+                    next[idx].title = e.target.value;
+                    setPartsLines(next);
+                  }}
+                  className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                />
+                <div className="w-24 relative">
+                  <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={line.amount}
+                    onChange={(e) => {
+                      const next = [...partsLines];
+                      next[idx].amount = e.target.value;
+                      setPartsLines(next);
+                    }}
+                    className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
+                  />
+                </div>
+                {partsLines.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setPartsLines(partsLines.filter((_, i) => i !== idx))}
+                    className="text-slate-500 hover:text-red-400 p-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* 4. Mileage / Travel Fee */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] uppercase font-bold text-slate-400">Mileage / Dispatch Travel Fee</p>
+            <div className="flex gap-2 items-center">
+              <input
+                placeholder="Trip fee description (e.g. 20 miles roundtrip)"
+                defaultValue="Mobile dispatch travel fee"
+                className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+              />
+              <div className="w-24 relative">
+                <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={mileageFee}
+                  onChange={(e) => setMileageFee(e.target.value)}
+                  className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Dispatch Notes / Warranty for Customer */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] uppercase font-bold text-slate-400">Invoice Notes / Warranty (Optional)</p>
+            <textarea
+              placeholder="e.g. 12-month / 12,000-mile parts & labor warranty applied."
+              value={dispatchInvoiceNotes}
+              onChange={(e) => setDispatchInvoiceNotes(e.target.value)}
+              rows={2}
+              className="w-full bg-[#12141c] border border-white/10 rounded-lg p-2 text-xs text-white resize-none"
+            />
+          </div>
+
+          {/* Invoice Summary Box */}
+          <div className="rounded-xl bg-orange-500/5 border border-orange-500/20 p-3 space-y-1.5">
+            <div className="flex justify-between text-xs text-slate-300">
+              <span>Diagnostic Visit (Hold):</span>
+              <span className="font-mono font-semibold">${holdDollars.toFixed(2)}</span>
+            </div>
+            {laborTotal > 0 && (
+              <div className="flex justify-between text-xs text-slate-300">
+                <span>Labor Total:</span>
+                <span className="font-mono font-semibold">${laborTotal.toFixed(2)}</span>
+              </div>
+            )}
+            {partsTotal > 0 && (
+              <div className="flex justify-between text-xs text-slate-300">
+                <span>Parts Total:</span>
+                <span className="font-mono font-semibold">${partsTotal.toFixed(2)}</span>
+              </div>
+            )}
+            {mileageTotal > 0 && (
+              <div className="flex justify-between text-xs text-slate-300">
+                <span>Mileage / Travel:</span>
+                <span className="font-mono font-semibold">${mileageTotal.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm font-black text-white pt-2 border-t border-white/10">
+              <span>Final Invoice Total:</span>
+              <span className="text-orange-400 font-mono">${invoiceGrandTotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              disabled={saving || isChargingInvoice}
+              onClick={() => void handleDispatchFinalCharge()}
+              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 rounded-xl text-xs font-black uppercase text-white tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span>{isChargingInvoice ? 'Processing Charge…' : `Charge Customer $${invoiceGrandTotal.toFixed(2)} & Complete`}</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleSendReceiptOnly()}
+              className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-2 transition-colors"
+            >
+              <Send className="w-3.5 h-3.5 text-orange-400" />
+              <span>Send Itemized SMS Receipt to Customer</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {booking.paymentStatus === 'authorized' ||
       booking.paymentStatus === 'awaiting_card' ||
       (booking.paymentIntentId && booking.paymentStatus !== 'captured') ? (
         <div className="rounded-xl border border-white/10 p-3 space-y-2 bg-[#0b0c10]">
-          <p className="text-[10px] uppercase font-bold text-slate-500">Partial capture (admin)</p>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="Amount USD"
-            value={partialCapture}
-            onChange={(e) => setPartialCapture(e.target.value)}
-            className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            disabled={saving || !partialCapture}
-            onClick={() =>
-              void onAdjustCapture(booking.id, Number(partialCapture), false)
-            }
-            className="w-full text-xs font-bold text-orange-300 border border-orange-500/30 rounded-lg py-2"
-          >
-            Capture amount (hold)
-          </button>
+          <p className="text-[10px] uppercase font-bold text-slate-500">Quick Hold Capture (No-Show / Diagnostic Only)</p>
           <label className="block space-y-1">
             <span className="text-[10px] uppercase font-bold text-slate-500">No-show reason</span>
             <select
@@ -832,7 +1157,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
               ) {
                 return;
               }
-              void onAdjustCapture(booking.id, 100, true, noShowReason);
+              void onAdjustCapture(booking.id, 85, true, noShowReason);
             }}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2"
           >
