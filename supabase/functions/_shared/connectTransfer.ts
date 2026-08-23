@@ -136,8 +136,8 @@ export async function transferTechShareToConnect(opts: {
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/x-www-form-urlencoded',
-        // Include transfer cents and source so retries or parameter adjustments do not collide with previous failed attempts
-        'Idempotency-Key': `adaptivity_transfer_${opts.paymentIntentId}_${techStripeAccountId}_${techTransferCents}`,
+        // Unique per request attempt so Stripe does not replay cached error responses
+        'Idempotency-Key': `adaptivity_transfer_${opts.paymentIntentId}_${techStripeAccountId}_${Date.now()}`,
       },
       body: new URLSearchParams(
         flattenParams(transferBody) as Record<string, string>
