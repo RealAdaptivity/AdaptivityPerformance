@@ -145,6 +145,8 @@ export async function captureBookingPayment(
     lineItems?: QuoteLineInput[];
     techNotes?: string;
     customerAgreedOnSite?: boolean;
+    includeDiagnosticFee?: boolean;
+    waiveDiagnosticFee?: boolean;
   }
 ) {
   return invokeEdgeFunction<{

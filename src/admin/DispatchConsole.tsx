@@ -609,6 +609,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     { title: 'Replacement Parts', amount: '' },
   ]);
   const [mileageFee, setMileageFee] = useState('');
+  const [includeDiagnosticFee, setIncludeDiagnosticFee] = useState(false);
   const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
   const taxRatePercent = '8.25';
   const [dispatchInvoiceNotes, setDispatchInvoiceNotes] = useState('');
@@ -616,10 +617,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const [isChargingInvoice, setIsChargingInvoice] = useState(false);
 
   const holdDollars = (booking.holdAmountCents ?? 8500) / 100;
+  const appliedDiagnosticDollars = includeDiagnosticFee ? holdDollars : 0;
   const laborTotal = laborLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
   const partsTotal = partsLines.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const mileageTotal = Number(mileageFee) || 0;
-  const subtotalBeforeTax = holdDollars + laborTotal + partsTotal + mileageTotal;
+  const subtotalBeforeTax = appliedDiagnosticDollars + laborTotal + partsTotal + mileageTotal;
 
   const currentTaxRate = (Number(taxRatePercent) || 8.25) / 100;
   const taxableBase =
@@ -632,7 +634,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
       !window.confirm(
         `Charge customer $${invoiceGrandTotal.toFixed(
           2
-        )} (including $${holdDollars.toFixed(0)} diagnostic hold & $${texasSalesTax.toFixed(
+        )} (${includeDiagnosticFee ? `$${holdDollars.toFixed(0)} diag + ` : 'diag waived + '}$${texasSalesTax.toFixed(
           2
         )} Texas Sales Tax) and complete job?`
       )
@@ -673,7 +675,13 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         });
       }
 
-      if (lineItems.length === 0 && invoiceGrandTotal === holdDollars) {
+      if (lineItems.length === 0 && invoiceGrandTotal === 0) {
+        setInvoiceMsg('Please enter parts, labor, or include diagnostic fee to process charge.');
+        setIsChargingInvoice(false);
+        return;
+      }
+
+      if (lineItems.length === 0 && includeDiagnosticFee) {
         // Diagnostic only charge
         await captureBookingPayment(booking.id, { mode: 'diagnostic_only' });
       } else {
@@ -682,6 +690,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           lineItems,
           techNotes: dispatchInvoiceNotes,
           customerAgreedOnSite: true,
+          includeDiagnosticFee,
         });
       }
 
@@ -694,12 +703,12 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           amountDollars: invoiceGrandTotal,
           kind: 'charge',
           lines: lineItems,
-          diagnosticDollars: holdDollars,
+          diagnosticDollars: appliedDiagnosticDollars,
           salesTaxDollars: texasSalesTax,
         });
       }
 
-      setInvoiceMsg(`Successfully charged $${invoiceGrandTotal.toFixed(2)} (inc. $${texasSalesTax.toFixed(2)} Texas tax) and sent receipt!`);
+      setInvoiceMsg(`Successfully charged $${invoiceGrandTotal.toFixed(2)} and sent receipt!`);
       await onPatch(booking.id, { status: 'COMPLETED' });
     } catch (err: unknown) {
       setInvoiceMsg(err instanceof Error ? err.message : 'Charge failed');
@@ -944,10 +953,45 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             </p>
           )}
 
-          {/* 1. Diagnostic Visit (Base Hold) */}
-          <div className="flex items-center justify-between text-xs bg-white/5 rounded-xl px-3 py-2.5 border border-white/5">
-            <span className="font-semibold text-slate-300">🔍 Mobile Diagnostic Visit (Hold on file)</span>
-            <span className="font-mono font-bold text-white">${holdDollars.toFixed(2)}</span>
+          {/* 1. Diagnostic Hold Handling (Waive vs Apply) */}
+          <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-300">
+                🔍 Mobile Diagnostic Hold ($85 on file)
+              </span>
+              <span className="font-mono font-bold text-white">
+                {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setIncludeDiagnosticFee(false)}
+                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                  !includeDiagnosticFee
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                }`}
+              >
+                ✓ Waive Fee / Release Hold
+              </button>
+              <button
+                type="button"
+                onClick={() => setIncludeDiagnosticFee(true)}
+                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                  includeDiagnosticFee
+                    ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                }`}
+              >
+                + Charge $85 Diag Fee
+              </button>
+            </div>
+            <p className="text-[10px] text-slate-400 leading-tight">
+              {!includeDiagnosticFee
+                ? 'Free diagnostic with repair — the $85 card hold is released/applied toward repairs with no extra diagnostic fee charged.'
+                : 'The $85 diagnostic visit fee is charged on top of labor & parts.'}
+            </p>
           </div>
 
           {/* 2. Labor Lines */}
@@ -1142,8 +1186,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           {/* Invoice Summary Box */}
           <div className="rounded-xl bg-orange-500/5 border border-orange-500/20 p-3 space-y-1.5">
             <div className="flex justify-between text-xs text-slate-300">
-              <span>Diagnostic Visit (Hold):</span>
-              <span className="font-mono font-semibold">${holdDollars.toFixed(2)}</span>
+              <span>Diagnostic Fee:</span>
+              <span className="font-mono font-semibold">
+                {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
+              </span>
             </div>
             {laborTotal > 0 && (
               <div className="flex justify-between text-xs text-slate-300">
