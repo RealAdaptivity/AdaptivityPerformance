@@ -1,0 +1,28 @@
+{
+  "name": "adaptivity-teams-bot",
+  "version": "1.0.0",
+  "description": "Microsoft Teams bot for Adaptivity Performance — new booking notifications and dispatch commands",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "ts-node-dev --respawn src/index.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "adaptive-expressions": "^4.23.1",
+    "botbuilder": "^4.23.1",
+    "botframework-connector": "^4.23.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "@types/restify": "^8.5.12",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.0"
+  }
+}
