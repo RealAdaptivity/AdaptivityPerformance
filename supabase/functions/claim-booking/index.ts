@@ -26,24 +26,45 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'bookingReference is required' }, 400);
     }
 
-    const assignedId = mechanicId?.trim() || user.id;
+    // Only admins may claim a job on behalf of another technician; everyone
+    // else claims strictly for themselves regardless of the requested id.
+    const { data: profile } = await supabaseUser
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    const isAdmin = profile?.role === 'admin';
+
+    const requestedId = typeof mechanicId === 'string' ? mechanicId.trim() : '';
+    if (requestedId && requestedId !== user.id && !isAdmin) {
+      return jsonResponse({ error: 'You can only claim jobs for yourself.' }, 403);
+    }
+    const assignedId = requestedId || user.id;
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const cleanRef = bookingReference.trim();
     const { data: booking, error: fetchErr } = await supabase
       .from('bookings')
       .select('id, reference_code, status, mechanic_id')
-      .ilike('reference_code', bookingReference.trim())
+      .ilike('reference_code', cleanRef)
       .maybeSingle();
 
     if (fetchErr || !booking) {
       return jsonResponse({ error: 'Booking not found' }, 404);
     }
 
-    const { data: updated, error: updateErr } = await supabase
+    // A technician cannot take over a job already claimed by someone else.
+    if (!isAdmin && booking.mechanic_id && booking.mechanic_id !== assignedId) {
+      return jsonResponse({ error: 'This job has already been claimed by another technician.' }, 409);
+    }
+
+    // Atomic guard: for non-admins, only update rows still unclaimed or already
+    // owned by this technician, so two simultaneous claims can't both succeed.
+    let updateQuery = supabase
       .from('bookings')
       .update({
         status: 'EN_ROUTE',
@@ -52,12 +73,20 @@ Deno.serve(async (req: Request) => {
         distance_miles: 8,
         updated_at: new Date().toISOString(),
       })
-      .ilike('reference_code', bookingReference.trim())
-      .select()
-      .single();
+      .ilike('reference_code', cleanRef);
+
+    if (!isAdmin) {
+      updateQuery = updateQuery.or(`mechanic_id.is.null,mechanic_id.eq.${assignedId}`);
+    }
+
+    const { data: updated, error: updateErr } = await updateQuery.select().maybeSingle();
 
     if (updateErr) {
       return jsonResponse({ error: updateErr.message || 'Update failed' }, 500);
+    }
+
+    if (!updated) {
+      return jsonResponse({ error: 'This job has already been claimed by another technician.' }, 409);
     }
 
     return jsonResponse({ ok: true, booking: updated });
