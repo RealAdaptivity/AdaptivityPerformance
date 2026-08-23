@@ -1,12 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
-import { requireAdminUser } from './_shared/adminAuth.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { requireAdminUser } from '../_shared/adminAuth.ts';
 import {
   resolveTechStripeAccountId,
   transferTechShareToConnect,
-} from './_shared/connectTransfer.ts';
-import { splitJobTotalCents } from './_shared/revenueSplit.ts';
+} from '../_shared/connectTransfer.ts';
+import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
