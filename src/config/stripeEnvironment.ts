@@ -16,7 +16,7 @@ export const STRIPE_KEYS = {
     publishableKey:
       (import.meta.env.VITE_STRIPE_TEST_PUBLISHABLE_KEY as string) ||
       (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string) ||
-      'pk_test_51...your_test_key',
+      'pk_test_51TxEPLAcEv1BPMy8gCacBHwPIkeIYc2MoNGulfzjJ4Dtikvsasfm3tsFcVCC4riTOZxRiqYY6Kq0dKZSs2d3oTZ000kGG5XtUs',
     isLive: false,
     label: 'Sandbox / Test Mode',
   },
