@@ -8,16 +8,74 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
-    const {
+    const body = await req.json();
+    let {
       baseAmountDollars,
-      tipAmountDollars = 0,
       customerEmail,
       customerName,
       shippingAddress,
       techStripeAccountId,
       bookingReference,
-      preferFinancing,
-    } = await req.json();
+    } = body;
+    const { tipAmountDollars = 0, preferFinancing } = body;
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Payment-link mode: a customer paying a tech-finalized total from a link.
+    // The amount and the destination tech account come from the stored booking —
+    // never from the client — so the customer cannot alter what they are charged.
+    const paymentLinkReference =
+      typeof body.paymentLinkReference === 'string' ? body.paymentLinkReference.trim() : '';
+    let isPaymentLink = false;
+    let linkTaxCents = 0;
+    let linkPartsCents = 0;
+    let linkPartsBy: 'tech' | 'company' = 'tech';
+    let servicesList: string[] = [];
+
+    if (paymentLinkReference) {
+      const { data: b } = await supabase
+        .from('bookings')
+        .select(
+          'reference_code, mechanic_id, customer_name, customer_email, customer_address, services, payment_link_status, payment_link_total_cents, payment_link_tax_cents, payment_link_parts_cents, payment_link_parts_by'
+        )
+        .ilike('reference_code', paymentLinkReference)
+        .maybeSingle();
+
+      if (
+        !b ||
+        b.payment_link_status !== 'sent' ||
+        !b.payment_link_total_cents ||
+        Number(b.payment_link_total_cents) <= 0
+      ) {
+        return jsonResponse({ error: 'This payment link is not available or has already been paid.' }, 404);
+      }
+
+      isPaymentLink = true;
+      baseAmountDollars = Number(b.payment_link_total_cents) / 100;
+      bookingReference = b.reference_code;
+      customerEmail = customerEmail || b.customer_email || undefined;
+      customerName = b.customer_name || customerName;
+      shippingAddress = b.customer_address ? { line1: String(b.customer_address) } : shippingAddress;
+      linkTaxCents = Number(b.payment_link_tax_cents) || 0;
+      linkPartsCents = Number(b.payment_link_parts_cents) || 0;
+      linkPartsBy = b.payment_link_parts_by === 'company' ? 'company' : 'tech';
+      servicesList = Array.isArray(b.services) ? (b.services as string[]) : [];
+
+      // Resolve the assigned tech's Connect account server-side.
+      techStripeAccountId = null;
+      if (b.mechanic_id) {
+        const { data: mech } = await supabase
+          .from('mechanic_details')
+          .select('stripe_account_id')
+          .eq('profile_id', b.mechanic_id)
+          .maybeSingle();
+        techStripeAccountId =
+          typeof mech?.stripe_account_id === 'string' ? mech.stripe_account_id : null;
+      }
+    }
 
     const base = Number(baseAmountDollars);
     const tip = Number(tipAmountDollars);
@@ -28,7 +86,9 @@ Deno.serve(async (req) => {
     const baseCents = Math.round(base * 100);
     const tipCents = Math.round(Math.max(0, tip) * 100);
     const totalCents = baseCents + tipCents;
-    const laborSplit = splitJobTotalCents(baseCents);
+    const laborSplit = isPaymentLink
+      ? splitJobTotalCents(baseCents, linkTaxCents, linkPartsCents, linkPartsBy)
+      : splitJobTotalCents(baseCents);
     const platformFeeCents = laborSplit.platformFeeCents;
     const techTransferCents = laborSplit.techTransferCents + tipCents;
 
@@ -42,6 +102,7 @@ Deno.serve(async (req) => {
       metadata: {
         booking_reference: bookingReference || '',
         platform: 'adaptivity_performance',
+        type: isPaymentLink ? 'booking_payment_link' : 'checkout',
         prefer_financing: preferFinancing ? 'true' : 'false',
         bnpl_providers: 'affirm,afterpay,zip,sunbit,klarna',
         bnpl_hint:
@@ -89,11 +150,6 @@ Deno.serve(async (req) => {
 
     const paymentIntent = await stripeRequest('/payment_intents', 'POST', params);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
     let bookingId: string | null = null;
     if (bookingReference) {
       const { data: booking } = await supabase
@@ -125,8 +181,13 @@ Deno.serve(async (req) => {
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
       totalCharged: totalCents / 100,
+      baseAmount: baseCents / 100,
       techShareAmount: techTransferCents / 100,
       platformShareAmount: platformFeeCents / 100,
+      // Display info for the payment-link checkout page (customer is not logged in).
+      ...(isPaymentLink
+        ? { customerName: name, services: servicesList, bookingReference }
+        : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Payment intent failed';

@@ -7,6 +7,7 @@ import {
   claimBookingRow,
   fetchDispatchBookings,
   fetchMyTechSpecialties,
+  sendBookingPaymentLink,
   subscribeDispatchBookings,
   updateBookingRow,
   type DispatchBooking,
@@ -349,6 +350,58 @@ export const TechJobsTab: React.FC = () => {
     } catch (e: unknown) {
       console.error('[TechJobsTab handleCharge error]', e);
       setMessage(e instanceof Error ? e.message : 'Charge failed');
+      setBusy(false);
+    }
+  };
+
+  const handleSendPaymentLink = async () => {
+    if (!activeJob) return;
+
+    const lineItems = lines
+      .map((l) => {
+        const labor = Number(l.laborDollars) || 0;
+        const parts = Number(l.partsDollars) || 0;
+        let title = l.title.trim();
+        if (!title && (labor > 0 || parts > 0)) {
+          title = labor > 0 && parts > 0 ? 'Mechanical Labor & Parts' : labor > 0 ? 'Mechanical Labor' : 'Replacement Parts';
+        }
+        return { title, laborDollars: labor, partsDollars: parts };
+      })
+      .filter((l) => l.title && (l.laborDollars > 0 || l.partsDollars > 0));
+
+    if (!lineItems.length && !includeDiagnosticFee) {
+      setMessage('⚠️ Enter a labor or parts amount (or enable the $85 Diagnostic Fee) before sending a link.');
+      return;
+    }
+    if (mileageTotal > 0) {
+      lineItems.push({ title: 'Mileage / Travel Fee', laborDollars: mileageTotal, partsDollars: 0 });
+    }
+    if (salesTaxDollars > 0) {
+      lineItems.push({
+        title: `Texas Sales Tax (8.25%${taxMode === 'parts' ? ' on parts' : ''})`,
+        laborDollars: 0,
+        partsDollars: salesTaxDollars,
+      });
+    }
+
+    setBusy(true);
+    setMessage(null);
+    try {
+      const result = await sendBookingPaymentLink({
+        bookingReference: activeJob.referenceCode,
+        lineItems,
+        includeDiagnosticFee,
+        salesTaxDollars,
+        partsPurchasedBy,
+      });
+      setMessage(
+        result.smsSent
+          ? `✅ Payment link texted to the customer — $${result.totalDollars.toFixed(2)} (card or financing).`
+          : `Payment link ready: ${result.url}${result.smsError ? ` — SMS not sent: ${result.smsError}` : ''}`
+      );
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Could not create payment link');
+    } finally {
       setBusy(false);
     }
   };
@@ -1047,6 +1100,18 @@ export const TechJobsTab: React.FC = () => {
               >
                 {busy ? 'Charging Card…' : `Charge Customer $${chargeTotal.toFixed(2)}`}
               </button>
+
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleSendPaymentLink()}
+                className="w-full py-3 bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl text-xs font-bold text-slate-100 disabled:opacity-60 transition-colors"
+              >
+                Send payment link instead (card or financing)
+              </button>
+              <p className="text-[10px] text-slate-500 -mt-1">
+                Texts the customer a secure link to pay themselves — the only way Affirm/Klarna/Afterpay/Zip/Sunbit can be offered.
+              </p>
 
               <div className="grid grid-cols-2 gap-2">
                 <button

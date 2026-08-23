@@ -33,6 +33,7 @@ import {
 import { CityLandingPage } from './pages/CityLandingPage';
 import { BlogPostPage } from './pages/BlogPostPage';
 import { ReferralLandingPage, referralCodeFromPath } from './pages/ReferralLandingPage';
+import { PayLinkPage, payReferenceFromPath } from './pages/PayLinkPage';
 import { blogSlugFromPath } from './services/blog';
 
 function MainAppContent() {
@@ -214,6 +215,12 @@ function MainAppContent() {
     onBookMobileZip: handleBookMobileZip,
     activeServiceMode,
   };
+
+  // Public customer pay link (card or BNPL) — full-screen, no marketing chrome.
+  const payReference = payReferenceFromPath(pathname);
+  if (payReference) {
+    return <PayLinkPage reference={payReference} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">

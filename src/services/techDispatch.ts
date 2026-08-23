@@ -685,3 +685,26 @@ export type TechPayoutPreview = {
 export async function fetchTechPayoutPreview(): Promise<TechPayoutPreview> {
   return invokeEdgeFunction<TechPayoutPreview>('trigger-instant-payout', { action: 'preview' });
 }
+
+export type SendPaymentLinkResult = {
+  ok: boolean;
+  url: string;
+  totalDollars: number;
+  smsSent: boolean;
+  smsError: string | null;
+};
+
+/**
+ * Finalize the job total and text the customer a link to pay it themselves
+ * (card or financing). Alternative to charging the card on file — BNPL requires
+ * the customer to be present, so it can only appear on a customer-driven checkout.
+ */
+export async function sendBookingPaymentLink(params: {
+  bookingReference: string;
+  lineItems: { title: string; laborDollars: number; partsDollars: number }[];
+  includeDiagnosticFee?: boolean;
+  salesTaxDollars?: number;
+  partsPurchasedBy?: 'tech' | 'company';
+}): Promise<SendPaymentLinkResult> {
+  return invokeEdgeFunction<SendPaymentLinkResult>('create-booking-payment-link', params);
+}
