@@ -186,7 +186,9 @@ export async function captureHoldAndRemainder(opts: {
       payout_error: transferResult.transferError,
       updated_at: new Date().toISOString(),
     })
-    .eq('payment_intent_id', opts.paymentIntentId);
+    .or(
+      `payment_intent_id.eq.${opts.paymentIntentId},booking_reference.ilike.${opts.bookingReference},booking_id.eq.${opts.bookingId}`
+    );
 
   return {
     capturedCents,

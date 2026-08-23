@@ -111,7 +111,9 @@ Deno.serve(async (req) => {
         payout_error: transferResult.transferError,
         updated_at: new Date().toISOString(),
       })
-      .eq('payment_intent_id', paymentIntentId);
+      .or(
+        `payment_intent_id.eq.${paymentIntentId},booking_reference.ilike.${booking.reference_code},booking_id.eq.${booking.id}`
+      );
 
     if (transferResult.transferError && !transferResult.transferId) {
       return jsonResponse(
