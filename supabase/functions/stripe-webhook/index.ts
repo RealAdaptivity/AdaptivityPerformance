@@ -4,6 +4,26 @@ import { attemptTechInstantPayout } from '../_shared/instantPayout.ts';
 
 const crypto = globalThis.crypto;
 
+// Reject events whose signed timestamp is older than this, to limit replay of a
+// captured webhook. Matches Stripe's own default tolerance; Stripe re-signs with
+// a fresh timestamp on each delivery attempt, so retries are unaffected.
+const SIGNATURE_TOLERANCE_SECONDS = 300;
+
+/** Length-independent, constant-time string comparison to avoid timing leaks. */
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const aBytes = enc.encode(a);
+  const bBytes = enc.encode(b);
+  // Fold the length difference into the accumulator instead of early-returning,
+  // so the comparison time doesn't reveal how much of the signature matched.
+  let mismatch = aBytes.length ^ bBytes.length;
+  const len = Math.max(aBytes.length, bBytes.length);
+  for (let i = 0; i < len; i++) {
+    mismatch |= (aBytes[i] ?? 0) ^ (bBytes[i] ?? 0);
+  }
+  return mismatch === 0;
+}
+
 async function verifyStripeSignature(
   payload: string,
   signatureHeader: string,
@@ -19,6 +39,12 @@ async function verifyStripeSignature(
   const signature = parts.v1;
   if (!timestamp || !signature) return false;
 
+  // Replay guard: the signed timestamp must be recent.
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > SIGNATURE_TOLERANCE_SECONDS) {
+    return false;
+  }
+
   const signedPayload = `${timestamp}.${payload}`;
   const key = await crypto.subtle.importKey(
     'raw',
@@ -29,7 +55,7 @@ async function verifyStripeSignature(
   );
   const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedPayload));
   const expected = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return expected === signature;
+  return timingSafeEqual(expected, signature);
 }
 
 function instantPayoutsEnabled(): boolean {
