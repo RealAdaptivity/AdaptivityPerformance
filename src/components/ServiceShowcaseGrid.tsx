@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wrench, Sparkles, Volume2, Flame, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Wrench, Sparkles, Volume2, Flame, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
 
 interface ServiceShowcaseGridProps {
   onBookService: (serviceName: string) => void;
@@ -14,34 +14,37 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       description: 'We bring full shop diagnostics, brake replacement, oil changes, starters, and batteries directly to your home or office.',
       icon: <Wrench className="w-6 h-6 text-orange-400" />,
       accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
-      badge: 'Free 15-Mi Dispatch',
-      badgeColor: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
+      badge: 'Active Service',
+      badgeColor: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
       items: ['Brake Pad & Rotor Swaps', 'Check Engine OBD-II Scans', 'Synthetic Oil Services', 'Starter & Battery Swaps'],
       primaryService: 'Mobile Mechanic & Diagnostic Visit',
+      isComingSoon: false,
     },
     {
       id: 'detailing',
       title: 'Mobile Detailing & Protection',
-      subtitle: 'Showroom Care at Your Driveway',
+      subtitle: 'Showroom Care · Coming Soon',
       description: 'Complete interior deep cleaning, exterior ceramic coating, paint correction, and headlight restoration on-location.',
       icon: <Sparkles className="w-6 h-6 text-amber-400" />,
-      accent: 'hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)]',
-      badge: 'Water & Power Equipped',
-      badgeColor: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+      accent: 'hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] opacity-90',
+      badge: 'Coming Soon',
+      badgeColor: 'bg-amber-500/15 border-amber-500/40 text-amber-300',
       items: ['Full Ceramic Protection', 'Interior Steam & Leather Care', 'Paint Correction & Polish', 'Headlight Restoration'],
       primaryService: 'Mobile Detailing & Ceramic Protection',
+      isComingSoon: true,
     },
     {
       id: 'audio-tint',
       title: 'Custom Audio, Tint & Wraps',
-      subtitle: 'Electronics & Styling Upgrades',
+      subtitle: 'Electronics & Styling · Coming Soon',
       description: 'Custom window tinting, dash cam installs, premium audio speaker upgrades, subwoofers, and vinyl color accents.',
       icon: <Volume2 className="w-6 h-6 text-orange-400" />,
-      accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
-      badge: 'Lifetime Tint Warranty',
-      badgeColor: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
+      accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)] opacity-90',
+      badge: 'Coming Soon',
+      badgeColor: 'bg-amber-500/15 border-amber-500/40 text-amber-300',
       items: ['Ceramic Window Tinting', 'Custom Audio & Subwoofers', 'Dash Cam & Radar Hardwire', 'Vinyl Accents & Wrap Work'],
       primaryService: 'Custom Audio & Window Tinting',
+      isComingSoon: true,
     },
     {
       id: 'performance',
@@ -49,11 +52,12 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       subtitle: 'Garage Facility · Coming Soon',
       description: 'Upcoming dedicated garage facility for heavy suspension lifts, custom exhaust systems, cold air intakes, and engine overhauls.',
       icon: <Flame className="w-6 h-6 text-amber-400" />,
-      accent: 'hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)]',
-      badge: 'Facility Under Buildout',
-      badgeColor: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+      accent: 'hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] opacity-90',
+      badge: 'Coming Soon',
+      badgeColor: 'bg-amber-500/15 border-amber-500/40 text-amber-300',
       items: ['Truck Suspension Lifts & Leveling', 'Custom Exhaust & Headers', 'Cold Air Intakes & Tuning', 'Engine & Transmission Swaps'],
       primaryService: 'Performance Upgrade & Garage Build',
+      isComingSoon: true,
     },
   ];
 
@@ -65,10 +69,10 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
             Full Automotive Capabilities
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-black text-white">
-            Everything Automotive — Directly to Your Driveway
+            Everything Automotive — Built for North Texas
           </h2>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            From routine doorstep maintenance to high-end mobile detailing, custom electronics, and performance upgrades.
+            From active doorstep auto repair and diagnostics to upcoming mobile detailing, custom electronics, and garage builds.
           </p>
         </div>
 
@@ -106,14 +110,21 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
               </div>
 
               <div className="pt-6">
-                <button
-                  type="button"
-                  onClick={() => onBookService(cat.primaryService)}
-                  className="w-full py-3 px-4 rounded-xl bg-white/[0.04] hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-600 hover:text-white border border-white/10 hover:border-transparent font-bold text-xs text-slate-200 transition-all flex items-center justify-center space-x-2 group shadow-md"
-                >
-                  <span>Book {cat.title.split(' ')[0]} Service</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
+                {cat.isComingSoon ? (
+                  <div className="w-full py-3 px-4 rounded-xl bg-white/[0.04] border border-white/10 text-center font-bold text-xs text-slate-400 flex items-center justify-center space-x-2 cursor-default">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Coming Soon</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onBookService(cat.primaryService)}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center space-x-2 group hover:scale-[1.02] active:scale-95"
+                  >
+                    <span>Book Mobile Service</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
