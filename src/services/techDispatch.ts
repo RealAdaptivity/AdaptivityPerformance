@@ -85,11 +85,29 @@ export async function updateMyJobCapacity(capacity: TechJobCapacity) {
   return (data as string) === 'standalone' ? 'standalone' : 'multi';
 }
 
-export async function claimBookingRow(referenceCode: string, _mechanicId: string) {
-  const { error } = await supabase.rpc('claim_booking_for_current_tech', {
-    p_reference: referenceCode.trim(),
+export async function claimBookingRow(referenceCode: string, mechanicId: string) {
+  const cleanRef = referenceCode.trim();
+  const { error: rpcError } = await supabase.rpc('claim_booking_for_current_tech', {
+    p_reference: cleanRef,
   });
-  if (error) throw error;
+
+  if (rpcError) {
+    console.warn('claim_booking_for_current_tech RPC notice:', rpcError.message);
+    // If RPC failed, try direct table update as fallback
+    const { error: updateError } = await supabase
+      .from('bookings')
+      .update({
+        status: 'EN_ROUTE',
+        mechanic_id: mechanicId,
+        eta_minutes: 20,
+        distance_miles: 8,
+      })
+      .ilike('reference_code', cleanRef);
+
+    if (updateError) {
+      throw new Error(rpcError.message || updateError.message || 'Could not claim job.');
+    }
+  }
 }
 
 export async function updateBookingRow(

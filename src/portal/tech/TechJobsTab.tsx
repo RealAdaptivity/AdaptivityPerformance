@@ -133,22 +133,33 @@ export const TechJobsTab: React.FC = () => {
   };
 
   const handleClaim = async (job: DispatchBooking) => {
-    if (!mechanicId) {
-      setMessage('Sign in required.');
+    let effectiveMechId = mechanicId;
+    if (!effectiveMechId) {
+      const { data } = await supabase.auth.getSession();
+      effectiveMechId = data.session?.user?.id ?? null;
+      if (effectiveMechId) setMechanicId(effectiveMechId);
+    }
+    if (!effectiveMechId) {
+      setMessage('Please log in again to claim this job.');
       return;
     }
+    setBusy(true);
+    setMessage(null);
     try {
-      await claimBookingRow(job.referenceCode, mechanicId);
-      setActiveJob({ ...job, status: 'EN_ROUTE', etaMinutes: job.etaMinutes || 20 });
+      await claimBookingRow(job.referenceCode, effectiveMechId);
+      setActiveJob({ ...job, status: 'EN_ROUTE', etaMinutes: job.etaMinutes || 20, mechanicId: effectiveMechId });
       setFilter('active');
       setJobPhase('en_route');
       setLines([{ title: '', laborDollars: '', partsDollars: '' }]);
       setTechNotes('');
       setCustomerAgreed(false);
       await loadJobs();
-      setMessage('Job claimed — tap “Text customer — on the way” (auto-sends when Twilio is configured).');
+      setMessage('Job claimed! Tap “Text customer — on the way” or start navigation.');
     } catch (e: unknown) {
-      setMessage(e instanceof Error ? e.message : 'Claim failed');
+      const errText = e instanceof Error ? e.message : 'Claim failed';
+      setMessage(`Unable to claim job: ${errText}`);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -425,17 +436,18 @@ export const TechJobsTab: React.FC = () => {
           >
             Navigate
           </button>
-          {job.status === 'UNASSIGNED' && (
+          {(!job.mechanicId || job.status === 'UNASSIGNED') && (
             <button
               type="button"
+              disabled={busy}
               onClick={() => void handleClaim(job)}
-              className="flex-1 py-2.5 bg-orange-500 rounded-xl text-xs font-bold text-white"
+              className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 rounded-xl text-xs font-bold text-white transition-colors"
             >
-              Claim job
+              {busy ? 'Claiming…' : 'Claim job'}
             </button>
           )}
         </div>
-        {job.status !== 'UNASSIGNED' && (
+        {job.status !== 'UNASSIGNED' && job.mechanicId && (
           <p className="text-[10px] text-orange-400 font-bold uppercase">{job.status.replace('_', ' ')}</p>
         )}
       </div>
