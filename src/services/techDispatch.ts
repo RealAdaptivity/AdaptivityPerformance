@@ -521,7 +521,26 @@ export async function fetchContractorAgreementStatus(): Promise<{
   };
 }
 
-/** Calendar-year tech share paid (for 1099-NEC $600 tracking). */
+async function getTechPaymentFilter(userProfileId: string) {
+  const { data: mechDetails } = await supabase
+    .from('mechanic_details')
+    .select('stripe_account_id')
+    .eq('profile_id', userProfileId)
+    .maybeSingle();
+  const stripeAccountId = (mechDetails?.stripe_account_id as string) || null;
+
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('reference_code, payment_intent_id')
+    .eq('mechanic_id', userProfileId);
+
+  const refCodes = (bookings ?? []).map((b) => b.reference_code).filter(Boolean) as string[];
+  const paymentIntentIds = (bookings ?? []).map((b) => b.payment_intent_id).filter(Boolean) as string[];
+
+  return { stripeAccountId, refCodes, paymentIntentIds };
+}
+
+/** Calendar-year tech share paid (for 1099-NEC $600 tracking), filtered strictly to this technician. */
 export async function fetchTechYearToDateCompensation(year = new Date().getFullYear()): Promise<{
   year: number;
   totalCents: number;
@@ -529,14 +548,41 @@ export async function fetchTechYearToDateCompensation(year = new Date().getFullY
   thresholdDollars: number;
   meetsNecThreshold: boolean;
 }> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { year, totalCents: 0, totalDollars: 0, thresholdDollars: 600, meetsNecThreshold: false };
+  }
+
+  const { stripeAccountId, refCodes, paymentIntentIds } = await getTechPaymentFilter(user.id);
+  if (!stripeAccountId && refCodes.length === 0 && paymentIntentIds.length === 0) {
+    return { year, totalCents: 0, totalDollars: 0, thresholdDollars: 600, meetsNecThreshold: false };
+  }
+
   const start = `${year}-01-01T00:00:00.000Z`;
   const end = `${year + 1}-01-01T00:00:00.000Z`;
-  const { data, error } = await supabase
+  let query = supabase
     .from('payments')
-    .select('tech_transfer_cents, status, created_at')
-    .eq('is_test', false)
+    .select('tech_transfer_cents, status, created_at, tech_stripe_account_id, booking_reference, payment_intent_id')
     .gte('created_at', start)
     .lt('created_at', end);
+
+  const conditions: string[] = [];
+  if (stripeAccountId) {
+    conditions.push(`tech_stripe_account_id.eq.${stripeAccountId}`);
+  }
+  if (refCodes.length > 0) {
+    conditions.push(`booking_reference.in.(${refCodes.map((r) => `"${r}"`).join(',')})`);
+  }
+  if (paymentIntentIds.length > 0) {
+    conditions.push(`payment_intent_id.in.(${paymentIntentIds.map((p) => `"${p}"`).join(',')})`);
+  }
+  if (conditions.length > 0) {
+    query = query.or(conditions.join(','));
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   const totalCents = (data ?? []).reduce((sum, row) => {
     const status = String(row.status || '');
@@ -564,12 +610,37 @@ export type TechPayoutRow = {
 };
 
 export async function fetchTechPayoutHistory(): Promise<TechPayoutRow[]> {
-  const { data, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { stripeAccountId, refCodes, paymentIntentIds } = await getTechPaymentFilter(user.id);
+  if (!stripeAccountId && refCodes.length === 0 && paymentIntentIds.length === 0) {
+    return [];
+  }
+
+  let query = supabase
     .from('payments')
-    .select('id, booking_reference, tech_transfer_cents, payout_status, status, payout_error, created_at')
-    .eq('is_test', false)
+    .select('id, booking_reference, tech_transfer_cents, tech_stripe_account_id, payment_intent_id, payout_status, status, payout_error, created_at')
     .order('created_at', { ascending: false })
     .limit(25);
+
+  const conditions: string[] = [];
+  if (stripeAccountId) {
+    conditions.push(`tech_stripe_account_id.eq.${stripeAccountId}`);
+  }
+  if (refCodes.length > 0) {
+    conditions.push(`booking_reference.in.(${refCodes.map((r) => `"${r}"`).join(',')})`);
+  }
+  if (paymentIntentIds.length > 0) {
+    conditions.push(`payment_intent_id.in.(${paymentIntentIds.map((p) => `"${p}"`).join(',')})`);
+  }
+  if (conditions.length > 0) {
+    query = query.or(conditions.join(','));
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((row) => ({
     id: row.id,
