@@ -1,4 +1,4 @@
-import { Truck, ArrowRight, Calendar, MapPin, Phone, ShieldCheck, Wrench } from 'lucide-react';
+import { Truck, ArrowRight, Calendar, Phone, ShieldCheck, Wrench } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
@@ -35,15 +35,14 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
           {/* Foreground Hero Content (Positioned over Left Gradient Fade) */}
           <div className="relative z-10 p-6 sm:p-10 lg:p-14 max-w-2xl lg:max-w-3xl space-y-6 text-left">
             
-            {/* Live Arrival Ticker Pill */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#07080b]/90 border border-orange-500/40 shadow-[0_0_20px_rgba(249,115,22,0.15)] backdrop-blur-md">
-              <div className="w-6 h-6 rounded-lg bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400">
-                <MapPin className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-xs sm:text-sm font-black text-white tracking-wide uppercase">
-                📍 25 Min Arrival in DFW
+            {/* Category Tag */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-black tracking-widest text-orange-400 uppercase bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-full">
+                ADAPTIVITY PERFORMANCE
               </span>
-              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse ml-1" />
+              <span className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
+                ⭐ <strong>5.0 Google Rating</strong> across DFW
+              </span>
             </div>
 
             {/* Headline */}
