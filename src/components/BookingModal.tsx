@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, MapPin, Truck, Home, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
+import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
 import { StripeBookingHoldSection } from './StripeBookingHoldSection';
 import { computeHoldQuote } from '../services/holdPricing';
-import { DIAGNOSTIC_HOLD_DOLLARS } from '../services/serviceCatalog';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
-import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../content/contractorLiability';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
 import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
 import { applyReferralCodeOnBooking } from '../services/referrals';
@@ -295,99 +293,102 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           </button>
         </div>
 
+        {/* Step Indicator Bar */}
+        <div className="bg-[#0b0c10] px-6 py-3 border-b border-white/5 flex items-center justify-between text-xs">
+          {[
+            { num: 1, label: 'Vehicle & Service' },
+            { num: 2, label: 'Location & Time' },
+            { num: 3, label: 'Card Hold ($85)' },
+          ].map((s) => (
+            <div
+              key={s.num}
+              className={`flex items-center gap-1.5 font-bold ${
+                step === s.num
+                  ? 'text-orange-400'
+                  : step > s.num
+                  ? 'text-emerald-400'
+                  : 'text-slate-500'
+              }`}
+            >
+              <span
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                  step === s.num
+                    ? 'bg-orange-500 text-white'
+                    : step > s.num
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-white/5 text-slate-500'
+                }`}
+              >
+                {s.num}
+              </span>
+              <span className="hidden sm:inline">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
         <div className="p-6 overflow-y-auto flex-1">
           {step === 1 && (
             <form onSubmit={() => setStep(2)} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Service Type</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setServiceMode('mobile')}
-                    className={`p-3 rounded-xl border flex items-center justify-between text-xs font-bold transition-all ${
-                      serviceMode === 'mobile'
-                        ? 'border-orange-500 bg-orange-500/10 text-white'
-                        : 'border-white/10 bg-[#0b0c10] text-slate-400'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <Truck className="w-4 h-4 text-orange-400" />
-                      <span>Mobile (We Come to You)</span>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Service Mode</label>
+                <div className="p-3.5 rounded-2xl border border-orange-500/40 bg-orange-500/10 flex items-center justify-between text-xs font-bold text-white">
+                  <div className="flex items-center space-x-2.5">
+                    <Truck className="w-4 h-4 text-orange-400 shrink-0" />
+                    <div>
+                      <div>100% Mobile Service — We Come To Your Driveway</div>
+                      <div className="text-[10px] text-slate-400 font-normal">DFW · Justin · Northlake · Denton · Fort Worth</div>
                     </div>
-                    <span className="text-[9px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded font-mono">
-                      $2.00/mi
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setServiceMode('shop')}
-                    className={`p-3 rounded-xl border flex items-center space-x-2 text-xs font-bold transition-all ${
-                      serviceMode === 'shop'
-                        ? 'border-orange-500 bg-orange-500/10 text-white'
-                        : 'border-white/10 bg-[#0b0c10] text-slate-400'
-                    }`}
-                  >
-                    <Home className="w-4 h-4 text-orange-400" />
-                    <span>Drop Off at Shop / Partner</span>
-                  </button>
-                </div>
-              </div>
-
-              {serviceMode === 'shop' && partners.length > 0 && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    Choose shop / garage partner
-                  </label>
-                  <select
-                    value={partnerLocationId}
-                    onChange={(e) => setPartnerLocationId(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  >
-                    {partners.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.businessName}
-                        {p.city ? ` — ${p.city}` : ''}
-                        {p.hasLift ? ' · Lift' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Vehicle Details</label>
-                  <input
-                    type="text"
-                    required
-                    value={vehicle}
-                    onChange={e => setVehicle(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                    placeholder="e.g. 2021 Chevy Silverado 1500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">VIN Number (Optional)</label>
-                  <input
-                    type="text"
-                    value={vinNumber}
-                    onChange={e => setVinNumber(e.target.value.toUpperCase())}
-                    maxLength={17}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm font-mono text-white focus:border-orange-500 focus:outline-none uppercase"
-                    placeholder="17-Digit VIN"
-                  />
+                  </div>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                    $0 Travel (15 mi)
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Services Needed</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Your Vehicle</label>
+                <input
+                  type="text"
+                  required
+                  value={vehicle}
+                  onChange={e => setVehicle(e.target.value)}
+                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-3 text-sm text-white focus:border-orange-500 focus:outline-none"
+                  placeholder="e.g. 2021 Ford F-150 / 2019 Chevy Tahoe / 2020 Honda Civic"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Select Service Needed</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2">
+                  {[
+                    'Brake Pads & Rotors',
+                    'Battery Swap / No-Start',
+                    'Starter / Alternator',
+                    'Check Engine OBD-II Scan',
+                    'Synthetic Oil & Filter',
+                    'AC Recharge & Diagnostic',
+                  ].map((srv) => (
+                    <button
+                      key={srv}
+                      type="button"
+                      onClick={() => setServiceRequested(srv)}
+                      className={`p-2 rounded-xl text-left text-xs font-semibold transition-all ${
+                        serviceRequested.includes(srv)
+                          ? 'bg-orange-500 text-white font-bold shadow-md shadow-orange-500/25'
+                          : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/5'
+                      }`}
+                    >
+                      {srv}
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="text"
                   required
                   value={serviceRequested}
                   onChange={e => setServiceRequested(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="e.g. Brakes, Check Engine Light, Oil Change"
+                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none"
+                  placeholder="Or type custom description (e.g. squeaking brakes, car won't start)"
                 />
               </div>
 
@@ -399,7 +400,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     required
                     value={preferredDate}
                     onChange={e => setPreferredDate(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -407,7 +408,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <select
                     value={preferredTime}
                     onChange={e => setPreferredTime(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                   >
                     {PREFERRED_TIME_WINDOWS.map((w) => (
                       <option key={w} value={w}>
@@ -418,26 +419,25 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Card hold at booking:{' '}
-                <strong className="text-orange-400">${holdPreview.toFixed(2)}</strong>
-                <span className="block text-slate-500 mt-1">
-                  {holdQuote.mode === 'direct' ? 'Service hold' : `$${DIAGNOSTIC_HOLD_DOLLARS} diagnostic`} —{' '}
-                  {holdQuote.explanation}
-                </span>
-                <span className="block text-amber-400/90 mt-1.5">
-                  Card hold only at booking. Your tech diagnoses on site, sets labor + parts pricing with you,
-                  then charges through Adaptivity (tech 70% · platform 30%). Affirm, Afterpay, Zip, Sunbit, or
-                  Klarna may appear at final checkout when eligible.
-                </span>
-                <span className="block text-slate-500 mt-1.5">{CUSTOMER_TECH_LIABILITY_NOTICE}</span>
-              </p>
+              {/* Reassuring Card Hold Explainer */}
+              <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 space-y-1.5 text-xs text-slate-400">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Zero Charged Today ($85 Hold Only)
+                  </span>
+                  <span className="font-mono text-orange-400 font-bold">${holdPreview.toFixed(2)} Hold</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-400">
+                  Holds your technician's time slot and is <strong>100% credited</strong> toward your final repair and parts cost on-site.
+                </p>
+              </div>
 
               <button
                 type="submit"
-                className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all"
+                className="w-full py-4 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
               >
-                Next: Location & Contact Details →
+                Continue: Address & Contact Info →
               </button>
             </form>
           )}
