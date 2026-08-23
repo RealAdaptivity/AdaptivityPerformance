@@ -1,13 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient, SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
-import { recoverConnectAccountForProfile } from './_shared/connectAccountRecovery.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { recoverConnectAccountForProfile } from '../_shared/connectAccountRecovery.ts';
 import {
   attemptCashOut,
   friendlyPayoutError,
   readConnectedBalanceCents,
   type CashOutMethod,
-} from './_shared/instantPayout.ts';
+} from '../_shared/instantPayout.ts';
 
 async function accountExists(accountId: string): Promise<boolean> {
   try {

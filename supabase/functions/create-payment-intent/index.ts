@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
-import { splitJobTotalCents } from './_shared/revenueSplit.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
