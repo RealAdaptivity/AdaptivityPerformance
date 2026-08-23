@@ -56,6 +56,48 @@ export async function captureHoldAndRemainder(opts: {
         'Quote total exceeds the card hold, but no saved payment method is available for the remainder.'
       );
     }
+
+    let customerId: string | null =
+      typeof pi.customer === 'string' ? pi.customer : pi.customer?.id ?? null;
+
+    // If hold has no customer attached, create or resolve Stripe customer
+    if (!customerId) {
+      const { data: bookingRow } = await opts.supabase
+        .from('bookings')
+        .select('customer_name, customer_email, customer_phone')
+        .or(`id.eq.${opts.bookingId},reference_code.ilike.${opts.bookingReference}`)
+        .maybeSingle();
+
+      const customerPayload: Record<string, unknown> = {
+        metadata: {
+          booking_id: opts.bookingId,
+          booking_reference: opts.bookingReference,
+        },
+      };
+      if (bookingRow?.customer_email) customerPayload.email = bookingRow.customer_email;
+      else if (pi.receipt_email) customerPayload.email = pi.receipt_email;
+      if (bookingRow?.customer_name) customerPayload.name = bookingRow.customer_name;
+      if (bookingRow?.customer_phone) customerPayload.phone = bookingRow.customer_phone;
+
+      try {
+        const newCustomer = await stripeRequest('/customers', 'POST', customerPayload);
+        customerId = newCustomer.id as string;
+      } catch (custErr) {
+        console.warn('[captureHold] customer creation error:', custErr);
+      }
+    }
+
+    // Attach payment method to customer if available
+    if (customerId) {
+      try {
+        await stripeRequest(`/payment_methods/${paymentMethod}/attach`, 'POST', {
+          customer: customerId,
+        });
+      } catch (attachErr) {
+        console.warn('[captureHold] payment method attach notice (may already be attached):', attachErr);
+      }
+    }
+
     const remainderBody: Record<string, unknown> = {
       amount: remainderCents,
       currency: 'usd',
@@ -69,8 +111,8 @@ export async function captureHoldAndRemainder(opts: {
         source: opts.source,
       },
     };
-    if (typeof pi.customer === 'string' && pi.customer) {
-      remainderBody.customer = pi.customer;
+    if (customerId) {
+      remainderBody.customer = customerId;
     }
     const remainderPi = await stripeRequest('/payment_intents', 'POST', remainderBody);
     if (remainderPi.status !== 'succeeded') {
