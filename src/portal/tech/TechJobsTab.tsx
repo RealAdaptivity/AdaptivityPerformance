@@ -14,12 +14,6 @@ import {
 import { sendOnTheWaySmsAuto, sendChargeReceiptSmsAuto } from '../../services/sendSms';
 import { uploadJobPhoto } from '../../services/jobPhotos';
 import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
-import {
-  fetchMyPartsExpenseClaims,
-  submitPartsExpenseClaim,
-  uploadExpenseReceiptFile,
-  type PartsExpenseClaim,
-} from '../../services/partsExpenses';
 import { todayISODate } from '../../services/scheduleWindows';
 import { JobChatPanel } from '../../components/JobChatPanel';
 
@@ -49,19 +43,7 @@ export const TechJobsTab: React.FC = () => {
   const [lines, setLines] = useState<LineDraft[]>([
     { title: 'Diagnostic & Mechanical Labor', laborDollars: '', partsDollars: '' },
   ]);
-  const [expenseAmount, setExpenseAmount] = useState('');
-  const [expenseDesc, setExpenseDesc] = useState('');
-  const [expenseBusy, setExpenseBusy] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [claims, setClaims] = useState<PartsExpenseClaim[]>([]);
-
-  const loadClaims = useCallback(async () => {
-    try {
-      setClaims(await fetchMyPartsExpenseClaims());
-    } catch {
-      /* ignore if table missing */
-    }
-  }, []);
 
   const loadJobs = useCallback(async () => {
     try {
@@ -80,12 +62,11 @@ export const TechJobsTab: React.FC = () => {
     void supabase.auth.getSession().then(({ data }) => setMechanicId(data.session?.user?.id ?? null));
     void fetchMyTechSpecialties().then(setMySpecialties);
     loadJobs();
-    void loadClaims();
     const ch = subscribeDispatchBookings(() => loadJobs());
     return () => {
       void ch.unsubscribe();
     };
-  }, [loadJobs, loadClaims]);
+  }, [loadJobs]);
 
   useEffect(() => {
     if (!activeJob) return;
@@ -281,63 +262,6 @@ export const TechJobsTab: React.FC = () => {
           setMessage('Job photo uploaded.');
         } catch (e: unknown) {
           setMessage(e instanceof Error ? e.message : 'Photo upload failed');
-        }
-      })();
-    };
-    input.click();
-  };
-
-  const handleSubmitExpense = async () => {
-    if (!activeJob) return;
-    setExpenseBusy(true);
-    setMessage(null);
-    try {
-      await submitPartsExpenseClaim({
-        bookingId: activeJob.id,
-        amountDollars: Number(expenseAmount),
-        description: expenseDesc,
-        receiptPath: null,
-      });
-      setExpenseAmount('');
-      setExpenseDesc('');
-      setMessage('Parts reimbursement claim submitted.');
-      await loadClaims();
-    } catch (e: unknown) {
-      setMessage(e instanceof Error ? e.message : 'Claim failed');
-    } finally {
-      setExpenseBusy(false);
-    }
-  };
-
-  const handleAttachReceiptAndSubmit = async () => {
-    if (!activeJob) return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = input.files?.[0];
-      void (async () => {
-        setExpenseBusy(true);
-        setMessage(null);
-        try {
-          let receiptPath: string | null = null;
-          if (file) {
-            receiptPath = await uploadExpenseReceiptFile({ bookingId: activeJob.id, file });
-          }
-          await submitPartsExpenseClaim({
-            bookingId: activeJob.id,
-            amountDollars: Number(expenseAmount),
-            description: expenseDesc,
-            receiptPath,
-          });
-          setExpenseAmount('');
-          setExpenseDesc('');
-          setMessage(file ? 'Claim submitted with receipt.' : 'Claim submitted.');
-          await loadClaims();
-        } catch (e: unknown) {
-          setMessage(e instanceof Error ? e.message : 'Claim failed');
-        } finally {
-          setExpenseBusy(false);
         }
       })();
     };
@@ -1145,45 +1069,6 @@ export const TechJobsTab: React.FC = () => {
             </div>
           )}
 
-          {(jobPhase === 'on_site' || jobPhase === 'complete') && (
-            <div className="space-y-2 border border-white/10 rounded-xl p-3 bg-[#0b0c10]">
-              <p className="text-[11px] font-bold text-slate-300 uppercase">Parts reimbursement</p>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Amount $"
-                value={expenseAmount}
-                onChange={(e) => setExpenseAmount(e.target.value)}
-                className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
-              />
-              <input
-                placeholder="Description (e.g. brake pads)"
-                value={expenseDesc}
-                onChange={(e) => setExpenseDesc(e.target.value)}
-                className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={expenseBusy}
-                  onClick={() => void handleSubmitExpense()}
-                  className="flex-1 py-2.5 bg-white/10 rounded-xl text-xs font-bold text-white disabled:opacity-60"
-                >
-                  {expenseBusy ? '…' : 'Submit claim'}
-                </button>
-                <button
-                  type="button"
-                  disabled={expenseBusy}
-                  onClick={() => void handleAttachReceiptAndSubmit()}
-                  className="flex-1 py-2.5 bg-sky-700 rounded-xl text-xs font-bold text-white disabled:opacity-60"
-                >
-                  + Receipt
-                </button>
-              </div>
-            </div>
-          )}
-
           {jobPhase === 'complete' && (
             <p className="text-xs text-emerald-400">Job complete. Returning to board…</p>
           )}
@@ -1220,23 +1105,6 @@ export const TechJobsTab: React.FC = () => {
             </div>
           )}
           {completedJobs.map((job) => renderCompletedCard(job))}
-        </div>
-      )}
-
-      {claims.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-white/10">
-          <p className="text-[11px] font-bold text-slate-300 uppercase">My parts claims</p>
-          {claims.slice(0, 10).map((c) => (
-            <div
-              key={c.id}
-              className="flex justify-between gap-2 text-[11px] text-slate-400 bg-[#12141c] border border-white/5 rounded-lg px-3 py-2"
-            >
-              <span>
-                ${(c.amountCents / 100).toFixed(2)} · {c.description}
-              </span>
-              <span className="font-bold text-slate-300 uppercase shrink-0">{c.status}</span>
-            </div>
-          ))}
         </div>
       )}
     </div>
