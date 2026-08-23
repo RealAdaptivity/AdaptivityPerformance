@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { adminAuth } from '../_shared/adminAuth.ts';
+import { requireAdminUser } from '../_shared/adminAuth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +12,7 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const authResult = await adminAuth(req);
+  const authResult = await requireAdminUser(req);
   if (!authResult.ok) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
@@ -27,17 +27,19 @@ Deno.serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Fetch all auth users (paginated up to 1000)
+    // Fetch all auth users
     const { data, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
     if (error) throw new Error(error.message);
 
-    // Return map of userId -> last_sign_in_at
-    const result: Record<string, string | null> = {};
+    // Return map of userId -> { lastSignInAt, email }
+    const lastSignIn: Record<string, string | null> = {};
+    const authEmails: Record<string, string | null> = {};
     for (const user of data.users) {
-      result[user.id] = user.last_sign_in_at ?? null;
+      lastSignIn[user.id] = user.last_sign_in_at ?? null;
+      authEmails[user.id] = user.email ?? null;
     }
 
-    return new Response(JSON.stringify({ ok: true, lastSignIn: result }), {
+    return new Response(JSON.stringify({ ok: true, lastSignIn, authEmails }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

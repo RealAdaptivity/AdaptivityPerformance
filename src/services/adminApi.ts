@@ -151,12 +151,16 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
     });
   }
 
-  // Enrich with last login from auth
+  // Enrich with last login and auth email from auth.users
   try {
-    const loginData = await invokeEdgeFunction<{ ok: boolean; lastSignIn: Record<string, string | null> }>('admin-get-last-logins', {});
+    const loginData = await invokeEdgeFunction<{ ok: boolean; lastSignIn: Record<string, string | null>; authEmails: Record<string, string | null> }>('admin-get-last-logins', {});
     if (loginData.ok && loginData.lastSignIn) {
       for (const tech of byId.values()) {
         tech.lastSignInAt = loginData.lastSignIn[tech.id] ?? null;
+        // Backfill email from auth if missing in profile
+        if (!tech.email && loginData.authEmails?.[tech.id]) {
+          tech.email = loginData.authEmails[tech.id];
+        }
       }
     }
   } catch {
