@@ -423,7 +423,18 @@ export const DispatchConsole: React.FC = () => {
                     return (
                       <tr key={p.id} className="hover:bg-white/[0.02]">
                         <td className="px-4 py-3 font-mono text-orange-200/90">
-                          {p.bookingReference || '—'}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span>{p.bookingReference || '—'}</span>
+                            {p.isTest ? (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
+                                TEST
+                              </span>
+                            ) : (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                                LIVE
+                              </span>
+                            )}
+                          </div>
                           {p.payoutError ? (
                             <p className="text-[10px] text-amber-400/90 mt-1 max-w-[180px]">{p.payoutError}</p>
                           ) : null}

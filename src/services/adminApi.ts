@@ -61,6 +61,7 @@ export type AdminPaymentRow = {
   stripeTransferId: string | null;
   techStripeAccountId: string | null;
   createdAt: string;
+  isTest?: boolean;
 };
 
 export async function fetchAdminBookings(): Promise<Booking[]> {
@@ -161,9 +162,8 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
   const { data, error } = await supabase
     .from('payments')
     .select(
-      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, stripe_transfer_id, tech_stripe_account_id, tech_transfer_cents, created_at'
+      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, stripe_transfer_id, tech_stripe_account_id, tech_transfer_cents, created_at, is_test'
     )
-    .eq('is_test', false)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -180,6 +180,7 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
     stripeTransferId: (row.stripe_transfer_id as string | null) ?? null,
     techStripeAccountId: row.tech_stripe_account_id as string | null,
     createdAt: row.created_at as string,
+    isTest: Boolean(row.is_test),
   }));
 }
 
