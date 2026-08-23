@@ -71,6 +71,17 @@ function formatMoney(cents: number | null | undefined) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function getAssignedTechName(b: Booking, techs: DispatchTech[]): string {
+  if (b.claimedBy?.id) {
+    const found = techs.find((t) => t.id === b.claimedBy?.id);
+    if (found?.name) return found.name;
+  }
+  if (b.claimedBy?.name && b.claimedBy.name !== 'Technician') {
+    return b.claimedBy.name;
+  }
+  return b.claimedBy ? b.claimedBy.name : 'Unassigned';
+}
+
 export const DispatchConsole: React.FC = () => {
   const [tab, setTab] = useState<TabId>('dispatch');
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -275,8 +286,11 @@ export const DispatchConsole: React.FC = () => {
                           </div>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1 truncate">{b.vehicle}</p>
-                        <p className="text-[11px] text-slate-500">
-                          {b.claimedBy ? b.claimedBy.name : 'Unassigned'} · ${b.totalEstimate.toFixed(2)}
+                        <p className="text-[11px] text-slate-400">
+                          <span className={b.claimedBy ? 'text-orange-400 font-semibold' : 'text-slate-500'}>
+                            {b.claimedBy ? `👨‍🔧 ${getAssignedTechName(b, techs)}` : 'Unassigned'}
+                          </span>{' '}
+                          · ${b.totalEstimate.toFixed(2)}
                         </p>
                       </button>
                     </li>

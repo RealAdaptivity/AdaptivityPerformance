@@ -54,6 +54,16 @@ export function rowToBooking(row: BookingRow): Booking {
       rating: row.mechanic.mechanic_details?.rating ?? 4.9,
       stripeAccountId: row.mechanic.mechanic_details?.stripe_account_id ?? null,
     };
+  } else if (row.mechanic_id) {
+    claimedBy = {
+      id: row.mechanic_id,
+      name: 'Technician',
+      role: 'Mobile Technician',
+      vanNumber: 'Mobile Unit',
+      phone: '',
+      rating: 5.0,
+      stripeAccountId: null,
+    };
   }
 
   return {
