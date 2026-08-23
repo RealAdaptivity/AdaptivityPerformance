@@ -12,38 +12,6 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) => {
   return (
     <footer className="bg-[#08090d] text-slate-400 text-xs border-t border-white/10 pt-16 pb-12 relative overflow-hidden">
-      
-      {/* Emergency Hotline Banner */}
-      <div className="container mx-auto px-4 mb-16">
-        <div className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 p-6 sm:p-8 rounded-3xl shadow-2xl shadow-orange-500/20 text-white flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-1 text-center md:text-left">
-            <span className="text-[10px] bg-black/30 px-3 py-1 rounded-full font-extrabold uppercase tracking-widest text-amber-200">
-              Emergency Roadside Dispatch
-            </span>
-            <h3 className="font-heading text-2xl sm:text-3xl font-extrabold">Stranded in DFW or Fort Worth?</h3>
-            <p className="text-sm text-amber-100 max-w-xl">
-              Dead battery, flat tire, or sudden check engine light on I-35W / FM 407? Mobile unit available for rapid dispatch.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            <a
-              href={SITE_PHONE_TEL}
-              className="w-full sm:w-auto px-6 py-3.5 bg-black hover:bg-slate-900 text-white font-extrabold text-sm rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2"
-            >
-              <Phone className="w-4 h-4 text-orange-400" />
-              <span>Call {SITE_PHONE_DISPLAY}</span>
-            </a>
-            <button
-              onClick={onOpenBooking}
-              className="w-full sm:w-auto px-6 py-3.5 bg-white text-orange-600 hover:bg-slate-100 font-extrabold text-sm rounded-xl transition-all shadow-lg"
-            >
-              Book Mobile Van Now
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
         
         {/* Brand */}
@@ -97,7 +65,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">DFW / Fort Worth coverage</SiteLink></li>
             <li><SiteLink to="performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</SiteLink></li>
             <li><SiteLink to="faq" className="hover:text-orange-400 transition-colors">FAQ</SiteLink></li>
-            <li><SiteLink to="blog" className="hover:text-orange-400 transition-colors">Blog</SiteLink></li>
+            <li><button onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Book Service Online</button></li>
             <li><button onClick={onOpenTracker} className="text-orange-400 hover:underline">Track Live Repair / Dispatch</button></li>
           </ul>
         </div>
