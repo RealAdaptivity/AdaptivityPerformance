@@ -24,7 +24,7 @@ import { todayISODate } from '../../services/scheduleWindows';
 import { JobChatPanel } from '../../components/JobChatPanel';
 
 type LineDraft = { title: string; laborDollars: string; partsDollars: string };
-type JobsFilter = 'today' | 'available' | 'active';
+type JobsFilter = 'today' | 'available' | 'active' | 'completed';
 
 function googleMapsDirectionsUrl(address: string): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
@@ -67,7 +67,7 @@ export const TechJobsTab: React.FC = () => {
     try {
       setIsRefreshing(true);
       const rows = await fetchDispatchBookings();
-      setJobs(rows.filter((j) => j.status !== 'COMPLETED' && j.status !== 'CANCELED'));
+      setJobs(rows.filter((j) => j.status !== 'CANCELED'));
     } catch (e: unknown) {
       setMessage(e instanceof Error ? e.message : 'Failed to load jobs');
     } finally {
@@ -129,6 +129,13 @@ export const TechJobsTab: React.FC = () => {
     const isUnclaimed = !j.mechanicId || j.status === 'UNASSIGNED';
     if (!isMine && !isUnclaimed) return false; // Claimed by another tech -> Hide!
     return isTodaysJob(j, today);
+  });
+
+  // COMPLETED: Finished jobs completed by THIS logged-in technician
+  const completedJobs = jobs.filter((j) => {
+    if (j.status !== 'COMPLETED') return false;
+    if (!mechanicId) return true;
+    return j.mechanicId === mechanicId;
   });
 
   const openNavigate = (address: string) => {
@@ -566,6 +573,66 @@ export const TechJobsTab: React.FC = () => {
     );
   };
 
+  const renderCompletedCard = (job: DispatchBooking) => {
+    return (
+      <div key={job.id} className="rounded-xl border border-white/10 bg-[#12141c] p-3.5 space-y-2.5 shadow-md">
+        <div className="flex justify-between items-start gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-bold text-white">{job.customer}</p>
+              <span className="text-[10px] font-mono font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
+                #{job.referenceCode}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 font-medium">{job.vehicle}</p>
+            {job.preferredDate && (
+              <p className="text-[11px] text-slate-400 mt-0.5">Date: {job.preferredDate}</p>
+            )}
+            <p className="text-[11px] text-slate-400 mt-0.5">{job.address}</p>
+            <p className="text-[11px] text-slate-500">{job.services.join(' · ')}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
+              ✓ Completed
+            </span>
+            {job.total > 0 && (
+              <p className="text-xs font-mono font-black text-white mt-1.5">
+                ${job.total.toFixed(2)}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Action and status footer */}
+        <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[11px]">
+          <div className="flex items-center gap-3">
+            {job.phone && (
+              <a
+                href={`tel:${job.phone}`}
+                className="text-orange-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <Phone className="w-3 h-3" />
+                <span>Call</span>
+              </a>
+            )}
+            {job.phone && (
+              <a
+                href={`sms:${job.phone}`}
+                className="text-purple-400 hover:underline flex items-center gap-1 font-semibold"
+              >
+                <MessageSquare className="w-3 h-3" />
+                <span>SMS</span>
+              </a>
+            )}
+          </div>
+          <span className="text-[10px] font-bold text-emerald-400/90 uppercase tracking-wider">
+            {job.paymentStatus === 'captured' ? '💳 Payment Captured' : 'Archived'}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) return <p className="text-xs text-slate-500">Loading dispatch board…</p>;
 
   return (
@@ -576,20 +643,21 @@ export const TechJobsTab: React.FC = () => {
         </p>
       )}
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
         <div className="flex gap-2">
           {(
             [
               ['today', `Today (${todayJobs.length})`],
               ['available', `Available (${available.length})`],
               ['active', 'Active'],
+              ['completed', `Completed (${completedJobs.length})`],
             ] as const
           ).map(([f, label]) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-colors shrink-0 ${
                 filter === f ? 'bg-orange-500 text-white' : 'bg-white/5 text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -1136,6 +1204,23 @@ export const TechJobsTab: React.FC = () => {
         <p className="text-xs text-slate-500 text-center py-8">
           Claim a job from Available to start dispatch.
         </p>
+      )}
+
+      {filter === 'completed' && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] text-slate-400 font-bold uppercase">
+              Completed & Invoiced Jobs ({completedJobs.length})
+            </p>
+          </div>
+          {completedJobs.length === 0 && (
+            <div className="text-center py-8 bg-white/5 rounded-xl border border-white/10 space-y-1">
+              <p className="text-xs text-slate-300 font-semibold">No completed jobs yet.</p>
+              <p className="text-[11px] text-slate-500">Jobs you complete and invoice will appear here for reference.</p>
+            </div>
+          )}
+          {completedJobs.map((job) => renderCompletedCard(job))}
+        </div>
       )}
 
       {claims.length > 0 && (
