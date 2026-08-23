@@ -55,9 +55,9 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             </div>
             <h3 className="font-heading text-xl font-extrabold text-white">How we serve customers</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Book mobile service to your driveway or drop off at our Justin hub / partner shops. You get
-              tech-set pricing on site, $85 card holds instead of surprise bills, live job tracking, and
-              ASE-minded techs across repair, tint, audio, detailing, body work, and more.
+              Book mobile service directly to your driveway or workplace. You get transparent
+              tech-set pricing on-site, $85 card holds instead of surprise dealership markups, live repair tracking, and
+              certified master techs across repairs, brakes, batteries, diagnostics, and maintenance.
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[

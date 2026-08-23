@@ -87,29 +87,32 @@ export const Navbar: React.FC<NavbarProps> = ({
     }`;
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0b0c10]/90 backdrop-blur-md border-b border-white/10">
+    <header className="sticky top-0 z-50 bg-[#07080b]/90 backdrop-blur-xl border-b border-white/10 shadow-lg">
       <div className="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white text-xs py-1.5 px-4 font-medium">
         <div className="container mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center space-x-2 min-w-0">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
             <span className="truncate">
-              <strong>NOW ACTIVE:</strong> Mobile Service across <strong>DFW</strong> & <strong>Fort Worth</strong>
+              <strong>NOW ACTIVE:</strong> 100% Mobile Service Dispatched across <strong>DFW</strong> & <strong>Fort Worth</strong>
             </span>
           </div>
-          <span className="hidden sm:flex items-center space-x-1 flex-shrink-0 opacity-90">
+          <span className="hidden sm:flex items-center space-x-1.5 flex-shrink-0 opacity-95 text-[11px] font-bold">
             <Clock className="w-3.5 h-3.5" />
-            <span>Open 24/7</span>
+            <span>24/7 Mobile Dispatch</span>
           </span>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-3.5 flex items-center justify-between gap-3">
+      <div className="container mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
         <SiteLink to="home" className="group min-w-0">
           <BrandLogo withWordmark size={40} />
         </SiteLink>
 
-        <div className="relative flex items-center gap-1.5 sm:gap-2" ref={menuRef}>
-          <nav className="hidden lg:flex items-center gap-0.5 text-sm font-medium text-slate-300">
+        <div className="relative flex items-center gap-2 sm:gap-3" ref={menuRef}>
+          <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-300">
+            <SiteLink to="home" className={linkClass('home')}>
+              Home
+            </SiteLink>
             <SiteLink to="services" className={linkClass('services')}>
               Services
             </SiteLink>
@@ -117,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               About
             </SiteLink>
             <SiteLink to="quotes" className={linkClass('quotes')}>
-              Quotes
+              Price Quotes
             </SiteLink>
             <SiteLink
               to="join"
@@ -128,18 +131,23 @@ export const Navbar: React.FC<NavbarProps> = ({
               <UserPlus className="w-3.5 h-3.5" />
               Join as Tech
             </SiteLink>
-            <SiteLink to="careers" className={linkClass('careers')}>
-              Careers
-            </SiteLink>
           </nav>
+
+          <a
+            href={SITE_PHONE_TEL}
+            className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-orange-400 px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-orange-500/30 transition-colors"
+          >
+            <Phone className="w-3.5 h-3.5 text-orange-400" />
+            <span>{SITE_PHONE_DISPLAY}</span>
+          </a>
 
           <button
             type="button"
             onClick={onOpenBooking}
-            className="hidden sm:inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-xl shadow-lg shadow-orange-500/25"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
           >
             <Calendar className="w-4 h-4" />
-            Schedule / Call for Quote
+            <span>Book Service Now</span>
           </button>
 
           <button
@@ -147,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((o) => !o)}
-            className="text-slate-200 hover:text-white p-2 rounded-lg border border-white/10 hover:border-orange-500/40 hover:bg-white/5 transition-colors"
+            className="text-slate-200 hover:text-white p-2.5 rounded-xl border border-white/10 hover:border-orange-500/40 hover:bg-white/5 transition-colors"
           >
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
