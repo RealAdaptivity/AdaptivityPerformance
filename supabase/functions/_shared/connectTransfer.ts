@@ -12,12 +12,16 @@ export type ConnectTransferResult = {
   payoutStatus: string;
 };
 
-async function stripeAccountLive(accountId: string): Promise<boolean> {
+async function checkStripeAccountStatus(accountId: string): Promise<'valid' | 'missing' | 'error'> {
   try {
     await stripeRequest(`/accounts/${accountId}`, 'GET');
-    return true;
-  } catch {
-    return false;
+    return 'valid';
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('No such account') || msg.includes('resource_missing') || msg.includes('404')) {
+      return 'missing';
+    }
+    return 'error';
   }
 }
 
@@ -35,11 +39,12 @@ export async function resolveTechStripeAccountId(
     .maybeSingle();
 
   const stored = details?.stripe_account_id;
-  if (typeof stored === 'string' && stored.startsWith('acct_') && (await stripeAccountLive(stored))) {
-    return stored;
-  }
-
   if (typeof stored === 'string' && stored.startsWith('acct_')) {
+    const status = await checkStripeAccountStatus(stored);
+    if (status === 'valid' || status === 'error') {
+      return stored;
+    }
+    // Only wipe stored account if Stripe explicitly returned 404 (No such account)
     await supabase
       .from('mechanic_details')
       .update({ stripe_account_id: null })
