@@ -175,12 +175,22 @@ export const TechJobsTab: React.FC = () => {
     await loadJobs();
   };
 
+  const [includeDiagnosticFee, setIncludeDiagnosticFee] = useState(false);
+  const [mileageFee, setMileageFee] = useState('');
+  const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
+
   const laborSubtotal = lines.reduce((s, l) => s + (Number(l.laborDollars) || 0), 0);
   const partsSubtotal = lines.reduce((s, l) => s + (Number(l.partsDollars) || 0), 0);
-  const repairsSubtotal = laborSubtotal + partsSubtotal;
+  const mileageTotal = Number(mileageFee) || 0;
+  const repairsSubtotal = laborSubtotal + partsSubtotal + mileageTotal;
   const holdDollars = (activeJob?.holdAmountCents ?? 8500) / 100;
-  const salesTaxDollars = Math.round(partsSubtotal * 0.0825 * 100) / 100;
-  const chargeTotal = holdDollars + repairsSubtotal + salesTaxDollars;
+  const appliedDiagnosticDollars = includeDiagnosticFee ? holdDollars : 0;
+  const subtotalBeforeTax = appliedDiagnosticDollars + repairsSubtotal;
+
+  const taxableBase = taxMode === 'parts' ? partsSubtotal : taxMode === 'total' ? subtotalBeforeTax : 0;
+  const salesTaxDollars = Math.round(taxableBase * 0.0825 * 100) / 100;
+  const chargeTotal = subtotalBeforeTax + salesTaxDollars;
+  const techShare70 = Math.round(chargeTotal * 0.70 * 100) / 100;
 
   const finishJob = () => {
     setBusy(false);
@@ -311,14 +321,22 @@ export const TechJobsTab: React.FC = () => {
       }))
       .filter((l) => l.title && l.laborDollars + l.partsDollars > 0);
 
-    if (!lineItems.length) {
+    if (!lineItems.length && !includeDiagnosticFee) {
       setMessage('Add labor/parts lines for the agreed repair price, or tap Diagnostic only / No-show.');
       return;
     }
 
+    if (mileageTotal > 0) {
+      lineItems.push({
+        title: 'Mileage / Travel Fee',
+        laborDollars: mileageTotal,
+        partsDollars: 0,
+      });
+    }
+
     if (salesTaxDollars > 0) {
       lineItems.push({
-        title: 'Texas Sales Tax (8.25% on parts)',
+        title: `Texas Sales Tax (8.25%${taxMode === 'parts' ? ' on parts' : ''})`,
         laborDollars: 0,
         partsDollars: salesTaxDollars,
       });
@@ -332,6 +350,7 @@ export const TechJobsTab: React.FC = () => {
         lineItems,
         techNotes,
         customerAgreedOnSite: true,
+        includeDiagnosticFee,
       });
       setJobPhase('complete');
       if (result.transferWarning) {
@@ -345,7 +364,7 @@ export const TechJobsTab: React.FC = () => {
       }
       await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge', {
         lines: lineItems,
-        diagnosticDollars: holdDollars,
+        diagnosticDollars: appliedDiagnosticDollars,
         salesTaxDollars,
       });
       finishJob();
@@ -670,120 +689,246 @@ export const TechJobsTab: React.FC = () => {
           )}
 
           {jobPhase === 'on_site' && (
-            <div className="space-y-3 border border-white/10 rounded-xl p-3 bg-[#0b0c10]">
-              <p className="text-[11px] font-bold text-slate-300 uppercase">Set price (labor + parts)</p>
-              <p className="text-[10px] text-slate-500">
-                Agree the price with the customer on site, then charge. Adaptivity takes 30%; you keep 70% +
-                tips.
-              </p>
-              {lines.map((line, idx) => (
-                <div key={idx} className="space-y-1.5 border-b border-white/5 pb-2">
-                  <input
-                    placeholder="Line title (e.g. Front brake pads)"
-                    value={line.title}
-                    onChange={(e) => {
-                      const next = [...lines];
-                      next[idx] = { ...next[idx], title: e.target.value };
-                      setLines(next);
-                    }}
-                    className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-4 border border-orange-500/30 rounded-2xl p-4 bg-[#0b0c10] shadow-xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <div>
+                  <p className="text-xs font-black uppercase text-white tracking-wider">
+                    On-Site Invoice & Final Charge
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    Set price on-site, or Dispatch can charge from Admin console.
+                  </p>
+                </div>
+                <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                  ${chargeTotal.toFixed(2)}
+                </span>
+              </div>
+
+              {/* 1. Diagnostic Hold (Waive vs Charge $85) */}
+              <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-300">
+                    🔍 Mobile Diagnostic Hold ($85 on file)
+                  </span>
+                  <span className="font-mono font-bold text-white">
+                    {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setIncludeDiagnosticFee(false)}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                      !includeDiagnosticFee
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    ✓ Waive Fee / Release Hold
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIncludeDiagnosticFee(true)}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                      includeDiagnosticFee
+                        ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    + Charge $85 Diag Fee
+                  </button>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  {!includeDiagnosticFee
+                    ? 'Free diagnostic with repair — the $85 card hold is released/applied toward repairs with no extra diagnostic fee.'
+                    : 'The $85 diagnostic visit fee is charged on top of labor & parts.'}
+                </p>
+              </div>
+
+              {/* 2. Labor & Parts Line Items */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] uppercase font-bold text-slate-400">Repair Lines (Labor & Parts)</p>
+                  <button
+                    type="button"
+                    onClick={() => setLines([...lines, { title: '', laborDollars: '', partsDollars: '' }])}
+                    className="text-[10px] font-bold text-orange-400 hover:text-orange-300"
+                  >
+                    + Add Line
+                  </button>
+                </div>
+                {lines.map((line, idx) => (
+                  <div key={idx} className="space-y-1.5 bg-[#12141c] border border-white/10 rounded-xl p-2.5">
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="Labor $"
-                      value={line.laborDollars}
+                      placeholder="Line title (e.g. Front Brake Pads & Rotors)"
+                      value={line.title}
                       onChange={(e) => {
                         const next = [...lines];
-                        next[idx] = { ...next[idx], laborDollars: e.target.value };
+                        next[idx] = { ...next[idx], title: e.target.value };
                         setLines(next);
                       }}
-                      className="bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+                      className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
                     />
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Labor $"
+                          value={line.laborDollars}
+                          onChange={(e) => {
+                            const next = [...lines];
+                            next[idx] = { ...next[idx], laborDollars: e.target.value };
+                            setLines(next);
+                          }}
+                          className="w-full bg-[#0b0c10] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
+                        />
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Parts $"
+                          value={line.partsDollars}
+                          onChange={(e) => {
+                            const next = [...lines];
+                            next[idx] = { ...next[idx], partsDollars: e.target.value };
+                            setLines(next);
+                          }}
+                          className="w-full bg-[#0b0c10] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* 3. Mileage / Travel Fee */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] uppercase font-bold text-slate-400">Mileage / Travel Fee (Optional)</p>
+                <div className="flex gap-2 items-center">
+                  <input
+                    placeholder="Trip fee description"
+                    defaultValue="Mobile travel fee"
+                    className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                  />
+                  <div className="w-24 relative">
+                    <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="Parts $"
-                      value={line.partsDollars}
-                      onChange={(e) => {
-                        const next = [...lines];
-                        next[idx] = { ...next[idx], partsDollars: e.target.value };
-                        setLines(next);
-                      }}
-                      className="bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
+                      placeholder="0.00"
+                      value={mileageFee}
+                      onChange={(e) => setMileageFee(e.target.value)}
+                      className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
                     />
                   </div>
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => setLines([...lines, { title: '', laborDollars: '', partsDollars: '' }])}
-                className="text-[11px] text-orange-400 font-bold"
-              >
-                + Add line
-              </button>
+              </div>
+
+              {/* 4. Texas Sales Tax (8.25%) */}
+              <div className="space-y-1.5 bg-white/5 rounded-xl p-3 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] uppercase font-bold text-slate-300">
+                    🏛️ Texas Sales Tax (8.25%)
+                  </p>
+                  <span className="font-mono text-xs font-bold text-amber-300">
+                    +${salesTaxDollars.toFixed(2)}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setTaxMode('parts')}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                      taxMode === 'parts'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    Parts (8.25%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaxMode('total')}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                      taxMode === 'total'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    Total (8.25%)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaxMode('none')}
+                    className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                      taxMode === 'none'
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    Exempt (0%)
+                  </button>
+                </div>
+              </div>
+
               <textarea
-                placeholder="Notes (optional)"
+                placeholder="Tech invoice notes (optional)"
                 value={techNotes}
                 onChange={(e) => setTechNotes(e.target.value)}
                 rows={2}
                 className="w-full bg-[#12141c] border border-white/10 rounded-lg px-3 py-2 text-xs text-white"
               />
 
-              {/* Itemized charge preview — show customer before charging */}
+              {/* Itemized charge preview */}
               <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
                 <p className="text-[11px] font-bold text-emerald-300 uppercase tracking-wide">
-                  Itemized charge (show customer)
+                  Itemized Charge Summary
                 </p>
                 <div className="flex justify-between gap-2 text-[11px] text-slate-300">
-                  <span>Mobile diagnostic visit</span>
-                  <span className="font-mono text-white shrink-0">${holdDollars.toFixed(2)}</span>
+                  <span>Diagnostic Fee:</span>
+                  <span className="font-mono text-white shrink-0">
+                    {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
+                  </span>
                 </div>
-                {lines
-                  .map((l) => {
-                    const labor = Number(l.laborDollars) || 0;
-                    const parts = Number(l.partsDollars) || 0;
-                    const title = l.title.trim();
-                    if (!title || labor + parts <= 0) return null;
-                    return { title, labor, parts, total: labor + parts };
-                  })
-                  .filter(Boolean)
-                  .map((row, i) =>
-                    row ? (
-                      <div key={i} className="space-y-0.5">
-                        <div className="flex justify-between gap-2 text-[11px] text-slate-300">
-                          <span>{row.title}</span>
-                          <span className="font-mono text-white shrink-0">${row.total.toFixed(2)}</span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 pl-1">
-                          Labor ${row.labor.toFixed(2)}
-                          {row.parts > 0 ? ` · Parts $${row.parts.toFixed(2)}` : ''}
-                        </p>
-                      </div>
-                    ) : null
-                  )}
-                {salesTaxDollars > 0 && (
+                {laborSubtotal > 0 && (
                   <div className="flex justify-between gap-2 text-[11px] text-slate-300">
-                    <span>Texas Sales Tax (8.25% on parts)</span>
-                    <span className="font-mono text-white shrink-0">${salesTaxDollars.toFixed(2)}</span>
+                    <span>Labor Subtotal:</span>
+                    <span className="font-mono text-white shrink-0">${laborSubtotal.toFixed(2)}</span>
                   </div>
                 )}
-                {repairsSubtotal <= 0 && (
-                  <p className="text-[10px] text-amber-300/90">
-                    Add repair lines above, or use Diagnostic only / No-show below.
-                  </p>
+                {partsSubtotal > 0 && (
+                  <div className="flex justify-between gap-2 text-[11px] text-slate-300">
+                    <span>Parts Subtotal:</span>
+                    <span className="font-mono text-white shrink-0">${partsSubtotal.toFixed(2)}</span>
+                  </div>
                 )}
-                <div className="flex justify-between gap-2 text-xs font-bold text-white pt-1.5 border-t border-white/10">
-                  <span>Total to charge</span>
-                  <span className="font-mono">${chargeTotal.toFixed(2)}</span>
+                {mileageTotal > 0 && (
+                  <div className="flex justify-between gap-2 text-[11px] text-slate-300">
+                    <span>Mileage / Travel:</span>
+                    <span className="font-mono text-white shrink-0">${mileageTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {salesTaxDollars > 0 && (
+                  <div className="flex justify-between gap-2 text-[11px] text-amber-300 font-semibold">
+                    <span>Texas Sales Tax (8.25%):</span>
+                    <span className="font-mono text-amber-300 shrink-0">+${salesTaxDollars.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between gap-2 text-sm font-black text-white pt-2 border-t border-white/10">
+                  <span>Customer Total:</span>
+                  <span className="font-mono text-emerald-400">${chargeTotal.toFixed(2)}</span>
                 </div>
-                <p className="text-[10px] text-slate-500">
-                  Includes ${holdDollars.toFixed(0)} diagnostic
-                  {repairsSubtotal > 0 ? ` + $${repairsSubtotal.toFixed(2)} repairs` : ''}
-                </p>
+                <div className="flex justify-between gap-2 text-xs font-bold text-orange-300 pt-1 border-t border-white/5">
+                  <span>👨‍🔧 Your 70% Share:</span>
+                  <span className="font-mono">${techShare70.toFixed(2)} (+ tips)</span>
+                </div>
               </div>
 
               <label className="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer">
@@ -798,30 +943,34 @@ export const TechJobsTab: React.FC = () => {
                   before I charge their card
                 </span>
               </label>
+
               <button
                 type="button"
                 disabled={busy || !customerAgreed}
                 onClick={() => void handleCharge()}
-                className="w-full py-3 bg-emerald-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl text-xs font-black uppercase text-white tracking-wider shadow-lg disabled:opacity-60 transition-all"
               >
-                {busy ? 'Charging…' : `Charge customer $${chargeTotal.toFixed(2)}`}
+                {busy ? 'Charging Card…' : `Charge Customer $${chargeTotal.toFixed(2)}`}
               </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleDiagnosticOnly()}
-                className="w-full py-2.5 bg-white/10 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60"
-              >
-                Diagnostic only ($85) — no repairs
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleNoShow()}
-                className="w-full py-2.5 bg-amber-500/15 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60"
-              >
-                No-show — capture $85 hold
-              </button>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleDiagnosticOnly()}
+                  className="py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60 transition-colors"
+                >
+                  Diag only ($85)
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void handleNoShow()}
+                  className="py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60 transition-colors"
+                >
+                  No-show ($85 hold)
+                </button>
+              </div>
             </div>
           )}
 
