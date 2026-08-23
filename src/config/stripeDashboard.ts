@@ -1,12 +1,7 @@
-/** Stripe Dashboard deep links (test vs live from publishable key). */
-const publishable =
-  (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_STRIPE_PUBLISHABLE_KEY ||
-  (import.meta as ImportMeta & { env?: Record<string, string> }).env
-    ?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  '';
+import { isStripeLive } from './stripeEnvironment';
 
 export function stripeDashboardMode(): 'test' | 'live' {
-  return publishable.startsWith('pk_live_') ? 'live' : 'test';
+  return isStripeLive() ? 'live' : 'test';
 }
 
 export function stripePaymentIntentDashboardUrl(paymentIntentId: string): string {

@@ -1,17 +1,13 @@
 import { loadStripe } from '@stripe/stripe-js';
+import { getActiveStripePublishableKey } from '../config/stripeEnvironment';
 
-// Initialize Stripe Publishable Key — never use a fake key in production builds
-const stripePublishableKey =
-  (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY ||
-  (import.meta.env.DEV ? 'pk_test_sample_adaptivity_key' : '');
-if (!stripePublishableKey && !import.meta.env.DEV) {
-  console.error('[Stripe] VITE_STRIPE_PUBLISHABLE_KEY is required for production builds');
-}
+// Initialize Stripe Publishable Key
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
 export const getStripe = () => {
   if (!stripePromise) {
-    stripePromise = loadStripe(stripePublishableKey);
+    const key = getActiveStripePublishableKey();
+    stripePromise = loadStripe(key);
   }
   return stripePromise;
 };
