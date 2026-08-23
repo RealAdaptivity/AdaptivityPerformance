@@ -1,7 +1,6 @@
 import React from 'react';
 import { AboutUsSection } from '../components/AboutUsSection';
 import { ServicesSection } from '../components/ServicesSection';
-import { QuoteEstimator } from '../components/QuoteEstimator';
 import { MembershipSection } from '../components/MembershipSection';
 import { DiagnosticAssistant } from '../components/DiagnosticAssistant';
 import { PartnerNetworkSection } from '../components/PartnerNetworkSection';
@@ -56,10 +55,11 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       );
     case 'quotes':
       return reveal(
-        <QuoteEstimator
-          defaultMode={actions.activeServiceMode}
-          onBookWithEstimate={actions.onBookWithEstimate}
-        />
+        <ServicesSection
+          onOpenBooking={actions.onOpenBooking}
+          onBookService={actions.onBookService}
+        />,
+        'scale'
       );
     case 'membership':
       return reveal(<MembershipSection onOpenMembership={actions.onOpenMembership} />);

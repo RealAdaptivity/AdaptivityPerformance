@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Wrench,
   Users,
-  Calculator,
   UserPlus,
   Building2,
   MapPin,
@@ -53,13 +52,6 @@ const LINKS: {
       blurb: 'Diagnostics, brakes, audio, tint, detailing, performance, and more.',
       icon: <Wrench className="w-5 h-5" />,
       accent: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
-    },
-    {
-      to: 'quotes',
-      title: 'Price Estimate',
-      blurb: 'Rough ballpark only — your tech sets the final labor + parts price on site.',
-      icon: <Calculator className="w-5 h-5" />,
-      accent: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
     },
     {
       to: 'membership',
