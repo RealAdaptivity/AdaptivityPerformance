@@ -22,27 +22,27 @@ export type SeoMeta = {
 
 export const PAGE_SEO: Record<string, SeoMeta> = {
   home: {
-    title: 'Adaptivity Performance | Mobile Mechanic Justin TX & Northlake Auto Repair',
+    title: 'Adaptivity Performance | Mechanic Shop & Mobile Auto Repair DFW',
     description:
-      `Mobile mechanic & auto repair for Justin, Northlake, and DFW. $85 diagnostic hold, on-site pricing, brakes, oil, diagnostics. Call ${SITE_PHONE_DISPLAY}.`,
+      `Top-rated mechanic shop & mobile auto repair serving Justin, Northlake, Denton, and Fort Worth DFW. On-site brake repair, diagnostics, starters, and oil changes. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/',
   },
   about: {
-    title: 'About Adaptivity Performance | DFW Mobile & Shop Auto Repair',
+    title: 'About Us | Premier Mechanic Shop & Mobile Auto Repair — Adaptivity',
     description:
-      'Independent techs, transparent pricing, and a Justin TX hub serving Northlake, Fort Worth, and North Texas.',
+      'Learn about Adaptivity Performance — Justin TX auto repair shop hub and mobile mechanic fleet delivering transparent on-site automotive care across DFW.',
     path: '/about',
   },
   services: {
-    title: 'Auto Services | Mobile Brakes, Oil, Diagnostics & More — Adaptivity',
+    title: 'Auto Repair Services | Mechanic Shop & Mobile Van Dispatch — Adaptivity',
     description:
-      'Browse DFW mobile and shop services. On-site labor + parts pricing after an $85 diagnostic hold.',
+      'Explore professional auto repair services: brake replacements, engine OBD diagnostics, battery & starter swaps, and synthetic oil changes at your driveway.',
     path: '/services',
   },
   contact: {
-    title: 'Contact Adaptivity Performance | Mobile Mechanic Dispatch DFW',
+    title: 'Contact Us | Auto Repair Mechanic Shop & Mobile Dispatch DFW',
     description:
-      `Get in touch with Adaptivity Performance for 24/7 mobile auto repair dispatch, quotes, and customer support. Call ${SITE_PHONE_DISPLAY}.`,
+      `Contact Adaptivity Performance for immediate mechanic shop dispatch, phone quotes, and 24/7 customer support across North Texas. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/contact',
   },
   quotes: {
