@@ -7,13 +7,6 @@ interface HeroProps {
   onSelectServiceMode?: (mode: 'mobile' | 'shop') => void;
 }
 
-const UPFRONT_CARDS = [
-  { title: 'Brakes', price: '$199', desc: 'Pads & rotors on-site' },
-  { title: 'Battery', price: '$175', desc: 'Swap & load test' },
-  { title: 'Starter', price: '$250', desc: 'Roadside & driveway' },
-  { title: 'Diagnostics', price: '$99', desc: '100% credited if repaired' },
-];
-
 export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
   return (
     <section className="relative pt-4 pb-14 overflow-hidden bg-[#07080b]">
@@ -68,45 +61,51 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
               </p>
             </div>
 
-            {/* CTAs Row */}
+            {/* CTAs Row with Prominent Call for Quote */}
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <a
+                href={SITE_PHONE_TEL}
+                className="w-full sm:w-auto flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm sm:text-base uppercase tracking-wider px-8 py-4 rounded-2xl shadow-2xl shadow-orange-500/30 transition-all transform hover:-translate-y-0.5 active:scale-95"
+              >
+                <Phone className="w-5 h-5 animate-pulse" />
+                <span>Call for Quote: {SITE_PHONE_DISPLAY}</span>
+              </a>
+
               <button
                 type="button"
                 onClick={onOpenBooking}
-                className="w-full sm:w-auto flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm sm:text-base uppercase tracking-wider px-8 py-4 rounded-2xl shadow-2xl shadow-orange-500/30 transition-all transform hover:-translate-y-0.5 active:scale-95"
+                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-[#07080b]/90 hover:bg-slate-800/90 text-slate-200 font-bold text-xs sm:text-sm px-6 py-4 rounded-2xl border border-white/15 hover:border-orange-500/40 backdrop-blur-md transition-colors"
               >
-                <Calendar className="w-4 h-4" />
-                <span>Request Service Now</span>
+                <Calendar className="w-4 h-4 text-orange-400" />
+                <span>Schedule Online</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-
-              <a
-                href={SITE_PHONE_TEL}
-                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-[#07080b]/90 hover:bg-slate-800/90 text-slate-200 font-bold text-xs sm:text-sm px-5 py-4 rounded-2xl border border-white/15 hover:border-orange-500/40 backdrop-blur-md transition-colors"
-              >
-                <Phone className="w-4 h-4 text-orange-400" />
-                <span>Call {SITE_PHONE_DISPLAY}</span>
-              </a>
             </div>
 
-            {/* 4 Upfront Price Cards Row */}
+            {/* 4 Call for Quote Service Cards Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
-              {UPFRONT_CARDS.map((card, idx) => (
-                <div
+              {[
+                { title: 'Brakes & Rotors', subtitle: 'Call for Quote', desc: 'Pads, rotors & fluid on-site' },
+                { title: 'Battery & Starting', subtitle: 'Call for Quote', desc: 'AGM swaps, starters & alternators' },
+                { title: 'Diagnostics', subtitle: 'Call for Quote', desc: 'Computer scan & check engine' },
+                { title: 'Maintenance', subtitle: 'Call for Quote', desc: 'Synthetic oil & tune-ups' },
+              ].map((card, idx) => (
+                <a
                   key={idx}
-                  onClick={onOpenBooking}
+                  href={SITE_PHONE_TEL}
                   className="p-3.5 rounded-2xl bg-[#07080b]/85 border border-white/15 hover:border-orange-500/50 cursor-pointer transition-all hover:-translate-y-0.5 shadow-lg space-y-1 text-left backdrop-blur-md group"
                 >
-                  <div className="text-[11px] font-bold text-slate-400 group-hover:text-orange-400 transition-colors">
+                  <div className="text-[11px] font-bold text-slate-300 group-hover:text-orange-400 transition-colors">
                     {card.title}
                   </div>
-                  <div className="text-xl font-black text-white">
-                    {card.price}
+                  <div className="text-sm font-black text-orange-400 flex items-center gap-1">
+                    <Phone className="w-3 h-3" />
+                    <span>{card.subtitle}</span>
                   </div>
                   <div className="text-[10px] text-slate-400 line-clamp-1">
                     {card.desc}
                   </div>
-                </div>
+                </a>
               ))}
             </div>
 

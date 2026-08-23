@@ -120,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               About
             </SiteLink>
             <SiteLink to="quotes" className={linkClass('quotes')}>
-              Price Quotes
+              Call for Quote
             </SiteLink>
             <SiteLink
               to="join"

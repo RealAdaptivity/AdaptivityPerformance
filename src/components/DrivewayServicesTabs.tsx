@@ -9,7 +9,8 @@ import {
   ArrowRight,
   MapPin,
   Clock,
-  ShieldCheck
+  ShieldCheck,
+  Phone
 } from 'lucide-react';
 
 interface DrivewayServicesTabsProps {
@@ -192,11 +193,12 @@ export const DrivewayServicesTabs: React.FC<DrivewayServicesTabsProps> = ({ onOp
 
             <div className="lg:col-span-5 flex flex-col justify-between p-6 rounded-2xl bg-black/60 border border-white/10 space-y-5">
               <div className="space-y-1">
-                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Transparent Upfront Pricing</div>
-                <div className="text-3xl font-black text-white">
-                  From {activeTab.startingPrice}
-                  <span className="text-xs font-normal text-slate-400 ml-1.5">parts + labor</span>
+                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Direct Phone Quote</div>
+                <div className="text-2xl sm:text-3xl font-black text-orange-400 flex items-center gap-2">
+                  <Phone className="w-6 h-6 animate-pulse" />
+                  <span>Call for Quote</span>
                 </div>
+                <p className="text-[11px] text-slate-400">Get an instant exact price based on your vehicle's year, make & model.</p>
               </div>
 
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/5 space-y-1.5 text-xs text-slate-400">
@@ -207,14 +209,24 @@ export const DrivewayServicesTabs: React.FC<DrivewayServicesTabsProps> = ({ onOp
                 <p className="text-[11px] leading-relaxed">All replacement parts and on-site labor are 100% backed nationwide.</p>
               </div>
 
-              <button
-                type="button"
-                onClick={onOpenBooking}
-                className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
-              >
-                <span>Schedule This Service</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="space-y-2">
+                <a
+                  href="tel:9403040620"
+                  className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm uppercase tracking-wider shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>Call (940) 304-0620</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={onOpenBooking}
+                  className="w-full py-3 px-6 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 font-bold text-xs uppercase tracking-wider border border-white/10 transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>Or Schedule Online</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
           </div>
