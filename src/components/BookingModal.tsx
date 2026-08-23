@@ -296,8 +296,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         {/* Step Indicator Bar */}
         <div className="bg-[#0b0c10] px-6 py-3 border-b border-white/5 flex items-center justify-between text-xs">
           {[
-            { num: 1, label: 'Vehicle & Service' },
-            { num: 2, label: 'Location & Time' },
+            { num: 1, label: 'Vehicle Info' },
+            { num: 2, label: 'Driveway Location' },
             { num: 3, label: 'Card Hold ($85)' },
           ].map((s) => (
             <div
@@ -354,41 +354,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   onChange={e => setVehicle(e.target.value)}
                   className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-3 text-sm text-white focus:border-orange-500 focus:outline-none"
                   placeholder="e.g. 2021 Ford F-150 / 2019 Chevy Tahoe / 2020 Honda Civic"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Select Service Needed</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2">
-                  {[
-                    'Brake Pads & Rotors',
-                    'Battery Swap / No-Start',
-                    'Starter / Alternator',
-                    'Check Engine OBD-II Scan',
-                    'Synthetic Oil & Filter',
-                    'AC Recharge & Diagnostic',
-                  ].map((srv) => (
-                    <button
-                      key={srv}
-                      type="button"
-                      onClick={() => setServiceRequested(srv)}
-                      className={`p-2 rounded-xl text-left text-xs font-semibold transition-all ${
-                        serviceRequested.includes(srv)
-                          ? 'bg-orange-500 text-white font-bold shadow-md shadow-orange-500/25'
-                          : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/5'
-                      }`}
-                    >
-                      {srv}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={serviceRequested}
-                  onChange={e => setServiceRequested(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="Or type custom description (e.g. squeaking brakes, car won't start)"
                 />
               </div>
 
