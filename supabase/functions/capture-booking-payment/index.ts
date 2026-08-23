@@ -1,3 +1,4 @@
+/// <reference path="../deno.d.ts" />
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
@@ -20,7 +21,7 @@ type LineItemIn = {
  * - mode "diagnostic_only": customer declined repairs; capture hold only
  * No customer quote-approval gate.
  */
-Deno.serve(async (req) => {
+Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
@@ -267,7 +268,7 @@ Deno.serve(async (req) => {
         .select('amount_cents')
         .eq('profile_id', booking.customer_id);
       const balance = (creditRows || []).reduce(
-        (sum, r) => sum + (Number(r.amount_cents) || 0),
+        (sum: number, r: { amount_cents?: number | string }) => sum + (Number(r.amount_cents) || 0),
         0
       );
       creditAppliedCents = Math.max(0, Math.min(balance, totalChargeCents));
@@ -477,7 +478,7 @@ Deno.serve(async (req) => {
           .select('expo_push_token')
           .eq('profile_id', booking.customer_id);
         const pushTokens = (tokens || [])
-          .map((t) => t.expo_push_token as string)
+          .map((t: { expo_push_token?: string }) => t.expo_push_token as string)
           .filter(Boolean);
         if (pushTokens.length) {
           await sendExpoPush(pushTokens, {
