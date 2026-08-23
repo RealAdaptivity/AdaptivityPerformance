@@ -262,6 +262,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fire-and-forget: notify Teams channel of new booking
+    const teamsWebhookUrl = Deno.env.get('TEAMS_WEBHOOK_URL');
+    if (teamsWebhookUrl) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      fetch(`${supabaseUrl}/functions/v1/notify-teams-new-booking`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({ bookingId: booking.id }),
+      }).catch((e) => console.error('[Teams notify] failed:', e));
+    }
+
     return jsonResponse({
       bookingReference: booking.reference_code,
       bookingId: booking.id,
