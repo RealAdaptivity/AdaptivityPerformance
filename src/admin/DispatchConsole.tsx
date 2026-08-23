@@ -609,6 +609,8 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     { title: 'Replacement Parts', amount: '' },
   ]);
   const [mileageFee, setMileageFee] = useState('');
+  const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
+  const taxRatePercent = '8.25';
   const [dispatchInvoiceNotes, setDispatchInvoiceNotes] = useState('');
   const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
   const [isChargingInvoice, setIsChargingInvoice] = useState(false);
@@ -617,14 +619,22 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const laborTotal = laborLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
   const partsTotal = partsLines.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const mileageTotal = Number(mileageFee) || 0;
-  const invoiceGrandTotal = holdDollars + laborTotal + partsTotal + mileageTotal;
+  const subtotalBeforeTax = holdDollars + laborTotal + partsTotal + mileageTotal;
+
+  const currentTaxRate = (Number(taxRatePercent) || 8.25) / 100;
+  const taxableBase =
+    taxMode === 'parts' ? partsTotal : taxMode === 'total' ? subtotalBeforeTax : 0;
+  const texasSalesTax = Math.round(taxableBase * currentTaxRate * 100) / 100;
+  const invoiceGrandTotal = subtotalBeforeTax + texasSalesTax;
 
   const handleDispatchFinalCharge = async () => {
     if (
       !window.confirm(
         `Charge customer $${invoiceGrandTotal.toFixed(
           2
-        )} (including $${holdDollars.toFixed(0)} diagnostic hold) and complete job?`
+        )} (including $${holdDollars.toFixed(0)} diagnostic hold & $${texasSalesTax.toFixed(
+          2
+        )} Texas Sales Tax) and complete job?`
       )
     ) {
       return;
@@ -653,6 +663,15 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           partsDollars: 0,
         });
       }
+      if (texasSalesTax > 0) {
+        lineItems.push({
+          title: `Texas Sales Tax (${(currentTaxRate * 100).toFixed(2)}%${
+            taxMode === 'parts' ? ' on parts' : ''
+          })`,
+          laborDollars: 0,
+          partsDollars: texasSalesTax,
+        });
+      }
 
       if (lineItems.length === 0 && invoiceGrandTotal === holdDollars) {
         // Diagnostic only charge
@@ -676,10 +695,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           kind: 'charge',
           lines: lineItems,
           diagnosticDollars: holdDollars,
+          salesTaxDollars: texasSalesTax,
         });
       }
 
-      setInvoiceMsg(`Successfully charged $${invoiceGrandTotal.toFixed(2)} and sent receipt!`);
+      setInvoiceMsg(`Successfully charged $${invoiceGrandTotal.toFixed(2)} (inc. $${texasSalesTax.toFixed(2)} Texas tax) and sent receipt!`);
       await onPatch(booking.id, { status: 'COMPLETED' });
     } catch (err: unknown) {
       setInvoiceMsg(err instanceof Error ? err.message : 'Charge failed');
@@ -1060,7 +1080,54 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             </div>
           </div>
 
-          {/* 5. Dispatch Notes / Warranty for Customer */}
+          {/* 5. Texas Sales Tax (8.25% State/Local) */}
+          <div className="space-y-1.5 bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase font-bold text-slate-300 flex items-center gap-1">
+                <span>🏛️ Texas Sales Tax (DFW 8.25%)</span>
+              </p>
+              <span className="font-mono text-xs font-bold text-amber-300">
+                +${texasSalesTax.toFixed(2)}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setTaxMode('parts')}
+                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                  taxMode === 'parts'
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                }`}
+              >
+                Parts Only (8.25%)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaxMode('total')}
+                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                  taxMode === 'total'
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                }`}
+              >
+                Total Invoice (8.25%)
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaxMode('none')}
+                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                  taxMode === 'none'
+                    ? 'bg-orange-500 text-white border-orange-500'
+                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                }`}
+              >
+                Tax Exempt (0%)
+              </button>
+            </div>
+          </div>
+
+          {/* 6. Dispatch Notes / Warranty for Customer */}
           <div className="space-y-1.5">
             <p className="text-[10px] uppercase font-bold text-slate-400">Invoice Notes / Warranty (Optional)</p>
             <textarea
@@ -1094,6 +1161,12 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
               <div className="flex justify-between text-xs text-slate-300">
                 <span>Mileage / Travel:</span>
                 <span className="font-mono font-semibold">${mileageTotal.toFixed(2)}</span>
+              </div>
+            )}
+            {texasSalesTax > 0 && (
+              <div className="flex justify-between text-xs text-amber-300 font-semibold">
+                <span>Texas Sales Tax ({taxMode === 'parts' ? '8.25% on parts' : '8.25% total'}):</span>
+                <span className="font-mono">${texasSalesTax.toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm font-black text-white pt-2 border-t border-white/10">

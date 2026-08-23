@@ -175,12 +175,12 @@ export const TechJobsTab: React.FC = () => {
     await loadJobs();
   };
 
-  const repairsSubtotal = lines.reduce(
-    (s, l) => s + (Number(l.laborDollars) || 0) + (Number(l.partsDollars) || 0),
-    0
-  );
+  const laborSubtotal = lines.reduce((s, l) => s + (Number(l.laborDollars) || 0), 0);
+  const partsSubtotal = lines.reduce((s, l) => s + (Number(l.partsDollars) || 0), 0);
+  const repairsSubtotal = laborSubtotal + partsSubtotal;
   const holdDollars = (activeJob?.holdAmountCents ?? 8500) / 100;
-  const chargeTotal = holdDollars + repairsSubtotal;
+  const salesTaxDollars = Math.round(partsSubtotal * 0.0825 * 100) / 100;
+  const chargeTotal = holdDollars + repairsSubtotal + salesTaxDollars;
 
   const finishJob = () => {
     setBusy(false);
@@ -199,6 +199,7 @@ export const TechJobsTab: React.FC = () => {
     extras?: {
       lines?: { title: string; laborDollars: number; partsDollars: number }[];
       diagnosticDollars?: number;
+      salesTaxDollars?: number;
     }
   ) => {
     if (!job.phone) return;
@@ -210,6 +211,7 @@ export const TechJobsTab: React.FC = () => {
       kind,
       lines: extras?.lines,
       diagnosticDollars: extras?.diagnosticDollars,
+      salesTaxDollars: extras?.salesTaxDollars,
     });
     if (result.via === 'twilio') {
       setMessage((prev) => `${prev || 'Done'} · Receipt SMS sent.`);
@@ -314,6 +316,14 @@ export const TechJobsTab: React.FC = () => {
       return;
     }
 
+    if (salesTaxDollars > 0) {
+      lineItems.push({
+        title: 'Texas Sales Tax (8.25% on parts)',
+        laborDollars: 0,
+        partsDollars: salesTaxDollars,
+      });
+    }
+
     setBusy(true);
     setMessage(null);
     try {
@@ -336,6 +346,7 @@ export const TechJobsTab: React.FC = () => {
       await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge', {
         lines: lineItems,
         diagnosticDollars: holdDollars,
+        salesTaxDollars,
       });
       finishJob();
     } catch (e: unknown) {
@@ -754,6 +765,12 @@ export const TechJobsTab: React.FC = () => {
                       </div>
                     ) : null
                   )}
+                {salesTaxDollars > 0 && (
+                  <div className="flex justify-between gap-2 text-[11px] text-slate-300">
+                    <span>Texas Sales Tax (8.25% on parts)</span>
+                    <span className="font-mono text-white shrink-0">${salesTaxDollars.toFixed(2)}</span>
+                  </div>
+                )}
                 {repairsSubtotal <= 0 && (
                   <p className="text-[10px] text-amber-300/90">
                     Add repair lines above, or use Diagnostic only / No-show below.
