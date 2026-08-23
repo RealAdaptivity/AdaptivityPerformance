@@ -114,7 +114,7 @@ export async function updateBookingRow(
   referenceCode: string,
   patch: Partial<{ status: string; distance_miles: number; eta_minutes: number; dispatch_lat: number; dispatch_lng: number }>
 ) {
-  const { error } = await supabase.from('bookings').update(patch).eq('reference_code', referenceCode);
+  const { error } = await supabase.from('bookings').update(patch).ilike('reference_code', referenceCode.trim());
   if (error) throw error;
 }
 
