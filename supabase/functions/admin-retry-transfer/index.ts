@@ -89,11 +89,13 @@ Deno.serve(async (req) => {
     const chargeId =
       typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
+    const salesTaxCents = Number(paymentRow?.sales_tax_cents || 0);
     const techStripeAccountId = await resolveTechStripeAccountId(supabase, booking.mechanic_id);
     const transferResult = await transferTechShareToConnect({
       paymentIntentId,
       bookingReference: booking.reference_code,
       capturedCents: capturedCents as number,
+      salesTaxCents,
       techStripeAccountId,
       chargeId,
       source: 'admin_retry_transfer',

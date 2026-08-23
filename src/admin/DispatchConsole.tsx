@@ -719,6 +719,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           techNotes: dispatchInvoiceNotes,
           customerAgreedOnSite: true,
           includeDiagnosticFee,
+          salesTaxDollars: texasSalesTax,
         });
       }
 
@@ -1246,6 +1247,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             <div className="flex justify-between text-sm font-black text-white pt-2 border-t border-white/10">
               <span>Final Invoice Total:</span>
               <span className="text-orange-400 font-mono">${invoiceGrandTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs font-bold text-orange-300/90 pt-1 border-t border-white/5">
+              <span>👨‍🔧 Tech 70% Share (Pre-Tax):</span>
+              <span className="font-mono text-orange-300">${(Math.round(subtotalBeforeTax * 0.70 * 100) / 100).toFixed(2)}</span>
             </div>
           </div>
 

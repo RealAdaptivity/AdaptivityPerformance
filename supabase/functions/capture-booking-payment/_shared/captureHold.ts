@@ -28,10 +28,10 @@ export async function captureHoldAndRemainder(opts: {
   paymentIntentId: string;
   holdCents: number;
   totalChargeCents: number;
+  salesTaxCents?: number;
   source: string;
   /** Account credit to refund after capture; tech transfer uses net of this. */
   creditAppliedCents?: number;
-  salesTaxCents?: number;
 }): Promise<CaptureHoldResult & { creditAppliedCents: number; creditRefundId: string | null }> {
   const chargeFromHold = Math.min(opts.holdCents, opts.totalChargeCents);
   const remainderCents = Math.max(0, opts.totalChargeCents - chargeFromHold);
@@ -170,6 +170,7 @@ export async function captureHoldAndRemainder(opts: {
     paymentIntentId: opts.paymentIntentId,
     bookingReference: opts.bookingReference,
     capturedCents: netForTransfer,
+    salesTaxCents: opts.salesTaxCents,
     techStripeAccountId,
     chargeId,
     source: opts.source,

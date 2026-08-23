@@ -76,12 +76,16 @@ export async function transferTechShareToConnect(opts: {
   paymentIntentId: string;
   bookingReference: string;
   capturedCents: number;
+  salesTaxCents?: number;
   techStripeAccountId: string | null;
   chargeId?: string | null;
   source?: string;
   existingTransferId?: string | null;
 }): Promise<ConnectTransferResult> {
-  const { platformFeeCents, techTransferCents } = splitJobTotalCents(opts.capturedCents);
+  const { platformFeeCents, techTransferCents } = splitJobTotalCents(
+    opts.capturedCents,
+    opts.salesTaxCents ?? 0
+  );
   const techStripeAccountId = opts.techStripeAccountId;
 
   if (opts.existingTransferId) {

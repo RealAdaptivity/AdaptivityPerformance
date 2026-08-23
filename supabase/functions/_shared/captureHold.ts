@@ -28,6 +28,7 @@ export async function captureHoldAndRemainder(opts: {
   paymentIntentId: string;
   holdCents: number;
   totalChargeCents: number;
+  salesTaxCents?: number;
   source: string;
   /** Account credit to refund after capture; tech transfer uses net of this. */
   creditAppliedCents?: number;
@@ -166,6 +167,7 @@ export async function captureHoldAndRemainder(opts: {
     paymentIntentId: opts.paymentIntentId,
     bookingReference: opts.bookingReference,
     capturedCents: netForTransfer,
+    salesTaxCents: opts.salesTaxCents,
     techStripeAccountId,
     chargeId,
     source: opts.source,

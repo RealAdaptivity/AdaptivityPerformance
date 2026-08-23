@@ -319,6 +319,14 @@ Deno.serve(async (req: Request) => {
         500
       );
     }
+    let salesTaxCents = Math.round(Number(body.salesTaxDollars || 0) * 100);
+    if (salesTaxCents <= 0 && Array.isArray(lineItems)) {
+      for (const item of lineItems) {
+        if (String(item.title || '').toLowerCase().includes('tax')) {
+          salesTaxCents += Math.round((Number(item.partsDollars || 0) + Number(item.laborDollars || 0)) * 100);
+        }
+      }
+    }
 
     const result = await captureHoldAndRemainder({
       supabase,
@@ -328,6 +336,7 @@ Deno.serve(async (req: Request) => {
       paymentIntentId,
       holdCents,
       totalChargeCents,
+      salesTaxCents,
       creditAppliedCents,
       source:
         mode === 'no_show'

@@ -215,7 +215,7 @@ export const TechJobsTab: React.FC = () => {
   const taxableBase = taxMode === 'parts' ? partsSubtotal : taxMode === 'total' ? subtotalBeforeTax : 0;
   const salesTaxDollars = Math.round(taxableBase * 0.0825 * 100) / 100;
   const chargeTotal = subtotalBeforeTax + salesTaxDollars;
-  const techShare70 = Math.round(chargeTotal * 0.70 * 100) / 100;
+  const techShare70 = Math.round(subtotalBeforeTax * 0.70 * 100) / 100;
 
   const finishJob = () => {
     setBusy(false);
@@ -391,6 +391,7 @@ export const TechJobsTab: React.FC = () => {
         techNotes,
         customerAgreedOnSite: true,
         includeDiagnosticFee,
+        salesTaxDollars,
       });
       setJobPhase('complete');
       if (result.transferWarning) {
