@@ -100,25 +100,6 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
             </div>
 
           </div>
-
-          {/* Bottom Live Dispatch Status Bar */}
-          <div className="relative z-10 p-4 sm:p-5 bg-[#07080b]/90 border-t border-white/10 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
-                <Truck className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <div className="text-xs sm:text-sm font-bold text-white">100% Mobile Service Dispatched across DFW</div>
-                <div className="text-[11px] text-slate-400">Justin · Northlake · Denton · Fort Worth · Dallas</div>
-              </div>
-            </div>
-
-            <span className="px-3 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Active Driveway Dispatch</span>
-            </span>
-          </div>
-
         </div>
 
         {/* Customer App Download Badges */}
