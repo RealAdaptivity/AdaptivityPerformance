@@ -203,6 +203,7 @@ export const TechJobsTab: React.FC = () => {
   const [includeDiagnosticFee, setIncludeDiagnosticFee] = useState(false);
   const [mileageFee, setMileageFee] = useState('');
   const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
+  const [partsPurchasedBy, setPartsPurchasedBy] = useState<'tech' | 'company'>('tech');
 
   const laborSubtotal = lines.reduce((s, l) => s + (Number(l.laborDollars) || 0), 0);
   const partsSubtotal = lines.reduce((s, l) => s + (Number(l.partsDollars) || 0), 0);
@@ -215,7 +216,11 @@ export const TechJobsTab: React.FC = () => {
   const taxableBase = taxMode === 'parts' ? partsSubtotal : taxMode === 'total' ? subtotalBeforeTax : 0;
   const salesTaxDollars = Math.round(taxableBase * 0.0825 * 100) / 100;
   const chargeTotal = subtotalBeforeTax + salesTaxDollars;
-  const techShare70 = Math.round(subtotalBeforeTax * 0.70 * 100) / 100;
+
+  const laborAndDiagSubtotal = appliedDiagnosticDollars + laborSubtotal + mileageTotal;
+  const techLaborShare = Math.round(laborAndDiagSubtotal * 0.70 * 100) / 100;
+  const techPartsShare = partsPurchasedBy === 'tech' ? partsSubtotal : 0;
+  const techShare70 = techLaborShare + techPartsShare;
 
   const finishJob = () => {
     setBusy(false);
@@ -392,6 +397,7 @@ export const TechJobsTab: React.FC = () => {
         customerAgreedOnSite: true,
         includeDiagnosticFee,
         salesTaxDollars,
+        partsPurchasedBy,
       });
       setJobPhase('complete');
       if (result.transferWarning) {
@@ -920,6 +926,44 @@ export const TechJobsTab: React.FC = () => {
                 </div>
               </div>
 
+              {/* 5. Parts Purchased By (100% reimbursed to Tech if tech paid out of pocket) */}
+              {partsSubtotal > 0 && (
+                <div className="space-y-1.5 bg-white/5 rounded-xl p-3 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] uppercase font-bold text-slate-300">
+                      📦 Parts Out-Of-Pocket
+                    </p>
+                    <span className="text-[10px] font-bold text-orange-400">
+                      {partsPurchasedBy === 'tech' ? '100% reimbursed to you' : 'Company supplied (0%)'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setPartsPurchasedBy('tech')}
+                      className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                        partsPurchasedBy === 'tech'
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                          : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      👨‍🔧 Tech Bought Parts (100% mine)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPartsPurchasedBy('company')}
+                      className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                        partsPurchasedBy === 'company'
+                          ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                          : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                      }`}
+                    >
+                      🏢 Company Paid Parts
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <textarea
                 placeholder="Tech invoice notes (optional)"
                 value={techNotes}
@@ -948,7 +992,12 @@ export const TechJobsTab: React.FC = () => {
                 {partsSubtotal > 0 && (
                   <div className="flex justify-between gap-2 text-[11px] text-slate-300">
                     <span>Parts Subtotal:</span>
-                    <span className="font-mono text-white shrink-0">${partsSubtotal.toFixed(2)}</span>
+                    <span className="font-mono text-white shrink-0">
+                      ${partsSubtotal.toFixed(2)}{' '}
+                      <span className="text-[10px] text-orange-400">
+                        ({partsPurchasedBy === 'tech' ? '100% to tech' : 'company paid'})
+                      </span>
+                    </span>
                   </div>
                 )}
                 {mileageTotal > 0 && (
@@ -968,9 +1017,14 @@ export const TechJobsTab: React.FC = () => {
                   <span className="font-mono text-emerald-400">${chargeTotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between gap-2 text-xs font-bold text-orange-300 pt-1 border-t border-white/5">
-                  <span>👨‍🔧 Your 70% Share:</span>
+                  <span>👨‍🔧 Your Payout Total:</span>
                   <span className="font-mono">${techShare70.toFixed(2)} (+ tips)</span>
                 </div>
+                {partsSubtotal > 0 && (
+                  <div className="text-[10px] text-slate-400 text-right">
+                    (${techLaborShare.toFixed(2)} labor 70% + ${techPartsShare.toFixed(2)} parts {partsPurchasedBy === 'tech' ? '100%' : '0%'})
+                  </div>
+                )}
               </div>
 
               {message && (

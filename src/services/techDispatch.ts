@@ -148,6 +148,7 @@ export async function captureBookingPayment(
     includeDiagnosticFee?: boolean;
     waiveDiagnosticFee?: boolean;
     salesTaxDollars?: number;
+    partsPurchasedBy?: 'tech' | 'company';
   }
 ) {
   return invokeEdgeFunction<{
@@ -171,6 +172,7 @@ export async function captureBookingPayment(
     includeDiagnosticFee: opts?.includeDiagnosticFee,
     waiveDiagnosticFee: opts?.waiveDiagnosticFee,
     salesTaxDollars: opts?.salesTaxDollars,
+    partsPurchasedBy: opts?.partsPurchasedBy,
   });
 }
 

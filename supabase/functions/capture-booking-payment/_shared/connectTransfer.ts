@@ -77,6 +77,8 @@ export async function transferTechShareToConnect(opts: {
   bookingReference: string;
   capturedCents: number;
   salesTaxCents?: number;
+  partsCents?: number;
+  partsPurchasedBy?: 'tech' | 'company';
   techStripeAccountId: string | null;
   chargeId?: string | null;
   source?: string;
@@ -84,7 +86,9 @@ export async function transferTechShareToConnect(opts: {
 }): Promise<ConnectTransferResult> {
   const { platformFeeCents, techTransferCents } = splitJobTotalCents(
     opts.capturedCents,
-    opts.salesTaxCents ?? 0
+    opts.salesTaxCents ?? 0,
+    opts.partsCents ?? 0,
+    opts.partsPurchasedBy ?? 'tech'
   );
   const techStripeAccountId = opts.techStripeAccountId;
 

@@ -639,6 +639,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const [mileageFee, setMileageFee] = useState('');
   const [includeDiagnosticFee, setIncludeDiagnosticFee] = useState(false);
   const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
+  const [partsPurchasedBy, setPartsPurchasedBy] = useState<'tech' | 'company'>('tech');
   const taxRatePercent = '8.25';
   const [dispatchInvoiceNotes, setDispatchInvoiceNotes] = useState('');
   const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
@@ -656,6 +657,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     taxMode === 'parts' ? partsTotal : taxMode === 'total' ? subtotalBeforeTax : 0;
   const texasSalesTax = Math.round(taxableBase * currentTaxRate * 100) / 100;
   const invoiceGrandTotal = subtotalBeforeTax + texasSalesTax;
+
+  const laborAndDiagSubtotal = appliedDiagnosticDollars + laborTotal + mileageTotal;
+  const techLaborShare = Math.round(laborAndDiagSubtotal * 0.70 * 100) / 100;
+  const techPartsShare = partsPurchasedBy === 'tech' ? partsTotal : 0;
+  const techPayoutTotal = techLaborShare + techPartsShare;
 
   const handleDispatchFinalCharge = async () => {
     if (
@@ -720,6 +726,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           customerAgreedOnSite: true,
           includeDiagnosticFee,
           salesTaxDollars: texasSalesTax,
+          partsPurchasedBy,
         });
       }
 
@@ -1200,7 +1207,45 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             </div>
           </div>
 
-          {/* 6. Dispatch Notes / Warranty for Customer */}
+          {/* 6. Parts Purchased By (100% reimbursed to Tech if tech paid out of pocket) */}
+          {partsTotal > 0 && (
+            <div className="space-y-1.5 bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase font-bold text-slate-300">
+                  📦 Parts Out-Of-Pocket
+                </p>
+                <span className="text-[10px] font-bold text-orange-400">
+                  {partsPurchasedBy === 'tech' ? '100% reimbursed to tech' : 'Company paid (0% to tech)'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setPartsPurchasedBy('tech')}
+                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                    partsPurchasedBy === 'tech'
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                      : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                  }`}
+                >
+                  👨‍🔧 Tech Bought Parts (100% to tech)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPartsPurchasedBy('company')}
+                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
+                    partsPurchasedBy === 'company'
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                      : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                  }`}
+                >
+                  🏢 Company Supplied Parts
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 7. Dispatch Notes / Warranty for Customer */}
           <div className="space-y-1.5">
             <p className="text-[10px] uppercase font-bold text-slate-400">Invoice Notes / Warranty (Optional)</p>
             <textarea
@@ -1229,7 +1274,12 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             {partsTotal > 0 && (
               <div className="flex justify-between text-xs text-slate-300">
                 <span>Parts Total:</span>
-                <span className="font-mono font-semibold">${partsTotal.toFixed(2)}</span>
+                <span className="font-mono font-semibold">
+                  ${partsTotal.toFixed(2)}{' '}
+                  <span className="text-[10px] text-orange-400">
+                    ({partsPurchasedBy === 'tech' ? '100% to tech' : 'company paid'})
+                  </span>
+                </span>
               </div>
             )}
             {mileageTotal > 0 && (
@@ -1249,9 +1299,14 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
               <span className="text-orange-400 font-mono">${invoiceGrandTotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xs font-bold text-orange-300/90 pt-1 border-t border-white/5">
-              <span>👨‍🔧 Tech 70% Share (Pre-Tax):</span>
-              <span className="font-mono text-orange-300">${(Math.round(subtotalBeforeTax * 0.70 * 100) / 100).toFixed(2)}</span>
+              <span>👨‍🔧 Tech Payout Total:</span>
+              <span className="font-mono text-orange-300 font-bold">${techPayoutTotal.toFixed(2)}</span>
             </div>
+            {partsTotal > 0 && (
+              <div className="text-[10px] text-slate-400 text-right">
+                (${techLaborShare.toFixed(2)} labor 70% + ${techPartsShare.toFixed(2)} parts {partsPurchasedBy === 'tech' ? '100%' : '0%'})
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

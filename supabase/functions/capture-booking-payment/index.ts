@@ -328,6 +328,16 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const partsPurchasedBy: 'tech' | 'company' = body.partsPurchasedBy === 'company' ? 'company' : 'tech';
+    let totalPartsCents = 0;
+    if (Array.isArray(lineItems)) {
+      for (const item of lineItems) {
+        if (!String(item.title || '').toLowerCase().includes('tax')) {
+          totalPartsCents += Math.round(Number(item.partsDollars || 0) * 100);
+        }
+      }
+    }
+
     const result = await captureHoldAndRemainder({
       supabase,
       bookingId: booking.id,
@@ -337,6 +347,8 @@ Deno.serve(async (req: Request) => {
       holdCents,
       totalChargeCents,
       salesTaxCents,
+      partsCents: totalPartsCents,
+      partsPurchasedBy,
       creditAppliedCents,
       source:
         mode === 'no_show'
