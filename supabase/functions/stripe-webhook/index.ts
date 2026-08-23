@@ -199,6 +199,27 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  // Idempotency: claim this event id before processing. Stripe can deliver the
+  // same event more than once (and retries can race), so a duplicate must not be
+  // processed twice — otherwise a repeated payment_intent.succeeded could fire a
+  // second technician payout. A unique-violation means we've already handled it.
+  const eventId = typeof event.id === 'string' ? event.id : undefined;
+  if (eventId) {
+    const { error: claimErr } = await supabase
+      .from('stripe_webhook_events')
+      .insert({ event_id: eventId, event_type: event.type ?? null });
+    if (claimErr) {
+      if (claimErr.code === '23505') {
+        return new Response(JSON.stringify({ received: true, duplicate: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      // Fail open on unexpected ledger errors (e.g. migration not yet applied)
+      // so a real event is never dropped; duplicate protection is best-effort.
+      console.error('[stripe-webhook] event dedupe insert failed', claimErr);
+    }
+  }
+
   if (event.type === 'payment_intent.amount_capturable_updated') {
     const pi = event.data.object;
     if (pi.metadata?.type === 'booking_hold' && pi.status === 'requires_capture') {
