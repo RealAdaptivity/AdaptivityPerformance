@@ -368,6 +368,7 @@ export const DispatchConsole: React.FC = () => {
                     setSaving(false);
                   }
                 }}
+                payments={payments}
               />
             )}
           </aside>
@@ -606,6 +607,7 @@ type BookingDetailProps = {
   ) => Promise<void>;
   onRefund: (ref: string, amount?: number, forceAfterPayout?: boolean) => Promise<void>;
   onRetryTransfer: (ref: string) => Promise<void>;
+  payments?: AdminPaymentRow[];
 };
 
 const BookingDetail: React.FC<BookingDetailProps> = ({
@@ -618,6 +620,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   onAdjustCapture,
   onRefund,
   onRetryTransfer,
+  payments = [],
 }) => {
   const mechanicId = booking.claimedBy?.id ?? '';
   const [refundAmount, setRefundAmount] = useState('');
@@ -1310,17 +1313,51 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </div>
       ) : null}
 
-      {booking.paymentStatus === 'captured' || booking.paymentStatus === 'partially_refunded' ? (
-        <div className="rounded-xl border border-white/10 p-3 space-y-2 bg-[#0b0c10]">
-          <p className="text-[10px] uppercase font-bold text-slate-500">Support — money</p>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void onRetryTransfer(booking.id)}
-            className="w-full text-xs font-bold text-emerald-300 border border-emerald-500/30 rounded-lg py-2"
-          >
-            Retry Connect transfer (70% tech)
-          </button>
+      {booking.paymentStatus === 'captured' || booking.paymentStatus === 'partially_refunded' ? (() => {
+        const matchingPayment = payments.find(
+          (p) =>
+            p.bookingReference === booking.id ||
+            (booking.paymentIntentId && p.paymentIntentId === booking.paymentIntentId)
+        );
+        const isTransferDone = Boolean(
+          matchingPayment?.stripeTransferId &&
+            ['pending', 'paid', 'instant_paid', 'instant_pending', 'standard_pending'].includes(
+              matchingPayment.payoutStatus
+            )
+        );
+
+        return (
+          <div className="rounded-xl border border-white/10 p-3 space-y-2 bg-[#0b0c10]">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] uppercase font-bold text-slate-500">Support — money</p>
+              {isTransferDone ? (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  ✓ 70% Payout Complete
+                </span>
+              ) : null}
+            </div>
+
+            {isTransferDone ? (
+              <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-lg p-2.5 text-xs text-emerald-300 space-y-1">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-emerald-400/80 font-medium">Transfer ID:</span>
+                  <span className="font-mono text-[10px] text-emerald-300">{matchingPayment?.stripeTransferId}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-emerald-400/80 font-medium">Payout Status:</span>
+                  <span className="capitalize font-semibold text-emerald-200">{matchingPayment?.payoutStatus}</span>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void onRetryTransfer(booking.id)}
+                className="w-full text-xs font-bold text-emerald-300 border border-emerald-500/30 rounded-lg py-2 hover:bg-emerald-500/10 transition-colors"
+              >
+                Retry Connect transfer (70% tech)
+              </button>
+            )}
           <p className="text-[10px] text-slate-500 leading-relaxed">
             Refund reverses the tech Connect transfer when possible. If the tech already cashed out, check
             “force after payout” (may fail if Connect balance is empty).
@@ -1413,7 +1450,8 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             Issue refund (+ reverse transfer)
           </button>
         </div>
-      ) : null}
+      );
+    })() : null}
 
       <label className="block space-y-1">
         <span className="text-[10px] uppercase font-bold text-slate-500">Job status</span>
