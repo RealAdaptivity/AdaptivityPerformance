@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BookingProvider, useBookingContext, type Booking } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
 import { RepairTrackerDemo } from './components/RepairTrackerDemo';
@@ -16,10 +16,13 @@ import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Capacitor } from '@capacitor/core';
-import { AdminApp } from './admin/AdminApp';
 import { useAdminConsoleRoute } from './admin/adminRoute';
-import { PortalApp } from './portal/PortalApp';
 import { usePortalRoute } from './portal/portalRoute';
+
+// Admin & Portal are only reached on their own routes — code-split so marketing
+// visitors never download them.
+const AdminApp = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })));
+const PortalApp = lazy(() => import('./portal/PortalApp').then((m) => ({ default: m.PortalApp })));
 import { SERVICE_CATALOG } from './services/serviceCatalog';
 import { HomePage } from './pages/HomePage';
 import { renderMarketingPage } from './pages/MarketingPages';
@@ -33,6 +36,7 @@ import {
 import { CityLandingPage } from './pages/CityLandingPage';
 import { BlogPostPage } from './pages/BlogPostPage';
 import { ReferralLandingPage, referralCodeFromPath } from './pages/ReferralLandingPage';
+import { PayLinkPage, payReferenceFromPath } from './pages/PayLinkPage';
 import { blogSlugFromPath } from './services/blog';
 
 function MainAppContent() {
@@ -165,7 +169,6 @@ function MainAppContent() {
     setEstimateDataForBooking({
       services: approvedServices,
       totalEstimate: totalCost,
-      vehicle: '2021 Ford F-150 SuperCrew',
       locationType: 'mobile',
     });
     setIsBookingOpen(true);
@@ -214,6 +217,12 @@ function MainAppContent() {
     onBookMobileZip: handleBookMobileZip,
     activeServiceMode,
   };
+
+  // Public customer pay link (card or BNPL) — full-screen, no marketing chrome.
+  const payReference = payReferenceFromPath(pathname);
+  if (payReference) {
+    return <PayLinkPage reference={payReference} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
@@ -340,12 +349,18 @@ export function App() {
   const isAdmin = useAdminConsoleRoute();
   const isPortal = usePortalRoute() || Capacitor.isNativePlatform();
 
+  const routeFallback = (
+    <div className="min-h-screen bg-[#0b0c10] flex items-center justify-center text-slate-400 text-sm animate-pulse">
+      Loading…
+    </div>
+  );
+
   if (isAdmin) {
-    return <AdminApp />;
+    return <Suspense fallback={routeFallback}><AdminApp /></Suspense>;
   }
 
   if (isPortal) {
-    return <PortalApp />;
+    return <Suspense fallback={routeFallback}><PortalApp /></Suspense>;
   }
 
   return (

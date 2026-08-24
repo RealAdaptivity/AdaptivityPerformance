@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wrench, Sparkles, Volume2, Flame, ArrowRight, CheckCircle2, Clock } from 'lucide-react';
+import { Wrench, Bike, Flame, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface ServiceShowcaseGridProps {
   onBookService: (serviceName: string) => void;
@@ -9,7 +9,7 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
   const categories = [
     {
       id: 'mobile-repair',
-      title: 'Mobile Repair & Diagnostics',
+      title: 'Mobile Auto Repair & Diagnostics',
       subtitle: 'Driveway & Workplace Dispatch',
       description: 'We bring full shop diagnostics, brake replacement, oil changes, starters, and batteries directly to your home or office.',
       icon: <Wrench className="w-6 h-6 text-orange-400" />,
@@ -21,43 +21,30 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       isComingSoon: false,
     },
     {
-      id: 'detailing',
-      title: 'Mobile Detailing & Protection',
-      subtitle: 'Showroom Care · Coming Soon',
-      description: 'Complete interior deep cleaning, exterior ceramic coating, paint correction, and headlight restoration on-location.',
-      icon: <Sparkles className="w-6 h-6 text-amber-400" />,
-      accent: 'hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] opacity-90',
-      badge: 'Coming Soon',
-      badgeColor: 'bg-amber-500/15 border-amber-500/40 text-amber-300',
-      items: ['Full Ceramic Protection', 'Interior Steam & Leather Care', 'Paint Correction & Polish', 'Headlight Restoration'],
-      primaryService: 'Mobile Detailing & Ceramic Protection',
-      isComingSoon: true,
-    },
-    {
-      id: 'audio-tint',
-      title: 'Custom Audio, Tint & Wraps',
-      subtitle: 'Electronics & Styling · Coming Soon',
-      description: 'Custom window tinting, dash cam installs, premium audio speaker upgrades, subwoofers, and vinyl color accents.',
-      icon: <Volume2 className="w-6 h-6 text-orange-400" />,
-      accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)] opacity-90',
-      badge: 'Coming Soon',
-      badgeColor: 'bg-amber-500/15 border-amber-500/40 text-amber-300',
-      items: ['Ceramic Window Tinting', 'Custom Audio & Subwoofers', 'Dash Cam & Radar Hardwire', 'Vinyl Accents & Wrap Work'],
-      primaryService: 'Custom Audio & Window Tinting',
-      isComingSoon: true,
+      id: 'motorcycle',
+      title: 'Motorcycle Repair & Service',
+      subtitle: 'Two-Wheel Mechanical',
+      description: 'Diagnostics, maintenance, and mechanical repair for motorcycles — same upfront $85 diagnostic visit and on-site pricing.',
+      icon: <Bike className="w-6 h-6 text-orange-400" />,
+      accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
+      badge: 'Active Service',
+      badgeColor: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+      items: ['Diagnostics & Tune-Ups', 'Brake & Fluid Service', 'Battery & Electrical', 'Maintenance & Repair'],
+      primaryService: 'Motorcycle Repair & Diagnostic Visit',
+      isComingSoon: false,
     },
     {
       id: 'performance',
-      title: 'Shop Performance & Builds',
-      subtitle: 'Garage Facility · Coming Soon',
-      description: 'Upcoming dedicated garage facility for heavy suspension lifts, custom exhaust systems, cold air intakes, and engine overhauls.',
-      icon: <Flame className="w-6 h-6 text-amber-400" />,
-      accent: 'hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.12)] opacity-90',
-      badge: 'Coming Soon',
-      badgeColor: 'bg-amber-500/15 border-amber-500/40 text-amber-300',
-      items: ['Truck Suspension Lifts & Leveling', 'Custom Exhaust & Headers', 'Cold Air Intakes & Tuning', 'Engine & Transmission Swaps'],
-      primaryService: 'Performance Upgrade & Garage Build',
-      isComingSoon: true,
+      title: 'Performance & Builds',
+      subtitle: 'Upgrades & Modifications',
+      description: 'Suspension lifts and leveling, custom exhaust systems, cold air intakes, and performance tuning.',
+      icon: <Flame className="w-6 h-6 text-orange-400" />,
+      accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
+      badge: 'Active Service',
+      badgeColor: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+      items: ['Suspension Lifts & Leveling', 'Custom Exhaust & Headers', 'Cold Air Intakes & Tuning', 'Performance Upgrades'],
+      primaryService: 'Performance Upgrade & Build',
+      isComingSoon: false,
     },
   ];
 
@@ -72,12 +59,12 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
             Everything Automotive — Built for North Texas
           </h2>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
-            From active doorstep auto repair and diagnostics to upcoming mobile detailing, custom electronics, and garage builds.
+            Doorstep auto and motorcycle repair, diagnostics, and performance builds across North Texas.
           </p>
         </div>
 
-        {/* 4 Category Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+        {/* Category Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {categories.map((cat) => (
             <div
               key={cat.id}
@@ -110,21 +97,14 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
               </div>
 
               <div className="pt-6">
-                {cat.isComingSoon ? (
-                  <div className="w-full py-3 px-4 rounded-xl bg-white/[0.04] border border-white/10 text-center font-bold text-xs text-slate-400 flex items-center justify-center space-x-2 cursor-default">
-                    <Clock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Coming Soon</span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onBookService(cat.primaryService)}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center space-x-2 group hover:scale-[1.02] active:scale-95"
-                  >
-                    <span>Book Mobile Service</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => onBookService(cat.primaryService)}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center space-x-2 group hover:scale-[1.02] active:scale-95"
+                >
+                  <span>Book Service</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
               </div>
             </div>
           ))}

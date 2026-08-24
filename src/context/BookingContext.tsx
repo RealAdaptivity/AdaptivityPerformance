@@ -63,14 +63,14 @@ interface BookingContextType {
 }
 
 const DEFAULT_TECHS: TechProfile[] = [
-  { id: 'tech-1', name: 'Alex Vance', role: 'Senior ASE Master Tech', vanNumber: 'Mobile Unit #2 (Ford F-250 Rig)', phone: '(940) 304-0620', rating: 4.9 },
-  { id: 'tech-2', name: 'Marcus Hill', role: 'Diagnostic & Brake Specialist', vanNumber: 'Mobile Unit #1 (Transit Rig)', phone: '(940) 304-0620', rating: 4.9 },
+  { id: 'tech-1', name: 'Adaptivity Technician', role: 'Senior ASE Master Tech', vanNumber: 'Mobile Unit #2 (Ford F-250 Rig)', phone: '(940) 304-0620', rating: 4.9 },
+  { id: 'tech-2', name: 'Adaptivity Technician', role: 'Diagnostic & Brake Specialist', vanNumber: 'Mobile Unit #1 (Transit Rig)', phone: '(940) 304-0620', rating: 4.9 },
 ];
 
 const INITIAL_BOOKINGS: Booking[] = [
   {
     id: 'AP-8492',
-    customerName: 'Mark Stevens',
+    customerName: 'Sample Customer',
     customerPhone: '(214) 555-8123',
     customerAddress: '1234 Canyon Falls Dr, Northlake, TX 76226',
     zipCode: '76226',

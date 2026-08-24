@@ -61,7 +61,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
             Contact <span className="text-orange-500">Adaptivity</span>
           </h2>
           <p className="text-slate-400 text-sm">
-            Send us a message and we'll get back to you within 1 hour during business hours — or call for immediate dispatch.
+            Send us a message and we'll get back to you within 1 hour (8AM–10PM daily) — or call for immediate dispatch.
           </p>
         </div>
 
@@ -80,7 +80,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Call or Text</div>
                 <div className="font-bold text-white text-lg group-hover:text-orange-400 transition-colors">{SITE_PHONE_DISPLAY}</div>
-                <div className="text-xs text-slate-500">Available 24/7 for emergency dispatch</div>
+                <div className="text-xs text-slate-500">Open every day · 8AM–10PM</div>
               </div>
             </a>
 
@@ -115,8 +115,8 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               </div>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hours</div>
-                <div className="font-bold text-white text-sm">24 / 7 — Every Day</div>
-                <div className="text-xs text-slate-500">Emergency mobile dispatch always available</div>
+                <div className="font-bold text-white text-sm">Every day · 8AM–10PM</div>
+                <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Denton & DFW</div>
               </div>
             </div>
 

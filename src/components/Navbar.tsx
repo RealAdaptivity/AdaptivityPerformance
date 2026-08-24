@@ -97,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <span className="hidden sm:flex items-center space-x-1.5 flex-shrink-0 opacity-95 text-[11px] font-bold">
             <Clock className="w-3.5 h-3.5" />
-            <span>24/7 Mobile Dispatch</span>
+            <span>Mobile Dispatch · 8AM–10PM Daily</span>
           </span>
         </div>
       </div>

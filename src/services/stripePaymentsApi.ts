@@ -5,12 +5,17 @@ export interface CreatePaymentIntentResult {
   clientSecret: string;
   paymentIntentId: string;
   totalCharged: number;
+  baseAmount?: number;
   techShareAmount: number;
   platformShareAmount: number;
+  // Present only for payment-link checkouts (customer not logged in).
+  customerName?: string;
+  services?: string[];
+  bookingReference?: string;
 }
 
 export async function createCheckoutPaymentIntent(params: {
-  baseAmountDollars: number;
+  baseAmountDollars?: number;
   tipAmountDollars?: number;
   customerEmail?: string;
   customerName?: string;
@@ -24,6 +29,9 @@ export async function createCheckoutPaymentIntent(params: {
   techStripeAccountId?: string | null;
   bookingReference?: string;
   preferFinancing?: boolean;
+  // When set, the server derives the amount and tech account from the stored
+  // booking; baseAmountDollars/techStripeAccountId from the client are ignored.
+  paymentLinkReference?: string;
 }): Promise<CreatePaymentIntentResult> {
   const { data, error } = await supabase.functions.invoke('create-payment-intent', {
     body: params,

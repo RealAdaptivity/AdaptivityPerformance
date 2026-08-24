@@ -259,6 +259,21 @@ Deno.serve(async (req) => {
         .eq('payment_intent_id', pi.id);
     }
 
+    // Customer paid a tech-finalized total via a payment link (card or BNPL).
+    // The hold PI id lives on the booking, not this PI, so settle by reference
+    // and close out the link so it can't be paid twice.
+    if (pi.metadata?.type === 'booking_payment_link' && pi.metadata?.booking_reference) {
+      await supabase
+        .from('bookings')
+        .update({
+          payment_status: 'captured',
+          captured_amount_cents: pi.amount_received ?? pi.amount,
+          payment_link_status: 'paid',
+          updated_at: new Date().toISOString(),
+        })
+        .ilike('reference_code', pi.metadata.booking_reference);
+    }
+
     const destination = pi.transfer_data?.destination as string | undefined;
     if (pi.metadata?.type !== 'booking_hold') {
       await releaseTechPayoutForPaymentIntent(supabase, pi.id, destination);

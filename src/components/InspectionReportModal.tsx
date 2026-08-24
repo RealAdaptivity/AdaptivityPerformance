@@ -85,7 +85,7 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
     DVI_ITEMS.filter(item => item.isRequiredDefault).map(item => item.id)
   );
 
-  const [customerSignature, setCustomerSignature] = useState('Mark Stevens');
+  const [customerSignature, setCustomerSignature] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   if (!isOpen) return null;
@@ -136,7 +136,7 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                2021 Ford F-150 SuperCrew • Inspected by <strong className="text-amber-400">Alex Vance (ASE Master Tech)</strong>
+                Sample digital inspection • Performed by your <strong className="text-amber-400">ASE-Certified Technician</strong>
               </p>
             </div>
           </div>
@@ -180,7 +180,7 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
               </div>
               <h3 className="text-2xl font-heading font-black text-white">Inspection Authorization Approved!</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Electronic signature verified. Alex Vance has been notified to dispatch the mobile unit with parts for your approved services.
+                Electronic signature verified. Your technician has been notified to dispatch the mobile unit with parts for your approved services.
               </p>
             </div>
           ) : (

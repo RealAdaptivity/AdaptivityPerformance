@@ -364,6 +364,36 @@ export const SERVICE_CATALOG: CatalogService[] = [
   ),
 ];
 
+/**
+ * Service kinds we don't offer yet — hidden from customer-facing selection so
+ * customers can't book work we can't fulfill. Kept in the catalog only so that
+ * free-text/historical labels still resolve for pricing and matching.
+ */
+export const UNAVAILABLE_SERVICE_KINDS: ServiceKind[] = [
+  'car_audio',
+  'window_tint',
+  'vehicle_wrap',
+  'ppf',
+  'body_work',
+  'interior_lighting',
+  'interior_color',
+  'accessories',
+  'mobile_detailing',
+  'ceramic_coating',
+  'paint_correction',
+  'headlight_restore',
+  'auto_glass',
+];
+
+export function isServiceAvailable(kind: ServiceKind): boolean {
+  return !UNAVAILABLE_SERVICE_KINDS.includes(kind);
+}
+
+/** Services currently offered for booking (excludes not-yet-available kinds). */
+export const BOOKABLE_SERVICE_CATALOG: CatalogService[] = SERVICE_CATALOG.filter((s) =>
+  isServiceAvailable(s.kind)
+);
+
 export function getCatalogById(id: string): CatalogService | undefined {
   return SERVICE_CATALOG.find((s) => s.id === id);
 }
