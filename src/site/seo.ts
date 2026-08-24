@@ -42,7 +42,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   contact: {
     title: 'Contact Us | Auto Repair Mechanic Shop & Mobile Dispatch DFW',
     description:
-      `Contact Adaptivity Performance for immediate mechanic shop dispatch, phone quotes, and 24/7 customer support across North Texas. Call ${SITE_PHONE_DISPLAY}.`,
+      `Contact Adaptivity Performance for immediate mechanic shop dispatch, phone quotes, and daily 8AM–10PM customer support across North Texas. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/contact',
   },
   quotes: {

@@ -78,7 +78,7 @@ const INITIAL_GARAGE: SavedVehicle[] = [
         service: 'Mobile Battery Swap (AGM 850CCA) & Terminal Clean',
         mileage: 45200,
         cost: 215,
-        tech: 'Alex Vance (ASE Master Tech)',
+        tech: 'Adaptivity Technician',
         locationType: 'mobile'
       },
       {
@@ -129,7 +129,7 @@ const INITIAL_GARAGE: SavedVehicle[] = [
         service: 'Rear Ceramic Brake Pad & Rotors Overhaul',
         mileage: 58900,
         cost: 320,
-        tech: 'Alex Vance',
+        tech: 'Adaptivity Technician',
         locationType: 'shop'
       }
     ]
@@ -475,7 +475,7 @@ export const CustomerGarageModal: React.FC<CustomerGarageModalProps> = ({
                   </div>
                   <div>
                     <h5 className="font-bold text-sm text-white">Latest Digital Inspection (DVI) Report Available</h5>
-                    <p className="text-xs text-slate-300">ASE Master Tech Alex Vance submitted a 50-point mobile inspection with photos.</p>
+                    <p className="text-xs text-slate-300">Your Adaptivity technician submitted a 50-point mobile inspection with photos.</p>
                   </div>
                 </div>
 

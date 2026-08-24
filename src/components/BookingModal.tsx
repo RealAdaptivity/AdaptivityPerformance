@@ -545,6 +545,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $85 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
                   </span>
                 </label>
+                <p className="text-[10px] text-slate-500 leading-relaxed pl-6">
+                  By providing your number, you consent to receive service-related text messages
+                  (appointment updates, receipts, and secure payment links) from Adaptivity Performance.
+                  Message &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                </p>
               </div>
 
               <div className="bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-500/30 p-3 rounded-xl flex items-start space-x-2 text-[11px] text-slate-300">

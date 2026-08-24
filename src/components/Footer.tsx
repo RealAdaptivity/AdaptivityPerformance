@@ -76,10 +76,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           <div className="space-y-1.5 text-slate-300">
             <div className="flex justify-between border-b border-white/5 pb-1">
               <span>Every day:</span>
-              <span className="font-bold text-white">24/7</span>
+              <span className="font-bold text-white">8AM–10PM</span>
             </div>
             <p className="text-[11px] text-slate-500 pt-1">
-              Mobile dispatch available around the clock across our DFW coverage area.
+              Mobile dispatch every day, 8AM–10PM, across our DFW coverage area.
             </p>
           </div>
 

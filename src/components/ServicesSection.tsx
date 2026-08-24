@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ArrowRight, Wrench } from 'lucide-react';
 import {
-  SERVICE_CATALOG,
+  BOOKABLE_SERVICE_CATALOG,
   formatCatalogPriceRange,
   specialtyForServiceKind,
   type CatalogService,
@@ -28,7 +28,7 @@ interface ServicesSectionProps {
 export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking, onBookService }) => {
   const groups = useMemo(() => {
     const map = new Map<string, CatalogService[]>();
-    for (const s of SERVICE_CATALOG) {
+    for (const s of BOOKABLE_SERVICE_CATALOG) {
       const key = specialtyForServiceKind(s.kind);
       const list = map.get(key) || [];
       list.push(s);
