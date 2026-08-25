@@ -7,21 +7,23 @@ import {
 } from '@stripe/react-connect-js';
 import { invokeEdgeFunction } from '../../services/edgeFunctionErrors';
 import { getActiveStripePublishableKey } from '../../config/stripeEnvironment';
+import { ExternalLink, Loader2 } from 'lucide-react';
 
 type Props = {
   onClose: () => void;
   onAdded: () => void;
 };
 
-type Tab = 'payouts' | 'account';
+type Tab = 'account' | 'payouts';
 
 /**
  * Express platforms cannot POST /external_accounts for connected accounts.
- * Stripe’s embedded Account Management / Payouts UI is the supported path to add a debit card.
+ * Stripe’s embedded Account Management / Payouts UI and hosted Express Dashboard are the supported paths to add a debit card.
  */
 export const AddInstantDebitCardModal: React.FC<Props> = ({ onClose, onAdded }) => {
   const [tab, setTab] = useState<Tab>('account');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isOpeningHosted, setIsOpeningHosted] = useState(false);
 
   const fetchClientSecret = useCallback(async () => {
     setLoadError(null);
@@ -35,6 +37,22 @@ export const AddInstantDebitCardModal: React.FC<Props> = ({ onClose, onAdded }) 
       throw e;
     }
   }, []);
+
+  const openHostedExpress = async () => {
+    try {
+      setIsOpeningHosted(true);
+      const data = await invokeEdgeFunction<{ loginUrl: string }>('create-stripe-account-link', {
+        action: 'express_dashboard',
+      });
+      if (data.loginUrl) {
+        window.open(data.loginUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (e: unknown) {
+      setLoadError(e instanceof Error ? e.message : 'Could not open Stripe Express portal');
+    } finally {
+      setIsOpeningHosted(false);
+    }
+  };
 
   const publishableKey = getActiveStripePublishableKey();
 
@@ -63,11 +81,9 @@ export const AddInstantDebitCardModal: React.FC<Props> = ({ onClose, onAdded }) 
         <div className="px-4 pt-4 pb-3 border-b border-white/10 space-y-2">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-bold text-white">Add Instant debit card</p>
+              <p className="text-sm font-bold text-white">Add Instant Debit Card</p>
               <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                Express does not allow the app to attach cards directly. Use Stripe’s payout settings
-                below → add a <strong className="text-slate-300">debit card</strong> (keep your bank
-                for Standard). Test card: <span className="font-mono text-slate-300">4000056655665556</span>.
+                Add your Visa/Mastercard debit card for ~30-minute instant cash outs.
               </p>
             </div>
             <button
@@ -81,24 +97,41 @@ export const AddInstantDebitCardModal: React.FC<Props> = ({ onClose, onAdded }) 
               Done
             </button>
           </div>
-          <div className="flex gap-1 p-0.5 bg-black/30 rounded-lg w-fit">
+
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex gap-1 p-0.5 bg-black/30 rounded-lg w-fit">
+              <button
+                type="button"
+                onClick={() => setTab('account')}
+                className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${
+                  tab === 'account' ? 'bg-orange-500 text-white' : 'text-slate-400'
+                }`}
+              >
+                Bank & Cards
+              </button>
+              <button
+                type="button"
+                onClick={() => setTab('payouts')}
+                className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${
+                  tab === 'payouts' ? 'bg-orange-500 text-white' : 'text-slate-400'
+                }`}
+              >
+                Payout History
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => setTab('payouts')}
-              className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${
-                tab === 'payouts' ? 'bg-orange-500 text-white' : 'text-slate-400'
-              }`}
+              disabled={isOpeningHosted}
+              onClick={() => void openHostedExpress()}
+              className="px-3 py-1.5 bg-white/10 hover:bg-white/15 border border-white/15 text-orange-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition"
             >
-              Payouts / Instant
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('account')}
-              className={`text-[11px] font-bold px-3 py-1.5 rounded-md ${
-                tab === 'account' ? 'bg-orange-500 text-white' : 'text-slate-400'
-              }`}
-            >
-              Account / bank & cards
+              {isOpeningHosted ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <ExternalLink className="w-3.5 h-3.5" />
+              )}
+              <span>Open in Stripe Portal ↗</span>
             </button>
           </div>
         </div>
