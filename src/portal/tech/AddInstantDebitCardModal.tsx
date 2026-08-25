@@ -6,6 +6,7 @@ import {
   ConnectPayouts,
 } from '@stripe/react-connect-js';
 import { invokeEdgeFunction } from '../../services/edgeFunctionErrors';
+import { getActiveStripePublishableKey } from '../../config/stripeEnvironment';
 
 type Props = {
   onClose: () => void;
@@ -35,9 +36,7 @@ export const AddInstantDebitCardModal: React.FC<Props> = ({ onClose, onAdded }) 
     }
   }, []);
 
-  const publishableKey =
-    (import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_STRIPE_PUBLISHABLE_KEY ||
-    '';
+  const publishableKey = getActiveStripePublishableKey();
 
   const stripeConnectInstance = useMemo(() => {
     if (!publishableKey.startsWith('pk_')) return null;
