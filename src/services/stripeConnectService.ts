@@ -2,11 +2,14 @@ import { loadStripe } from '@stripe/stripe-js';
 import { getActiveStripePublishableKey } from '../config/stripeEnvironment';
 
 // Initialize Stripe Publishable Key
+let currentKey = '';
 let stripePromise: ReturnType<typeof loadStripe> | null = null;
 
-export const getStripe = () => {
-  if (!stripePromise) {
-    const key = getActiveStripePublishableKey();
+export const getStripe = (publishableKey?: string) => {
+  const key = publishableKey || getActiveStripePublishableKey();
+  if (!key) return null;
+  if (!stripePromise || currentKey !== key) {
+    currentKey = key;
     stripePromise = loadStripe(key);
   }
   return stripePromise;
