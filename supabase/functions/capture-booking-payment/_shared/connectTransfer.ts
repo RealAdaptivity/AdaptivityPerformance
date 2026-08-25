@@ -141,6 +141,9 @@ export async function transferTechShareToConnect(opts: {
       source: opts.source ?? 'job_capture',
     },
   };
+  if (opts.chargeId) {
+    transferBody.source_transaction = opts.chargeId;
+  }
 
   try {
     const key = Deno.env.get('STRIPE_SECRET_KEY')!;
