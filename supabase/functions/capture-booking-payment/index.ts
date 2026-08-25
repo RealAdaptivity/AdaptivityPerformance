@@ -71,12 +71,12 @@ Deno.serve(async (req: Request) => {
           ? 'diagnostic_only'
           : 'charge';
 
-    const agreed = customerAgreedOnSite === true || customerAgreedOnSite === 'true' || String(customerAgreedOnSite).toLowerCase() === 'true';
-    if (mode === 'charge' && !agreed) {
+    const explicitlyDeclined = customerAgreedOnSite === false || customerAgreedOnSite === 'false';
+    if (mode === 'charge' && explicitlyDeclined) {
       return jsonResponse(
         {
           error:
-            'Confirm the customer agreed to the on-site price before charging (customerAgreedOnSite).',
+            'Customer declined on-site price. Please adjust quote or complete diagnostic only.',
         },
         400
       );
