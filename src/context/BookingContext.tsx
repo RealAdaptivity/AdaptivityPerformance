@@ -67,56 +67,7 @@ const DEFAULT_TECHS: TechProfile[] = [
   { id: 'tech-2', name: 'Adaptivity Technician', role: 'Diagnostic & Brake Specialist', vanNumber: 'Mobile Unit #1 (Transit Rig)', phone: '(940) 304-0620', rating: 4.9 },
 ];
 
-const INITIAL_BOOKINGS: Booking[] = [
-  {
-    id: 'AP-8492',
-    customerName: 'Sample Customer',
-    customerPhone: '(214) 555-8123',
-    customerAddress: '1234 Canyon Falls Dr, Northlake, TX 76226',
-    zipCode: '76226',
-    vehicle: '2021 Ford F-150 (3.5L V6 EcoBoost Twin-Turbo)',
-    vin: '1FTFW1E84MKD12345',
-    services: ['Front Brake Pads & Rotor Replacement', 'Full Synthetic Oil Change & Filter'],
-    totalEstimate: 335,
-    locationType: 'mobile',
-    status: 'EN_ROUTE',
-    claimedBy: DEFAULT_TECHS[0],
-    distanceMiles: 3.8,
-    etaMinutes: 9,
-    dateCreated: '2026-07-20 08:30 AM',
-  },
-  {
-    id: 'AP-9104',
-    customerName: 'Jessica Taylor',
-    customerPhone: '(940) 555-4921',
-    customerAddress: '500 Harvest Way, Justin, TX 76247',
-    zipCode: '76247',
-    vehicle: '2020 Chevy Tahoe (5.3L V8)',
-    services: ['AGM/Heavy Duty Battery Swap', 'Full Computer Diagnostic & Coding'],
-    totalEstimate: 280,
-    locationType: 'mobile',
-    status: 'UNASSIGNED',
-    distanceMiles: 4.2,
-    etaMinutes: 11,
-    dateCreated: '2026-07-20 09:15 AM',
-  },
-  {
-    id: 'AP-7732',
-    customerName: 'David Rodriguez',
-    customerPhone: '(817) 555-3092',
-    customerAddress: '100 Country Club Rd, Argyle, TX 76227',
-    zipCode: '76227',
-    vehicle: '2022 RAM 2500 Cummins (6.7L Turbo Diesel)',
-    services: ['Complete 4-Wheel Brake Overhaul'],
-    totalEstimate: 525,
-    locationType: 'mobile',
-    status: 'ON_SITE',
-    claimedBy: DEFAULT_TECHS[1],
-    distanceMiles: 0,
-    etaMinutes: 0,
-    dateCreated: '2026-07-20 07:45 AM',
-  },
-];
+const INITIAL_BOOKINGS: Booking[] = [];
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
@@ -126,9 +77,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const refreshBookings = useCallback(async () => {
     const remote = await fetchAllBookings();
-    if (remote.length > 0) {
-      setBookings(remote);
-    }
+    setBookings(remote);
   }, []);
 
   useEffect(() => {
