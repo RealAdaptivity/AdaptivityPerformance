@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { CreditCard, Lock, Loader2 } from 'lucide-react';
+import { CreditCard, Lock, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface StripeBookingHoldFormProps {
   holdAmountDollars: number;
@@ -40,12 +40,12 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
     setIsProcessing(false);
 
     if (error) {
-      setPayError(error.message || 'Could not save card');
+      setPayError(error.message || 'Payment failed');
       return;
     }
     if (
-      paymentIntent?.status === 'requires_capture' ||
-      paymentIntent?.status === 'succeeded'
+      paymentIntent?.status === 'succeeded' ||
+      paymentIntent?.status === 'requires_capture'
     ) {
       onAuthorized();
     } else {
@@ -55,19 +55,29 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-start gap-2 text-[11px] text-slate-300 bg-slate-950/80 border border-white/10 rounded-xl p-3">
+      <div className="flex items-start gap-2 text-[11px] text-slate-300 bg-slate-950/80 border border-white/10 rounded-xl p-3.5 space-y-1">
         <CreditCard className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
-        <p>
-          We&apos;ll place a <strong className="text-white">${holdAmountDollars.toFixed(2)}</strong> hold for your
-          diagnostic visit. Your card is charged only when the job is completed. Technicians receive 70% via
-          platform checkout.
-        </p>
+        <div>
+          <p className="font-semibold text-white">
+            Pay <strong className="text-orange-400">${holdAmountDollars.toFixed(2)}</strong> Diagnostic Fee & Save Card on File
+          </p>
+          <p className="text-slate-400 text-[10px] leading-relaxed">
+            Your $85 payment reserves your certified technician. Additional labor & parts are quoted on-site and charged upon completion.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
+        <span className="flex items-center gap-1 text-emerald-400 font-medium">
+          <Sparkles className="w-3.5 h-3.5" /> Buy Now, Pay Later Available
+        </span>
+        <span className="text-[10px] text-slate-500">Affirm · Klarna · Afterpay · Card · Apple Pay</span>
       </div>
 
       {!isReady && (
-        <div className="py-8 flex items-center justify-center text-xs text-slate-400 gap-2 bg-slate-950/40 border border-white/5 rounded-xl">
+        <div className="py-10 flex items-center justify-center text-xs text-slate-400 gap-2 bg-slate-950/40 border border-white/5 rounded-xl">
           <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
-          <span>Loading secure card inputs...</span>
+          <span>Loading secure payment options…</span>
         </div>
       )}
 
@@ -85,6 +95,11 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
         </p>
       )}
 
+      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 px-1">
+        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        <span>Backed by our 12-Month / 12,000-Mile Warranty</span>
+      </div>
+
       <button
         type="submit"
         disabled={isProcessing || !stripe || !isReady}
@@ -93,12 +108,12 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
         {isProcessing ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Saving card…</span>
+            <span>Processing $85.00 payment…</span>
           </>
         ) : (
           <>
             <Lock className="w-4 h-4" />
-            <span>Confirm hold — ${holdAmountDollars.toFixed(2)}</span>
+            <span>Pay ${holdAmountDollars.toFixed(2)} & Book Appointment</span>
           </>
         )}
       </button>

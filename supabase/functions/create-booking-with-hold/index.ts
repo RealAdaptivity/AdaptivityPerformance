@@ -184,11 +184,10 @@ Deno.serve(async (req) => {
     const piParams: Record<string, unknown> = {
       amount: holdCents,
       currency: 'usd',
-      capture_method: 'manual',
-      payment_method_types: ['card'],
+      automatic_payment_methods: { enabled: true },
       setup_future_usage: 'off_session',
       metadata: {
-        type: 'booking_hold',
+        type: 'booking_charge',
         booking_reference: booking.reference_code,
         booking_id: String(booking.id),
         platform: 'adaptivity_performance',
