@@ -1,12 +1,28 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { stripeRequest } from './stripe.ts';
+import { voidAuthorization } from './paypal.ts';
 
+/**
+ * Release an uncaptured card hold.
+ *
+ * PayPal calls this voiding an authorization; it is the analogue of cancelling a
+ * Stripe PaymentIntent still in requires_capture. Two cases Stripe folded into
+ * its status machine have to be handled explicitly here:
+ *
+ *   - No hold exists yet. create-booking-with-hold opens an order before the
+ *     customer enters a card, so a booking abandoned at that step has no
+ *     authorization to void. Cancelling it is bookkeeping only.
+ *
+ *   - The authorization already expired. PayPal releases the funds itself after
+ *     the honor period, so a void on an expired authorization fails — but the
+ *     customer's money is already free, which is the outcome we wanted. That is
+ *     treated as success rather than blocking the cancellation.
+ */
 export async function cancelBookingHoldForRow(
   supabase: SupabaseClient,
   booking: {
     id: string;
     reference_code: string;
-    payment_intent_id: string | null;
+    paypal_authorization_id: string | null;
     payment_status: string | null;
   },
   options: { releaseJob: boolean }
@@ -15,25 +31,32 @@ export async function cancelBookingHoldForRow(
     throw new Error('Payment already captured; use refund instead.');
   }
 
-  let stripeStatus: string | null = null;
-  const paymentIntentId = booking.payment_intent_id;
+  let processorStatus: string | null = null;
+  const authorizationId = booking.paypal_authorization_id;
 
-  if (paymentIntentId) {
-    const pi = await stripeRequest(`/payment_intents/${paymentIntentId}`, 'GET');
-    stripeStatus = pi.status as string;
-
-    if (pi.status === 'requires_capture' || pi.status === 'requires_confirmation') {
-      await stripeRequest(`/payment_intents/${paymentIntentId}/cancel`, 'POST');
-      stripeStatus = 'canceled';
-    } else if (pi.status === 'canceled') {
-      stripeStatus = 'canceled';
-    } else if (
-      pi.status !== 'requires_payment_method' &&
-      pi.status !== 'requires_action' &&
-      pi.status !== 'succeeded'
-    ) {
-      throw new Error(`Cannot cancel hold (Stripe status: ${pi.status}).`);
+  if (authorizationId) {
+    try {
+      await voidAuthorization(authorizationId);
+      processorStatus = 'voided';
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      // An authorization that is already voided, already captured-and-settled,
+      // or expired past its honor period leaves nothing held. Treat those as
+      // done so a retried cancellation stays idempotent; anything else must
+      // surface, because silently cancelling a booking whose hold is still live
+      // would strand the customer's funds.
+      if (
+        /ALREADY_VOIDED|AUTHORIZATION_VOIDED|RESOURCE_NOT_FOUND|AUTHORIZATION_EXPIRED|INVALID_RESOURCE_ID/i.test(
+          message
+        )
+      ) {
+        processorStatus = 'voided';
+      } else {
+        throw new Error(`Could not release the card hold: ${message}`);
+      }
     }
+  } else {
+    processorStatus = 'no_hold';
   }
 
   const bookingPatch: Record<string, unknown> = {
@@ -47,15 +70,16 @@ export async function cancelBookingHoldForRow(
     bookingPatch.distance_miles = 0;
   }
 
-  const { error: updateError } = await supabase.from('bookings').update(bookingPatch).eq('id', booking.id);
+  const { error: updateError } = await supabase
+    .from('bookings')
+    .update(bookingPatch)
+    .eq('id', booking.id);
   if (updateError) throw new Error(updateError.message);
 
-  if (paymentIntentId) {
-    await supabase
-      .from('payments')
-      .update({ status: 'canceled', updated_at: new Date().toISOString() })
-      .eq('payment_intent_id', paymentIntentId);
-  }
+  await supabase
+    .from('payments')
+    .update({ status: 'canceled', updated_at: new Date().toISOString() })
+    .eq('booking_id', booking.id);
 
-  return { stripeStatus, bookingReference: booking.reference_code };
+  return { processorStatus, bookingReference: booking.reference_code };
 }
