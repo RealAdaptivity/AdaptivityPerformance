@@ -90,7 +90,7 @@ const functions = [
   { name: 'stripe-webhook', shared: ['stripe.ts', 'instantPayout.ts'], verify_jwt: false },
   {
     name: 'admin-cancel-booking-hold',
-    shared: ['stripe.ts', 'adminAuth.ts', 'cancelHold.ts'],
+    shared: ['helcim.ts', 'adminAuth.ts', 'cancelHold.ts'],
     verify_jwt: true,
   },
   { name: 'bootstrap-admin', shared: ['stripe.ts'], verify_jwt: false },
@@ -99,7 +99,7 @@ const functions = [
     shared: ['stripe.ts', 'adminAuth.ts'],
     verify_jwt: true,
   },
-  { name: 'cancel-booking-hold', shared: ['stripe.ts', 'cancelHold.ts'], verify_jwt: true },
+  { name: 'cancel-booking-hold', shared: ['helcim.ts', 'cancelHold.ts'], verify_jwt: true },
   { name: 'reschedule-booking', shared: ['stripe.ts'], verify_jwt: true },
   {
     name: 'admin-adjust-capture',

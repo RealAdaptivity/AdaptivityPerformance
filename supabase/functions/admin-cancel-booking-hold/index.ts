@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse } from './_shared/stripe.ts';
+import { handleCors, jsonResponse } from './_shared/helcim.ts';
 import { requireAdminUser } from './_shared/adminAuth.ts';
 import { cancelBookingHoldForRow } from './_shared/cancelHold.ts';
 
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, reference_code, payment_intent_id, payment_status')
+      .select('id, reference_code, helcim_transaction_id, payment_status')
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
 
