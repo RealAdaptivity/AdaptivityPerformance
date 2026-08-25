@@ -181,6 +181,26 @@ Deno.serve(async (req) => {
 
     const receiptEmail = email;
 
+    // Find or create Stripe Customer by email to support Link and saved cards
+    let stripeCustomerId: string | undefined;
+    if (receiptEmail) {
+      try {
+        const existing = await stripeRequest(`/customers?email=${encodeURIComponent(receiptEmail)}&limit=1`, 'GET');
+        if (existing.data && existing.data.length > 0) {
+          stripeCustomerId = existing.data[0].id;
+        } else {
+          const newCust = await stripeRequest('/customers', 'POST', {
+            email: receiptEmail,
+            name: customerName.trim(),
+            phone: customerPhone.trim(),
+          });
+          stripeCustomerId = newCust.id;
+        }
+      } catch (custErr) {
+        console.warn('[create-booking-with-hold] customer find/create warning:', custErr);
+      }
+    }
+
     const piParams: Record<string, unknown> = {
       amount: holdCents,
       currency: 'usd',
@@ -192,6 +212,9 @@ Deno.serve(async (req) => {
         platform: 'adaptivity_performance',
       },
     };
+    if (stripeCustomerId) {
+      piParams.customer = stripeCustomerId;
+    }
     if (receiptEmail) {
       piParams.receipt_email = receiptEmail;
     }
