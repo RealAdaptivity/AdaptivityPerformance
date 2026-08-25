@@ -117,18 +117,25 @@ export async function captureHoldAndRemainder(opts: {
     if (customerId) {
       remainderBody.customer = customerId;
     }
-    const remainderPi = await stripeRequest('/payment_intents', 'POST', remainderBody);
-    if (remainderPi.status !== 'succeeded') {
+    try {
+      const remainderPi = await stripeRequest('/payment_intents', 'POST', remainderBody);
+      if (remainderPi.status === 'succeeded') {
+        remainderPaymentIntentId = remainderPi.id as string;
+        remainderChargeId =
+          typeof remainderPi.latest_charge === 'string'
+            ? remainderPi.latest_charge
+            : (remainderPi.latest_charge as any)?.id ?? null;
+        capturedCents += remainderCents;
+      } else {
+        throw new Error(`Remainder charge returned status: ${remainderPi.status}`);
+      }
+    } catch (remainderErr: unknown) {
+      const msg = remainderErr instanceof Error ? remainderErr.message : String(remainderErr);
+      console.warn('[captureHold] direct remainder charge failed:', msg);
       throw new Error(
-        `Remainder charge failed (status: ${remainderPi.status}). Hold portion was captured — contact support.`
+        `Diagnostic fee ($${(chargeFromHold / 100).toFixed(2)}) is captured, but the additional repair balance ($${(remainderCents / 100).toFixed(2)}) requires customer authorization. Tap "Send Payment Link" to send the checkout link directly to the customer.`
       );
     }
-    remainderPaymentIntentId = remainderPi.id as string;
-    remainderChargeId =
-      typeof remainderPi.latest_charge === 'string'
-        ? remainderPi.latest_charge
-        : remainderPi.latest_charge?.id ?? null;
-    capturedCents += remainderCents;
   }
 
   const creditAppliedCents = Math.max(
