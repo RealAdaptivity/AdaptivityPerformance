@@ -20,7 +20,7 @@ type Tab = 'payouts' | 'account';
  * Stripe’s embedded Account Management / Payouts UI is the supported path to add a debit card.
  */
 export const AddInstantDebitCardModal: React.FC<Props> = ({ onClose, onAdded }) => {
-  const [tab, setTab] = useState<Tab>('payouts');
+  const [tab, setTab] = useState<Tab>('account');
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchClientSecret = useCallback(async () => {
