@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
-import { StripeBookingHoldSection } from './StripeBookingHoldSection';
+import { PayPalBookingHoldSection } from './PayPalBookingHoldSection';
 import { computeHoldQuote } from '../services/holdPricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
@@ -68,7 +68,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [referralInput, setReferralInput] = useState('');
   const [bookingRef, setBookingRef] = useState('');
   const [holdAmount, setHoldAmount] = useState(0);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [holdOrderId, setHoldOrderId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreatingHold, setIsCreatingHold] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
@@ -120,7 +120,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       setStep(1);
-      setClientSecret(null);
+      setHoldOrderId(null);
       setSubmitError(null);
       setBookingRef('');
       setAccountPassword('');
@@ -207,7 +207,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       });
 
       setBookingRef(hold.bookingReference);
-      setClientSecret(hold.clientSecret);
+      setHoldOrderId(hold.orderId);
       setStep(3);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Could not start card hold');
@@ -598,16 +598,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </form>
           )}
 
-          {step === 3 && clientSecret && (
+          {step === 3 && holdOrderId && (
             <div className="space-y-4">
               <p className="text-xs text-slate-400">
                 Appointment <span className="font-mono text-orange-400 font-bold">#{bookingRef}</span>
               </p>
-              <StripeBookingHoldSection
-                clientSecret={clientSecret}
+              <PayPalBookingHoldSection
+                orderId={holdOrderId}
+                bookingReference={bookingRef}
                 holdAmountDollars={holdAmount}
-                customerName={fullName}
-                customerEmail={email}
                 onAuthorized={handleCardAuthorized}
               />
               <button

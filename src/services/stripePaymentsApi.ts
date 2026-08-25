@@ -67,8 +67,8 @@ export async function startMechanicStripeOnboarding(params: {
 export type BookingHoldResult = {
   bookingReference: string;
   bookingId: string;
-  clientSecret: string;
-  paymentIntentId: string;
+  /** PayPal order id. Replaces the Stripe clientSecret. */
+  orderId: string;
   holdAmountDollars: number;
   message: string;
 };
@@ -92,6 +92,34 @@ export async function createBookingWithCardHold(params: {
   preferredMechanicId?: string;
 }): Promise<BookingHoldResult> {
   const data = await invokeEdgeFunction<BookingHoldResult>('create-booking-with-hold', params);
-  if (!data?.clientSecret) throw new Error('Missing Stripe authorization from server');
+  if (!data?.orderId) throw new Error('Missing card authorization order from server');
   return data;
+}
+
+export type ConfirmBookingHoldResult = {
+  ok: boolean;
+  bookingReference: string;
+  authorizationId?: string;
+  authorizedAmountDollars?: number;
+  /** False when PayPal returned no vault id, meaning a repair above the hold
+   * cannot be charged without re-collecting the card. */
+  cardOnFile?: boolean;
+  /** When PayPal stops guaranteeing the funds (~3 days out). */
+  authorizationExpiresAt?: string | null;
+  alreadyConfirmed?: boolean;
+};
+
+/**
+ * Place the hold once the buyer approves the order in the browser.
+ *
+ * PayPal splits approval from authorization: approving an order reserves
+ * nothing, and only this server-side call actually holds the funds. The order id
+ * was minted server-side, so it is verified against the booking rather than
+ * trusted.
+ */
+export async function confirmBookingHold(params: {
+  bookingReference: string;
+  orderId: string;
+}): Promise<ConfirmBookingHoldResult> {
+  return invokeEdgeFunction<ConfirmBookingHoldResult>('confirm-booking-hold', params);
 }
