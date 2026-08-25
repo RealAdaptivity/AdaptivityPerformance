@@ -84,6 +84,7 @@ const functions = [
     verify_jwt: true,
   },
   { name: 'stripe-webhook', shared: ['stripe.ts', 'instantPayout.ts'], verify_jwt: false },
+  { name: 'helcim-webhook', shared: ['helcim.ts'], verify_jwt: false },
   {
     name: 'admin-cancel-booking-hold',
     shared: ['helcim.ts', 'adminAuth.ts', 'cancelHold.ts'],
