@@ -86,15 +86,28 @@ export async function transferTechShareToConnect(opts: {
   partsPurchasedBy?: 'tech' | 'company';
   techStripeAccountId: string | null;
   chargeId?: string | null;
+  /** Charges that funded this capture, each with how many cents it holds. When one
+   * covers the tech share, the transfer is drawn from it via source_transaction so
+   * it settles without needing an available platform balance. */
+  fundingCandidates?: Array<{ chargeId: string; amountCents: number }>;
+  /** Transfer exactly this many cents instead of recomputing the split. Used by the
+   * retry path, where the correct 70% share was already computed at capture and the
+   * hold PaymentIntent alone would under-report the total. */
+  techTransferCentsOverride?: number;
   source?: string;
   existingTransferId?: string | null;
 }): Promise<ConnectTransferResult> {
-  const { platformFeeCents, techTransferCents } = splitJobTotalCents(
+  const split = splitJobTotalCents(
     opts.capturedCents,
     opts.salesTaxCents ?? 0,
     opts.partsCents ?? 0,
     opts.partsPurchasedBy ?? 'tech'
   );
+  const techTransferCents =
+    opts.techTransferCentsOverride && opts.techTransferCentsOverride > 0
+      ? Math.round(opts.techTransferCentsOverride)
+      : split.techTransferCents;
+  const platformFeeCents = split.platformFeeCents;
   const techStripeAccountId = opts.techStripeAccountId;
 
   if (opts.existingTransferId) {
@@ -130,10 +143,21 @@ export async function transferTechShareToConnect(opts: {
     };
   }
 
+  // Prefer funding the transfer from a specific charge (source_transaction) so it
+  // succeeds even while funds are still settling and doesn't draw the platform's
+  // available balance. Requires a single charge large enough to cover the share;
+  // otherwise fall back to a balance transfer (the prior behavior).
+  // Only use source_transaction when the caller supplied accurate per-charge
+  // amounts (captureHold does). Other callers keep the balance-transfer behavior.
+  const coveringCharge = (opts.fundingCandidates ?? []).find(
+    (c) => c.chargeId && c.amountCents >= techTransferCents
+  )?.chargeId;
+
   const transferBody: Record<string, unknown> = {
     amount: techTransferCents,
     currency: 'usd',
     destination: techStripeAccountId,
+    ...(coveringCharge ? { source_transaction: coveringCharge } : {}),
     metadata: {
       booking_reference: opts.bookingReference,
       payment_intent_id: opts.paymentIntentId,

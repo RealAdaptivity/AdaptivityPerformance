@@ -136,6 +136,20 @@ Deno.serve(async (req: Request) => {
         Math.round(Number(booking.total_estimate) * 100);
       const chargeId =
         typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
+
+      // The correct 70% share (incl. any repair remainder + tax/parts rules) was
+      // computed and stored at capture. Reuse it — recomputing from the hold
+      // PaymentIntent alone would under-pay jobs that had a remainder charge.
+      const { data: storedPayment } = await supabase
+        .from('payments')
+        .select('tech_transfer_cents')
+        .eq('payment_intent_id', paymentIntentId)
+        .maybeSingle();
+      const storedTechCents =
+        typeof storedPayment?.tech_transfer_cents === 'number'
+          ? storedPayment.tech_transfer_cents
+          : Number(storedPayment?.tech_transfer_cents) || 0;
+
       const techStripeAccountId = await resolveTechStripeAccountId(supabase, booking.mechanic_id);
       const transferResult = await transferTechShareToConnect({
         paymentIntentId,
@@ -143,13 +157,14 @@ Deno.serve(async (req: Request) => {
         capturedCents,
         techStripeAccountId,
         chargeId,
+        techTransferCentsOverride: storedTechCents > 0 ? storedTechCents : undefined,
         source: 'job_capture_retry',
         existingTransferId: null,
       });
       await supabase
         .from('payments')
         .update({
-          platform_fee_cents: transferResult.platformFeeCents,
+          // Do not overwrite the stored 70% share / platform fee on a retry.
           tech_transfer_cents: transferResult.techTransferCents,
           tech_stripe_account_id: transferResult.techStripeAccountId,
           stripe_transfer_id: transferResult.transferId,
