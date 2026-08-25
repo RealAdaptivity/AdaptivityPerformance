@@ -2,8 +2,8 @@ import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
 
 export interface CreatePaymentIntentResult {
-  /** HelcimPay.js session token. Replaces the Stripe clientSecret. */
-  checkoutToken: string;
+  clientSecret: string;
+  paymentIntentId: string;
   totalCharged: number;
   baseAmount?: number;
   techShareAmount: number;
@@ -43,8 +43,8 @@ export async function createCheckoutPaymentIntent(params: {
   if (data?.error) {
     throw new Error(String(data.error));
   }
-  if (!data?.checkoutToken) {
-    throw new Error('Checkout session missing from server response');
+  if (!data?.clientSecret) {
+    throw new Error('Stripe client secret missing from server response');
   }
   return data as CreatePaymentIntentResult;
 }
@@ -67,8 +67,8 @@ export async function startMechanicStripeOnboarding(params: {
 export type BookingHoldResult = {
   bookingReference: string;
   bookingId: string;
-  /** HelcimPay.js session token. Replaces the Stripe clientSecret. */
-  checkoutToken: string;
+  clientSecret: string;
+  paymentIntentId: string;
   holdAmountDollars: number;
   message: string;
 };
@@ -92,53 +92,6 @@ export async function createBookingWithCardHold(params: {
   preferredMechanicId?: string;
 }): Promise<BookingHoldResult> {
   const data = await invokeEdgeFunction<BookingHoldResult>('create-booking-with-hold', params);
-  if (!data?.checkoutToken) throw new Error('Missing card authorization session from server');
+  if (!data?.clientSecret) throw new Error('Missing Stripe authorization from server');
   return data;
-}
-
-export type ConfirmBookingHoldResult = {
-  ok: boolean;
-  bookingReference: string;
-  transactionId?: string;
-  authorizedAmountDollars?: number;
-  /** False when Helcim returned no reusable card token, which means a repair
-   * above the hold cannot be charged without re-collecting the card. */
-  cardOnFile?: boolean;
-  alreadyConfirmed?: boolean;
-};
-
-/**
- * Record the hold after the customer completes the HelcimPay.js modal.
- *
- * The transaction id comes from the browser, so the server re-fetches it from
- * Helcim and validates approval, amount, and prior use before storing anything.
- * This call is what actually attaches the hold to the booking -- until it
- * succeeds, the booking has a checkout session but no card.
- */
-export type ConfirmCheckoutResult = {
-  ok: boolean;
-  bookingReference: string | null;
-  transactionId?: string;
-  paidAmountDollars?: number;
-  alreadyConfirmed?: boolean;
-};
-
-/**
- * Record a completed checkout after the HelcimPay.js modal closes.
- *
- * As with the hold, the transaction id comes from the browser and is
- * revalidated server-side against Helcim before the payment is marked paid.
- */
-export async function confirmCheckoutPayment(params: {
-  checkoutToken: string;
-  transactionId: string;
-}): Promise<ConfirmCheckoutResult> {
-  return invokeEdgeFunction<ConfirmCheckoutResult>('confirm-checkout-payment', params);
-}
-
-export async function confirmBookingHold(params: {
-  bookingReference: string;
-  transactionId: string;
-}): Promise<ConfirmBookingHoldResult> {
-  return invokeEdgeFunction<ConfirmBookingHoldResult>('confirm-booking-hold', params);
 }

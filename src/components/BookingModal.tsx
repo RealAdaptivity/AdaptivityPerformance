@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
-import { HelcimBookingHoldSection } from './HelcimBookingHoldSection';
+import { StripeBookingHoldSection } from './StripeBookingHoldSection';
 import { computeHoldQuote } from '../services/holdPricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
@@ -68,7 +68,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [referralInput, setReferralInput] = useState('');
   const [bookingRef, setBookingRef] = useState('');
   const [holdAmount, setHoldAmount] = useState(0);
-  const [checkoutToken, setCheckoutToken] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreatingHold, setIsCreatingHold] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
@@ -120,7 +120,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       setStep(1);
-      setCheckoutToken(null);
+      setClientSecret(null);
       setSubmitError(null);
       setBookingRef('');
       setAccountPassword('');
@@ -207,7 +207,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       });
 
       setBookingRef(hold.bookingReference);
-      setCheckoutToken(hold.checkoutToken);
+      setClientSecret(hold.clientSecret);
       setStep(3);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : 'Could not start card hold');
@@ -598,15 +598,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </form>
           )}
 
-          {step === 3 && checkoutToken && (
+          {step === 3 && clientSecret && (
             <div className="space-y-4">
               <p className="text-xs text-slate-400">
                 Appointment <span className="font-mono text-orange-400 font-bold">#{bookingRef}</span>
               </p>
-              <HelcimBookingHoldSection
-                checkoutToken={checkoutToken}
-                bookingReference={bookingRef}
+              <StripeBookingHoldSection
+                clientSecret={clientSecret}
                 holdAmountDollars={holdAmount}
+                customerName={fullName}
+                customerEmail={email}
                 onAuthorized={handleCardAuthorized}
               />
               <button

@@ -6,7 +6,6 @@ const sharedDir = path.join(root, '_shared');
 
 const sharedFiles = {
   'stripe.ts': fs.readFileSync(path.join(sharedDir, 'stripe.ts'), 'utf8'),
-  'helcim.ts': fs.readFileSync(path.join(sharedDir, 'helcim.ts'), 'utf8'),
   'revenueSplit.ts': fs.readFileSync(path.join(sharedDir, 'revenueSplit.ts'), 'utf8'),
   'instantPayout.ts': fs.readFileSync(path.join(sharedDir, 'instantPayout.ts'), 'utf8'),
   'adminAuth.ts': fs.readFileSync(path.join(sharedDir, 'adminAuth.ts'), 'utf8'),
@@ -22,20 +21,20 @@ const sharedFiles = {
 };
 
 const functions = [
-  { name: 'create-payment-intent', shared: ['helcim.ts', 'revenueSplit.ts'], verify_jwt: true },
-  { name: 'confirm-checkout-payment', shared: ['helcim.ts'], verify_jwt: true },
+  { name: 'create-payment-intent', shared: ['stripe.ts', 'revenueSplit.ts'], verify_jwt: true },
   { name: 'create-connect-account', shared: ['stripe.ts', 'connectBranding.ts', 'connectAccountRecovery.ts'], verify_jwt: true },
   {
     name: 'create-booking-with-hold',
-    shared: ['helcim.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
+    shared: ['stripe.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
     verify_jwt: true,
   },
-  { name: 'confirm-booking-hold', shared: ['helcim.ts'], verify_jwt: true },
   {
     name: 'capture-booking-payment',
     shared: [
-      'helcim.ts',
+      'stripe.ts',
       'revenueSplit.ts',
+      'connectTransfer.ts',
+      'connectAccountRecovery.ts',
       'captureHold.ts',
       'expoPush.ts',
     ],
@@ -53,7 +52,12 @@ const functions = [
   },
   {
     name: 'add-booking-tip',
-    shared: ['helcim.ts'],
+    shared: [
+      'stripe.ts',
+      'connectTransfer.ts',
+      'connectAccountRecovery.ts',
+      'revenueSplit.ts',
+    ],
     verify_jwt: true,
   },
   {
@@ -84,10 +88,9 @@ const functions = [
     verify_jwt: true,
   },
   { name: 'stripe-webhook', shared: ['stripe.ts', 'instantPayout.ts'], verify_jwt: false },
-  { name: 'helcim-webhook', shared: ['helcim.ts'], verify_jwt: false },
   {
     name: 'admin-cancel-booking-hold',
-    shared: ['helcim.ts', 'adminAuth.ts', 'cancelHold.ts'],
+    shared: ['stripe.ts', 'adminAuth.ts', 'cancelHold.ts'],
     verify_jwt: true,
   },
   { name: 'bootstrap-admin', shared: ['stripe.ts'], verify_jwt: false },
@@ -96,16 +99,16 @@ const functions = [
     shared: ['stripe.ts', 'adminAuth.ts'],
     verify_jwt: true,
   },
-  { name: 'cancel-booking-hold', shared: ['helcim.ts', 'cancelHold.ts'], verify_jwt: true },
+  { name: 'cancel-booking-hold', shared: ['stripe.ts', 'cancelHold.ts'], verify_jwt: true },
   { name: 'reschedule-booking', shared: ['stripe.ts'], verify_jwt: true },
   {
     name: 'admin-adjust-capture',
-    shared: ['helcim.ts', 'adminAuth.ts', 'revenueSplit.ts'],
+    shared: ['stripe.ts', 'adminAuth.ts', 'revenueSplit.ts', 'connectTransfer.ts', 'connectAccountRecovery.ts'],
     verify_jwt: true,
   },
   {
     name: 'admin-refund-booking',
-    shared: ['helcim.ts', 'adminAuth.ts'],
+    shared: ['stripe.ts', 'adminAuth.ts', 'connectTransfer.ts', 'revenueSplit.ts', 'connectAccountRecovery.ts'],
     verify_jwt: true,
   },
   {

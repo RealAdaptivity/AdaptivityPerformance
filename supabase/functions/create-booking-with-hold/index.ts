@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, initializeHelcimPayCheckout } from '../_shared/helcim.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
 import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
 import { computeHoldFromServices } from '../_shared/holdPricing.ts';
@@ -10,9 +10,9 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
-    if (!Deno.env.get('HELCIM_API_TOKEN')?.trim()) {
+    if (!Deno.env.get('STRIPE_SECRET_KEY')?.trim()) {
       return jsonResponse(
-        { error: 'HELCIM_API_TOKEN is not configured on Supabase Edge Functions.' },
+        { error: 'STRIPE_SECRET_KEY is not configured on Supabase Edge Functions.' },
         503
       );
     }
@@ -181,59 +181,73 @@ Deno.serve(async (req) => {
 
     const receiptEmail = email;
 
-    // Open a HelcimPay.js session in preauth mode — the analogue of a Stripe
-    // PaymentIntent with capture_method: manual. This only reserves a checkout
-    // token; no card is collected and no hold exists until the customer completes
-    // the modal, at which point confirm-booking-hold records the real transaction.
-    //
-    // Card-only is implicit here: Helcim does not offer BNPL, so the Stripe
-    // excluded_payment_method_types list has no counterpart to carry over.
-    let checkout;
+    const piParams: Record<string, unknown> = {
+      amount: holdCents,
+      currency: 'usd',
+      capture_method: 'manual',
+      automatic_payment_methods: { enabled: true },
+      // Card hold for later capture — BNPL is for final checkout only.
+      setup_future_usage: 'off_session',
+      excluded_payment_method_types: [
+        'affirm',
+        'klarna',
+        'afterpay_clearpay',
+        'zip',
+        'sunbit',
+      ],
+      metadata: {
+        type: 'booking_hold',
+        booking_reference: booking.reference_code,
+        booking_id: String(booking.id),
+        platform: 'adaptivity_performance',
+      },
+    };
+
+    const holdPmc =
+      Deno.env.get('STRIPE_PAYMENT_METHOD_CONFIGURATION_HOLDS')?.trim() ||
+      Deno.env.get('STRIPE_PMC_HOLDS')?.trim();
+    if (holdPmc?.startsWith('pmc_')) {
+      // Prefer a card-only holds PMC in Dashboard; exclusions remain as a safety net.
+      piParams.payment_method_configuration = holdPmc;
+    }
+    if (receiptEmail) {
+      piParams.receipt_email = receiptEmail;
+    }
+
+    let paymentIntent;
     try {
-      checkout = await initializeHelcimPayCheckout({
-        amount: hold,
-        currency: 'USD',
-        paymentType: 'preauth',
-        // Surfaces on the customer's statement and ties the Helcim-side record
-        // back to the booking customers quote over the phone.
-        invoiceNumber: booking.reference_code,
-        // Vault the card so a repair total above the hold can be charged on site
-        // without asking for it again.
-        saveCard: true,
-        idempotencySeed: `hold_${booking.id}`,
-      });
-    } catch (helcimErr) {
+      paymentIntent = await stripeRequest('/payment_intents', 'POST', piParams);
+    } catch (stripeErr) {
       await supabase.from('bookings').delete().eq('id', booking.id);
-      throw helcimErr;
+      throw stripeErr;
     }
 
     await supabase
       .from('bookings')
       .update({
-        processor: 'helcim',
-        helcim_checkout_token: checkout.checkoutToken,
+        payment_intent_id: paymentIntent.id,
         payment_status: 'awaiting_card',
       })
       .eq('id', booking.id);
 
     const { platformFeeCents, techTransferCents } = splitJobTotalCents(holdCents);
 
-    // Plain insert rather than the previous upsert-on-payment_intent_id: the
-    // booking was created moments ago, so no payments row can exist for it yet,
-    // and Helcim has no transaction id to key on until the customer pays.
-    const { error: paymentRowError } = await supabase.from('payments').insert({
-      booking_reference: booking.reference_code,
-      booking_id: booking.id,
-      processor: 'helcim',
-      helcim_checkout_token: checkout.checkoutToken,
-      customer_email: receiptEmail ?? null,
-      amount_cents: holdCents,
-      tip_cents: 0,
-      platform_fee_cents: platformFeeCents,
-      tech_transfer_cents: techTransferCents,
-      status: 'pending',
-      payout_status: 'none',
-    });
+    const { error: paymentRowError } = await supabase.from('payments').upsert(
+      {
+        booking_reference: booking.reference_code,
+        booking_id: booking.id,
+        payment_intent_id: paymentIntent.id,
+        customer_email: receiptEmail ?? null,
+        amount_cents: holdCents,
+        tip_cents: 0,
+        platform_fee_cents: platformFeeCents,
+        tech_transfer_cents: techTransferCents,
+        tech_stripe_account_id: null,
+        status: 'pending',
+        payout_status: 'none',
+      },
+      { onConflict: 'payment_intent_id' }
+    );
 
     if (paymentRowError) {
       console.error('[create-booking-with-hold] payments upsert:', paymentRowError.message);
@@ -266,9 +280,8 @@ Deno.serve(async (req) => {
     return jsonResponse({
       bookingReference: booking.reference_code,
       bookingId: booking.id,
-      // Replaces clientSecret: the browser passes this to appendHelcimPayIframe()
-      // to render the card modal, then posts the result to confirm-booking-hold.
-      checkoutToken: checkout.checkoutToken,
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
       holdAmountDollars: hold,
       holdMode: quote.mode,
       holdExpiresAt,

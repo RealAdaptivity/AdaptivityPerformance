@@ -1,192 +1,227 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
+import { stripeRequest } from './stripe.ts';
 import {
-  captureHelcimPreauth,
-  chargeWithCardToken,
-  refundHelcimTransaction,
-  isHelcimApproved,
-  amountToCents,
-  centsToAmount,
-} from './helcim.ts';
-import { splitJobTotalCents } from './revenueSplit.ts';
+  resolveTechStripeAccountId,
+  transferTechShareToConnect,
+} from './connectTransfer.ts';
 
 export type CaptureHoldResult = {
   capturedCents: number;
   remainderCents: number;
-  captureTransactionId: string | null;
-  remainderTransactionId: string | null;
+  remainderPaymentIntentId: string | null;
+  transferId: string | null;
+  transferError: string | null;
   techTransferCents: number;
   platformFeeCents: number;
-  payoutId: string | null;
-  payoutError: string | null;
+  techStripeAccountId: string | null;
 };
 
 /**
- * Capture the booking hold and charge any repair total above it.
- *
- * Two things changed with the move off Stripe.
- *
- * First, the remainder. Stripe let us confirm a second PaymentIntent off_session
- * against the saved payment method. Helcim's equivalent is a fresh purchase
- * against the card token HelcimPay.js vaulted when the hold was taken, which
- * confirm-booking-hold stored. Without that token there is no way to charge the
- * repair without re-collecting the card, so its absence is a hard error here
- * rather than something discovered at the roadside.
- *
- * Second, the payout. There is no Helcim rail that moves money to a third party,
- * so the tech's share is no longer transferred on the spot -- it is recorded in
- * tech_payouts as an obligation and settled in a weekly batch. The split itself
- * is unchanged: splitJobTotalCents still decides it, and still routes sales tax
- * entirely to the platform for remittance.
+ * Capture the booking hold (up to hold amount) and optionally charge any
+ * remainder off-session with the saved payment method (repairs above diagnostic).
  */
 export async function captureHoldAndRemainder(opts: {
   supabase: SupabaseClient;
   bookingId: string;
   bookingReference: string;
   mechanicId: string | null;
-  /** Helcim preauth transaction from the booking hold. */
-  helcimTransactionId: string;
-  /** Vaulted card, required only when the total exceeds the hold. */
-  helcimCardToken: string | null;
+  paymentIntentId: string;
   holdCents: number;
   totalChargeCents: number;
   salesTaxCents?: number;
   partsCents?: number;
   partsPurchasedBy?: 'tech' | 'company';
   source: string;
-  /** Account credit refunded after capture; the payout is net of it. */
+  /** Account credit to refund after capture; tech transfer uses net of this. */
   creditAppliedCents?: number;
 }): Promise<CaptureHoldResult & { creditAppliedCents: number; creditRefundId: string | null }> {
   const chargeFromHold = Math.min(opts.holdCents, opts.totalChargeCents);
   const remainderCents = Math.max(0, opts.totalChargeCents - chargeFromHold);
 
-  // Fail before taking any money if the repair exceeds the hold and there is no
-  // card on file to cover the difference. Capturing first would leave the job
-  // half-paid with no way to finish collecting.
-  if (remainderCents > 0 && !opts.helcimCardToken) {
-    throw new Error(
-      'Job total exceeds the card hold, but no saved card is available for the remainder. Ask the customer to pay the balance through a payment link.'
-    );
+  let pi = await stripeRequest(`/payment_intents/${opts.paymentIntentId}`, 'GET');
+  if (pi.status === 'requires_capture') {
+    pi = await stripeRequest(`/payment_intents/${opts.paymentIntentId}/capture`, 'POST', {
+      amount_to_capture: chargeFromHold,
+    });
+  } else if (pi.status !== 'succeeded') {
+    throw new Error(`Cannot capture hold (Stripe status: ${pi.status})`);
   }
 
-  const capture = await captureHelcimPreauth({
-    preauthTransactionId: opts.helcimTransactionId,
-    amount: centsToAmount(chargeFromHold),
-    idempotencySeed: `cap_${opts.bookingId}`,
-  });
-  if (!isHelcimApproved(capture.status)) {
-    throw new Error(`Could not capture the card hold (Helcim status: ${capture.status}).`);
-  }
-
-  let capturedCents = amountToCents(capture.amount) || chargeFromHold;
-  let remainderTransactionId: string | null = null;
+  let capturedCents = (pi.amount_received as number) ?? chargeFromHold;
+  let remainderPaymentIntentId: string | null = null;
+  let remainderChargeId: string | null = null;
 
   if (remainderCents > 0) {
-    const remainder = await chargeWithCardToken({
-      cardToken: opts.helcimCardToken!,
-      amount: centsToAmount(remainderCents),
-      invoiceNumber: opts.bookingReference,
-      idempotencySeed: `rem_${opts.bookingId}`,
-    });
-    if (!isHelcimApproved(remainder.status)) {
-      // The hold portion is already captured and stays captured; surfacing this
-      // as an error routes it to the admin rather than silently under-collecting.
+    const paymentMethod =
+      typeof pi.payment_method === 'string' ? pi.payment_method : pi.payment_method?.id;
+    if (!paymentMethod) {
       throw new Error(
-        `Remainder charge declined (Helcim status: ${remainder.status}). The $${(chargeFromHold / 100).toFixed(2)} hold portion was captured -- collect the balance by payment link.`
+        'Quote total exceeds the card hold, but no saved payment method is available for the remainder.'
       );
     }
-    remainderTransactionId = remainder.transactionId;
+
+    let customerId: string | null =
+      typeof pi.customer === 'string' ? pi.customer : pi.customer?.id ?? null;
+
+    // If hold has no customer attached, create or resolve Stripe customer
+    if (!customerId) {
+      const { data: bookingRow } = await opts.supabase
+        .from('bookings')
+        .select('customer_name, customer_email, customer_phone')
+        .or(`id.eq.${opts.bookingId},reference_code.ilike.${opts.bookingReference}`)
+        .maybeSingle();
+
+      const customerPayload: Record<string, unknown> = {
+        metadata: {
+          booking_id: opts.bookingId,
+          booking_reference: opts.bookingReference,
+        },
+      };
+      if (bookingRow?.customer_email) customerPayload.email = bookingRow.customer_email;
+      else if (pi.receipt_email) customerPayload.email = pi.receipt_email;
+      if (bookingRow?.customer_name) customerPayload.name = bookingRow.customer_name;
+      if (bookingRow?.customer_phone) customerPayload.phone = bookingRow.customer_phone;
+
+      try {
+        const newCustomer = await stripeRequest('/customers', 'POST', customerPayload);
+        customerId = newCustomer.id as string;
+      } catch (custErr) {
+        console.warn('[captureHold] customer creation error:', custErr);
+      }
+    }
+
+    // Attach payment method to customer if available
+    if (customerId) {
+      try {
+        await stripeRequest(`/payment_methods/${paymentMethod}/attach`, 'POST', {
+          customer: customerId,
+        });
+      } catch (attachErr) {
+        console.warn('[captureHold] payment method attach notice (may already be attached):', attachErr);
+      }
+    }
+
+    const remainderBody: Record<string, unknown> = {
+      amount: remainderCents,
+      currency: 'usd',
+      payment_method: paymentMethod,
+      confirm: true,
+      off_session: true,
+      metadata: {
+        type: 'quote_remainder',
+        booking_reference: opts.bookingReference,
+        booking_id: opts.bookingId,
+        source: opts.source,
+      },
+    };
+    if (customerId) {
+      remainderBody.customer = customerId;
+    }
+    const remainderPi = await stripeRequest('/payment_intents', 'POST', remainderBody);
+    if (remainderPi.status !== 'succeeded') {
+      throw new Error(
+        `Remainder charge failed (status: ${remainderPi.status}). Hold portion was captured — contact support.`
+      );
+    }
+    remainderPaymentIntentId = remainderPi.id as string;
+    remainderChargeId =
+      typeof remainderPi.latest_charge === 'string'
+        ? remainderPi.latest_charge
+        : remainderPi.latest_charge?.id ?? null;
     capturedCents += remainderCents;
   }
 
-  // Account credit is returned against the capture, so it reduces what the job
-  // actually collected and therefore what the tech is owed.
   const creditAppliedCents = Math.max(
     0,
     Math.min(Math.round(opts.creditAppliedCents ?? 0), capturedCents)
   );
   let creditRefundId: string | null = null;
   if (creditAppliedCents > 0) {
-    try {
-      const refund = await refundHelcimTransaction({
-        originalTransactionId: capture.transactionId,
-        amount: centsToAmount(creditAppliedCents),
-        idempotencySeed: `crd_${opts.bookingId}`,
-      });
-      creditRefundId = refund.transactionId;
-    } catch (e) {
-      console.warn('[captureHold] credit refund failed', e);
+    const chargeIdForRefund =
+      typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
+    if (chargeIdForRefund) {
+      try {
+        const refund = await stripeRequest('/refunds', 'POST', {
+          charge: chargeIdForRefund,
+          amount: creditAppliedCents,
+          reason: 'requested_by_customer',
+          metadata: {
+            type: 'account_credit',
+            booking_reference: opts.bookingReference,
+            booking_id: opts.bookingId,
+          },
+        });
+        creditRefundId = typeof refund.id === 'string' ? refund.id : null;
+      } catch (e) {
+        console.warn('[captureHold] credit refund failed', e);
+      }
     }
   }
 
   const netForTransfer = Math.max(0, capturedCents - creditAppliedCents);
-  const split = splitJobTotalCents(
-    netForTransfer,
-    opts.salesTaxCents ?? 0,
-    opts.partsCents ?? 0,
-    opts.partsPurchasedBy ?? 'tech'
-  );
 
-  // Record what the tech earned. Unique on booking_id, so a retried capture
-  // reuses the existing row instead of accruing the job twice.
-  let payoutId: string | null = null;
-  let payoutError: string | null = null;
-  if (opts.mechanicId && split.techTransferCents > 0) {
-    const { data: payoutRow, error } = await opts.supabase
-      .from('tech_payouts')
-      .upsert(
-        {
-          booking_id: opts.bookingId,
-          booking_reference: opts.bookingReference,
-          mechanic_id: opts.mechanicId,
-          amount_cents: split.techTransferCents,
-          status: 'accrued',
-          notes: `Captured via ${opts.source}`,
-        },
-        { onConflict: 'booking_id' }
-      )
-      .select('id')
-      .maybeSingle();
+  const chargeId =
+    typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
 
-    if (error) {
-      // The customer has already paid at this point, so a ledger failure must not
-      // fail the capture. Surface it instead: the admin reconciles from Helcim.
-      payoutError = error.message;
-      console.error('[captureHold] tech_payouts upsert failed', error.message);
-    } else {
-      payoutId = (payoutRow?.id as string) ?? null;
-    }
-  } else if (!opts.mechanicId) {
-    payoutError = 'No technician assigned to this booking; nothing accrued.';
-  }
+  const { data: paymentRow } = await opts.supabase
+    .from('payments')
+    .select('stripe_transfer_id')
+    .eq('payment_intent_id', opts.paymentIntentId)
+    .maybeSingle();
+
+  // Fund the tech transfer directly from the charge(s) it came from, so it works
+  // even while the charge is still settling and never needs an available platform
+  // balance. Bigger charge first so a single transfer usually covers the share.
+  // Any account credit is refunded off the hold charge, so that charge has less
+  // left to source a transfer from. The remainder charge is untouched.
+  const holdAvailableCents = Math.max(0, chargeFromHold - creditAppliedCents);
+  const fundingCandidates = [
+    remainderChargeId ? { chargeId: remainderChargeId, amountCents: remainderCents } : null,
+    chargeId ? { chargeId, amountCents: holdAvailableCents } : null,
+  ].filter(Boolean) as Array<{ chargeId: string; amountCents: number }>;
+
+  const techStripeAccountId = await resolveTechStripeAccountId(opts.supabase, opts.mechanicId);
+  const transferResult = await transferTechShareToConnect({
+    paymentIntentId: opts.paymentIntentId,
+    bookingReference: opts.bookingReference,
+    capturedCents: netForTransfer,
+    salesTaxCents: opts.salesTaxCents,
+    partsCents: opts.partsCents,
+    partsPurchasedBy: opts.partsPurchasedBy,
+    techStripeAccountId,
+    chargeId,
+    fundingCandidates,
+    source: opts.source,
+    existingTransferId:
+      typeof paymentRow?.stripe_transfer_id === 'string' ? paymentRow.stripe_transfer_id : null,
+  });
 
   await opts.supabase
     .from('payments')
     .update({
-      processor: 'helcim',
       status: 'succeeded',
       amount_cents: capturedCents,
-      helcim_capture_transaction_id: capture.transactionId,
-      helcim_remainder_transaction_id: remainderTransactionId,
-      helcim_refund_transaction_id: creditRefundId,
-      platform_fee_cents: split.platformFeeCents,
-      tech_transfer_cents: split.techTransferCents,
-      payout_status: payoutId ? 'accrued' : 'none',
-      payout_error: payoutError,
+      platform_fee_cents: transferResult.platformFeeCents,
+      tech_transfer_cents: transferResult.techTransferCents,
+      tech_stripe_account_id: transferResult.techStripeAccountId,
+      stripe_transfer_id: transferResult.transferId,
+      payout_status: transferResult.payoutStatus,
+      payout_error: transferResult.transferError,
       updated_at: new Date().toISOString(),
     })
     .or(
-      `booking_id.eq.${opts.bookingId},booking_reference.ilike.${opts.bookingReference}`
+      `payment_intent_id.eq.${opts.paymentIntentId},booking_reference.ilike.${opts.bookingReference},booking_id.eq.${opts.bookingId}`
     );
 
   return {
     capturedCents,
     remainderCents,
-    captureTransactionId: capture.transactionId,
-    remainderTransactionId,
-    techTransferCents: split.techTransferCents,
-    platformFeeCents: split.platformFeeCents,
-    payoutId,
-    payoutError,
+    remainderPaymentIntentId,
+    transferId: transferResult.transferId,
+    transferError: transferResult.transferError,
+    techTransferCents: transferResult.techTransferCents,
+    platformFeeCents: transferResult.platformFeeCents,
+    techStripeAccountId: transferResult.techStripeAccountId,
     creditAppliedCents,
     creditRefundId,
   };

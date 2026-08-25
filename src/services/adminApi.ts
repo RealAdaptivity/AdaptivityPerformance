@@ -279,8 +279,7 @@ export async function adminCancelBookingHold(
   const result = await invokeEdgeFunction<{
     ok: boolean;
     bookingReference: string;
-    /** 'reversed' | 'no_hold' | a raw Helcim status. */
-    processorStatus: string | null;
+    stripeStatus: string | null;
     released: boolean;
   }>('admin-cancel-booking-hold', { bookingReference, releaseJob });
   if (cancelReason) {

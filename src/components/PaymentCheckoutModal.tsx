@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, CheckCircle2, Lock, CreditCard, CalendarRange } from 'lucide-react';
-import { HelcimCheckoutFlow } from './HelcimCheckoutFlow';
+import { StripeCheckoutSection } from './StripeCheckoutSection';
 import { BnplMessaging } from './BnplMessaging';
 import { bnplLenderList } from '../services/bnplEligibility';
 
@@ -251,10 +251,13 @@ export const PaymentCheckoutModal: React.FC<PaymentCheckoutModalProps> = ({
                 </div>
               </div>
 
-              <HelcimCheckoutFlow
+              <StripeCheckoutSection
                 baseAmount={baseAmount}
                 tipAmount={tipAmount}
                 grandTotal={grandTotal}
+                techPayoutAmount={techPayoutAmount}
+                platformFeeAmount={platformFeeAmount}
+                preferFinancing={preferFinancing}
                 bookingDetails={bookingDetails}
                 onPaid={handlePaid}
               />

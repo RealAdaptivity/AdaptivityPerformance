@@ -602,67 +602,88 @@ export async function fetchTechYearToDateCompensation(year = new Date().getFullY
 export type TechPayoutRow = {
   id: string;
   bookingReference: string | null;
-  amountCents: number;
-  /** accrued | queued | paid | void */
-  status: string;
-  earnedAt: string;
-  paidAt: string | null;
-  /** How it was settled: gusto | ach | zelle | check | manual. */
-  payoutMethod: string | null;
-  /** Receipt from the system that moved the money. */
-  externalReference: string | null;
+  techTransferCents: number | null;
+  payoutStatus: string;
+  paymentStatus: string;
+  payoutError: string | null;
+  createdAt: string;
 };
 
-export type TechEarningsSummary = {
-  /** Earned but not yet sent. What the business owes right now. */
-  unpaidCents: number;
-  /** Settled to date. */
-  paidCents: number;
-  rows: TechPayoutRow[];
-};
-
-/**
- * A tech's earnings, from the tech_payouts ledger.
- *
- * Much simpler than the Connect version this replaces, which had to reconcile a
- * Stripe balance against payment rows and filter by the tech's connected
- * account. RLS on tech_payouts already restricts rows to the signed-in tech, so
- * there is no account id to resolve and no cross-filtering to get wrong.
- */
-export async function fetchTechEarnings(): Promise<TechEarningsSummary> {
+export async function fetchTechPayoutHistory(): Promise<TechPayoutRow[]> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { unpaidCents: 0, paidCents: 0, rows: [] };
+  if (!user) return [];
 
-  const { data, error } = await supabase
-    .from('tech_payouts')
-    .select('id, booking_reference, amount_cents, status, earned_at, paid_at, payout_method, external_reference')
-    .order('earned_at', { ascending: false })
-    .limit(100);
-
-  if (error) throw error;
-
-  const rows: TechPayoutRow[] = (data ?? []).map((row) => ({
-    id: row.id as string,
-    bookingReference: (row.booking_reference as string) ?? null,
-    amountCents: Number(row.amount_cents) || 0,
-    status: (row.status as string) ?? 'accrued',
-    earnedAt: row.earned_at as string,
-    paidAt: (row.paid_at as string) ?? null,
-    payoutMethod: (row.payout_method as string) ?? null,
-    externalReference: (row.external_reference as string) ?? null,
-  }));
-
-  let unpaidCents = 0;
-  let paidCents = 0;
-  for (const row of rows) {
-    if (row.status === 'paid') paidCents += row.amountCents;
-    else if (row.status === 'accrued' || row.status === 'queued') unpaidCents += row.amountCents;
-    // 'void' rows are reversed by a refund and count toward neither.
+  const { stripeAccountId, refCodes, paymentIntentIds } = await getTechPaymentFilter(user.id);
+  if (!stripeAccountId && refCodes.length === 0 && paymentIntentIds.length === 0) {
+    return [];
   }
 
-  return { unpaidCents, paidCents, rows };
+  let query = supabase
+    .from('payments')
+    .select('id, booking_reference, tech_transfer_cents, tech_stripe_account_id, payment_intent_id, payout_status, status, payout_error, created_at')
+    .order('created_at', { ascending: false })
+    .limit(25);
+
+  const conditions: string[] = [];
+  if (stripeAccountId) {
+    conditions.push(`tech_stripe_account_id.eq.${stripeAccountId}`);
+  }
+  if (refCodes.length > 0) {
+    conditions.push(`booking_reference.in.(${refCodes.map((r) => `"${r}"`).join(',')})`);
+  }
+  if (paymentIntentIds.length > 0) {
+    conditions.push(`payment_intent_id.in.(${paymentIntentIds.map((p) => `"${p}"`).join(',')})`);
+  }
+  if (conditions.length > 0) {
+    query = query.or(conditions.join(','));
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    bookingReference: row.booking_reference,
+    techTransferCents: row.tech_transfer_cents,
+    payoutStatus: row.payout_status ?? 'none',
+    paymentStatus: row.status ?? 'pending',
+    payoutError: row.payout_error ?? null,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function triggerInstantCashOut(method: 'instant' | 'standard') {
+  return invokeEdgeFunction<{ message: string; method?: string; amountDollars?: number }>(
+    'trigger-instant-payout',
+    { method }
+  );
+}
+
+export type TechPayoutPreview = {
+  stripeOnboarded: boolean;
+  stripeAccountId?: string | null;
+  instantAvailableCents: number;
+  availableCents: number;
+  pendingCents?: number;
+  connectTotalCents?: number;
+  cashOutEligibleCents: number;
+  cashOutEligibleDollars: number;
+  availableDollars?: number;
+  instantEligibleDollars?: number;
+  connectTotalDollars?: number;
+  pendingDollars?: number;
+  canCashOut: boolean;
+  canStandardCashOut?: boolean;
+  canInstantCashOut?: boolean;
+  hint?: string;
+  hasDebitCardForInstant?: boolean;
+  payoutsEnabled?: boolean;
+  payoutBlockReason?: string | null;
+};
+
+export async function fetchTechPayoutPreview(): Promise<TechPayoutPreview> {
+  return invokeEdgeFunction<TechPayoutPreview>('trigger-instant-payout', { action: 'preview' });
 }
 
 export type SendPaymentLinkResult = {
