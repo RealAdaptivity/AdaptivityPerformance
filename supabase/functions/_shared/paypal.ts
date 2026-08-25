@@ -481,3 +481,67 @@ export async function refundCapture(opts: {
     amountCents: amountToCents(amount?.value),
   };
 }
+
+/**
+ * Authorize an order the buyer has approved.
+ *
+ * This is the step that actually places the hold. Unlike Helcim's browser-minted
+ * transaction, the order id was created server-side before the buyer ever saw
+ * it, so there is no caller-supplied identifier to distrust here — the id came
+ * from us and is looked up against our own record.
+ *
+ * Returns the authorization plus the vault id, which is only available once the
+ * card has been used successfully.
+ */
+export async function authorizeOrder(opts: {
+  orderId: string;
+  idempotencyKey?: string;
+}): Promise<PayPalAuthorization> {
+  const data = await paypalRequest(
+    `/v2/checkout/orders/${opts.orderId}/authorize`,
+    'POST',
+    {},
+    { idempotencyKey: opts.idempotencyKey }
+  );
+  const auth = authorizationFromOrder(data);
+  if (!auth || !auth.authorizationId) {
+    throw new Error(
+      `PayPal authorized order ${opts.orderId} but returned no authorization (status: ${String(data.status ?? 'unknown')}).`
+    );
+  }
+  return auth;
+}
+
+/** Capture an order the buyer approved under intent: CAPTURE (checkout, links). */
+export async function captureOrder(opts: {
+  orderId: string;
+  idempotencyKey?: string;
+}): Promise<PayPalCapture> {
+  const data = await paypalRequest(
+    `/v2/checkout/orders/${opts.orderId}/capture`,
+    'POST',
+    {},
+    { idempotencyKey: opts.idempotencyKey }
+  );
+  const units = data.purchase_units;
+  if (Array.isArray(units) && units.length > 0) {
+    const unit = units[0] as Record<string, unknown>;
+    const payments = unit.payments as Record<string, unknown> | undefined;
+    const captures = payments?.captures;
+    if (Array.isArray(captures) && captures.length > 0) {
+      return toCapture(captures[0] as Record<string, unknown>);
+    }
+  }
+  throw new Error(
+    `PayPal captured order ${opts.orderId} but returned no capture (status: ${String(data.status ?? 'unknown')}).`
+  );
+}
+
+/** Vault id off an order, once the card has been used successfully. */
+export function vaultIdFromOrder(order: Record<string, unknown>): string | null {
+  const source = order.payment_source as Record<string, unknown> | undefined;
+  const card = source?.card as Record<string, unknown> | undefined;
+  const attributes = card?.attributes as Record<string, unknown> | undefined;
+  const vault = attributes?.vault as Record<string, unknown> | undefined;
+  return vault && typeof vault.id === 'string' ? vault.id : null;
+}

@@ -1,12 +1,9 @@
 /// <reference path="../deno.d.ts" />
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
+import { handleCors, jsonResponse } from './_shared/paypal.ts';
 import { captureHoldAndRemainder } from './_shared/captureHold.ts';
-import {
-  resolveTechStripeAccountId,
-  transferTechShareToConnect,
-} from './_shared/connectTransfer.ts';
+import { splitJobTotalCents } from './_shared/revenueSplit.ts';
 import { sendExpoPush } from './_shared/expoPush.ts';
 type LineItemIn = {
   title?: string;
@@ -89,7 +86,7 @@ Deno.serve(async (req: Request) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, vehicle_description, services, payment_intent_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
+        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, vehicle_description, services, paypal_authorization_id, paypal_vault_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -124,72 +121,67 @@ Deno.serve(async (req: Request) => {
     }
 
     if (booking.payment_status === 'captured' && booking.status === 'COMPLETED') {
-      // Retry Connect transfer only (no re-charge)
-      const paymentIntentId = booking.payment_intent_id;
-      if (!paymentIntentId) {
-        return jsonResponse({ error: 'No payment intent on completed booking' }, 400);
-      }
-      const pi = await stripeRequest(`/payment_intents/${paymentIntentId}`, 'GET');
-      const capturedCents =
-        (pi.amount_received as number) ??
-        booking.hold_amount_cents ??
-        Math.round(Number(booking.total_estimate) * 100);
-      const chargeId =
-        typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
-
-      // The correct 70% share (incl. any repair remainder + tax/parts rules) was
-      // computed and stored at capture. Reuse it — recomputing from the hold
-      // PaymentIntent alone would under-pay jobs that had a remainder charge.
+      // The money is already collected. Under Stripe this branch retried the
+      // Connect transfer; there is no transfer to retry now, so the only thing
+      // that can still be missing is the payout ledger row -- for instance if
+      // the tech_payouts write failed after a successful capture.
       const { data: storedPayment } = await supabase
         .from('payments')
-        .select('tech_transfer_cents')
-        .eq('payment_intent_id', paymentIntentId)
+        .select('tech_transfer_cents, platform_fee_cents, amount_cents')
+        .eq('booking_id', booking.id)
         .maybeSingle();
+
+      // Reuse the share computed at capture. Recomputing it here from the hold
+      // alone would under-pay any job that had a repair remainder.
       const storedTechCents =
         typeof storedPayment?.tech_transfer_cents === 'number'
           ? storedPayment.tech_transfer_cents
           : Number(storedPayment?.tech_transfer_cents) || 0;
+      const capturedCents =
+        Number(storedPayment?.amount_cents) ||
+        booking.hold_amount_cents ||
+        Math.round(Number(booking.total_estimate) * 100);
 
-      const techStripeAccountId = await resolveTechStripeAccountId(supabase, booking.mechanic_id);
-      const transferResult = await transferTechShareToConnect({
-        paymentIntentId,
-        bookingReference: booking.reference_code,
-        capturedCents,
-        techStripeAccountId,
-        chargeId,
-        techTransferCentsOverride: storedTechCents > 0 ? storedTechCents : undefined,
-        source: 'job_capture_retry',
-        existingTransferId: null,
-      });
+      let payoutError: string | null = null;
+      if (!booking.mechanic_id) {
+        payoutError = 'No technician assigned to this booking; nothing accrued.';
+      } else if (storedTechCents > 0) {
+        const { error } = await supabase.from('tech_payouts').upsert(
+          {
+            booking_id: booking.id,
+            booking_reference: booking.reference_code,
+            mechanic_id: booking.mechanic_id,
+            amount_cents: storedTechCents,
+            status: 'accrued',
+            notes: 'Backfilled by capture retry',
+          },
+          { onConflict: 'booking_id' }
+        );
+        if (error) payoutError = error.message;
+      }
+
       await supabase
         .from('payments')
         .update({
-          // Do not overwrite the stored 70% share / platform fee on a retry.
-          tech_transfer_cents: transferResult.techTransferCents,
-          tech_stripe_account_id: transferResult.techStripeAccountId,
-          stripe_transfer_id: transferResult.transferId,
-          payout_status: transferResult.payoutStatus,
-          payout_error: transferResult.transferError,
+          payout_status: payoutError ? 'none' : 'accrued',
+          payout_error: payoutError,
           updated_at: new Date().toISOString(),
         })
-        .eq('payment_intent_id', paymentIntentId);
+        .eq('booking_id', booking.id);
 
       return jsonResponse({
         ok: true,
         alreadyCaptured: true,
         bookingReference: booking.reference_code,
         capturedAmountDollars: capturedCents / 100,
-        techPayoutDollars: transferResult.techTransferCents / 100,
-        platformFeeDollars: transferResult.platformFeeCents / 100,
-        transferId: transferResult.transferId,
-        transferWarning: transferResult.transferError,
-        connectAccountId: transferResult.techStripeAccountId,
-        message: 'Job already captured — transfer retry attempted.',
+        techPayoutDollars: storedTechCents / 100,
+        payoutWarning: payoutError,
+        message: 'Job already captured — payout ledger re-checked.',
       });
     }
 
-    const paymentIntentId = booking.payment_intent_id;
-    if (!paymentIntentId) {
+    const authorizationId = booking.paypal_authorization_id;
+    if (!authorizationId) {
       return jsonResponse({ error: 'No card hold on this booking' }, 400);
     }
 
@@ -358,7 +350,8 @@ Deno.serve(async (req: Request) => {
       bookingId: booking.id,
       bookingReference: booking.reference_code,
       mechanicId: booking.mechanic_id,
-      paymentIntentId,
+      authorizationId,
+      vaultId: booking.paypal_vault_id ?? null,
       holdCents,
       totalChargeCents,
       salesTaxCents,
@@ -540,10 +533,11 @@ Deno.serve(async (req: Request) => {
       diagnosticFeeDollars: holdCents / 100,
       repairsDollars: repairsCents / 100,
       techPayoutDollars: result.techTransferCents / 100,
+      payoutId: result.payoutId,
+      payoutWarning: result.payoutError,
       platformFeeDollars: result.platformFeeCents / 100,
-      transferId: result.transferId,
-      transferWarning: result.transferError,
-      connectAccountId: result.techStripeAccountId,
+      captureId: result.captureId,
+      remainderCaptureId: result.remainderCaptureId,
       reviewAskDueAt,
       message:
         mode === 'no_show'

@@ -6,6 +6,7 @@ const sharedDir = path.join(root, '_shared');
 
 const sharedFiles = {
   'stripe.ts': fs.readFileSync(path.join(sharedDir, 'stripe.ts'), 'utf8'),
+  'paypal.ts': fs.readFileSync(path.join(sharedDir, 'paypal.ts'), 'utf8'),
   'revenueSplit.ts': fs.readFileSync(path.join(sharedDir, 'revenueSplit.ts'), 'utf8'),
   'instantPayout.ts': fs.readFileSync(path.join(sharedDir, 'instantPayout.ts'), 'utf8'),
   'adminAuth.ts': fs.readFileSync(path.join(sharedDir, 'adminAuth.ts'), 'utf8'),
@@ -25,19 +26,13 @@ const functions = [
   { name: 'create-connect-account', shared: ['stripe.ts', 'connectBranding.ts', 'connectAccountRecovery.ts'], verify_jwt: true },
   {
     name: 'create-booking-with-hold',
-    shared: ['stripe.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
+    shared: ['paypal.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
     verify_jwt: true,
   },
+  { name: 'confirm-booking-hold', shared: ['paypal.ts'], verify_jwt: true },
   {
     name: 'capture-booking-payment',
-    shared: [
-      'stripe.ts',
-      'revenueSplit.ts',
-      'connectTransfer.ts',
-      'connectAccountRecovery.ts',
-      'captureHold.ts',
-      'expoPush.ts',
-    ],
+    shared: ['paypal.ts', 'revenueSplit.ts', 'captureHold.ts', 'expoPush.ts'],
     verify_jwt: true,
   },
   {
