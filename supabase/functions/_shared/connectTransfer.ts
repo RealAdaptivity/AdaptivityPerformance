@@ -90,15 +90,24 @@ export async function transferTechShareToConnect(opts: {
    * covers the tech share, the transfer is drawn from it via source_transaction so
    * it settles without needing an available platform balance. */
   fundingCandidates?: Array<{ chargeId: string; amountCents: number }>;
+  /** Transfer exactly this many cents instead of recomputing the split. Used by the
+   * retry path, where the correct 70% share was already computed at capture and the
+   * hold PaymentIntent alone would under-report the total. */
+  techTransferCentsOverride?: number;
   source?: string;
   existingTransferId?: string | null;
 }): Promise<ConnectTransferResult> {
-  const { platformFeeCents, techTransferCents } = splitJobTotalCents(
+  const split = splitJobTotalCents(
     opts.capturedCents,
     opts.salesTaxCents ?? 0,
     opts.partsCents ?? 0,
     opts.partsPurchasedBy ?? 'tech'
   );
+  const techTransferCents =
+    opts.techTransferCentsOverride && opts.techTransferCentsOverride > 0
+      ? Math.round(opts.techTransferCentsOverride)
+      : split.techTransferCents;
+  const platformFeeCents = split.platformFeeCents;
   const techStripeAccountId = opts.techStripeAccountId;
 
   if (opts.existingTransferId) {
