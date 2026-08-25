@@ -59,7 +59,6 @@ async function readExternalAccountFlags(accountId: string): Promise<{
     return {
       hasDebitCardForInstant: accounts.some(
         (a) =>
-          a.object === 'card' &&
           Array.isArray(a.available_payout_methods) &&
           a.available_payout_methods.includes('instant')
       ),
