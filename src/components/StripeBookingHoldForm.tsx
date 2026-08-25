@@ -19,7 +19,6 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
   const elements = useElements();
   const [payError, setPayError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,17 +73,11 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
         <span className="text-[10px] text-slate-500">Affirm · Klarna · Afterpay · Card · Apple Pay</span>
       </div>
 
-      {!isReady && (
-        <div className="py-10 flex items-center justify-center text-xs text-slate-400 gap-2 bg-slate-950/40 border border-white/5 rounded-xl">
-          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
-          <span>Loading secure payment options…</span>
-        </div>
-      )}
-
-      <div className={isReady ? 'block' : 'hidden'}>
+      <div className="min-h-[140px] bg-slate-950/60 border border-white/10 rounded-xl p-3.5">
         <PaymentElement
-          options={{ layout: 'tabs' }}
-          onReady={() => setIsReady(true)}
+          options={{
+            layout: 'tabs',
+          }}
           onChange={() => setPayError(null)}
         />
       </div>
@@ -102,7 +95,7 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
 
       <button
         type="submit"
-        disabled={isProcessing || !stripe || !isReady}
+        disabled={isProcessing || !stripe}
         className="w-full py-3.5 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white disabled:opacity-50 transition"
       >
         {isProcessing ? (
