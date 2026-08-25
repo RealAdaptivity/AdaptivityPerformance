@@ -185,16 +185,8 @@ Deno.serve(async (req) => {
       amount: holdCents,
       currency: 'usd',
       capture_method: 'manual',
-      automatic_payment_methods: { enabled: true },
-      // Card hold for later capture — BNPL is for final checkout only.
+      payment_method_types: ['card'],
       setup_future_usage: 'off_session',
-      excluded_payment_method_types: [
-        'affirm',
-        'klarna',
-        'afterpay_clearpay',
-        'zip',
-        'sunbit',
-      ],
       metadata: {
         type: 'booking_hold',
         booking_reference: booking.reference_code,
@@ -202,14 +194,6 @@ Deno.serve(async (req) => {
         platform: 'adaptivity_performance',
       },
     };
-
-    const holdPmc =
-      Deno.env.get('STRIPE_PAYMENT_METHOD_CONFIGURATION_HOLDS')?.trim() ||
-      Deno.env.get('STRIPE_PMC_HOLDS')?.trim();
-    if (holdPmc?.startsWith('pmc_')) {
-      // Prefer a card-only holds PMC in Dashboard; exclusions remain as a safety net.
-      piParams.payment_method_configuration = holdPmc;
-    }
     if (receiptEmail) {
       piParams.receipt_email = receiptEmail;
     }

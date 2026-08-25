@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
-import { CreditCard, Lock } from 'lucide-react';
+import { CreditCard, Lock, Loader2 } from 'lucide-react';
 
 interface StripeBookingHoldFormProps {
   holdAmountDollars: number;
@@ -19,6 +19,7 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
   const elements = useElements();
   const [payError, setPayError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,19 +64,43 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
         </p>
       </div>
 
-      <PaymentElement options={{ layout: 'tabs' }} />
+      {!isReady && (
+        <div className="py-8 flex items-center justify-center text-xs text-slate-400 gap-2 bg-slate-950/40 border border-white/5 rounded-xl">
+          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+          <span>Loading secure card inputs...</span>
+        </div>
+      )}
+
+      <div className={isReady ? 'block' : 'hidden'}>
+        <PaymentElement
+          options={{ layout: 'tabs' }}
+          onReady={() => setIsReady(true)}
+          onChange={() => setPayError(null)}
+        />
+      </div>
 
       {payError && (
-        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{payError}</p>
+        <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          {payError}
+        </p>
       )}
 
       <button
         type="submit"
-        disabled={isProcessing || !stripe}
-        className="w-full py-3.5 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white disabled:opacity-50"
+        disabled={isProcessing || !stripe || !isReady}
+        className="w-full py-3.5 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white disabled:opacity-50 transition"
       >
-        <Lock className="w-4 h-4" />
-        <span>{isProcessing ? 'Saving card…' : `Confirm hold — $${holdAmountDollars.toFixed(2)}`}</span>
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Saving card…</span>
+          </>
+        ) : (
+          <>
+            <Lock className="w-4 h-4" />
+            <span>Confirm hold — ${holdAmountDollars.toFixed(2)}</span>
+          </>
+        )}
       </button>
     </form>
   );
