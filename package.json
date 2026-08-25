@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "verify:production-ops": "node scripts/verify-production-ops.mjs",
     "preview": "vite preview",
-    "cap:sync:ios": "cap sync ios"
+    "cap:sync:ios": "cap sync ios",
+    "check:edge": "node scripts/check-edge-functions.mjs"
   },
   "dependencies": {
     "@capacitor/camera": "^8.2.1",

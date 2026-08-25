@@ -109,7 +109,7 @@ const functions = [
   },
   {
     name: 'admin-refund-booking',
-    shared: ['stripe.ts', 'adminAuth.ts', 'connectTransfer.ts', 'revenueSplit.ts', 'connectAccountRecovery.ts'],
+    shared: ['helcim.ts', 'adminAuth.ts'],
     verify_jwt: true,
   },
   {
