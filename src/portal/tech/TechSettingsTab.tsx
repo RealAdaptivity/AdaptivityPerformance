@@ -533,10 +533,11 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
         {acctId && status?.hasDebitCardForInstant !== true && (
           <button
             type="button"
-            onClick={() => setShowDebitModal(true)}
-            className="w-full py-3 bg-orange-500 rounded-xl text-xs font-bold text-white"
+            disabled={openingDash}
+            onClick={() => void openDashboard()}
+            className="w-full py-3 bg-orange-500 hover:bg-orange-600 rounded-xl text-xs font-bold text-white transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            Add Instant debit card →
+            {openingDash ? 'Opening Stripe Express…' : 'Add Instant debit card (Stripe Portal) →'}
           </button>
         )}
         <button
