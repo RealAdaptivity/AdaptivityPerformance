@@ -49,6 +49,7 @@ export async function captureHoldAndRemainder(opts: {
 
   let capturedCents = (pi.amount_received as number) ?? chargeFromHold;
   let remainderPaymentIntentId: string | null = null;
+  let remainderChargeId: string | null = null;
 
   if (remainderCents > 0) {
     const paymentMethod =
@@ -123,6 +124,10 @@ export async function captureHoldAndRemainder(opts: {
       );
     }
     remainderPaymentIntentId = remainderPi.id as string;
+    remainderChargeId =
+      typeof remainderPi.latest_charge === 'string'
+        ? remainderPi.latest_charge
+        : remainderPi.latest_charge?.id ?? null;
     capturedCents += remainderCents;
   }
 
@@ -164,6 +169,17 @@ export async function captureHoldAndRemainder(opts: {
     .eq('payment_intent_id', opts.paymentIntentId)
     .maybeSingle();
 
+  // Fund the tech transfer directly from the charge(s) it came from, so it works
+  // even while the charge is still settling and never needs an available platform
+  // balance. Bigger charge first so a single transfer usually covers the share.
+  // Any account credit is refunded off the hold charge, so that charge has less
+  // left to source a transfer from. The remainder charge is untouched.
+  const holdAvailableCents = Math.max(0, chargeFromHold - creditAppliedCents);
+  const fundingCandidates = [
+    remainderChargeId ? { chargeId: remainderChargeId, amountCents: remainderCents } : null,
+    chargeId ? { chargeId, amountCents: holdAvailableCents } : null,
+  ].filter(Boolean) as Array<{ chargeId: string; amountCents: number }>;
+
   const techStripeAccountId = await resolveTechStripeAccountId(opts.supabase, opts.mechanicId);
   const transferResult = await transferTechShareToConnect({
     paymentIntentId: opts.paymentIntentId,
@@ -174,6 +190,7 @@ export async function captureHoldAndRemainder(opts: {
     partsPurchasedBy: opts.partsPurchasedBy,
     techStripeAccountId,
     chargeId,
+    fundingCandidates,
     source: opts.source,
     existingTransferId:
       typeof paymentRow?.stripe_transfer_id === 'string' ? paymentRow.stripe_transfer_id : null,

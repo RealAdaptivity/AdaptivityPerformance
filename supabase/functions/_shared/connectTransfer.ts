@@ -86,6 +86,10 @@ export async function transferTechShareToConnect(opts: {
   partsPurchasedBy?: 'tech' | 'company';
   techStripeAccountId: string | null;
   chargeId?: string | null;
+  /** Charges that funded this capture, each with how many cents it holds. When one
+   * covers the tech share, the transfer is drawn from it via source_transaction so
+   * it settles without needing an available platform balance. */
+  fundingCandidates?: Array<{ chargeId: string; amountCents: number }>;
   source?: string;
   existingTransferId?: string | null;
 }): Promise<ConnectTransferResult> {
@@ -130,10 +134,21 @@ export async function transferTechShareToConnect(opts: {
     };
   }
 
+  // Prefer funding the transfer from a specific charge (source_transaction) so it
+  // succeeds even while funds are still settling and doesn't draw the platform's
+  // available balance. Requires a single charge large enough to cover the share;
+  // otherwise fall back to a balance transfer (the prior behavior).
+  // Only use source_transaction when the caller supplied accurate per-charge
+  // amounts (captureHold does). Other callers keep the balance-transfer behavior.
+  const coveringCharge = (opts.fundingCandidates ?? []).find(
+    (c) => c.chargeId && c.amountCents >= techTransferCents
+  )?.chargeId;
+
   const transferBody: Record<string, unknown> = {
     amount: techTransferCents,
     currency: 'usd',
     destination: techStripeAccountId,
+    ...(coveringCharge ? { source_transaction: coveringCharge } : {}),
     metadata: {
       booking_reference: opts.bookingReference,
       payment_intent_id: opts.paymentIntentId,
