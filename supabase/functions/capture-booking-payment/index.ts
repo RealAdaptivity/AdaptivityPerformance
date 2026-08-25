@@ -71,7 +71,8 @@ Deno.serve(async (req: Request) => {
           ? 'diagnostic_only'
           : 'charge';
 
-    if (mode === 'charge' && customerAgreedOnSite !== true) {
+    const agreed = customerAgreedOnSite === true || customerAgreedOnSite === 'true' || String(customerAgreedOnSite).toLowerCase() === 'true';
+    if (mode === 'charge' && !agreed) {
       return jsonResponse(
         {
           error:
