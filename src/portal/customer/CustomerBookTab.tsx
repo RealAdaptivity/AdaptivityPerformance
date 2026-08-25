@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
 import { createBookingWithCardHold } from '../../services/stripePaymentsApi';
-import { PayPalBookingHoldSection } from '../../components/PayPalBookingHoldSection';
+import { PayPalDepositSection } from '../../components/PayPalDepositSection';
 import { SERVICE_CATALOG } from '../../services/serviceCatalog';
 import { computeHoldQuote } from '../../services/holdPricing';
 import { loadGarageVehicles, vehicleLabel } from './garageStorage';
@@ -137,10 +137,10 @@ export const CustomerBookTab: React.FC<Props> = ({
           Reference <span className="font-mono text-orange-400">{bookingRef}</span> · hold $
           {holdAmount.toFixed(2)}
         </p>
-        <PayPalBookingHoldSection
+        <PayPalDepositSection
           orderId={holdOrderId}
           bookingReference={bookingRef}
-          holdAmountDollars={holdAmount}
+          depositAmountDollars={holdAmount}
           onAuthorized={() => setStep('done')}
         />
         <button type="button" onClick={() => setStep('form')} className="text-xs text-slate-500">

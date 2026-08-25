@@ -1,62 +1,59 @@
 import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { voidAuthorization } from './paypal.ts';
+import { refundCapture } from './paypal.ts';
 
 /**
- * Release an uncaptured card hold.
+ * Cancel a booking and return the diagnostic deposit.
  *
- * PayPal calls this voiding an authorization; it is the analogue of cancelling a
- * Stripe PaymentIntent still in requires_capture. Two cases Stripe folded into
- * its status machine have to be handled explicitly here:
- *
- *   - No hold exists yet. create-booking-with-hold opens an order before the
- *     customer enters a card, so a booking abandoned at that step has no
- *     authorization to void. Cancelling it is bookkeeping only.
- *
- *   - The authorization already expired. PayPal releases the funds itself after
- *     the honor period, so a void on an expired authorization fails — but the
- *     customer's money is already free, which is the outcome we wanted. That is
- *     treated as success rather than blocking the cancellation.
+ * Under the old hold model this voided an authorization, which released
+ * reserved funds. The deposit is now real money already collected, so
+ * cancelling means refunding it — a slower thing for the customer to see, but a
+ * far simpler thing to get right: there is no honor period, nothing expires, and
+ * a refund cannot silently fail the way a void on a lapsed authorization could.
  */
 export async function cancelBookingHoldForRow(
   supabase: SupabaseClient,
   booking: {
     id: string;
     reference_code: string;
-    paypal_authorization_id: string | null;
+    paypal_capture_id: string | null;
     payment_status: string | null;
+    hold_amount_cents?: number | null;
   },
   options: { releaseJob: boolean }
 ) {
   if (booking.payment_status === 'captured') {
-    throw new Error('Payment already captured; use refund instead.');
+    throw new Error('Job already settled; use refund instead.');
   }
 
   let processorStatus: string | null = null;
-  const authorizationId = booking.paypal_authorization_id;
+  const captureId = booking.paypal_capture_id;
 
-  if (authorizationId) {
+  if (captureId) {
     try {
-      await voidAuthorization(authorizationId);
-      processorStatus = 'voided';
+      // Omitting the amount refunds the capture in full, which is what a
+      // cancellation owes: the customer paid a deposit for a visit that is not
+      // happening.
+      await refundCapture({
+        captureId,
+        invoiceId: booking.reference_code,
+        idempotencyKey: `cancel-${booking.id}`.slice(0, 38),
+      });
+      processorStatus = 'refunded';
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      // An authorization that is already voided, already captured-and-settled,
-      // or expired past its honor period leaves nothing held. Treat those as
-      // done so a retried cancellation stays idempotent; anything else must
-      // surface, because silently cancelling a booking whose hold is still live
-      // would strand the customer's funds.
-      if (
-        /ALREADY_VOIDED|AUTHORIZATION_VOIDED|RESOURCE_NOT_FOUND|AUTHORIZATION_EXPIRED|INVALID_RESOURCE_ID/i.test(
-          message
-        )
-      ) {
-        processorStatus = 'voided';
+      // Already fully refunded is the state we wanted, so a retried cancellation
+      // stays idempotent. Anything else must surface — marking a booking
+      // cancelled while the customer is still out the deposit is how chargebacks
+      // start.
+      if (/CAPTURE_FULLY_REFUNDED|ALREADY_REFUNDED|RESOURCE_NOT_FOUND/i.test(message)) {
+        processorStatus = 'refunded';
       } else {
-        throw new Error(`Could not release the card hold: ${message}`);
+        throw new Error(`Could not refund the deposit: ${message}`);
       }
     }
   } else {
-    processorStatus = 'no_hold';
+    // The customer never completed payment, so there is nothing to return.
+    processorStatus = 'no_deposit';
   }
 
   const bookingPatch: Record<string, unknown> = {

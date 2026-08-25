@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, reference_code, paypal_authorization_id, payment_status')
+      .select('id, reference_code, paypal_capture_id, payment_status, hold_amount_cents')
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
 

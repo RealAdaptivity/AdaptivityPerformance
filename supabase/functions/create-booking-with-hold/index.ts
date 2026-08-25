@@ -83,9 +83,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const holdCents = Math.round(hold * 100);
-    if (holdCents < 50) {
-      return jsonResponse({ error: 'Hold amount must be at least $0.50' }, 400);
+    const depositCents = Math.round(hold * 100);
+    if (depositCents < 50) {
+      return jsonResponse({ error: 'Deposit must be at least $0.50' }, 400);
     }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -135,11 +135,10 @@ Deno.serve(async (req) => {
         ? preferredMechanicIdRaw.trim()
         : null;
 
-    // PayPal guarantees authorized funds for roughly 3 days, against the 7 that
-    // Stripe gave us. Holding a booking longer than the authorization is
-    // guaranteed would mean arriving at a job with a hold that has quietly
-    // evaporated, so the booking deadline is shortened to match the rail.
-    const holdExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    // Our own deadline for a booking to be claimed and scheduled. It no longer
+    // tracks any processor state: the deposit is charged outright, so there is
+    // no authorization sitting on the customer's card that can expire.
+    const holdExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
@@ -172,7 +171,7 @@ Deno.serve(async (req) => {
         hold_expires_at: holdExpiresAt,
         reference_code: '',
         payment_status: 'awaiting_card',
-        hold_amount_cents: holdCents,
+        hold_amount_cents: depositCents,
         quote_status: quote.mode === 'diagnostic' ? 'awaiting_diagnostic' : 'none',
       })
       .select('id, reference_code')
@@ -185,24 +184,24 @@ Deno.serve(async (req) => {
 
     const receiptEmail = email;
 
-    // Open an order with intent AUTHORIZE — the analogue of a Stripe
-    // PaymentIntent with capture_method: manual. Creating it reserves nothing;
-    // no hold exists until the buyer approves and confirm-booking-hold
-    // authorizes it.
+    // The diagnostic deposit is charged outright, not held.
     //
-    // vaultCard is what lets a repair above the $85 hold be charged on site
-    // without re-collecting the card. Without it the remainder path has no way
-    // to bill.
+    // A hold was the more complicated option and bought nothing: it reserved
+    // funds for a few days, needed a vaulted card to bill anything above it, and
+    // expired on the processor's schedule rather than ours. A charge is
+    // strictly stronger protection -- the money is actually collected -- and it
+    // removes the vault, the authorization window and the capture step entirely.
+    // Any balance above the deposit is collected afterwards by payment link,
+    // and the deposit is refunded if we cannot make the appointment.
     let order;
     try {
       order = await createOrder({
-        intent: 'AUTHORIZE',
-        amountCents: holdCents,
+        intent: 'CAPTURE',
+        amountCents: depositCents,
         currency: 'USD',
         invoiceId: booking.reference_code,
-        description: `Adaptivity Performance diagnostic — ${booking.reference_code}`,
-        vaultCard: true,
-        idempotencyKey: `hold-${booking.id}`,
+        description: `Adaptivity Performance diagnostic deposit — ${booking.reference_code}`,
+        idempotencyKey: `dep-${booking.id}`,
       });
     } catch (paypalErr) {
       await supabase.from('bookings').delete().eq('id', booking.id);
@@ -218,7 +217,7 @@ Deno.serve(async (req) => {
       })
       .eq('id', booking.id);
 
-    const { platformFeeCents, techTransferCents } = splitJobTotalCents(holdCents);
+    const { platformFeeCents, techTransferCents } = splitJobTotalCents(depositCents);
 
     // Plain insert rather than the previous upsert-on-payment_intent_id: the
     // booking was created moments ago, so no payments row can exist for it yet.
@@ -228,7 +227,7 @@ Deno.serve(async (req) => {
       processor: 'paypal',
       paypal_order_id: order.orderId,
       customer_email: receiptEmail ?? null,
-      amount_cents: holdCents,
+      amount_cents: depositCents,
       tip_cents: 0,
       platform_fee_cents: platformFeeCents,
       tech_transfer_cents: techTransferCents,
@@ -274,7 +273,7 @@ Deno.serve(async (req) => {
       holdMode: quote.mode,
       holdExpiresAt,
       message:
-        'Confirm your card for the $85 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
+        'Pay the $85 diagnostic deposit to confirm your booking. It is credited toward your repair, and refunded in full if we cannot make the appointment.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Booking authorization failed';

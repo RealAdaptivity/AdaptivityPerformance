@@ -12,9 +12,9 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: rows, error } = await supabase
     .from('bookings')
-    .select('id, reference_code, paypal_authorization_id, payment_status')
+    .select('id, reference_code, paypal_capture_id, payment_status, hold_amount_cents')
     .lte('hold_expires_at', new Date().toISOString())
-    .in('payment_status', ['awaiting_card', 'authorized', 'requires_capture', 'hold'])
+    .in('payment_status', ['awaiting_card'])
     .neq('status', 'COMPLETED')
     .neq('status', 'CANCELED')
     .order('hold_expires_at', { ascending: true })

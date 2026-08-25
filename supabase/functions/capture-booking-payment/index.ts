@@ -2,7 +2,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from './_shared/paypal.ts';
-import { captureHoldAndRemainder } from './_shared/captureHold.ts';
+import { finalizeJobCharges } from './_shared/jobCharges.ts';
 import { splitJobTotalCents } from './_shared/revenueSplit.ts';
 import { sendExpoPush } from './_shared/expoPush.ts';
 type LineItemIn = {
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, vehicle_description, services, paypal_authorization_id, paypal_vault_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
+        'id, reference_code, mechanic_id, customer_id, customer_phone, customer_name, customer_address, vehicle_description, services, paypal_capture_id, payment_status, hold_amount_cents, total_estimate, quote_status, status, referral_code_used, credit_applied_cents'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -180,9 +180,9 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const authorizationId = booking.paypal_authorization_id;
-    if (!authorizationId) {
-      return jsonResponse({ error: 'No card hold on this booking' }, 400);
+    const depositCaptureId = booking.paypal_capture_id ?? null;
+    if (!depositCaptureId && booking.payment_status !== 'deposit_paid') {
+      return jsonResponse({ error: 'No deposit collected on this booking' }, 400);
     }
 
     const holdCents = booking.hold_amount_cents ?? 8500;
@@ -345,14 +345,13 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const result = await captureHoldAndRemainder({
+    const result = await finalizeJobCharges({
       supabase,
       bookingId: booking.id,
       bookingReference: booking.reference_code,
       mechanicId: booking.mechanic_id,
-      authorizationId,
-      vaultId: booking.paypal_vault_id ?? null,
-      holdCents,
+      depositCaptureId,
+      depositCents: holdCents,
       totalChargeCents,
       salesTaxCents,
       partsCents: totalPartsCents,
@@ -451,10 +450,13 @@ Deno.serve(async (req: Request) => {
         quote_status: quoteStatus,
         active_quote_id: quote?.id ?? null,
         recommended_total_cents: totalChargeCents,
-        payment_status: 'captured',
-        captured_amount_cents: result.capturedCents,
+        // 'balance_due' rather than 'captured' when the job came in above the
+        // deposit: the work is finished but the customer still owes money, and
+        // marking it captured would hide that from every screen that reads this.
+        payment_status: result.balanceDueCents > 0 ? 'balance_due' : 'captured',
+        captured_amount_cents: result.collectedCents,
         credit_applied_cents: result.creditAppliedCents || creditAppliedCents,
-        total_estimate: result.capturedCents / 100,
+        total_estimate: totalChargeCents / 100,
         status: 'COMPLETED',
         review_ask_due_at: reviewAskDueAt,
         updated_at: new Date().toISOString(),
@@ -465,7 +467,7 @@ Deno.serve(async (req: Request) => {
       await supabase
         .from('booking_quotes')
         .update({
-          capture_amount_cents: result.capturedCents,
+          capture_amount_cents: totalChargeCents,
           updated_at: new Date().toISOString(),
         })
         .eq('id', quote.id);
@@ -495,7 +497,8 @@ Deno.serve(async (req: Request) => {
     }
 
     // Push when customer has Expo token. Receipt SMS is tech device composer (Twilio deferred).
-    const capturedDollars = (result.capturedCents / 100).toFixed(2);
+    const collectedDollars = (result.collectedCents / 100).toFixed(2);
+    const balanceDollars = (result.balanceDueCents / 100).toFixed(2);
     const creditNote =
       result.creditAppliedCents > 0
         ? ` Credit applied: $${(result.creditAppliedCents / 100).toFixed(2)}.`
@@ -511,8 +514,11 @@ Deno.serve(async (req: Request) => {
           .filter(Boolean);
         if (pushTokens.length) {
           await sendExpoPush(pushTokens, {
-            title: 'Payment complete',
-            body: `$${capturedDollars} charged for job ${booking.reference_code}.${creditNote}`,
+            title: result.balanceDueCents > 0 ? 'Balance due' : 'Payment complete',
+            body:
+              result.balanceDueCents > 0
+                ? `Job ${booking.reference_code} is complete. $${collectedDollars} deposit applied — $${balanceDollars} balance due. We'll send a payment link.`
+                : `$${collectedDollars} charged for job ${booking.reference_code}.${creditNote}`,
             data: { bookingReference: booking.reference_code, type: 'capture' },
           });
         }
@@ -527,26 +533,29 @@ Deno.serve(async (req: Request) => {
       mode,
       bookingReference: booking.reference_code,
       quoteId: quote?.id ?? null,
-      capturedAmountDollars: result.capturedCents / 100,
+      collectedAmountDollars: result.collectedCents / 100,
+      // > 0 means the tech must send a payment link for the rest.
+      balanceDueDollars: result.balanceDueCents / 100,
+      refundedDollars: result.refundedCents / 100,
       creditAppliedDollars: (result.creditAppliedCents || 0) / 100,
-      remainderDollars: result.remainderCents / 100,
       diagnosticFeeDollars: holdCents / 100,
       repairsDollars: repairsCents / 100,
       techPayoutDollars: result.techTransferCents / 100,
       payoutId: result.payoutId,
       payoutWarning: result.payoutError,
       platformFeeDollars: result.platformFeeCents / 100,
-      captureId: result.captureId,
-      remainderCaptureId: result.remainderCaptureId,
+      refundId: result.refundId,
       reviewAskDueAt,
       message:
-        mode === 'no_show'
-          ? 'No-show hold charged. Job complete.'
-          : mode === 'diagnostic_only'
-            ? 'Diagnostic visit charged. Job complete.'
-            : result.remainderCents > 0
-              ? 'Hold captured and repair remainder charged to card on file.'
-              : 'Charged from card hold.',
+        result.balanceDueCents > 0
+          ? `Job complete. Deposit of $${(result.collectedCents / 100).toFixed(2)} applied — send a payment link for the $${(result.balanceDueCents / 100).toFixed(2)} balance.`
+          : result.refundedCents > 0
+            ? `Job complete. $${(result.refundedCents / 100).toFixed(2)} returned to the customer from the deposit.`
+            : mode === 'no_show'
+              ? 'No-show. Deposit retained, job closed.'
+              : mode === 'diagnostic_only'
+                ? 'Diagnostic visit settled against the deposit. Job complete.'
+                : 'Job complete. Settled against the deposit.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Capture failed';

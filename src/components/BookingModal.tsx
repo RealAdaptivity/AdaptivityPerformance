@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
-import { PayPalBookingHoldSection } from './PayPalBookingHoldSection';
+import { PayPalDepositSection } from './PayPalDepositSection';
 import { computeHoldQuote } from '../services/holdPricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
@@ -603,10 +603,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <p className="text-xs text-slate-400">
                 Appointment <span className="font-mono text-orange-400 font-bold">#{bookingRef}</span>
               </p>
-              <PayPalBookingHoldSection
+              <PayPalDepositSection
                 orderId={holdOrderId}
                 bookingReference={bookingRef}
-                holdAmountDollars={holdAmount}
+                depositAmountDollars={holdAmount}
                 onAuthorized={handleCardAuthorized}
               />
               <button

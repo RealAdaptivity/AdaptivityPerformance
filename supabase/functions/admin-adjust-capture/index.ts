@@ -1,22 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import {
-  handleCors,
-  jsonResponse,
-  captureAuthorization,
-  isPayPalOk,
-} from './_shared/paypal.ts';
+import { handleCors, jsonResponse } from './_shared/paypal.ts';
 import { requireAdminUser } from './_shared/adminAuth.ts';
-import { splitJobTotalCents } from './_shared/revenueSplit.ts';
+import { finalizeJobCharges } from './_shared/jobCharges.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
   try {
-    if (!Deno.env.get('STRIPE_SECRET_KEY')?.trim()) {
+    if (!Deno.env.get('PAYPAL_CLIENT_ID')?.trim() || !Deno.env.get('PAYPAL_CLIENT_SECRET')?.trim()) {
       return jsonResponse(
-        { error: 'STRIPE_SECRET_KEY is not configured on Supabase Edge Functions.' },
+        { error: 'PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are not configured on Supabase Edge Functions.' },
         503
       );
     }
@@ -42,7 +37,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, paypal_authorization_id, payment_status, hold_amount_cents, total_estimate, mechanic_id'
+        'id, reference_code, paypal_capture_id, payment_status, hold_amount_cents, total_estimate, mechanic_id'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -51,59 +46,39 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Booking not found' }, 404);
     }
 
-    const authorizationId = booking.paypal_authorization_id as string | null;
-    if (!authorizationId) {
-      return jsonResponse({ error: 'No payment hold on this booking' }, 400);
-    }
-
     if (booking.payment_status === 'captured') {
-      return jsonResponse({ error: 'Payment already captured. Use refund to adjust.' }, 400);
+      return jsonResponse({ error: 'Job already settled. Use refund to adjust.' }, 400);
     }
 
-    const holdCents =
+    const depositCents =
       booking.hold_amount_cents ?? Math.round(Number(booking.total_estimate) * 100);
     const captureCents = Math.round(captureDollars * 100);
-    if (captureCents > holdCents) {
-      return jsonResponse({ error: `Capture cannot exceed hold ($${(holdCents / 100).toFixed(2)})` }, 400);
-    }
-
-    // Capture less than the authorized amount. final_capture releases the
-    // uncaptured remainder back to the customer rather than leaving it pending.
-    const capture = await captureAuthorization({
-      authorizationId,
-      amountCents: captureCents,
-      invoiceId: booking.reference_code,
-      finalCapture: true,
-      idempotencyKey: `adj-${booking.id}-${captureCents}`.slice(0, 38),
-    });
-    if (!isPayPalOk(capture.status)) {
-      return jsonResponse({ error: `Cannot capture (PayPal status: ${capture.status})` }, 400);
-    }
-
-    const capturedCents = capture.amountCents || captureCents;
-    const split = splitJobTotalCents(capturedCents);
-
-    // Accrue rather than transfer: same as the main capture path.
-    let payoutWarning: string | null = null;
-    if (booking.mechanic_id && split.techTransferCents > 0) {
-      const { error: payoutError } = await supabase.from('tech_payouts').upsert(
+    if (captureCents > depositCents) {
+      return jsonResponse(
         {
-          booking_id: booking.id,
-          booking_reference: booking.reference_code,
-          mechanic_id: booking.mechanic_id,
-          amount_cents: split.techTransferCents,
-          status: 'accrued',
-          notes: 'Adjusted capture',
+          error: `Cannot settle above the $${(depositCents / 100).toFixed(2)} deposit here — send a payment link for the balance instead.`,
         },
-        { onConflict: 'booking_id' }
+        400
       );
-      if (payoutError) {
-        payoutWarning = payoutError.message;
-        console.error('[admin-adjust-capture] tech_payouts upsert failed', payoutError.message);
-      }
-    } else if (!booking.mechanic_id) {
-      payoutWarning = 'No technician assigned; nothing accrued.';
     }
+
+    // Settling at an admin-chosen total is the same operation the tech performs
+    // at job completion, so it goes through the same path rather than keeping a
+    // parallel implementation that could drift. Below the deposit, that means
+    // refunding the difference.
+    const result = await finalizeJobCharges({
+      supabase,
+      bookingId: booking.id,
+      bookingReference: booking.reference_code,
+      mechanicId: booking.mechanic_id,
+      depositCaptureId: booking.paypal_capture_id ?? null,
+      depositCents,
+      totalChargeCents: captureCents,
+      source: 'admin_adjust',
+    });
+
+    const capturedCents = result.collectedCents;
+    const payoutWarning = result.payoutError;
 
     const bookingPatch: Record<string, unknown> = {
       payment_status: 'captured',
@@ -118,27 +93,17 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('payments')
-      .update({
-        processor: 'paypal',
-        status: 'succeeded',
-        amount_cents: capturedCents,
-        paypal_capture_id: capture.captureId,
-        platform_fee_cents: split.platformFeeCents,
-        tech_transfer_cents: split.techTransferCents,
-        payout_status: payoutWarning ? 'none' : 'accrued',
-        payout_error: payoutWarning,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('booking_id', booking.id);
+
 
     return jsonResponse({
       ok: true,
       bookingReference: booking.reference_code,
       capturedAmountDollars: capturedCents / 100,
-      techShareDollars: split.techTransferCents / 100,
-      platformShareDollars: split.platformFeeCents / 100,
+      techShareDollars: result.techTransferCents / 100,
+      platformShareDollars: result.platformFeeCents / 100,
+      refundedDollars: result.refundedCents / 100,
       markCompleted,
-      captureId: capture.captureId,
+      refundId: result.refundId,
       payoutWarning,
     });
   } catch (err) {

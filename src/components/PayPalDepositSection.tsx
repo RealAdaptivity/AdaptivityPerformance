@@ -3,30 +3,30 @@ import { CreditCard, Lock } from 'lucide-react';
 import { loadPayPalSdk, type PayPalCardFields } from '../services/paypalSdk';
 import { confirmBookingHold } from '../services/stripePaymentsApi';
 
-interface PayPalBookingHoldSectionProps {
-  /** Order id created server-side by create-booking-with-hold. */
+interface PayPalDepositSectionProps {
+  /** Order id created server-side at booking. */
   orderId: string;
   bookingReference: string;
-  holdAmountDollars: number;
+  depositAmountDollars: number;
   onAuthorized: () => void;
 }
 
 /**
- * Card hold step, on PayPal hosted card fields.
+ * Diagnostic deposit step, on PayPal hosted card fields.
  *
- * Replaces StripeBookingHoldSection + StripeBookingHoldForm. PayPal renders the
- * number, expiry and CVV inputs into our containers from its own iframe, so the
- * card never touches this DOM and the customer never needs a PayPal account.
+ * PayPal renders the number, expiry and CVV inputs into our containers from its
+ * own iframe, so the card never touches this DOM and the customer never needs a
+ * PayPal account.
  *
- * The hold is not real until confirmBookingHold succeeds. Approving the order in
- * the browser reserves nothing — only the server-side authorize call holds
- * funds — so a failure there is reported plainly rather than retried into a
- * second authorization on the customer's card.
+ * The deposit is charged, not held, and the copy says so. Approving the order in
+ * the browser moves no money — only the server-side capture does — so a failure
+ * after approval is reported plainly rather than retried into a second charge on
+ * the customer's card.
  */
-export const PayPalBookingHoldSection: React.FC<PayPalBookingHoldSectionProps> = ({
+export const PayPalDepositSection: React.FC<PayPalDepositSectionProps> = ({
   orderId,
   bookingReference,
-  holdAmountDollars,
+  depositAmountDollars,
   onAuthorized,
 }) => {
   const [ready, setReady] = useState(false);
@@ -65,8 +65,8 @@ export const PayPalBookingHoldSection: React.FC<PayPalBookingHoldSectionProps> =
             } catch (confirmErr) {
               if (cancelled) return;
               setError(
-                `Your card was authorized, but we could not attach it to booking ${bookingReference}. ` +
-                  'Please call us at (940) 304-0620 before trying again so you are not held twice. ' +
+                `Your payment went through, but we could not attach it to booking ${bookingReference}. ` +
+                  'Please call us at (940) 304-0620 before trying again so you are not charged twice. ' +
                   `(${confirmErr instanceof Error ? confirmErr.message : 'confirmation failed'})`
               );
             }
@@ -130,9 +130,10 @@ export const PayPalBookingHoldSection: React.FC<PayPalBookingHoldSectionProps> =
       <div className="flex items-start gap-2 text-[11px] text-slate-300 bg-slate-950/80 border border-white/10 rounded-xl p-3">
         <CreditCard className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
         <p>
-          We&apos;ll place a{' '}
-          <strong className="text-white">${holdAmountDollars.toFixed(2)}</strong> hold for your
-          diagnostic visit. Your card is charged only when the job is completed.
+          Your card will be charged{' '}
+          <strong className="text-white">${depositAmountDollars.toFixed(2)}</strong> now to confirm
+          the visit. It comes straight off your repair total, and we refund it in full if we
+          can&apos;t make the appointment.
         </p>
       </div>
 
@@ -161,8 +162,8 @@ export const PayPalBookingHoldSection: React.FC<PayPalBookingHoldSectionProps> =
           {!ready
             ? 'Loading secure form…'
             : isProcessing
-              ? 'Authorizing…'
-              : `Confirm hold — $${holdAmountDollars.toFixed(2)}`}
+              ? 'Processing…'
+              : `Pay deposit — $${depositAmountDollars.toFixed(2)}`}
         </span>
       </button>
     </div>

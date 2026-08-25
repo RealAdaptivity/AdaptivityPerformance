@@ -1,26 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import {
-  handleCors,
-  jsonResponse,
-  authorizeOrder,
-  getOrder,
-  authorizationFromOrder,
-  isPayPalOk,
-} from '../_shared/paypal.ts';
+import { handleCors, jsonResponse, captureOrder, getOrder, isPayPalOk } from '../_shared/paypal.ts';
 
 /**
- * Place the card hold after the buyer approves the order in the browser.
+ * Collect the diagnostic deposit after the buyer approves the order.
  *
- * Stripe did not need this step: the PaymentIntent was authorized as part of
- * confirmation, and a webhook recorded it. PayPal splits the two — the buyer
- * approves an order, then the server authorizes it, and only that second call
- * actually reserves funds.
+ * PayPal splits approval from settlement: approving an order in the browser
+ * moves no money, and only this server-side capture does.
  *
- * Unlike the Helcim design this replaced, the order id is not attacker-supplied:
- * it was minted server-side in create-booking-with-hold and is looked up against
- * the booking's own record. A caller passing someone else's order id gets a
- * mismatch, not a hold.
+ * The order id is not attacker-supplied — it was minted server-side in
+ * create-booking-with-hold and is matched against the booking's own record, so a
+ * caller passing someone else's order gets a mismatch rather than a payment
+ * applied to their booking.
  */
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -47,7 +38,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, payment_status, hold_amount_cents, paypal_order_id, paypal_authorization_id'
+        'id, reference_code, payment_status, hold_amount_cents, paypal_order_id, paypal_capture_id'
       )
       .eq('reference_code', reference)
       .maybeSingle();
@@ -63,55 +54,66 @@ Deno.serve(async (req) => {
     }
 
     // Idempotent: the browser may retry, and a webhook backstop may land first.
-    if (booking.paypal_authorization_id) {
+    if (booking.paypal_capture_id) {
       return jsonResponse({
         ok: true,
         alreadyConfirmed: true,
         bookingReference: booking.reference_code,
-        authorizationId: booking.paypal_authorization_id,
+        captureId: booking.paypal_capture_id,
       });
     }
 
-    // Authorize. If PayPal already authorized this order (a retry that crossed
-    // with a webhook), read the existing authorization back off the order rather
-    // than treating the error as fatal.
-    let auth;
+    // Capture. A retry that crossed with a webhook will find the order already
+    // captured; read the capture back rather than treating that as a failure.
+    let capture;
     try {
-      auth = await authorizeOrder({
+      capture = await captureOrder({
         orderId: submittedOrderId,
-        idempotencyKey: `auth-${booking.id}`,
+        idempotencyKey: `dep-cap-${booking.id}`.slice(0, 38),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      if (/ORDER_ALREADY_AUTHORIZED|ORDER_NOT_APPROVED/i.test(message)) {
+      if (/ORDER_ALREADY_CAPTURED/i.test(message)) {
         const existing = await getOrder(submittedOrderId).catch(() => null);
-        const recovered = existing ? authorizationFromOrder(existing.raw) : null;
-        if (!recovered?.authorizationId) {
-          return jsonResponse(
-            { error: `Card was not approved by the customer yet (${message}).` },
-            400
-          );
+        const units = existing?.raw?.purchase_units;
+        const unit = Array.isArray(units) ? (units[0] as Record<string, unknown>) : null;
+        const payments = unit?.payments as Record<string, unknown> | undefined;
+        const captures = payments?.captures;
+        const first = Array.isArray(captures) ? (captures[0] as Record<string, unknown>) : null;
+        if (!first?.id) {
+          return jsonResponse({ error: `Deposit could not be confirmed: ${message}` }, 400);
         }
-        auth = recovered;
+        capture = {
+          captureId: String(first.id),
+          status: String(first.status ?? 'COMPLETED'),
+          amountCents: Math.round(
+            Number((first.amount as Record<string, unknown> | undefined)?.value ?? 0) * 100
+          ),
+          raw: first,
+        };
+      } else if (/ORDER_NOT_APPROVED/i.test(message)) {
+        return jsonResponse({ error: 'The card was not approved by the customer yet.' }, 400);
       } else {
-        return jsonResponse({ error: `Could not place the card hold: ${message}` }, 400);
+        return jsonResponse({ error: `Could not collect the deposit: ${message}` }, 400);
       }
     }
 
-    if (!isPayPalOk(auth.status)) {
+    if (!isPayPalOk(capture.status)) {
       return jsonResponse(
-        { error: `Card was not authorized (PayPal status: ${auth.status}).` },
+        { error: `Deposit was not collected (PayPal status: ${capture.status}).` },
         400
       );
     }
 
-    // The hold must cover what was quoted. A short authorization leaves the
-    // diagnostic underfunded and is treated as a failed hold, not accepted.
+    // The deposit must cover what was quoted. Taking less would leave the
+    // diagnostic underfunded, and is treated as a failed booking rather than
+    // quietly accepted.
     const expectedCents = Number(booking.hold_amount_cents ?? 0);
-    if (expectedCents > 0 && auth.amountCents > 0 && auth.amountCents < expectedCents) {
+    const paidCents = capture.amountCents;
+    if (expectedCents > 0 && paidCents > 0 && paidCents < expectedCents) {
       return jsonResponse(
         {
-          error: `Authorized amount ($${(auth.amountCents / 100).toFixed(2)}) is less than the required hold ($${(expectedCents / 100).toFixed(2)}).`,
+          error: `Amount paid ($${(paidCents / 100).toFixed(2)}) is less than the required deposit ($${(expectedCents / 100).toFixed(2)}).`,
         },
         400
       );
@@ -123,10 +125,11 @@ Deno.serve(async (req) => {
       .from('bookings')
       .update({
         processor: 'paypal',
-        paypal_authorization_id: auth.authorizationId,
-        paypal_vault_id: auth.vaultId,
-        paypal_authorization_expires_at: auth.expirationTime,
-        payment_status: 'authorized',
+        paypal_capture_id: capture.captureId,
+        // Money is collected, not reserved. 'authorized' would be a lie the
+        // receipt renders as "Authorized hold".
+        payment_status: 'deposit_paid',
+        captured_amount_cents: paidCents,
         updated_at: now,
       })
       .eq('id', booking.id);
@@ -135,11 +138,10 @@ Deno.serve(async (req) => {
       .from('payments')
       .update({
         processor: 'paypal',
-        paypal_authorization_id: auth.authorizationId,
-        // Without this the remainder above the hold cannot be charged.
-        paypal_vault_id: auth.vaultId,
-        status: 'authorized',
-        payout_status: 'awaiting_capture',
+        paypal_capture_id: capture.captureId,
+        amount_cents: paidCents,
+        status: 'deposit_paid',
+        payout_status: 'awaiting_job',
         updated_at: now,
       })
       .eq('booking_id', booking.id);
@@ -148,26 +150,14 @@ Deno.serve(async (req) => {
       console.error('[confirm-booking-hold] payments update:', paymentError.message);
     }
 
-    if (!auth.vaultId) {
-      // Not fatal — the hold is valid and the diagnostic can be captured. But the
-      // remainder path will fail later, so make it visible now rather than at the
-      // roadside when the tech tries to charge for the repair.
-      console.warn(
-        `[confirm-booking-hold] no vault id for ${booking.reference_code}; a repair above the hold will need the card re-collected.`
-      );
-    }
-
     return jsonResponse({
       ok: true,
       bookingReference: booking.reference_code,
-      authorizationId: auth.authorizationId,
-      authorizedAmountDollars: auth.amountCents / 100,
-      cardOnFile: Boolean(auth.vaultId),
-      // Funds stop being guaranteed here (~3 days out).
-      authorizationExpiresAt: auth.expirationTime,
+      captureId: capture.captureId,
+      depositPaidDollars: paidCents / 100,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not confirm the card hold';
+    const message = error instanceof Error ? error.message : 'Could not collect the deposit';
     console.error('[confirm-booking-hold]', message);
     return jsonResponse({ error: message }, 500);
   }

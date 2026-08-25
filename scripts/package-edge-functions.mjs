@@ -16,7 +16,7 @@ const sharedFiles = {
   'connectAccountRecovery.ts': fs.readFileSync(path.join(sharedDir, 'connectAccountRecovery.ts'), 'utf8'),
   'connectTransfer.ts': fs.readFileSync(path.join(sharedDir, 'connectTransfer.ts'), 'utf8'),
   'holdPricing.ts': fs.readFileSync(path.join(sharedDir, 'holdPricing.ts'), 'utf8'),
-  'captureHold.ts': fs.readFileSync(path.join(sharedDir, 'captureHold.ts'), 'utf8'),
+  'jobCharges.ts': fs.readFileSync(path.join(sharedDir, 'jobCharges.ts'), 'utf8'),
   'twilioSms.ts': fs.readFileSync(path.join(sharedDir, 'twilioSms.ts'), 'utf8'),
   'expoPush.ts': fs.readFileSync(path.join(sharedDir, 'expoPush.ts'), 'utf8'),
 };
@@ -33,7 +33,7 @@ const functions = [
   { name: 'confirm-booking-hold', shared: ['paypal.ts'], verify_jwt: true },
   {
     name: 'capture-booking-payment',
-    shared: ['paypal.ts', 'revenueSplit.ts', 'captureHold.ts', 'expoPush.ts'],
+    shared: ['paypal.ts', 'revenueSplit.ts', 'jobCharges.ts', 'expoPush.ts'],
     verify_jwt: true,
   },
   {
@@ -94,7 +94,7 @@ const functions = [
   { name: 'reschedule-booking', shared: ['stripe.ts'], verify_jwt: true },
   {
     name: 'admin-adjust-capture',
-    shared: ['paypal.ts', 'adminAuth.ts', 'revenueSplit.ts'],
+    shared: ['paypal.ts', 'adminAuth.ts', 'revenueSplit.ts', 'jobCharges.ts'],
     verify_jwt: true,
   },
   {
