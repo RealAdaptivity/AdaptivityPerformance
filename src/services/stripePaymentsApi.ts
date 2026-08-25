@@ -2,8 +2,8 @@ import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
 
 export interface CreatePaymentIntentResult {
-  clientSecret: string;
-  paymentIntentId: string;
+  /** HelcimPay.js session token. Replaces the Stripe clientSecret. */
+  checkoutToken: string;
   totalCharged: number;
   baseAmount?: number;
   techShareAmount: number;
@@ -43,8 +43,8 @@ export async function createCheckoutPaymentIntent(params: {
   if (data?.error) {
     throw new Error(String(data.error));
   }
-  if (!data?.clientSecret) {
-    throw new Error('Stripe client secret missing from server response');
+  if (!data?.checkoutToken) {
+    throw new Error('Checkout session missing from server response');
   }
   return data as CreatePaymentIntentResult;
 }
@@ -115,6 +115,27 @@ export type ConfirmBookingHoldResult = {
  * This call is what actually attaches the hold to the booking -- until it
  * succeeds, the booking has a checkout session but no card.
  */
+export type ConfirmCheckoutResult = {
+  ok: boolean;
+  bookingReference: string | null;
+  transactionId?: string;
+  paidAmountDollars?: number;
+  alreadyConfirmed?: boolean;
+};
+
+/**
+ * Record a completed checkout after the HelcimPay.js modal closes.
+ *
+ * As with the hold, the transaction id comes from the browser and is
+ * revalidated server-side against Helcim before the payment is marked paid.
+ */
+export async function confirmCheckoutPayment(params: {
+  checkoutToken: string;
+  transactionId: string;
+}): Promise<ConfirmCheckoutResult> {
+  return invokeEdgeFunction<ConfirmCheckoutResult>('confirm-checkout-payment', params);
+}
+
 export async function confirmBookingHold(params: {
   bookingReference: string;
   transactionId: string;

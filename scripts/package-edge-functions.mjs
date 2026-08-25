@@ -22,7 +22,8 @@ const sharedFiles = {
 };
 
 const functions = [
-  { name: 'create-payment-intent', shared: ['stripe.ts', 'revenueSplit.ts'], verify_jwt: true },
+  { name: 'create-payment-intent', shared: ['helcim.ts', 'revenueSplit.ts'], verify_jwt: true },
+  { name: 'confirm-checkout-payment', shared: ['helcim.ts'], verify_jwt: true },
   { name: 'create-connect-account', shared: ['stripe.ts', 'connectBranding.ts', 'connectAccountRecovery.ts'], verify_jwt: true },
   {
     name: 'create-booking-with-hold',

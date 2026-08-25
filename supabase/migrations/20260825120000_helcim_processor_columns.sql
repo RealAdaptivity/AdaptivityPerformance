@@ -65,3 +65,11 @@ comment on column public.payments.helcim_transaction_id is
   'Helcim preauth transaction id — the card hold placed at booking.';
 comment on column public.payments.helcim_card_token is
   'Vaulted Helcim card token from HelcimPay.js, used to charge a repair remainder above the hold without re-collecting the card.';
+
+-- create-payment-intent upserts the payments row keyed on the checkout token,
+-- because Helcim mints no transaction id until the customer completes the modal.
+-- That ON CONFLICT target needs a real unique index. Partial, so the many
+-- historical Stripe rows with a NULL token do not collide with each other.
+create unique index if not exists payments_helcim_checkout_token_unique
+  on public.payments (helcim_checkout_token)
+  where helcim_checkout_token is not null;
