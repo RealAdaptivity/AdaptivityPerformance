@@ -1348,11 +1348,13 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </div>
       )}
 
-      {booking.paymentStatus === 'authorized' ||
+      {booking.paymentStatus === 'deposit_paid' ||
+      booking.paymentStatus === 'balance_due' ||
+      booking.paymentStatus === 'authorized' ||
       booking.paymentStatus === 'awaiting_card' ||
       (booking.paymentIntentId && booking.paymentStatus !== 'captured') ? (
         <div className="rounded-xl border border-white/10 p-3 space-y-2 bg-[#0b0c10]">
-          <p className="text-[10px] uppercase font-bold text-slate-500">Quick Hold Capture (No-Show / Diagnostic Only)</p>
+          <p className="text-[10px] uppercase font-bold text-slate-500">Settle Against Deposit (No-Show / Diagnostic Only)</p>
           <label className="block space-y-1">
             <span className="text-[10px] uppercase font-bold text-slate-500">No-show reason</span>
             <select

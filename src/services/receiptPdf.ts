@@ -36,6 +36,10 @@ function money(n: number) {
 function paymentLabel(status: string) {
   const s = status.trim().toLowerCase();
   if (s === 'captured' || s === 'completed') return 'Paid';
+  // The deposit is charged, not reserved. Calling it a hold on a receipt for
+  // money already taken is how disputes start.
+  if (s === 'deposit_paid') return 'Deposit paid';
+  if (s === 'balance_due') return 'Deposit paid — balance due';
   if (s === 'authorized' || s === 'held') return 'Authorized hold';
   if (s === 'refunded') return 'Refunded';
   if (s === 'canceled' || s === 'cancelled') return 'Canceled';

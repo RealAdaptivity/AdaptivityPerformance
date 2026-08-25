@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { handleCors, jsonResponse, createOrder } from '../_shared/paypal.ts';
 import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
 import { computeHoldFromServices } from '../_shared/holdPricing.ts';
@@ -10,9 +10,9 @@ Deno.serve(async (req) => {
   if (cors) return cors;
 
   try {
-    if (!Deno.env.get('STRIPE_SECRET_KEY')?.trim()) {
+    if (!Deno.env.get('PAYPAL_CLIENT_ID')?.trim() || !Deno.env.get('PAYPAL_CLIENT_SECRET')?.trim()) {
       return jsonResponse(
-        { error: 'STRIPE_SECRET_KEY is not configured on Supabase Edge Functions.' },
+        { error: 'PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are not configured on Supabase Edge Functions.' },
         503
       );
     }
@@ -83,9 +83,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const holdCents = Math.round(hold * 100);
-    if (holdCents < 50) {
-      return jsonResponse({ error: 'Hold amount must be at least $0.50' }, 400);
+    const depositCents = Math.round(hold * 100);
+    if (depositCents < 50) {
+      return jsonResponse({ error: 'Deposit must be at least $0.50' }, 400);
     }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -135,6 +135,9 @@ Deno.serve(async (req) => {
         ? preferredMechanicIdRaw.trim()
         : null;
 
+    // Our own deadline for a booking to be claimed and scheduled. It no longer
+    // tracks any processor state: the deposit is charged outright, so there is
+    // no authorization sitting on the customer's card that can expire.
     const holdExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const { data: booking, error: bookingError } = await supabase
@@ -168,7 +171,7 @@ Deno.serve(async (req) => {
         hold_expires_at: holdExpiresAt,
         reference_code: '',
         payment_status: 'awaiting_card',
-        hold_amount_cents: holdCents,
+        hold_amount_cents: depositCents,
         quote_status: quote.mode === 'diagnostic' ? 'awaiting_diagnostic' : 'none',
       })
       .select('id, reference_code')
@@ -181,73 +184,56 @@ Deno.serve(async (req) => {
 
     const receiptEmail = email;
 
-    const piParams: Record<string, unknown> = {
-      amount: holdCents,
-      currency: 'usd',
-      capture_method: 'manual',
-      automatic_payment_methods: { enabled: true },
-      // Card hold for later capture — BNPL is for final checkout only.
-      setup_future_usage: 'off_session',
-      excluded_payment_method_types: [
-        'affirm',
-        'klarna',
-        'afterpay_clearpay',
-        'zip',
-        'sunbit',
-      ],
-      metadata: {
-        type: 'booking_hold',
-        booking_reference: booking.reference_code,
-        booking_id: String(booking.id),
-        platform: 'adaptivity_performance',
-      },
-    };
-
-    const holdPmc =
-      Deno.env.get('STRIPE_PAYMENT_METHOD_CONFIGURATION_HOLDS')?.trim() ||
-      Deno.env.get('STRIPE_PMC_HOLDS')?.trim();
-    if (holdPmc?.startsWith('pmc_')) {
-      // Prefer a card-only holds PMC in Dashboard; exclusions remain as a safety net.
-      piParams.payment_method_configuration = holdPmc;
-    }
-    if (receiptEmail) {
-      piParams.receipt_email = receiptEmail;
-    }
-
-    let paymentIntent;
+    // The diagnostic deposit is charged outright, not held.
+    //
+    // A hold was the more complicated option and bought nothing: it reserved
+    // funds for a few days, needed a vaulted card to bill anything above it, and
+    // expired on the processor's schedule rather than ours. A charge is
+    // strictly stronger protection -- the money is actually collected -- and it
+    // removes the vault, the authorization window and the capture step entirely.
+    // Any balance above the deposit is collected afterwards by payment link,
+    // and the deposit is refunded if we cannot make the appointment.
+    let order;
     try {
-      paymentIntent = await stripeRequest('/payment_intents', 'POST', piParams);
-    } catch (stripeErr) {
+      order = await createOrder({
+        intent: 'CAPTURE',
+        amountCents: depositCents,
+        currency: 'USD',
+        invoiceId: booking.reference_code,
+        description: `Adaptivity Performance diagnostic deposit — ${booking.reference_code}`,
+        idempotencyKey: `dep-${booking.id}`,
+      });
+    } catch (paypalErr) {
       await supabase.from('bookings').delete().eq('id', booking.id);
-      throw stripeErr;
+      throw paypalErr;
     }
 
     await supabase
       .from('bookings')
       .update({
-        payment_intent_id: paymentIntent.id,
+        processor: 'paypal',
+        paypal_order_id: order.orderId,
         payment_status: 'awaiting_card',
       })
       .eq('id', booking.id);
 
-    const { platformFeeCents, techTransferCents } = splitJobTotalCents(holdCents);
+    const { platformFeeCents, techTransferCents } = splitJobTotalCents(depositCents);
 
-    const { error: paymentRowError } = await supabase.from('payments').upsert(
-      {
-        booking_reference: booking.reference_code,
-        booking_id: booking.id,
-        payment_intent_id: paymentIntent.id,
-        customer_email: receiptEmail ?? null,
-        amount_cents: holdCents,
-        tip_cents: 0,
-        platform_fee_cents: platformFeeCents,
-        tech_transfer_cents: techTransferCents,
-        tech_stripe_account_id: null,
-        status: 'pending',
-        payout_status: 'none',
-      },
-      { onConflict: 'payment_intent_id' }
-    );
+    // Plain insert rather than the previous upsert-on-payment_intent_id: the
+    // booking was created moments ago, so no payments row can exist for it yet.
+    const { error: paymentRowError } = await supabase.from('payments').insert({
+      booking_reference: booking.reference_code,
+      booking_id: booking.id,
+      processor: 'paypal',
+      paypal_order_id: order.orderId,
+      customer_email: receiptEmail ?? null,
+      amount_cents: depositCents,
+      tip_cents: 0,
+      platform_fee_cents: platformFeeCents,
+      tech_transfer_cents: techTransferCents,
+      status: 'pending',
+      payout_status: 'none',
+    });
 
     if (paymentRowError) {
       console.error('[create-booking-with-hold] payments upsert:', paymentRowError.message);
@@ -280,13 +266,14 @@ Deno.serve(async (req) => {
     return jsonResponse({
       bookingReference: booking.reference_code,
       bookingId: booking.id,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      // Replaces clientSecret: the browser hands this to the PayPal JS SDK to
+      // render card fields, then posts back to confirm-booking-hold.
+      orderId: order.orderId,
       holdAmountDollars: hold,
       holdMode: quote.mode,
       holdExpiresAt,
       message:
-        'Confirm your card for the $85 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
+        'Pay the $85 diagnostic deposit to confirm your booking. It is credited toward your repair, and refunded in full if we cannot make the appointment.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Booking authorization failed';

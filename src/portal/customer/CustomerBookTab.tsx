@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
 import { createBookingWithCardHold } from '../../services/stripePaymentsApi';
-import { StripeBookingHoldSection } from '../../components/StripeBookingHoldSection';
+import { PayPalDepositSection } from '../../components/PayPalDepositSection';
 import { SERVICE_CATALOG } from '../../services/serviceCatalog';
 import { computeHoldQuote } from '../../services/holdPricing';
 import { loadGarageVehicles, vehicleLabel } from './garageStorage';
@@ -53,7 +53,7 @@ export const CustomerBookTab: React.FC<Props> = ({
   const [step, setStep] = useState<'form' | 'card' | 'done'>('form');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [holdOrderId, setHoldOrderId] = useState<string | null>(null);
   const [bookingRef, setBookingRef] = useState('');
   const [holdAmount, setHoldAmount] = useState(0);
 
@@ -109,7 +109,7 @@ export const CustomerBookTab: React.FC<Props> = ({
       });
       setHoldAmount(hold.holdAmountDollars ?? quote.holdDollars);
       setBookingRef(hold.bookingReference);
-      setClientSecret(hold.clientSecret);
+      setHoldOrderId(hold.orderId);
       setStep('card');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Could not start booking');
@@ -130,18 +130,17 @@ export const CustomerBookTab: React.FC<Props> = ({
     );
   }
 
-  if (step === 'card' && clientSecret) {
+  if (step === 'card' && holdOrderId) {
     return (
       <div className="space-y-4">
         <p className="text-xs text-slate-400">
           Reference <span className="font-mono text-orange-400">{bookingRef}</span> · hold $
           {holdAmount.toFixed(2)}
         </p>
-        <StripeBookingHoldSection
-          clientSecret={clientSecret}
-          holdAmountDollars={holdAmount}
-          customerName={profile.fullName || 'Customer'}
-          customerEmail={profile.email}
+        <PayPalDepositSection
+          orderId={holdOrderId}
+          bookingReference={bookingRef}
+          depositAmountDollars={holdAmount}
           onAuthorized={() => setStep('done')}
         />
         <button type="button" onClick={() => setStep('form')} className="text-xs text-slate-500">

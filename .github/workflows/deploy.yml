@@ -45,7 +45,16 @@ jobs:
           VITE_SUPABASE_URL: 'https://qqyairzymqpkbfxobztx.supabase.co'
           VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxeWFpcnp5bXFwa2JmeG9ienR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMTExNTUsImV4cCI6MjEwMDU4NzE1NX0.a6pkHT6fVnW6synzig51QOmR0x48fi88zi6RT7MpeLs'
           # Repo Settings → Secrets → Actions: VITE_STRIPE_PUBLISHABLE_KEY=pk_live_...
+          # Retained so any not-yet-migrated Stripe surface keeps building.
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.VITE_STRIPE_PUBLISHABLE_KEY }}
+          # PayPal. config/paypalEnvironment.ts throws when the client id for the
+          # active mode is missing, which would break booking on the live site —
+          # so these must exist as repo secrets before this branch reaches main.
+          # Set VITE_PAYPAL_MODE to 'sandbox' until a real booking has been
+          # tested end to end.
+          VITE_PAYPAL_MODE: ${{ secrets.VITE_PAYPAL_MODE }}
+          VITE_PAYPAL_SANDBOX_CLIENT_ID: ${{ secrets.VITE_PAYPAL_SANDBOX_CLIENT_ID }}
+          VITE_PAYPAL_LIVE_CLIENT_ID: ${{ secrets.VITE_PAYPAL_LIVE_CLIENT_ID }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

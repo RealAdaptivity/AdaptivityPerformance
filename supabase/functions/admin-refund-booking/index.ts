@@ -1,8 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
+import { handleCors, jsonResponse, refundCapture, isPayPalOk } from './_shared/paypal.ts';
 import { requireAdminUser } from './_shared/adminAuth.ts';
-import { reverseConnectTransfer } from './_shared/connectTransfer.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -12,7 +11,7 @@ Deno.serve(async (req) => {
     const admin = await requireAdminUser(req);
     if (!admin.ok) return admin.response;
 
-    const { bookingReference, refundAmountDollars, reason, forceAfterPayout } = await req.json();
+    const { bookingReference, refundAmountDollars, forceAfterPayout } = await req.json();
     if (!bookingReference?.trim()) {
       return jsonResponse({ error: 'bookingReference is required' }, 400);
     }
@@ -24,7 +23,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, reference_code, payment_intent_id, payment_status, captured_amount_cents')
+      .select('id, reference_code, processor, payment_status, captured_amount_cents')
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
 
@@ -36,112 +35,183 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Refund only applies after payment is captured' }, 400);
     }
 
-    const paymentIntentId = booking.payment_intent_id as string | null;
-    if (!paymentIntentId) {
-      return jsonResponse({ error: 'Missing payment intent' }, 400);
+    // Jobs paid before the cutover were captured on Stripe, whose account is
+    // closed. There is no API path to refund those, so say so plainly rather
+    // than failing with a confusing processor error.
+    if (booking.processor === 'stripe') {
+      return jsonResponse(
+        {
+          error:
+            'This job was paid through Stripe, which is no longer reachable. Refund it manually (bank transfer or cash) and record it outside the app.',
+          processor: 'stripe',
+        },
+        409
+      );
     }
 
     const { data: paymentRow } = await supabase
       .from('payments')
       .select(
-        'stripe_transfer_id, stripe_transfer_reversal_id, tech_transfer_cents, amount_cents, payout_status'
+        'id, paypal_capture_id, paypal_remainder_capture_id, tech_transfer_cents, amount_cents, payout_status'
       )
-      .eq('payment_intent_id', paymentIntentId)
+      .eq('booking_id', booking.id)
       .maybeSingle();
 
-    const pi = await stripeRequest(`/payment_intents/${paymentIntentId}`, 'GET');
-    const chargeId = typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id;
-    if (!chargeId) {
-      return jsonResponse({ error: 'No charge found to refund' }, 400);
+    // A hold capture and a repair remainder are separate PayPal captures, so a
+    // refund larger than the hold has to be drawn from both. Remainder first, so
+    // a typical refund resolves in a single call.
+    const holdCents = Number(booking.captured_amount_cents ?? 0);
+    const totalCents = Number(paymentRow?.amount_cents ?? holdCents);
+    const sources = [
+      paymentRow?.paypal_remainder_capture_id
+        ? {
+            id: paymentRow.paypal_remainder_capture_id as string,
+            cents: Math.max(0, totalCents - holdCents),
+          }
+        : null,
+      paymentRow?.paypal_capture_id
+        ? { id: paymentRow.paypal_capture_id as string, cents: holdCents || totalCents }
+        : null,
+    ].filter(Boolean) as Array<{ id: string; cents: number }>;
+
+    if (sources.length === 0) {
+      return jsonResponse({ error: 'No PayPal capture found to refund' }, 400);
     }
 
-    const maxCents = booking.captured_amount_cents ?? paymentRow?.amount_cents ?? pi.amount_received ?? pi.amount;
-    let refundCents = maxCents as number;
+    const maxCents = totalCents || holdCents;
+    let refundCents = maxCents;
     if (refundAmountDollars !== undefined && refundAmountDollars !== null && refundAmountDollars !== '') {
       refundCents = Math.round(Number(refundAmountDollars) * 100);
       if (!Number.isFinite(refundCents) || refundCents <= 0) {
         return jsonResponse({ error: 'Invalid refundAmountDollars' }, 400);
       }
-      if (refundCents > (maxCents as number)) {
+      if (refundCents > maxCents) {
         return jsonResponse({ error: 'Refund exceeds captured amount' }, 400);
       }
     }
 
-    let reversal: Awaited<ReturnType<typeof reverseConnectTransfer>> | null = null;
-    const transferId =
-      typeof paymentRow?.stripe_transfer_id === 'string' ? paymentRow.stripe_transfer_id : null;
+    // Claw back the tech's share before refunding the customer.
+    //
+    // A Connect transfer already sent had to be reversed on Stripe's side and
+    // could fail outright if the tech had cashed out. An accrual that has not
+    // been settled is just a number we can reduce. Only a payout already sent
+    // out the door needs a human.
+    const techCents = Number(paymentRow?.tech_transfer_cents ?? 0);
+    const reverseTechCents =
+      maxCents > 0 && techCents > 0
+        ? Math.min(techCents, Math.round((techCents * refundCents) / maxCents))
+        : 0;
 
-    if (transferId && !paymentRow?.stripe_transfer_reversal_id) {
-      reversal = await reverseConnectTransfer({
-        transferId,
-        capturedCents: maxCents as number,
-        refundCents,
-        techTransferCents: (paymentRow?.tech_transfer_cents as number) ?? 0,
-        bookingReference: booking.reference_code,
-        forceAfterPayout: forceAfterPayout === true,
-        payoutStatus: paymentRow?.payout_status as string | null,
-      });
+    let payoutWarning: string | null = null;
+    let reversedTechCents = 0;
 
-      if (reversal.error && !reversal.reversalId) {
-        return jsonResponse(
-          {
-            error: reversal.error,
-            requiresForceAfterPayout: reversal.payoutAlreadyCashedOut,
-            transferId,
-          },
-          409
-        );
+    if (reverseTechCents > 0) {
+      const { data: payout } = await supabase
+        .from('tech_payouts')
+        .select('id, amount_cents, status')
+        .eq('booking_id', booking.id)
+        .maybeSingle();
+
+      if (payout) {
+        if (payout.status === 'paid') {
+          if (forceAfterPayout !== true) {
+            return jsonResponse(
+              {
+                error: `The technician has already been paid $${(Number(payout.amount_cents) / 100).toFixed(2)} for this job. Recover it from them directly, then retry with forceAfterPayout to refund the customer anyway.`,
+                requiresForceAfterPayout: true,
+                payoutId: payout.id,
+              },
+              409
+            );
+          }
+          payoutWarning = `Technician was already paid $${(Number(payout.amount_cents) / 100).toFixed(2)}; recover it manually.`;
+        } else {
+          const remaining = Math.max(0, Number(payout.amount_cents) - reverseTechCents);
+          const { error: payoutError } = await supabase
+            .from('tech_payouts')
+            .update({
+              amount_cents: remaining,
+              status: remaining === 0 ? 'void' : payout.status,
+              notes: `Reduced by refund of $${(refundCents / 100).toFixed(2)}`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', payout.id);
+          if (payoutError) payoutWarning = payoutError.message;
+          else reversedTechCents = reverseTechCents;
+        }
       }
     }
 
-    const refund = await stripeRequest('/refunds', 'POST', {
-      charge: chargeId,
-      amount: refundCents,
-      reason: reason === 'duplicate' || reason === 'fraudulent' ? reason : 'requested_by_customer',
-      metadata: {
-        booking_reference: booking.reference_code,
-        platform: 'adaptivity_admin',
-        transfer_reversal_id: reversal?.reversalId ?? '',
-      },
-    });
+    // Draw the refund from each capture in turn until satisfied.
+    let remainingToRefund = refundCents;
+    const refundIds: string[] = [];
+    for (const source of sources) {
+      if (remainingToRefund <= 0) break;
+      const slice = Math.min(remainingToRefund, source.cents);
+      if (slice <= 0) continue;
 
-    const fullyRefunded = refundCents >= (maxCents as number);
+      const result = await refundCapture({
+        captureId: source.id,
+        amountCents: slice,
+        invoiceId: booking.reference_code,
+        idempotencyKey: `rfnd-${booking.id}-${source.id}-${slice}`.slice(0, 38),
+      });
+      if (!isPayPalOk(result.status) && result.status.toUpperCase() !== 'PENDING') {
+        return jsonResponse(
+          {
+            error: `Refund declined by PayPal (status: ${result.status}). ${refundIds.length > 0 ? `Partial refunds already issued: ${refundIds.join(', ')}.` : ''}`,
+            refundIds,
+          },
+          400
+        );
+      }
+      refundIds.push(result.refundId);
+      remainingToRefund -= slice;
+    }
+
+    if (remainingToRefund > 0) {
+      return jsonResponse(
+        {
+          error: `Only $${((refundCents - remainingToRefund) / 100).toFixed(2)} of $${(refundCents / 100).toFixed(2)} could be refunded from the recorded captures.`,
+          refundIds,
+        },
+        400
+      );
+    }
+
+    const fullyRefunded = refundCents >= maxCents;
     const paymentStatus = fullyRefunded ? 'refunded' : 'partially_refunded';
-    const payoutStatus = reversal?.reversalId
-      ? fullyRefunded
-        ? 'reversed'
-        : 'partially_reversed'
-      : paymentRow?.payout_status ?? 'none';
+    const now = new Date().toISOString();
 
     await supabase
       .from('bookings')
-      .update({
-        payment_status: paymentStatus,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ payment_status: paymentStatus, updated_at: now })
       .eq('id', booking.id);
 
     await supabase
       .from('payments')
       .update({
         status: paymentStatus,
-        stripe_refund_id: refund.id,
-        stripe_transfer_reversal_id: reversal?.reversalId ?? paymentRow?.stripe_transfer_reversal_id ?? null,
-        payout_status: payoutStatus,
-        payout_error: reversal?.error ?? null,
-        updated_at: new Date().toISOString(),
+        paypal_refund_id: refundIds[0] ?? null,
+        payout_status:
+          reversedTechCents > 0
+            ? fullyRefunded
+              ? 'reversed'
+              : 'partially_reversed'
+            : paymentRow?.payout_status ?? 'none',
+        payout_error: payoutWarning,
+        updated_at: now,
       })
-      .eq('payment_intent_id', paymentIntentId);
+      .eq('booking_id', booking.id);
 
     return jsonResponse({
       ok: true,
       bookingReference: booking.reference_code,
-      refundId: refund.id,
+      refundIds,
       refundAmountDollars: refundCents / 100,
       fullyRefunded,
-      transferReversalId: reversal?.reversalId ?? null,
-      reversedTechDollars: (reversal?.reversedCents ?? 0) / 100,
-      reversalWarning: reversal?.error ?? null,
+      reversedTechDollars: reversedTechCents / 100,
+      payoutWarning,
     });
   } catch (err) {
     console.error('[admin-refund-booking]', err);

@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse } from './_shared/stripe.ts';
+import { handleCors, jsonResponse } from './_shared/paypal.ts';
 import { cancelBookingHoldForRow } from './_shared/cancelHold.ts';
 
 Deno.serve(async (req) => {
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
 
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, reference_code, mechanic_id, customer_id, payment_intent_id, payment_status, status')
+      .select('id, reference_code, mechanic_id, customer_id, paypal_capture_id, payment_status, status, hold_amount_cents')
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
 

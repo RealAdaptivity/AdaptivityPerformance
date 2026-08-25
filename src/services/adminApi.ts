@@ -279,7 +279,8 @@ export async function adminCancelBookingHold(
   const result = await invokeEdgeFunction<{
     ok: boolean;
     bookingReference: string;
-    stripeStatus: string | null;
+    /** 'voided' | 'no_hold' | a raw PayPal status. */
+    processorStatus: string | null;
     released: boolean;
   }>('admin-cancel-booking-hold', { bookingReference, releaseJob });
   if (cancelReason) {

@@ -1,9 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
 import {
-  resolveTechStripeAccountId,
-} from './_shared/connectTransfer.ts';
+  handleCors,
+  jsonResponse,
+  chargeVaultedCard,
+  isPayPalOk,
+} from './_shared/paypal.ts';
 
 /** Post-capture tip — 100% to tech via Connect transfer. */
 Deno.serve(async (req) => {
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
     const { data: booking, error } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, customer_id, mechanic_id, payment_intent_id, payment_status, captured_amount_cents'
+        'id, reference_code, customer_id, mechanic_id, paypal_vault_id, payment_status, captured_amount_cents'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -63,7 +65,7 @@ Deno.serve(async (req) => {
 
     const { data: payment } = await supabase
       .from('payments')
-      .select('id, tip_cents, payment_intent_id')
+      .select('id, tip_cents, paypal_vault_id')
       .eq('booking_id', booking.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -73,59 +75,50 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'A tip was already added for this job' }, 400);
     }
 
-    const piId = booking.payment_intent_id || payment?.payment_intent_id;
-    if (!piId) return jsonResponse({ error: 'No payment on file for tip charge' }, 400);
-
-    const pi = await stripeRequest(`/payment_intents/${piId}`, 'GET');
-    const paymentMethod =
-      typeof pi.payment_method === 'string' ? pi.payment_method : pi.payment_method?.id;
-    if (!paymentMethod) {
-      return jsonResponse({ error: 'No saved card for tip' }, 400);
+    // Tips are charged against the card vaulted when the hold was authorized,
+    // the same token the repair remainder uses. Stripe could re-confirm
+    // off_session against a saved payment method; PayPal's equivalent is a fresh
+    // order charged against the vault id.
+    const vaultId = booking.paypal_vault_id || payment?.paypal_vault_id;
+    if (!vaultId) {
+      return jsonResponse(
+        { error: 'No saved card on file for this job, so a tip cannot be charged.' },
+        400
+      );
     }
 
-    const tipBody: Record<string, unknown> = {
-      amount: tipCents,
-      currency: 'usd',
-      payment_method: paymentMethod,
-      confirm: true,
-      off_session: true,
-      metadata: {
-        type: 'job_tip',
+    const tipCharge = await chargeVaultedCard({
+      vaultId: vaultId as string,
+      amountCents: tipCents,
+      invoiceId: booking.reference_code,
+      description: `Tip — ${booking.reference_code}`,
+      idempotencyKey: `tip-${booking.id}-${tipCents}`.slice(0, 38),
+    });
+    if (!isPayPalOk(tipCharge.status)) {
+      return jsonResponse({ error: `Tip charge failed (${tipCharge.status})` }, 402);
+    }
+
+    // A tip goes 100% to the tech, unlike the 70% job share, so it is recorded as
+    // its own ledger line rather than folded into the job's row. That also keeps
+    // it clear of the unique-per-booking_id index, which a second row for the
+    // same booking would collide with.
+    let payoutWarning: string | null = null;
+    if (booking.mechanic_id) {
+      const { error: payoutError } = await supabase.from('tech_payouts').insert({
+        booking_id: null,
         booking_reference: booking.reference_code,
-        booking_id: booking.id,
-      },
-    };
-    if (typeof pi.customer === 'string' && pi.customer) tipBody.customer = pi.customer;
-
-    const tipPi = await stripeRequest('/payment_intents', 'POST', tipBody);
-    if (tipPi.status !== 'succeeded') {
-      return jsonResponse({ error: `Tip charge failed (${tipPi.status})` }, 402);
-    }
-
-    const chargeId =
-      typeof tipPi.latest_charge === 'string' ? tipPi.latest_charge : tipPi.latest_charge?.id ?? null;
-    const techStripeAccountId = await resolveTechStripeAccountId(supabase, booking.mechanic_id);
-
-    let transferId: string | null = null;
-    let transferError: string | null = null;
-    if (techStripeAccountId?.startsWith('acct_')) {
-      try {
-        const transfer = await stripeRequest('/transfers', 'POST', {
-          amount: tipCents,
-          currency: 'usd',
-          destination: techStripeAccountId,
-          ...(chargeId ? { source_transaction: chargeId } : {}),
-          metadata: {
-            booking_reference: booking.reference_code,
-            type: 'tip_100pct',
-          },
-        });
-        transferId = transfer.id as string;
-      } catch (e) {
-        transferError = e instanceof Error ? e.message : 'Tip transfer failed';
+        mechanic_id: booking.mechanic_id,
+        amount_cents: tipCents,
+        status: 'accrued',
+        notes: `Tip on ${booking.reference_code} (100% to tech)`,
+      });
+      if (payoutError) {
+        // The customer has already been charged; never fail the tip over the ledger.
+        payoutWarning = payoutError.message;
+        console.error('[add-booking-tip] tech_payouts insert failed', payoutError.message);
       }
     } else {
-      transferError = 'Tech has no Stripe Express account for tip transfer';
+      payoutWarning = 'No technician assigned; tip not accrued.';
     }
 
     if (payment?.id) {
@@ -142,9 +135,8 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       tipAmountDollars: tipCents / 100,
-      tipPaymentIntentId: tipPi.id,
-      transferId,
-      transferWarning: transferError,
+      tipCaptureId: tipCharge.captureId,
+      payoutWarning,
     });
   } catch (e) {
     return jsonResponse({ error: e instanceof Error ? e.message : 'Tip failed' }, 500);

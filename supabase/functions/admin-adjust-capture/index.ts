@@ -1,20 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
+import { handleCors, jsonResponse } from './_shared/paypal.ts';
 import { requireAdminUser } from './_shared/adminAuth.ts';
-import {
-  resolveTechStripeAccountId,
-  transferTechShareToConnect,
-} from './_shared/connectTransfer.ts';
+import { finalizeJobCharges } from './_shared/jobCharges.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
   try {
-    if (!Deno.env.get('STRIPE_SECRET_KEY')?.trim()) {
+    if (!Deno.env.get('PAYPAL_CLIENT_ID')?.trim() || !Deno.env.get('PAYPAL_CLIENT_SECRET')?.trim()) {
       return jsonResponse(
-        { error: 'STRIPE_SECRET_KEY is not configured on Supabase Edge Functions.' },
+        { error: 'PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are not configured on Supabase Edge Functions.' },
         503
       );
     }
@@ -40,7 +37,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, payment_intent_id, payment_status, hold_amount_cents, total_estimate, mechanic_id'
+        'id, reference_code, paypal_capture_id, payment_status, hold_amount_cents, total_estimate, mechanic_id'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -49,51 +46,39 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Booking not found' }, 404);
     }
 
-    const paymentIntentId = booking.payment_intent_id as string | null;
-    if (!paymentIntentId) {
-      return jsonResponse({ error: 'No payment hold on this booking' }, 400);
+    if (booking.payment_status === 'captured') {
+      return jsonResponse({ error: 'Job already settled. Use refund to adjust.' }, 400);
     }
 
-    const holdCents =
+    const depositCents =
       booking.hold_amount_cents ?? Math.round(Number(booking.total_estimate) * 100);
     const captureCents = Math.round(captureDollars * 100);
-    if (captureCents > holdCents) {
-      return jsonResponse({ error: `Capture cannot exceed hold ($${(holdCents / 100).toFixed(2)})` }, 400);
+    if (captureCents > depositCents) {
+      return jsonResponse(
+        {
+          error: `Cannot settle above the $${(depositCents / 100).toFixed(2)} deposit here — send a payment link for the balance instead.`,
+        },
+        400
+      );
     }
 
-    let pi = await stripeRequest(`/payment_intents/${paymentIntentId}`, 'GET');
-
-    if (pi.status === 'requires_capture') {
-      pi = await stripeRequest(`/payment_intents/${paymentIntentId}/capture`, 'POST', {
-        amount_to_capture: captureCents,
-      });
-    } else if (pi.status === 'succeeded') {
-      return jsonResponse({ error: 'Payment already captured. Use refund to adjust.' }, 400);
-    } else {
-      return jsonResponse({ error: `Cannot capture (Stripe status: ${pi.status})` }, 400);
-    }
-
-    const capturedCents = pi.amount_received ?? captureCents;
-    const chargeId =
-      typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
-    const techStripeAccountId = await resolveTechStripeAccountId(supabase, booking.mechanic_id);
-
-    const { data: paymentRow } = await supabase
-      .from('payments')
-      .select('stripe_transfer_id')
-      .eq('payment_intent_id', paymentIntentId)
-      .maybeSingle();
-
-    const transferResult = await transferTechShareToConnect({
-      paymentIntentId,
+    // Settling at an admin-chosen total is the same operation the tech performs
+    // at job completion, so it goes through the same path rather than keeping a
+    // parallel implementation that could drift. Below the deposit, that means
+    // refunding the difference.
+    const result = await finalizeJobCharges({
+      supabase,
+      bookingId: booking.id,
       bookingReference: booking.reference_code,
-      capturedCents,
-      techStripeAccountId,
-      chargeId,
-      source: 'admin_adjust_capture',
-      existingTransferId:
-        typeof paymentRow?.stripe_transfer_id === 'string' ? paymentRow.stripe_transfer_id : null,
+      mechanicId: booking.mechanic_id,
+      depositCaptureId: booking.paypal_capture_id ?? null,
+      depositCents,
+      totalChargeCents: captureCents,
+      source: 'admin_adjust',
     });
+
+    const capturedCents = result.collectedCents;
+    const payoutWarning = result.payoutError;
 
     const bookingPatch: Record<string, unknown> = {
       payment_status: 'captured',
@@ -108,28 +93,18 @@ Deno.serve(async (req) => {
 
     await supabase
       .from('payments')
-      .update({
-        status: 'succeeded',
-        amount_cents: capturedCents,
-        platform_fee_cents: transferResult.platformFeeCents,
-        tech_transfer_cents: transferResult.techTransferCents,
-        tech_stripe_account_id: transferResult.techStripeAccountId,
-        stripe_transfer_id: transferResult.transferId,
-        payout_status: transferResult.payoutStatus,
-        payout_error: transferResult.transferError,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('payment_intent_id', paymentIntentId);
+
 
     return jsonResponse({
       ok: true,
       bookingReference: booking.reference_code,
       capturedAmountDollars: capturedCents / 100,
-      techShareDollars: transferResult.techTransferCents / 100,
-      platformShareDollars: transferResult.platformFeeCents / 100,
+      techShareDollars: result.techTransferCents / 100,
+      platformShareDollars: result.platformFeeCents / 100,
+      refundedDollars: result.refundedCents / 100,
       markCompleted,
-      transferId: transferResult.transferId,
-      transferWarning: transferResult.transferError,
+      refundId: result.refundId,
+      payoutWarning,
     });
   } catch (err) {
     console.error('[admin-adjust-capture]', err);

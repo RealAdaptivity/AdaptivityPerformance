@@ -17,14 +17,17 @@ export function formatTechPayoutLabel(payoutStatus: string, paymentStatus: strin
       return 'No Connect account at capture';
     case 'pending':
       return 'On Connect — use Instant cash out';
+    case 'awaiting_job':
+      return 'Deposit paid — complete job to settle';
     case 'awaiting_capture':
-      return 'Card held — complete job to capture';
+      return 'Deposit paid — complete job to settle';
     case 'awaiting_payment':
-      return paymentStatus === 'authorized'
-        ? 'Card held — complete job to capture'
+      return paymentStatus === 'deposit_paid'
+        ? 'Deposit paid — complete job to settle'
         : 'Waiting for customer payment';
     case 'none':
-      if (paymentStatus === 'authorized') return 'Card held — complete job to capture';
+      if (paymentStatus === 'deposit_paid') return 'Deposit paid — complete job to settle';
+      if (paymentStatus === 'balance_due') return 'Balance due — send a payment link';
       if (paymentStatus === 'pending') return 'Waiting for customer card';
       if (paymentStatus === 'succeeded') return 'Captured — transfer to Connect needed';
       return 'Not started';
@@ -34,6 +37,8 @@ export function formatTechPayoutLabel(payoutStatus: string, paymentStatus: strin
 }
 
 export function countsTowardLedgerPending(payoutStatus: string, paymentStatus: string): boolean {
-  if (!['authorized', 'succeeded'].includes(paymentStatus)) return false;
-  return ['retry_pending', 'awaiting_capture', 'none', 'pending', 'awaiting_payment'].includes(payoutStatus);
+  if (!['deposit_paid', 'balance_due', 'authorized', 'succeeded'].includes(paymentStatus)) return false;
+  return ['retry_pending', 'awaiting_capture', 'awaiting_job', 'none', 'pending', 'awaiting_payment'].includes(
+    payoutStatus
+  );
 }

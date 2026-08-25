@@ -1,9 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Elements } from '@stripe/react-stripe-js';
+import React, { useEffect, useState } from 'react';
 import { ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { getStripe } from '../services/stripeConnectService';
 import { createCheckoutPaymentIntent, type CreatePaymentIntentResult } from '../services/stripePaymentsApi';
-import { StripeCheckoutForm } from '../components/StripeCheckoutForm';
+import { PayPalCheckoutSection } from '../components/PayPalCheckoutSection';
 
 /** Extract the booking reference from a `/pay/<ref>` path. */
 export function payReferenceFromPath(pathname: string): string | null {
@@ -37,21 +35,6 @@ export const PayLinkPage: React.FC<PayLinkPageProps> = ({ reference }) => {
     };
   }, [reference]);
 
-  const options = useMemo(() => {
-    if (!intent?.clientSecret) return undefined;
-    return {
-      clientSecret: intent.clientSecret,
-      appearance: {
-        theme: 'night' as const,
-        variables: {
-          colorPrimary: '#f97316',
-          colorBackground: '#0b0c10',
-          colorText: '#f1f5f9',
-        },
-      },
-    };
-  }, [intent?.clientSecret]);
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl">
@@ -77,7 +60,7 @@ export const PayLinkPage: React.FC<PayLinkPageProps> = ({ reference }) => {
           </div>
         )}
 
-        {!paid && intent && options && (
+        {!paid && intent && (
           <>
             <div className="mb-5">
               <p className="text-xs text-slate-400">Service total for {intent.customerName || 'your visit'}</p>
@@ -87,24 +70,13 @@ export const PayLinkPage: React.FC<PayLinkPageProps> = ({ reference }) => {
               {intent.services && intent.services.length > 0 && (
                 <p className="text-[11px] text-slate-500 mt-1">{intent.services.join(' · ')}</p>
               )}
-              <p className="text-[11px] text-amber-400/90 mt-2">
-                Pay by card or finance with Affirm · Afterpay · Zip · Sunbit · Klarna when eligible
-              </p>
             </div>
 
-            <Elements stripe={getStripe()} options={options}>
-              <StripeCheckoutForm
-                grandTotal={intent.totalCharged ?? 0}
-                techPayoutAmount={intent.techShareAmount ?? 0}
-                platformFeeAmount={intent.platformShareAmount ?? 0}
-                bookingDetails={{
-                  id: intent.bookingReference || reference,
-                  customerName: intent.customerName || 'Customer',
-                }}
-                preferFinancing
-                onPaid={() => setPaid(true)}
-              />
-            </Elements>
+            <PayPalCheckoutSection
+              orderId={intent.orderId}
+              grandTotal={intent.totalCharged ?? 0}
+              onPaid={() => setPaid(true)}
+            />
           </>
         )}
       </div>
