@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
+import { handleCors, jsonResponse, createOrder } from '../_shared/paypal.ts';
 import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
 
 Deno.serve(async (req) => {
@@ -13,11 +13,9 @@ Deno.serve(async (req) => {
       baseAmountDollars,
       customerEmail,
       customerName,
-      shippingAddress,
-      techStripeAccountId,
       bookingReference,
     } = body;
-    const { tipAmountDollars = 0, preferFinancing } = body;
+    const { tipAmountDollars = 0 } = body;
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -58,23 +56,11 @@ Deno.serve(async (req) => {
       bookingReference = b.reference_code;
       customerEmail = customerEmail || b.customer_email || undefined;
       customerName = b.customer_name || customerName;
-      shippingAddress = b.customer_address ? { line1: String(b.customer_address) } : shippingAddress;
       linkTaxCents = Number(b.payment_link_tax_cents) || 0;
       linkPartsCents = Number(b.payment_link_parts_cents) || 0;
       linkPartsBy = b.payment_link_parts_by === 'company' ? 'company' : 'tech';
       servicesList = Array.isArray(b.services) ? (b.services as string[]) : [];
 
-      // Resolve the assigned tech's Connect account server-side.
-      techStripeAccountId = null;
-      if (b.mechanic_id) {
-        const { data: mech } = await supabase
-          .from('mechanic_details')
-          .select('stripe_account_id')
-          .eq('profile_id', b.mechanic_id)
-          .maybeSingle();
-        techStripeAccountId =
-          typeof mech?.stripe_account_id === 'string' ? mech.stripe_account_id : null;
-      }
     }
 
     const base = Number(baseAmountDollars);
@@ -92,63 +78,27 @@ Deno.serve(async (req) => {
     const platformFeeCents = laborSplit.platformFeeCents;
     const techTransferCents = laborSplit.techTransferCents + tipCents;
 
-    const params: Record<string, unknown> = {
-      amount: totalCents,
-      currency: 'usd',
-      // Dynamic methods: Affirm, Afterpay, Zip, Sunbit, Klarna when enabled in Dashboard
-      // (do not set payment_method_types — Stripe best practice).
-      automatic_payment_methods: { enabled: true },
-      receipt_email: customerEmail || undefined,
-      metadata: {
-        booking_reference: bookingReference || '',
-        platform: 'adaptivity_performance',
-        type: isPaymentLink ? 'booking_payment_link' : 'checkout',
-        prefer_financing: preferFinancing ? 'true' : 'false',
-        bnpl_providers: 'affirm,afterpay,zip,sunbit,klarna',
-        bnpl_hint:
-          totalCents >= 5000 && totalCents <= 70000
-            ? 'pay_in_4'
-            : totalCents > 70000
-              ? 'longer_monthly'
-              : 'card',
-      },
-    };
+    // Card-only. The Stripe version leaned on automatic_payment_methods to
+    // surface Affirm / Afterpay / Zip / Sunbit / Klarna, and synthesised a
+    // shipping address purely to improve BNPL eligibility. PayPal's card
+    // processing has no BNPL equivalent here, so that machinery is gone rather
+    // than left in place advertising something checkout cannot do.
+    //
+    // transfer_data / application_fee_amount are gone with the rest of Connect;
+    // the tech's share is accrued to tech_payouts when the payment is confirmed.
+    const name =
+      typeof customerName === 'string' && customerName.trim() ? customerName.trim() : 'Customer';
 
-    // Optional: Stripe Dashboard → Payment method configurations → platform PMC id
-    const pmc =
-      Deno.env.get('STRIPE_PAYMENT_METHOD_CONFIGURATION')?.trim() ||
-      Deno.env.get('STRIPE_PMC_CHECKOUT')?.trim();
-    if (pmc?.startsWith('pmc_')) {
-      params.payment_method_configuration = pmc;
-    }
-
-    // BNPL conversion: shipping address improves Affirm / Afterpay / Zip / Klarna eligibility
-    const ship = shippingAddress && typeof shippingAddress === 'object' ? shippingAddress : null;
-    const name = typeof customerName === 'string' && customerName.trim() ? customerName.trim() : 'Customer';
-    params.shipping = {
-      name,
-      address: {
-        line1:
-          typeof ship?.line1 === 'string' && ship.line1.trim()
-            ? ship.line1.trim()
-            : 'Service address on booking',
-        line2: typeof ship?.line2 === 'string' ? ship.line2 : undefined,
-        city: typeof ship?.city === 'string' && ship.city.trim() ? ship.city.trim() : 'Justin',
-        state: typeof ship?.state === 'string' && ship.state.trim() ? ship.state.trim() : 'TX',
-        postal_code:
-          typeof ship?.postal_code === 'string' && ship.postal_code.trim()
-            ? ship.postal_code.trim()
-            : '76247',
-        country: 'US',
-      },
-    };
-
-    if (techStripeAccountId && String(techStripeAccountId).startsWith('acct_')) {
-      params.transfer_data = { destination: techStripeAccountId };
-      params.application_fee_amount = platformFeeCents;
-    }
-
-    const paymentIntent = await stripeRequest('/payment_intents', 'POST', params);
+    const order = await createOrder({
+      intent: 'CAPTURE',
+      amountCents: totalCents,
+      currency: 'USD',
+      invoiceId: bookingReference || undefined,
+      description: bookingReference
+        ? `Adaptivity Performance — ${bookingReference}`
+        : 'Adaptivity Performance service',
+      idempotencyKey: `chk-${bookingReference || 'adhoc'}-${totalCents}`,
+    });
 
     let bookingId: string | null = null;
     if (bookingReference) {
@@ -160,26 +110,27 @@ Deno.serve(async (req) => {
       bookingId = booking?.id ?? null;
     }
 
+    // Keyed on the order id: unlike a Stripe PaymentIntent there is no capture
+    // until the buyer approves, and confirm-checkout-payment fills the rest in.
     await supabase.from('payments').upsert(
       {
         booking_reference: bookingReference || null,
         booking_id: bookingId,
-        payment_intent_id: paymentIntent.id,
+        processor: 'paypal',
+        paypal_order_id: order.orderId,
         customer_email: customerEmail || null,
         amount_cents: totalCents,
         tip_cents: tipCents,
         platform_fee_cents: platformFeeCents,
         tech_transfer_cents: techTransferCents,
-        tech_stripe_account_id: techStripeAccountId || null,
-        status: paymentIntent.status === 'succeeded' ? 'succeeded' : 'pending',
-        payout_status: techStripeAccountId ? 'awaiting_payment' : 'skipped',
+        status: 'pending',
+        payout_status: 'awaiting_payment',
       },
-      { onConflict: 'payment_intent_id' }
+      { onConflict: 'paypal_order_id' }
     );
 
     return jsonResponse({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      orderId: order.orderId,
       totalCharged: totalCents / 100,
       baseAmount: baseCents / 100,
       techShareAmount: techTransferCents / 100,

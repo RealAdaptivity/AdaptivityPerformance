@@ -2,8 +2,8 @@ import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
 
 export interface CreatePaymentIntentResult {
-  clientSecret: string;
-  paymentIntentId: string;
+  /** PayPal order id. Replaces the Stripe clientSecret. */
+  orderId: string;
   totalCharged: number;
   baseAmount?: number;
   techShareAmount: number;
@@ -43,8 +43,8 @@ export async function createCheckoutPaymentIntent(params: {
   if (data?.error) {
     throw new Error(String(data.error));
   }
-  if (!data?.clientSecret) {
-    throw new Error('Stripe client secret missing from server response');
+  if (!data?.orderId) {
+    throw new Error('Checkout order missing from server response');
   }
   return data as CreatePaymentIntentResult;
 }
@@ -117,6 +117,26 @@ export type ConfirmBookingHoldResult = {
  * was minted server-side, so it is verified against the booking rather than
  * trusted.
  */
+export type ConfirmCheckoutResult = {
+  ok: boolean;
+  bookingReference: string | null;
+  captureId?: string;
+  paidAmountDollars?: number;
+  alreadyConfirmed?: boolean;
+};
+
+/**
+ * Capture a checkout the buyer approved.
+ *
+ * Approving an order in the browser moves no money; this call does. The order id
+ * was minted server-side and is matched against our own payments row.
+ */
+export async function confirmCheckoutPayment(params: {
+  orderId: string;
+}): Promise<ConfirmCheckoutResult> {
+  return invokeEdgeFunction<ConfirmCheckoutResult>('confirm-checkout-payment', params);
+}
+
 export async function confirmBookingHold(params: {
   bookingReference: string;
   orderId: string;
