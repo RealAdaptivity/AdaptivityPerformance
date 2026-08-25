@@ -26,9 +26,12 @@ Live credentials require `PAYPAL_MODE=live`; sandbox credentials require
 `sandbox`. Mixing them reads as a credential rejection and sends you debugging
 the wrong thing.
 
-Four checks run. **Check 4 (card vaulting) is the one that matters most** — if it
-fails, a repair above the $85 hold cannot be charged without re-collecting the
-customer's card, and the remainder and tip paths need restructuring.
+Four checks run. **Checks 1 and 3 (authentication and CAPTURE orders) are the
+ones that matter** — those are what the deposit and payment-link flows use.
+
+Checks 2 and 4 (AUTHORIZE orders and card vaulting) are no longer used by any
+code path. The deposit is charged rather than held, so nothing depends on
+authorizations or a stored card. They can fail without blocking anything.
 
 ---
 
@@ -105,9 +108,19 @@ Do not let a real customer be the first transaction through this code.
 
 ## What changes for the business
 
-**Holds last 3 days, not 7.** That is PayPal's authorization honor period. Past
-it the funds are no longer guaranteed. Bookings further out than 3 days will need
-the card re-collected.
+**The $85 diagnostic is charged at booking, not held.** It is credited against
+the repair total, and refunded in full if the appointment cannot be made. A job
+that comes in under $85 refunds the difference automatically; a job over $85
+leaves a balance the technician collects with a payment link.
+
+This is stronger protection than the old hold — the money is actually collected
+rather than reserved and released — and it removes the authorization window and
+the stored-card dependency entirely.
+
+**Two new payment states.** `deposit_paid` means the deposit is collected and the
+job has not been settled. `balance_due` means the job is finished and the
+customer still owes money. Neither is `captured`, which is reserved for a fully
+settled job.
 
 **Technicians lose instant cash-out.** Stripe Connect let them pull their balance
 on demand. Earnings are now recorded in the `tech_payouts` ledger and paid in a
@@ -122,8 +135,10 @@ refuses them with an explanation rather than failing obscurely.
 ## Known gaps
 
 - **No webhook backstop.** If a customer's browser dies between approving and
-  confirming, the payment is not recorded automatically — reconcile from the
+  confirming, the deposit is not recorded automatically — reconcile from the
   PayPal dashboard.
+- **Balance payment links are sent manually.** When a job ends with a balance
+  due, the technician taps "send payment link". Nothing goes out automatically.
 - **The tech portal still shows Stripe Connect onboarding**, which is dead.
   Customer-facing flows are unaffected; technicians will see a broken payout
   setup screen until it is removed.
