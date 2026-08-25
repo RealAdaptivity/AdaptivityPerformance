@@ -1,11 +1,15 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
-import { requireAdminUser } from './_shared/adminAuth.ts';
 import {
-  resolveTechStripeAccountId,
-  transferTechShareToConnect,
-} from './_shared/connectTransfer.ts';
+  handleCors,
+  jsonResponse,
+  captureHelcimPreauth,
+  isHelcimApproved,
+  centsToAmount,
+  amountToCents,
+} from './_shared/helcim.ts';
+import { requireAdminUser } from './_shared/adminAuth.ts';
+import { splitJobTotalCents } from './_shared/revenueSplit.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);
@@ -40,7 +44,7 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(
-        'id, reference_code, payment_intent_id, payment_status, hold_amount_cents, total_estimate, mechanic_id'
+        'id, reference_code, helcim_transaction_id, payment_status, hold_amount_cents, total_estimate, mechanic_id'
       )
       .eq('reference_code', bookingReference.trim())
       .maybeSingle();
@@ -49,9 +53,13 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Booking not found' }, 404);
     }
 
-    const paymentIntentId = booking.payment_intent_id as string | null;
-    if (!paymentIntentId) {
+    const helcimTransactionId = booking.helcim_transaction_id as string | null;
+    if (!helcimTransactionId) {
       return jsonResponse({ error: 'No payment hold on this booking' }, 400);
+    }
+
+    if (booking.payment_status === 'captured') {
+      return jsonResponse({ error: 'Payment already captured. Use refund to adjust.' }, 400);
     }
 
     const holdCents =
@@ -61,39 +69,42 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: `Capture cannot exceed hold ($${(holdCents / 100).toFixed(2)})` }, 400);
     }
 
-    let pi = await stripeRequest(`/payment_intents/${paymentIntentId}`, 'GET');
-
-    if (pi.status === 'requires_capture') {
-      pi = await stripeRequest(`/payment_intents/${paymentIntentId}/capture`, 'POST', {
-        amount_to_capture: captureCents,
-      });
-    } else if (pi.status === 'succeeded') {
-      return jsonResponse({ error: 'Payment already captured. Use refund to adjust.' }, 400);
-    } else {
-      return jsonResponse({ error: `Cannot capture (Stripe status: ${pi.status})` }, 400);
+    // Capture less than the authorized amount. Helcim allows a capture below the
+    // preauth but never above it, which is why captureCents is clamped to the
+    // hold before we get here.
+    const capture = await captureHelcimPreauth({
+      preauthTransactionId: helcimTransactionId,
+      amount: centsToAmount(captureCents),
+      idempotencySeed: `adj_${booking.id}_${captureCents}`,
+    });
+    if (!isHelcimApproved(capture.status)) {
+      return jsonResponse({ error: `Cannot capture (Helcim status: ${capture.status})` }, 400);
     }
 
-    const capturedCents = pi.amount_received ?? captureCents;
-    const chargeId =
-      typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge?.id ?? null;
-    const techStripeAccountId = await resolveTechStripeAccountId(supabase, booking.mechanic_id);
+    const capturedCents = amountToCents(capture.amount) || captureCents;
+    const split = splitJobTotalCents(capturedCents);
 
-    const { data: paymentRow } = await supabase
-      .from('payments')
-      .select('stripe_transfer_id')
-      .eq('payment_intent_id', paymentIntentId)
-      .maybeSingle();
-
-    const transferResult = await transferTechShareToConnect({
-      paymentIntentId,
-      bookingReference: booking.reference_code,
-      capturedCents,
-      techStripeAccountId,
-      chargeId,
-      source: 'admin_adjust_capture',
-      existingTransferId:
-        typeof paymentRow?.stripe_transfer_id === 'string' ? paymentRow.stripe_transfer_id : null,
-    });
+    // Accrue rather than transfer: same as the main capture path.
+    let payoutWarning: string | null = null;
+    if (booking.mechanic_id && split.techTransferCents > 0) {
+      const { error: payoutError } = await supabase.from('tech_payouts').upsert(
+        {
+          booking_id: booking.id,
+          booking_reference: booking.reference_code,
+          mechanic_id: booking.mechanic_id,
+          amount_cents: split.techTransferCents,
+          status: 'accrued',
+          notes: 'Adjusted capture',
+        },
+        { onConflict: 'booking_id' }
+      );
+      if (payoutError) {
+        payoutWarning = payoutError.message;
+        console.error('[admin-adjust-capture] tech_payouts upsert failed', payoutError.message);
+      }
+    } else if (!booking.mechanic_id) {
+      payoutWarning = 'No technician assigned; nothing accrued.';
+    }
 
     const bookingPatch: Record<string, unknown> = {
       payment_status: 'captured',
@@ -109,27 +120,27 @@ Deno.serve(async (req) => {
     await supabase
       .from('payments')
       .update({
+        processor: 'helcim',
         status: 'succeeded',
         amount_cents: capturedCents,
-        platform_fee_cents: transferResult.platformFeeCents,
-        tech_transfer_cents: transferResult.techTransferCents,
-        tech_stripe_account_id: transferResult.techStripeAccountId,
-        stripe_transfer_id: transferResult.transferId,
-        payout_status: transferResult.payoutStatus,
-        payout_error: transferResult.transferError,
+        helcim_capture_transaction_id: capture.transactionId,
+        platform_fee_cents: split.platformFeeCents,
+        tech_transfer_cents: split.techTransferCents,
+        payout_status: payoutWarning ? 'none' : 'accrued',
+        payout_error: payoutWarning,
         updated_at: new Date().toISOString(),
       })
-      .eq('payment_intent_id', paymentIntentId);
+      .eq('booking_id', booking.id);
 
     return jsonResponse({
       ok: true,
       bookingReference: booking.reference_code,
       capturedAmountDollars: capturedCents / 100,
-      techShareDollars: transferResult.techTransferCents / 100,
-      platformShareDollars: transferResult.platformFeeCents / 100,
+      techShareDollars: split.techTransferCents / 100,
+      platformShareDollars: split.platformFeeCents / 100,
       markCompleted,
-      transferId: transferResult.transferId,
-      transferWarning: transferResult.transferError,
+      captureTransactionId: capture.transactionId,
+      payoutWarning,
     });
   } catch (err) {
     console.error('[admin-adjust-capture]', err);
