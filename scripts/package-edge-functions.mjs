@@ -6,6 +6,7 @@ const sharedDir = path.join(root, '_shared');
 
 const sharedFiles = {
   'stripe.ts': fs.readFileSync(path.join(sharedDir, 'stripe.ts'), 'utf8'),
+  'helcim.ts': fs.readFileSync(path.join(sharedDir, 'helcim.ts'), 'utf8'),
   'revenueSplit.ts': fs.readFileSync(path.join(sharedDir, 'revenueSplit.ts'), 'utf8'),
   'instantPayout.ts': fs.readFileSync(path.join(sharedDir, 'instantPayout.ts'), 'utf8'),
   'adminAuth.ts': fs.readFileSync(path.join(sharedDir, 'adminAuth.ts'), 'utf8'),
@@ -25,16 +26,15 @@ const functions = [
   { name: 'create-connect-account', shared: ['stripe.ts', 'connectBranding.ts', 'connectAccountRecovery.ts'], verify_jwt: true },
   {
     name: 'create-booking-with-hold',
-    shared: ['stripe.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
+    shared: ['helcim.ts', 'revenueSplit.ts', 'serviceArea.ts', 'holdPricing.ts'],
     verify_jwt: true,
   },
+  { name: 'confirm-booking-hold', shared: ['helcim.ts'], verify_jwt: true },
   {
     name: 'capture-booking-payment',
     shared: [
-      'stripe.ts',
+      'helcim.ts',
       'revenueSplit.ts',
-      'connectTransfer.ts',
-      'connectAccountRecovery.ts',
       'captureHold.ts',
       'expoPush.ts',
     ],
