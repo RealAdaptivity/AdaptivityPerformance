@@ -23,6 +23,7 @@ export type SitePage =
   | 'city'
   | 'terms'
   | 'privacy'
+  | 'refunds'
   | 'notFound'
   | 'referral';
 
@@ -45,6 +46,7 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>,
   blog: 'blog',
   terms: 'terms',
   privacy: 'privacy',
+  refunds: 'refund-policy',
   notFound: '404',
 };
 
@@ -138,6 +140,7 @@ export function readSitePage(): SitePage {
   if (/^\/r\/[A-Za-z0-9_-]{4,16}\/?$/.test(path)) return 'referral';
   if (blogSlugFromPath(path)) return 'blogPost';
   if (path === '/blog') return 'blog';
+  if (path === '/refunds' || path === '/refund-policy' || path === '/cancellation-policy') return 'refunds';
   if (path === '/' || path === '') {
     const hash = window.location.hash.replace(/^#/, '');
     if (hash && HASH_TO_PAGE[hash]) return HASH_TO_PAGE[hash];

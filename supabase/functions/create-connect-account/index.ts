@@ -1,18 +1,18 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
+import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
 import {
   expressAccountBrandingUpdate,
   expressAccountCapabilityRequest,
   expressAccountCreatePayload,
   resolveTechStripeConnectRedirectUrls,
   stripeBusinessProfileSite,
-} from './_shared/connectBranding.ts';
+} from '../_shared/connectBranding.ts';
 import {
   countConnectAccountsForEmail,
   recoverConnectAccountForProfile,
   tagConnectAccountProfile,
-} from './_shared/connectAccountRecovery.ts';
+} from '../_shared/connectAccountRecovery.ts';
 
 Deno.serve(async (req) => {
   const cors = handleCors(req);

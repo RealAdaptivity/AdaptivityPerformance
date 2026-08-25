@@ -16,6 +16,7 @@ import { WantToTeachPage } from './WantToTeachPage';
 import { BlogIndexPage } from './BlogIndexPage';
 import { TermsPrivacyPage } from './TermsPrivacyPage';
 import { PrivacyPolicyPage } from './PrivacyPolicyPage';
+import { RefundPolicyPage } from './RefundPolicyPage';
 import { NotFoundPage } from './NotFoundPage';
 import type { SitePage } from '../site/siteRoute';
 
@@ -107,6 +108,8 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return reveal(<TermsPrivacyPage />, 'fade');
     case 'privacy':
       return reveal(<PrivacyPolicyPage />, 'fade');
+    case 'refunds':
+      return reveal(<RefundPolicyPage />, 'fade');
     case 'notFound':
       return <NotFoundPage />;
     case 'blogPost':

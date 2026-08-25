@@ -28,6 +28,9 @@ const PAGES = [
   { path: '/performance', changefreq: 'monthly', priority: '0.5' },
   { path: '/want-to-teach', changefreq: 'monthly', priority: '0.5' },
   { path: '/learn', changefreq: 'monthly', priority: '0.5' },
+  { path: '/terms', changefreq: 'monthly', priority: '0.4' },
+  { path: '/privacy', changefreq: 'monthly', priority: '0.4' },
+  { path: '/refund-policy', changefreq: 'monthly', priority: '0.4' },
 ];
 
 const CITY_SLUGS = [

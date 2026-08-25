@@ -113,6 +113,21 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
     description: 'Mobile mechanic tips and local auto repair guides from Adaptivity Performance.',
     path: '/blog',
   },
+  terms: {
+    title: 'Terms of Service | Adaptivity Performance',
+    description: 'Master service agreement and legal disclosures for Adaptivity Performance LLC.',
+    path: '/terms',
+  },
+  privacy: {
+    title: 'Privacy Policy | Adaptivity Performance',
+    description: 'Privacy policy and data protection disclosures for Adaptivity Performance LLC.',
+    path: '/privacy',
+  },
+  refunds: {
+    title: 'Refund & Cancellation Policy | Adaptivity Performance',
+    description: 'Clear refund terms for $85 diagnostic holds, 12-month warranties, and customer cancellations.',
+    path: '/refund-policy',
+  },
 };
 
 export type CityLanding = {
