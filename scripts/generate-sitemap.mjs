@@ -23,7 +23,6 @@ const PAGES = [
   { path: '/join', changefreq: 'monthly', priority: '0.6' },
   { path: '/partners', changefreq: 'monthly', priority: '0.6' },
   { path: '/careers', changefreq: 'monthly', priority: '0.5' },
-  { path: '/membership', changefreq: 'monthly', priority: '0.5' },
   { path: '/diagnostics', changefreq: 'monthly', priority: '0.5' },
   { path: '/performance', changefreq: 'monthly', priority: '0.5' },
   { path: '/want-to-teach', changefreq: 'monthly', priority: '0.5' },

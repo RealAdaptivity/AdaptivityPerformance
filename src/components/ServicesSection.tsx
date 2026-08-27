@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { ArrowRight, Wrench } from 'lucide-react';
+import { ServiceIcon } from './ServiceIcon';
 import {
   BOOKABLE_SERVICE_CATALOG,
   formatCatalogPriceRange,
@@ -81,18 +82,16 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking,
                     <button
                       type="button"
                       onClick={() => (onBookService ? onBookService(s.id) : onOpenBooking())}
-                      className="w-full flex items-start gap-3 text-left rounded-xl px-2.5 py-2 hover:bg-white/5 transition-colors group"
+                      className="w-full flex items-start gap-3.5 text-left rounded-2xl px-3 py-2.5 hover:bg-white/5 transition-all group border border-transparent hover:border-orange-500/20"
                     >
-                      <span className="text-base leading-none mt-0.5" aria-hidden>
-                        {s.icon}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-slate-200 group-hover:text-orange-300">
+                      <ServiceIcon kind={s.kind} id={s.id} />
+                      <span className="min-w-0 flex-1 pt-0.5">
+                        <span className="block text-sm font-bold text-slate-100 group-hover:text-orange-400 transition-colors">
                           {s.title}
                         </span>
-                        <span className="block text-[11px] text-slate-500 line-clamp-1">{s.description}</span>
+                        <span className="block text-[11px] text-slate-400 line-clamp-1 mt-0.5">{s.description}</span>
                       </span>
-                      <span className="text-[11px] font-bold text-orange-400 shrink-0 pt-0.5 text-right max-w-[7.5rem] leading-snug">
+                      <span className="text-[11px] font-bold text-orange-400 shrink-0 pt-1 text-right max-w-[7.5rem] leading-snug">
                         {formatCatalogPriceRange(s) ?? 'On-site price'}
                       </span>
                     </button>

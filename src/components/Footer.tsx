@@ -1,15 +1,15 @@
 import React from 'react';
-import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
+import { Phone, MapPin, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { AseLogo } from './AseLogo';
 import { SiteLink } from '../site/SiteLink';
 import { CITY_LANDINGS, cityPath, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 interface FooterProps {
   onOpenBooking: () => void;
-  onOpenTracker: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenBooking }) => {
   return (
     <footer className="bg-[#08090d] text-slate-400 text-xs border-t border-white/10 pt-16 pb-12 relative overflow-hidden">
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -28,11 +28,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, transparent $85 holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
+            DFW / Fort Worth’s premier mobile auto repair and Justin garage performance specialist. Quality OE parts, zero-down online booking, transparent on-site pricing, and 12-month nationwide warranty on all work.
           </p>
 
-          <div className="flex items-center space-x-3 text-white font-semibold pt-1">
-            <ShieldCheck className="w-4 h-4 text-orange-400" />
+          <div className="flex items-center space-x-2.5 text-white font-semibold pt-1">
+            <AseLogo className="w-5 h-5 flex-shrink-0" />
             <span>ASE Certified Technicians</span>
           </div>
 
@@ -56,7 +56,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="about" hash="future" className="hover:text-orange-400 transition-colors">Future plans</SiteLink></li>
             <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services</SiteLink></li>
             <li><SiteLink to="contact" className="hover:text-orange-400 transition-colors">Contact Us</SiteLink></li>
-            <li><SiteLink to="diagnostics" className="hover:text-orange-400 transition-colors">Symptom Checker</SiteLink></li>
             <li><SiteLink to="join" className="hover:text-orange-400 transition-colors">Join as Tech</SiteLink></li>
             <li><SiteLink to="learn" className="hover:text-orange-400 transition-colors">Want to Learn</SiteLink></li>
             <li><SiteLink to="wantToTeach" className="hover:text-orange-400 transition-colors">Want to Teach</SiteLink></li>
@@ -66,7 +65,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</SiteLink></li>
             <li><SiteLink to="faq" className="hover:text-orange-400 transition-colors">FAQ</SiteLink></li>
             <li><button onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Book Service Online</button></li>
-            <li><button onClick={onOpenTracker} className="text-orange-400 hover:underline">Track Live Repair / Dispatch</button></li>
           </ul>
         </div>
 
@@ -134,9 +132,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
       <div className="container mx-auto px-4 mt-12 pt-6 border-t border-white/5 text-center text-slate-500 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
           <span>© 2026 Adaptivity Performance LLC. Servicing Justin, Northlake & DFW.</span>
-          <span className="bg-slate-900 border border-white/10 text-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
-            🔒 Powered by Stripe Connect
-          </span>
         </div>
         <div className="flex items-center space-x-4">
           <SiteLink to="terms" className="hover:text-orange-400 transition-colors">Terms of Service</SiteLink>

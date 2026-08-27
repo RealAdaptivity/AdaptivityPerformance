@@ -1,5 +1,6 @@
-import { Truck, ArrowRight, Calendar, Phone, ShieldCheck, Wrench } from 'lucide-react';
+import { Truck, ArrowRight, Calendar, Phone, ShieldCheck } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { AseLogo } from './AseLogo';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 interface HeroProps {
@@ -93,9 +94,9 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                 <Truck className="w-4 h-4 text-emerald-400" />
                 <span>Zero Towing Required</span>
               </span>
-              <span className="flex items-center gap-1.5 bg-[#07080b]/80 px-3 py-1 rounded-xl border border-white/10 backdrop-blur-sm">
-                <Wrench className="w-4 h-4 text-orange-400" />
-                <span>ASE Certified Techs</span>
+              <span className="flex items-center gap-2 bg-[#07080b]/90 px-3.5 py-1.5 rounded-xl border border-white/10 backdrop-blur-sm shadow-md">
+                <AseLogo className="w-5 h-5 flex-shrink-0" />
+                <span className="font-semibold text-slate-200">ASE Certified Techs</span>
               </span>
             </div>
 

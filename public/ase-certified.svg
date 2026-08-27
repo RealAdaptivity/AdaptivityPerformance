@@ -1,0 +1,47 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="aseBlue" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0066B3" />
+      <stop offset="100%" stop-color="#003366" />
+    </radialGradient>
+  </defs>
+  <!-- Outer 12-tooth Gear Cogwheel -->
+  <path
+    d="M45,4 L55,4 L56.5,12.5 Q60,13.5 63,15.5 L70.5,10.5 L78,17.5 L73.5,25.5 Q76,28.5 77.5,32 L86,33.5 L86,43.5 L77.5,45 Q76,48.5 73.5,51.5 L78,59.5 L70.5,66.5 L63,61.5 Q60,63.5 56.5,64.5 L55,73 L45,73 L43.5,64.5 Q40,63.5 37,61.5 L29.5,66.5 L22,59.5 L26.5,51.5 Q24,48.5 22.5,45 L14,43.5 L14,33.5 L22.5,32 Q24,28.5 26.5,25.5 L22,17.5 L29.5,10.5 L37,15.5 Q40,13.5 43.5,12.5 Z"
+    transform="scale(1.22) translate(-9, -2)"
+    fill="url(#aseBlue)"
+    stroke="#002244"
+    stroke-width="1.5"
+  />
+  <!-- Inner White Border and Blue Disc -->
+  <circle cx="50" cy="46" r="32" fill="#004A87" stroke="#ffffff" stroke-width="2.5" />
+  <!-- Center ASE Wordmark -->
+  <text
+    x="50"
+    y="49"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#ffffff"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-weight="900"
+    font-size="23"
+    letter-spacing="1.5"
+  >
+    ASE
+  </text>
+  <!-- CERTIFIED Lower Banner -->
+  <rect x="14" y="74" width="72" height="18" rx="4" fill="#002244" stroke="#ffffff" stroke-width="1.5" />
+  <text
+    x="50"
+    y="84"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#ffffff"
+    font-family="system-ui, -apple-system, sans-serif"
+    font-weight="900"
+    font-size="9.5"
+    letter-spacing="2"
+  >
+    CERTIFIED
+  </text>
+</svg>

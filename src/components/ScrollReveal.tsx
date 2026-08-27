@@ -30,9 +30,16 @@ export const ScrollReveal: React.FC<Props> = ({
     const el = ref.current;
     if (!el) return;
 
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true);
-      return;
+    if (typeof window !== 'undefined') {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        setVisible(true);
+        return;
+      }
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight) {
+        setVisible(true);
+        if (once) return;
+      }
     }
 
     const observer = new IntersectionObserver(
@@ -41,7 +48,7 @@ export const ScrollReveal: React.FC<Props> = ({
         setVisible(true);
         if (once) observer.disconnect();
       },
-      { threshold: 0.14, rootMargin: '0px 0px -6% 0px' }
+      { threshold: 0.02, rootMargin: '0px 0px 0px 0px' }
     );
 
     observer.observe(el);

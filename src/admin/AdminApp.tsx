@@ -7,9 +7,11 @@ import {
   LogOut,
   Package,
   Radio,
+  Receipt,
   Shield,
   Sparkles,
   UserPlus,
+  Wrench,
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import {
@@ -29,8 +31,10 @@ import { PnLDashboard } from './PnLDashboard';
 import { GrowthAdmin } from './GrowthAdmin';
 import { TechApplicationsAdmin } from './TechApplicationsAdmin';
 import { AdminContractorAgreementsTab } from './AdminContractorAgreementsTab';
+import { AllDataLaborGuideTab } from './AllDataLaborGuideTab';
+import { InvoiceBuilderTab } from './InvoiceBuilderTab';
 
-type AdminTab = 'dispatch' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth';
+type AdminTab = 'dispatch' | 'invoices' | 'alldata' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth';
 
 export const AdminApp: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -129,6 +133,18 @@ export const AdminApp: React.FC = () => {
 
   const tabs: { id: AdminTab; label: string; icon?: React.ReactNode; activeClass: string }[] = [
     { id: 'dispatch', label: 'Dispatch', activeClass: 'bg-orange-500 text-white' },
+    {
+      id: 'invoices',
+      label: 'Invoice Builder',
+      icon: <Receipt className="w-3 h-3" />,
+      activeClass: 'bg-emerald-600 text-white',
+    },
+    {
+      id: 'alldata',
+      label: 'Labor Guide (ALLDATA)',
+      icon: <Wrench className="w-3 h-3" />,
+      activeClass: 'bg-orange-600 text-white',
+    },
     {
       id: 'techs',
       label: 'Techs',
@@ -240,6 +256,14 @@ export const AdminApp: React.FC = () => {
       </header>
       {adminTab === 'dispatch' ? (
         <DispatchConsole />
+      ) : adminTab === 'invoices' ? (
+        <div className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-6">
+          <InvoiceBuilderTab />
+        </div>
+      ) : adminTab === 'alldata' ? (
+        <div className="max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-6">
+          <AllDataLaborGuideTab />
+        </div>
       ) : adminTab === 'techs' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">
           <h1 className="text-lg font-extrabold text-white mb-4">Tech applications</h1>

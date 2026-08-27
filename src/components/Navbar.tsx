@@ -3,8 +3,6 @@ import {
   Phone,
   Calendar,
   Clock,
-  ShieldCheck,
-  Truck,
   Car,
   FileCheck,
   UserPlus,
@@ -24,12 +22,10 @@ import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
   onOpenBooking: () => void;
-  onOpenTracker: () => void;
   onOpenGarage: () => void;
   onOpenInspection: () => void;
   onOpenRecruitment: () => void;
   onOpenPartnerApply: () => void;
-  onOpenMembership: () => void;
 }
 
 function MenuSection({ label, children }: { label: string; children: React.ReactNode }) {
@@ -43,12 +39,10 @@ function MenuSection({ label, children }: { label: string; children: React.React
 
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenBooking,
-  onOpenTracker,
   onOpenGarage,
   onOpenInspection,
   onOpenRecruitment,
   onOpenPartnerApply,
-  onOpenMembership,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -172,16 +166,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <SiteLink to="contact" onNavigate={close} className={itemClass}>
                     <Phone className="w-4 h-4 text-orange-400" /> Contact
                   </SiteLink>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onOpenTracker();
-                      close();
-                    }}
-                    className={itemClass}
-                  >
-                    <Truck className="w-4 h-4 text-orange-400" /> Track Dispatch
-                  </button>
                 </MenuSection>
 
                 <MenuSection label="Work with us">
@@ -234,19 +218,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                 {moreOpen && (
                   <div className="flex flex-col pb-1">
-                    <SiteLink
-                      to="membership"
-                      onNavigate={() => {
-                        close();
-                        onOpenMembership();
-                      }}
-                      className={`${itemClass} text-orange-300`}
-                    >
-                      <ShieldCheck className="w-4 h-4 text-orange-400" /> VIP Shield
-                    </SiteLink>
-                    <SiteLink to="diagnostics" onNavigate={close} className={itemClass}>
-                      Symptom Checker
-                    </SiteLink>
                     <SiteLink to="partners" onNavigate={close} className={itemClass}>
                       <Building2 className="w-4 h-4 text-sky-400" /> Partner locations
                     </SiteLink>

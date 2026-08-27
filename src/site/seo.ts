@@ -47,7 +47,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   quotes: {
     title: 'Rough Estimate Calculator | Adaptivity Performance',
-    description: 'Ballpark labor + parts for DFW mobile service, then book an $85 diagnostic hold.',
+    description: 'Ballpark labor + parts for DFW mobile service, then book online with zero payment due today.',
     path: '/quotes',
   },
   coverage: {
@@ -76,11 +76,6 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
     title: 'Careers | Adaptivity Performance',
     description: 'Technician and partner opportunities with Adaptivity Performance in North Texas.',
     path: '/careers',
-  },
-  membership: {
-    title: 'Membership Plans | Adaptivity Performance',
-    description: 'Priority dispatch and member perks for DFW drivers.',
-    path: '/membership',
   },
   diagnostics: {
     title: 'Diagnostic Assistant | Adaptivity Performance',
@@ -280,15 +275,15 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you accept cash?',
-    a: 'No. Adaptivity Performance is a cashless business. We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover) processed securely via Stripe. We also accept Zelle for applicable balances. A card on file is required at booking to place an $85 authorization hold. Cash payments are not accepted under any circumstances.',
+    a: 'Adaptivity Performance operates cash-free for technician safety. We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover), digital card payments, and Zelle. Zero payment is required to book your appointment online — you only pay once your technician has inspected your vehicle and completed the approved service.',
   },
   {
-    q: 'Why is a credit card hold required before my appointment?',
-    a: 'The $85 pre-authorization hold secures your appointment slot and covers our technician\'s drive time to your location. The hold is not a charge — it is released automatically if you cancel within the allowable window. If you approve a repair, the hold is applied toward your final invoice. This protects both you and our technicians from no-shows.',
+    q: 'When do I pay for my service?',
+    a: 'Zero payment is due upfront when booking. Your certified mobile technician will inspect your vehicle on-site and provide an exact, itemized labor and parts quote. Once you approve and the repair is finished, payment is completed securely through our digital invoice.',
   },
   {
     q: 'What happens if I need to cancel or reschedule my appointment?',
-    a: 'Cancellations made more than 2 hours before the scheduled appointment window are fully refunded with no penalty. Cancellations within 2 hours of the appointment forfeit the $85 diagnostic hold as a late cancellation fee. Same-day no-shows without notice forfeit the full hold. Rescheduling more than 2 hours in advance is always free.',
+    a: 'Rescheduling or canceling your appointment is completely free. We ask for at least 2 hours advance notice so we can reassign our mobile technicians efficiently. If you need to make changes, simply call or text our dispatch team.',
   },
 
   // SERVICES
@@ -320,7 +315,7 @@ export const SITE_FAQS = [
   // BOOKING PROCESS
   {
     q: 'How do I book an appointment?',
-    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place a $85 card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
+    a: `Booking is 100% online with zero payment required today — click Book Service on our website, enter your vehicle details, address, and preferred appointment window. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
   },
   {
     q: 'How long does a typical mobile repair take?',
@@ -403,7 +398,7 @@ export async function shareAdaptivity(opts?: { title?: string; text?: string; ur
   const title = opts?.title || 'Adaptivity Performance';
   const text =
     opts?.text ||
-    `Mobile mechanic for Justin, Northlake & DFW — book a $85 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
+    `Mobile mechanic for Justin, Northlake & DFW — book with zero due today. ${SITE_PHONE_DISPLAY}`;
   const url = opts?.url || SITE_ORIGIN;
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {

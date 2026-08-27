@@ -178,9 +178,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
                 </li>
               </ul>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Subject to lender eligibility. Enable Affirm, Afterpay, Zip, Sunbit & Klarna in Stripe →
-                Payment methods (or your platform PMC). Diagnostic holds stay on a card; financing is at
-                final escrow checkout.
+                Subject to lender eligibility. Financing options (Affirm, Afterpay, Zip, Sunbit & Klarna) are available at final digital invoice checkout.
               </p>
             </div>
             <div className="lg:col-span-5 space-y-3">

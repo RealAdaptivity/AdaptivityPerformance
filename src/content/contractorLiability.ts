@@ -13,4 +13,4 @@ export const TECH_LIABILITY_ACK_LABEL =
   'I understand Adaptivity is not liable for damage I cause on jobs or for my own on-the-job injuries; I am responsible for my own liability and injury insurance (workers’ comp is my responsibility as a 1099). Insurance is recommended but not required to join.';
 
 export const CUSTOMER_TECH_LIABILITY_NOTICE =
-  'Independent techs perform the work. Adaptivity connects you and processes payment; we recommend techs carry insurance, but if a tech damages your vehicle they—not Adaptivity—are responsible for that damage. We tell you this before you place the diagnostic hold.';
+  'Independent techs perform the work. Adaptivity connects you and processes payment; we recommend techs carry insurance, but if a tech damages your vehicle they—not Adaptivity—are responsible for that damage. We tell you this before you confirm your appointment.';

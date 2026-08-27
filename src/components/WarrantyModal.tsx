@@ -64,7 +64,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ isOpen, onClose, o
             </div>
           </div>
 
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-3 pb-3 border-b border-white/5">
             <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
             <div>
               <strong className="text-white text-sm block">Digital Record & Easy Warranty Claims</strong>
@@ -72,6 +72,10 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ isOpen, onClose, o
                 Your repair receipt is stored digitally in your Adaptivity App account. Zero paper receipt hassle.
               </p>
             </div>
+          </div>
+
+          <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 text-[11px] text-amber-300">
+            <strong>*Customer Parts Disclaimer:</strong> We are <strong>not responsible for customer-provided parts</strong>. The 12-Month / 12,000-Mile Warranty is only valid if Adaptivity Performance provides the parts.
           </div>
         </div>
 

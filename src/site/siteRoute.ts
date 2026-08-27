@@ -8,7 +8,6 @@ export type SitePage =
   | 'services'
   | 'contact'
   | 'quotes'
-  | 'membership'
   | 'diagnostics'
   | 'join'
   | 'wantToTeach'
@@ -33,7 +32,6 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>,
   services: 'services',
   contact: 'contact',
   quotes: 'quotes',
-  membership: 'membership',
   diagnostics: 'diagnostics',
   join: 'join',
   wantToTeach: 'want-to-teach',
@@ -67,7 +65,6 @@ const HASH_TO_PAGE: Record<string, SitePage> = {
   future: 'about',
   services: 'services',
   estimator: 'quotes',
-  membership: 'membership',
   diagnostics: 'diagnostics',
   partners: 'partners',
   area: 'coverage',

@@ -84,7 +84,7 @@ const REQUIREMENTS = [
       'Adaptivity is not liable for accidents or damage you cause on a job — you are',
       'You are responsible for your own injury / medical insurance (Texas 1099 — no Adaptivity workers’ comp claim)',
       'Insurance for tools / liability is strongly recommended (not required to join)',
-      'Customers are told before the diagnostic hold that the working tech is responsible for damage they cause',
+      'Customers are told before booking that the working tech is responsible for damage they cause',
       'Stripe Express payout account (we walk you through Connect after approval)',
       'IRS Form W-9 / tax ID (SSN or EIN) via Stripe before your first claimed job',
       'Form 1099-NEC: if you earn $600+ in a calendar year, Adaptivity files with the IRS and sends you a copy by Jan 31',

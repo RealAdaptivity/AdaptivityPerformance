@@ -6,8 +6,6 @@ import {
   UserPlus,
   Building2,
   MapPin,
-  ShieldCheck,
-  Stethoscope,
   Briefcase,
   GraduationCap,
 } from 'lucide-react';
@@ -50,20 +48,6 @@ const LINKS: {
       blurb: 'Diagnostics, brakes, audio, tint, detailing, performance, and more.',
       icon: <Wrench className="w-5 h-5" />,
       accent: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
-    },
-    {
-      to: 'membership',
-      title: 'VIP Membership',
-      blurb: 'Adaptivity Shield — $0 travel fees and member discounts.',
-      icon: <ShieldCheck className="w-5 h-5" />,
-      accent: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
-    },
-    {
-      to: 'diagnostics',
-      title: 'Symptom Checker',
-      blurb: 'Tell us what’s wrong — get a recommended service path.',
-      icon: <Stethoscope className="w-5 h-5" />,
-      accent: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
     },
     {
       to: 'join',

@@ -1,13 +1,11 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { BookingProvider, useBookingContext, type Booking } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
-import { RepairTrackerDemo } from './components/RepairTrackerDemo';
 import { BookingModal } from './components/BookingModal';
 import { CustomerGarageModal } from './components/CustomerGarageModal';
 import { InspectionReportModal } from './components/InspectionReportModal';
 import { TechRecruitmentModal } from './components/TechRecruitmentModal';
 import { PartnerApplyModal } from './components/PartnerApplyModal';
-import { MembershipModal } from './components/MembershipModal';
 import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
 import { WarrantyModal } from './components/WarrantyModal';
 import { ReferralModal } from './components/ReferralModal';
@@ -64,17 +62,14 @@ function MainAppContent() {
   }, [page, cityLanding]);
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isGarageOpen, setIsGarageOpen] = useState(false);
   const [isInspectionOpen, setIsInspectionOpen] = useState(false);
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
   const [isPartnerApplyOpen, setIsPartnerApplyOpen] = useState(false);
-  const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isWarrantyOpen, setIsWarrantyOpen] = useState(false);
   const [isReferralOpen, setIsReferralOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutBooking, setCheckoutBooking] = useState<Booking | null>(null);
-  const [selectedMembershipPlan, setSelectedMembershipPlan] = useState<'basic' | 'vip' | 'fleet'>('vip');
   const [activeServiceMode, setActiveServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [estimateDataForBooking, setEstimateDataForBooking] = useState<any>(null);
 
@@ -93,7 +88,6 @@ function MainAppContent() {
       services: 'services',
       contact: 'contact',
       estimator: 'quotes',
-      membership: 'membership',
       diagnostics: 'diagnostics',
       partners: 'partners',
       area: 'coverage',
@@ -151,11 +145,6 @@ function MainAppContent() {
     setIsBookingOpen(true);
   };
 
-  const handleOpenMembershipModal = (planId?: 'basic' | 'vip' | 'fleet') => {
-    if (planId) setSelectedMembershipPlan(planId);
-    setIsMembershipOpen(true);
-  };
-
   const handleBookFromGarage = (serviceName: string, vehicleInfo: string) => {
     setEstimateDataForBooking({
       services: [serviceName],
@@ -196,7 +185,6 @@ function MainAppContent() {
     onOpenBooking: openBooking,
     onOpenRecruitment: () => setIsRecruitmentOpen(true),
     onOpenPartnerApply: () => setIsPartnerApplyOpen(true),
-    onOpenMembership: handleOpenMembershipModal,
     onBookWithEstimate: handleOpenBookingWithEstimate,
     onSelectRecommendedService: handleSelectRecommendedService,
     onBookService: (serviceId: string) => {
@@ -228,15 +216,10 @@ function MainAppContent() {
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       <Navbar
         onOpenBooking={openBooking}
-        onOpenTracker={() => setIsTrackerOpen(true)}
         onOpenGarage={() => setIsGarageOpen(true)}
         onOpenInspection={() => setIsInspectionOpen(true)}
         onOpenRecruitment={() => setIsRecruitmentOpen(true)}
         onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
-        onOpenMembership={() => {
-          navigateSite('membership');
-          handleOpenMembershipModal('vip');
-        }}
       />
 
       <main className="flex-grow pb-16 md:pb-0">
@@ -258,7 +241,7 @@ function MainAppContent() {
         )}
       </main>
 
-      <Footer onOpenBooking={openBooking} onOpenTracker={() => setIsTrackerOpen(true)} />
+      <Footer onOpenBooking={openBooking} />
 
       <StickyMobileActionBar onOpenBooking={openBooking} />
 
@@ -278,15 +261,6 @@ function MainAppContent() {
         onClose={() => setIsBookingOpen(false)}
         initialEstimateData={estimateDataForBooking}
         onBookingSubmitted={handleBookingSubmittedInModal}
-      />
-
-      <RepairTrackerDemo
-        isOpen={isTrackerOpen}
-        onClose={() => setIsTrackerOpen(false)}
-        onOpenCheckout={(booking) => {
-          setCheckoutBooking(booking);
-          setIsCheckoutOpen(true);
-        }}
       />
 
       <CustomerGarageModal
@@ -310,12 +284,6 @@ function MainAppContent() {
       <PartnerApplyModal
         isOpen={isPartnerApplyOpen}
         onClose={() => setIsPartnerApplyOpen(false)}
-      />
-
-      <MembershipModal
-        isOpen={isMembershipOpen}
-        onClose={() => setIsMembershipOpen(false)}
-        initialPlanId={selectedMembershipPlan}
       />
 
       <PaymentCheckoutModal

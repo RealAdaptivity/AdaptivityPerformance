@@ -1,19 +1,32 @@
 import React from 'react';
-import { ShieldCheck, Eye, Database, Mail, Share2, Lock, Clock, UserX, Phone } from 'lucide-react';
+import {
+  ShieldCheck,
+  Eye,
+  Database,
+  Mail,
+  Share2,
+  Lock,
+  Clock,
+  UserX,
+  PhoneCall,
+  MessageSquare,
+  FileText,
+  CheckCircle2,
+} from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { SiteLink } from '../site/SiteLink';
 
 export const PrivacyPolicyPage: React.FC = () => {
-  const effectiveDate = 'July 31, 2026';
+  const effectiveDate = 'January 1, 2026';
 
   return (
     <div className="py-16 bg-[#08090d] text-slate-300 min-h-screen">
       <div className="container mx-auto px-4 max-w-4xl space-y-12">
-
-        {/* Header */}
+        {/* Page Header */}
         <div className="text-center space-y-3 border-b border-white/10 pb-8">
           <div className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-4 h-4" />
-            <span>CCPA & GDPR Compliant Privacy Policy</span>
+            <span>Texas TDPSA & CCPA Compliant Privacy Policy</span>
           </div>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
             Privacy Policy
@@ -22,36 +35,36 @@ export const PrivacyPolicyPage: React.FC = () => {
             Adaptivity Performance LLC • Effective Date: <strong className="text-white">{effectiveDate}</strong>
           </p>
           <p className="text-xs text-slate-500 max-w-2xl mx-auto">
-            This Privacy Policy explains how Adaptivity Performance LLC ("we", "us", or "our") collects, uses, discloses, and protects your personal information when you use our website at adaptivityperformance.com and mobile mechanic services.
+            This Privacy Policy explains how Adaptivity Performance LLC (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) collects, uses, discloses, and protects your personal information when you use our website at adaptivityperformance.com and mobile mechanic services across North Texas.
           </p>
         </div>
 
         {/* 1. Information We Collect */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
-            <Database className="w-6 h-6" />
+            <Database className="w-6 h-6 flex-shrink-0" />
             <h2 className="font-heading text-xl font-bold text-white">1. Information We Collect</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
               <p className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">Information You Provide</p>
-              <ul className="space-y-1 text-slate-300 leading-relaxed list-disc list-inside">
-                <li>Full name, phone number, and email address when booking</li>
-                <li>Vehicle VIN, year, make, model, and mileage</li>
-                <li>Service address (home / workplace driveway)</li>
-                <li>Payment card details (processed by Stripe — we never store raw card data)</li>
-                <li>Referral codes and membership plan selections</li>
-                <li>Notes or messages submitted through booking forms</li>
+              <ul className="space-y-1.5 text-slate-300 leading-relaxed list-disc list-inside">
+                <li>Full name, phone number, and email address for booking and dispatch</li>
+                <li>Vehicle details: VIN, year, make, model, trim, and current odometer mileage</li>
+                <li>Service location: Home driveway, workplace, or designated parking address</li>
+                <li>Payment details: Processed securely via encrypted PCI-DSS payment gateways</li>
+                <li>Referral codes and service notes submitted through booking forms</li>
+                <li>Customer garage and vehicle service history preferences</li>
               </ul>
             </div>
             <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
               <p className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">Automatically Collected Data</p>
-              <ul className="space-y-1 text-slate-300 leading-relaxed list-disc list-inside">
-                <li>IP address and approximate geolocation (city-level)</li>
-                <li>Browser type, operating system, and device type</li>
-                <li>Pages visited, time on site, and referring URL</li>
-                <li>Cookies and similar tracking technologies</li>
-                <li>Diagnostic trouble codes (DTCs) submitted via our AI Mechanic tool</li>
+              <ul className="space-y-1.5 text-slate-300 leading-relaxed list-disc list-inside">
+                <li>IP address and approximate geolocation (city-level across DFW)</li>
+                <li>Browser type, operating system, and mobile device characteristics</li>
+                <li>Pages visited, referring URL, and site interaction analytics</li>
+                <li>Diagnostic Trouble Codes (DTCs) and OBD-II telemetry submitted via diagnostic tools</li>
+                <li>Session cookies and preference tokens</li>
               </ul>
             </div>
           </div>
@@ -60,25 +73,26 @@ export const PrivacyPolicyPage: React.FC = () => {
         {/* 2. How We Use Your Information */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-orange-400 border-b border-white/5 pb-4">
-            <Eye className="w-6 h-6" />
+            <Eye className="w-6 h-6 flex-shrink-0" />
             <h2 className="font-heading text-xl font-bold text-white">2. How We Use Your Information</h2>
           </div>
           <div className="space-y-2 text-xs text-slate-300">
             {[
-              ['Schedule and dispatch mobile mechanic appointments', 'Core service delivery'],
-              ['Process payment card authorizations and final charges via Stripe', 'Payment processing'],
-              ['Report completed repair orders to CARFAX & Experian AutoCheck to update your vehicle history', 'VIN history sync'],
-              ['Send appointment confirmations, repair status updates, and receipts via SMS and email', 'Communications'],
-              ['Verify identity, detect fraud, and prevent unauthorized transactions', 'Security'],
-              ['Improve our website, services, and technician dispatch quality', 'Service improvement'],
-              ['Comply with Texas Property Code, TCEQ regulations, and applicable law', 'Legal compliance'],
-              ['Send service reminders and promotional offers (only if you opt in)', 'Marketing — opt-in only'],
+              ['Schedule and dispatch certified mobile technicians directly to your address', 'Core Dispatch'],
+              ['Provide transparent digital quotes, inspection photos, and invoices upon service completion', 'Invoicing'],
+              ['Report completed maintenance and repairs to CARFAX & Experian AutoCheck to enhance vehicle resale value', 'Vehicle History'],
+              ['Send real-time appointment confirmations, technician en-route SMS alerts, and warranty receipts', 'Communications'],
+              ['Verify identity, prevent fraud, and maintain secure transaction processing', 'Security'],
+              ['Comply with Texas Property Code, TCEQ environmental standards, and federal tax laws', 'Legal Compliance'],
+              ['Continuously refine mobile route optimization, response times, and technician training quality', 'Service Quality'],
             ].map(([use, category]) => (
               <div key={use} className="flex items-start space-x-3 bg-[#0b0c10] p-3 rounded-xl border border-white/5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <div>
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 flex flex-wrap items-center justify-between gap-1">
                   <span className="text-white">{use}</span>
-                  <span className="ml-2 text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono">{category}</span>
+                  <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+                    {category}
+                  </span>
                 </div>
               </div>
             ))}
@@ -88,41 +102,72 @@ export const PrivacyPolicyPage: React.FC = () => {
         {/* 3. Sharing of Information */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
-            <Share2 className="w-6 h-6" />
+            <Share2 className="w-6 h-6 flex-shrink-0" />
             <h2 className="font-heading text-xl font-bold text-white">3. How We Share Your Information</h2>
           </div>
-          <p className="text-xs text-slate-400">We do <strong className="text-white">NOT</strong> sell your personal information. We only share data with trusted service partners necessary to deliver our services:</p>
+          <p className="text-xs text-slate-400">
+            We do <strong className="text-white">NOT</strong> sell or rent your personal information to third parties or data brokers. We share data only with trusted infrastructure partners necessary to perform our services:
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             {[
-              ['Stripe, Inc.', 'Payment card processing and authorization holds'],
-              ['CARFAX / Experian AutoCheck', 'Vehicle service history reporting by VIN'],
-              ['Supabase', 'Encrypted cloud database for booking records'],
-              ['Affirm / Klarna / Afterpay', '0% APR financing options at checkout'],
-              ['Google Analytics', 'Anonymized website traffic analysis (opt-out via cookie settings)'],
-              ['Certified Flatbed Towing Partners', 'Non-driveable vehicle transport when authorized by customer'],
+              ['Stripe & Digital Payment Processors', 'Secure payment card processing, digital invoicing, and merchant reconciliation'],
+              ['CARFAX / Experian AutoCheck', 'Official vehicle maintenance records syncing by Vehicle Identification Number (VIN)'],
+              ['Supabase Cloud Database', 'Encrypted cloud infrastructure with strict Row-Level Security (RLS) policies'],
+              ['Financing Partners (Affirm / Klarna / Afterpay)', 'Optional installment financing when selected by customer at checkout'],
+              ['Google Analytics', 'Anonymized web performance metrics (can be declined via cookie settings)'],
+              ['Certified Flatbed Towing Partners', 'Emergency shop transport when authorized by vehicle owner'],
             ].map(([partner, use]) => (
-              <div key={partner} className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-1">
+              <div key={partner} className="bg-[#0b0c10] p-3.5 rounded-xl border border-white/5 space-y-1">
                 <p className="font-bold text-white text-[11px]">{partner}</p>
                 <p className="text-slate-400 leading-relaxed">{use}</p>
               </div>
             ))}
           </div>
-          <p className="text-xs text-slate-400">We may also disclose your information when required by law, court order, or to protect the safety of our technicians or the public.</p>
+          <p className="text-xs text-slate-500">
+            We may disclose information if required by law, subpoena, or to protect the safety of our technicians, customers, or the general public.
+          </p>
         </section>
 
-        {/* 4. Cookies */}
+        {/* 4. SMS & Mobile Communications (TCPA Compliance) */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
-          <div className="flex items-center space-x-3 text-purple-400 border-b border-white/5 pb-4">
-            <Lock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">4. Cookies & Tracking Technologies</h2>
+          <div className="flex items-center space-x-3 text-emerald-400 border-b border-white/5 pb-4">
+            <MessageSquare className="w-6 h-6 flex-shrink-0" />
+            <h2 className="font-heading text-xl font-bold text-white">4. SMS Communications & TCPA Compliance</h2>
           </div>
           <div className="text-xs text-slate-300 space-y-3">
-            <p>We use the following types of cookies:</p>
+            <p className="leading-relaxed">
+              When booking an appointment or requesting an estimate, you provide consent to receive transactional text messages (SMS) regarding your dispatch, appointment arrival updates, digital inspection reports, and invoice links.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="bg-[#0b0c10] p-3.5 rounded-xl border border-white/5 space-y-1">
+                <p className="font-bold text-emerald-400 text-[11px]">Opting Out</p>
+                <p className="text-slate-400">
+                  You can opt out of SMS communications at any time by replying <strong>STOP</strong> to any message.
+                </p>
+              </div>
+              <div className="bg-[#0b0c10] p-3.5 rounded-xl border border-white/5 space-y-1">
+                <p className="font-bold text-emerald-400 text-[11px]">Customer Support</p>
+                <p className="text-slate-400">
+                  Reply <strong>HELP</strong> for assistance or call us at <strong>{SITE_PHONE_DISPLAY}</strong>. Message and data rates may apply.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 5. Cookies & Tracking Technologies */}
+        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
+          <div className="flex items-center space-x-3 text-purple-400 border-b border-white/5 pb-4">
+            <Lock className="w-6 h-6 flex-shrink-0" />
+            <h2 className="font-heading text-xl font-bold text-white">5. Cookies & Tracking Technologies</h2>
+          </div>
+          <div className="text-xs text-slate-300 space-y-3">
+            <p>We use minimal, privacy-focused cookies to ensure site functionality and improve user experience:</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                ['Essential Cookies', 'Required for our site to function. Cannot be disabled. Includes login sessions, booking state, and security tokens.', 'text-emerald-400'],
-                ['Analytics Cookies', 'Google Analytics 4 for anonymized traffic analysis. Can be declined via our cookie consent banner.', 'text-amber-400'],
-                ['Preference Cookies', 'Remember your service mode, zip code, and vehicle selections for a faster booking experience.', 'text-sky-400'],
+                ['Essential Cookies', 'Required for site security, customer login sessions, and booking flow state. Cannot be disabled.', 'text-emerald-400'],
+                ['Analytics Cookies', 'Google Analytics 4 for aggregated, anonymized usage insights. Can be declined at any time.', 'text-amber-400'],
+                ['Preference Cookies', 'Saves your service mode (mobile/shop), zip code, and vehicle details for faster future booking.', 'text-sky-400'],
               ].map(([type, desc, color]) => (
                 <div key={type} className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-1">
                   <p className={`font-bold text-[11px] uppercase tracking-wider ${color}`}>{type}</p>
@@ -130,26 +175,25 @@ export const PrivacyPolicyPage: React.FC = () => {
                 </div>
               ))}
             </div>
-            <p>You can manage cookie preferences at any time via your browser settings or our cookie consent banner.</p>
           </div>
         </section>
 
-        {/* 5. Data Retention */}
+        {/* 6. Data Retention */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-slate-400 border-b border-white/5 pb-4">
-            <Clock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">5. Data Retention</h2>
+            <Clock className="w-6 h-6 flex-shrink-0" />
+            <h2 className="font-heading text-xl font-bold text-white">6. Data Retention Schedule</h2>
           </div>
           <div className="text-xs text-slate-300 space-y-2">
-            <p>We retain your personal data for as long as necessary to provide our services and comply with legal obligations:</p>
+            <p>We retain personal records strictly as necessary to fulfill service warranties and satisfy statutory obligations:</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {[
-                ['Booking & repair records', '7 years (Texas business tax retention requirement)'],
-                ['Payment records', '7 years (IRS and Texas Comptroller requirements)'],
-                ['Customer portal accounts', 'Until account deletion is requested'],
-                ['Vehicle history VIN reports', 'Transmitted to CARFAX/AutoCheck permanently'],
-                ['Analytics data', '14 months (Google Analytics default)'],
-                ['Cookie preferences', '1 year or until browser data is cleared'],
+                ['Booking & repair orders', '7 years (Texas business record retention requirements)'],
+                ['Payment transaction logs', '7 years (IRS & Texas Comptroller audit compliance)'],
+                ['Customer portal accounts', 'Until account deletion is requested by the customer'],
+                ['CARFAX VIN repair history', 'Reported permanently to vehicle history databases'],
+                ['Website analytics data', '14 months (Google Analytics default)'],
+                ['Cookie consent preferences', '1 year or until browser storage is cleared'],
               ].map(([item, period]) => (
                 <div key={item} className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 flex justify-between items-center gap-2">
                   <span className="text-white">{item}</span>
@@ -160,21 +204,23 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 6. Your Rights (CCPA / Texas) */}
+        {/* 7. Your Privacy Rights (Texas TDPSA & CCPA) */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-rose-400 border-b border-white/5 pb-4">
-            <UserX className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">6. Your Privacy Rights (CCPA / Texas)</h2>
+            <UserX className="w-6 h-6 flex-shrink-0" />
+            <h2 className="font-heading text-xl font-bold text-white">7. Your Privacy Rights (Texas TDPSA & CCPA)</h2>
           </div>
-          <p className="text-xs text-slate-400">Under the California Consumer Privacy Act (CCPA) and Texas Privacy Protection Act, you have the right to:</p>
+          <p className="text-xs text-slate-400">
+            Under the Texas Data Privacy and Security Act (TDPSA) and California Consumer Privacy Act (CCPA), you enjoy the following rights:
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
             {[
-              ['Know', 'Request a list of all personal data we have collected about you'],
-              ['Access', 'Receive a copy of your personal data in a portable format'],
-              ['Delete', 'Request deletion of your personal data (subject to legal retention requirements)'],
-              ['Correct', 'Request correction of inaccurate personal information'],
-              ['Opt-Out', 'Opt out of marketing emails and analytics tracking at any time'],
-              ['Non-Discrimination', 'Exercise your rights without receiving different or inferior service'],
+              ['Know & Confirm', 'Confirm whether we are processing your personal data and request details on collected categories'],
+              ['Access & Portability', 'Obtain a copy of your personal data in a readable, portable digital format'],
+              ['Correct Inaccuracies', 'Request correction of inaccurate or outdated personal and vehicle information'],
+              ['Delete Data', 'Request deletion of personal data provided by or obtained about you (subject to legal retention requirements)'],
+              ['Opt-Out of Profiling', 'Opt out of targeted advertising, profiling, or non-essential data processing'],
+              ['Non-Discrimination', 'Exercise your privacy rights without facing differences in service quality or pricing'],
             ].map(([right, desc]) => (
               <div key={right} className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-1">
                 <p className="font-bold text-rose-400 text-[11px] uppercase tracking-wider">Right to {right}</p>
@@ -182,34 +228,25 @@ export const PrivacyPolicyPage: React.FC = () => {
               </div>
             ))}
           </div>
-          <p className="text-xs text-slate-400">To exercise any of these rights, contact us using the information below. We will respond within <strong className="text-white">45 days</strong> as required by law.</p>
-        </section>
-
-        {/* 7. Children's Privacy */}
-        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
-          <div className="flex items-center space-x-3 text-emerald-400 border-b border-white/5 pb-4">
-            <ShieldCheck className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">7. Children's Privacy</h2>
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Our services are not directed at children under 13 years of age. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal data, we will delete it immediately. If you believe a child has submitted data to us, contact us immediately.
+          <p className="text-xs text-slate-400">
+            To submit a data request or inquiry, contact us at <strong>service@adaptivityperformance.com</strong>. We verify and respond to all verified requests within <strong className="text-white">45 days</strong>.
           </p>
         </section>
 
-        {/* 8. Security */}
+        {/* 8. Security Architecture */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
           <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
-            <Lock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">8. Security of Your Information</h2>
+            <Lock className="w-6 h-6 flex-shrink-0" />
+            <h2 className="font-heading text-xl font-bold text-white">8. Security Architecture</h2>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            We implement industry-standard security measures to protect your personal information, including:
+            We enforce multi-layered administrative and technical safeguards to secure your data:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             {[
-              ['TLS/HTTPS Encryption', 'All data in transit is encrypted using TLS 1.3'],
-              ['Stripe PCI-DSS Compliance', 'Card data never touches our servers — processed by Stripe Level 1 PCI'],
-              ['Supabase Row-Level Security', 'Database access restricted by customer identity, not just API keys'],
+              ['TLS 1.3 In-Flight Encryption', 'All web traffic and API endpoints are encrypted in transit via modern TLS certificates'],
+              ['PCI-DSS Level 1 Compliance', 'Payment card data is tokenized directly by certified payment processors'],
+              ['Row-Level Security (RLS)', 'Supabase cloud database enforces identity-based security boundaries on every record'],
             ].map(([feature, desc]) => (
               <div key={feature} className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-1">
                 <p className="font-bold text-sky-400 text-[11px]">{feature}</p>
@@ -219,34 +256,64 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 9. Changes to this Policy */}
+        {/* 9. Children's Privacy & Updates */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
-            <Mail className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">9. Changes to This Privacy Policy</h2>
+            <FileText className="w-6 h-6 flex-shrink-0" />
+            <h2 className="font-heading text-xl font-bold text-white">9. Children&apos;s Privacy & Policy Updates</h2>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
-            We may update this Privacy Policy from time to time to reflect changes in law, technology, or our business practices. When we make material changes, we will update the Effective Date at the top of this page and notify existing customers by email when feasible. Your continued use of our services after the effective date constitutes acceptance of the updated policy.
+            Our services are strictly intended for individuals aged 18 and older. We do not knowingly collect information from children under 13 under the Children&apos;s Online Privacy Protection Act (COPPA). We may periodically update this policy; material modifications will be posted here with an updated effective date.
           </p>
         </section>
 
-        {/* Contact */}
-        <div className="bg-[#0b0c10] p-6 rounded-2xl border border-white/10 text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 text-white font-bold text-sm">
-            <Phone className="w-4 h-4 text-orange-400" />
-            Privacy Questions or Data Requests
+        {/* Support & Corporate Information */}
+        <section className="bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-slate-900 p-6 sm:p-8 rounded-3xl border border-orange-500/30 space-y-6">
+          <div className="text-center space-y-2">
+            <h3 className="font-heading text-lg font-bold text-white">Privacy Inquiries or Data Rights Requests</h3>
+            <p className="text-xs text-slate-400">
+              For any questions regarding personal data or privacy compliance, reach out to our team:
+            </p>
           </div>
-          <p className="text-xs text-slate-400">
-            Adaptivity Performance LLC • 410 FM 156, Justin, TX 76247
-          </p>
-          <p className="text-xs text-slate-400">
-            Phone: <a href={SITE_PHONE_TEL} className="text-orange-400 font-bold hover:underline">{SITE_PHONE_DISPLAY}</a>
-          </p>
-          <p className="text-xs text-slate-500 mt-2">
-            We respond to all privacy requests within 45 days as required by the CCPA and Texas Privacy Protection Act.
-          </p>
-        </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <a
+              href={SITE_PHONE_TEL}
+              className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-orange-500/50 transition flex items-center space-x-3 group"
+            >
+              <PhoneCall className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+              <div>
+                <strong className="text-white block">Call / Text Dispatch</strong>
+                <span className="text-slate-400">{SITE_PHONE_DISPLAY}</span>
+              </div>
+            </a>
+
+            <a
+              href="mailto:service@adaptivityperformance.com"
+              className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-orange-500/50 transition flex items-center space-x-3 group"
+            >
+              <Mail className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform flex-shrink-0" />
+              <div>
+                <strong className="text-white block">Email Privacy Officer</strong>
+                <span className="text-slate-400">service@adaptivityperformance.com</span>
+              </div>
+            </a>
+          </div>
+
+          <div className="text-[11px] text-slate-500 pt-2 border-t border-white/5 text-center">
+            <strong>Corporate Address:</strong> Adaptivity Performance LLC, 410 FM 156, Justin, TX 76247. Registered in the State of Texas.
+          </div>
+        </section>
+
+        {/* Footer Navigation Back Links */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-white/10 text-xs">
+          <SiteLink to="terms" className="text-slate-400 hover:text-white flex items-center gap-1">
+            ← Terms of Service
+          </SiteLink>
+          <SiteLink to="refunds" className="text-slate-400 hover:text-white flex items-center gap-1">
+            Refund & Cancellation Policy →
+          </SiteLink>
+        </div>
       </div>
     </div>
   );

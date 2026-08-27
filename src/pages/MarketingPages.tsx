@@ -2,8 +2,6 @@ import React from 'react';
 import { AboutUsSection } from '../components/AboutUsSection';
 import { ServicesSection } from '../components/ServicesSection';
 import { ContactSection } from '../components/ContactSection';
-import { MembershipSection } from '../components/MembershipSection';
-import { DiagnosticAssistant } from '../components/DiagnosticAssistant';
 import { PartnerNetworkSection } from '../components/PartnerNetworkSection';
 import { ServiceAreaChecker } from '../components/ServiceAreaChecker';
 import { PerformanceSection } from '../components/PerformanceSection';
@@ -24,7 +22,6 @@ type SharedActions = {
   onOpenBooking: () => void;
   onOpenRecruitment: () => void;
   onOpenPartnerApply: () => void;
-  onOpenMembership: (planId?: 'basic' | 'vip' | 'fleet') => void;
   onBookWithEstimate: (estimateDetails: unknown) => void;
   onSelectRecommendedService: (serviceName: string) => void;
   onBookService: (serviceId: string) => void;
@@ -65,11 +62,13 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       );
     case 'contact':
       return reveal(<ContactSection onOpenBooking={actions.onOpenBooking} />);
-    case 'membership':
-      return reveal(<MembershipSection onOpenMembership={actions.onOpenMembership} />);
     case 'diagnostics':
       return reveal(
-        <DiagnosticAssistant onSelectRecommendedService={actions.onSelectRecommendedService} />
+        <ServicesSection
+          onOpenBooking={actions.onOpenBooking}
+          onBookService={actions.onBookService}
+        />,
+        'scale'
       );
     case 'join':
       return reveal(
@@ -105,11 +104,11 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
     case 'blog':
       return reveal(<BlogIndexPage />);
     case 'terms':
-      return reveal(<TermsPrivacyPage />, 'fade');
+      return <TermsPrivacyPage />;
     case 'privacy':
-      return reveal(<PrivacyPolicyPage />, 'fade');
+      return <PrivacyPolicyPage />;
     case 'refunds':
-      return reveal(<RefundPolicyPage />, 'fade');
+      return <RefundPolicyPage />;
     case 'notFound':
       return <NotFoundPage />;
     case 'blogPost':

@@ -125,10 +125,10 @@ export const AIMechanicChatbot: React.FC<AIMechanicChatbotProps> = ({ onBookServ
 
   return (
     <>
-      {/* Floating Widget Trigger Button */}
+      {/* Floating Launcher Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 group bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white p-3.5 rounded-full shadow-2xl shadow-orange-500/40 flex items-center space-x-2 transition-all duration-300 active:scale-95"
+        className="fixed bottom-20 md:bottom-20 right-4 sm:right-6 z-50 group bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white p-3.5 rounded-full shadow-2xl shadow-orange-500/40 flex items-center space-x-2 transition-all duration-300 active:scale-95"
       >
         <div className="relative">
           <Bot className="w-6 h-6 group-hover:rotate-12 transition-transform" />
@@ -142,7 +142,7 @@ export const AIMechanicChatbot: React.FC<AIMechanicChatbotProps> = ({ onBookServ
 
       {/* Floating Chat Modal */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-[92vw] sm:w-[420px] h-[540px] bg-[#12141c] border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-fadeIn">
+        <div className="fixed bottom-36 md:bottom-32 right-4 sm:right-6 z-50 w-[92vw] sm:w-[420px] h-[540px] max-h-[calc(100vh-10rem)] bg-[#12141c] border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 animate-fadeIn">
           
           {/* Chat Header */}
           <div className="px-5 py-3.5 bg-[#1a1d28] border-b border-white/10 flex items-center justify-between">

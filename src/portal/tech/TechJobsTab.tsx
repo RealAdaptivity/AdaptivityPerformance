@@ -693,8 +693,8 @@ export const TechJobsTab: React.FC = () => {
                   <p className="text-xs text-slate-500 italic mt-0.5">No phone on file</p>
                 )}
               </div>
-              <span className="text-[10px] text-amber-400 font-bold px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg shrink-0">
-                $85 hold on file
+              <span className="text-[10px] text-emerald-400 font-bold px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg shrink-0">
+                Zero-Due Booking
               </span>
             </div>
 
@@ -702,8 +702,8 @@ export const TechJobsTab: React.FC = () => {
               <p className="text-[10px] uppercase font-bold text-slate-500">Customer address</p>
               <p className="text-xs text-slate-300 font-medium">{activeJob.address}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">{activeJob.services.join(' · ')}</p>
-              <p className="text-[10px] text-amber-400/90 mt-1">
-                $85 diagnostic hold on file — you set labor + parts after diagnosis.
+              <p className="text-[10px] text-emerald-400/90 mt-1">
+                Zero due upfront — inspect on site, set labor + parts quote, and invoice upon completion.
               </p>
             </div>
           </div>
@@ -797,11 +797,11 @@ export const TechJobsTab: React.FC = () => {
                 </span>
               </div>
 
-              {/* 1. Diagnostic Hold (Waive vs Charge $85) */}
+              {/* 1. Diagnostic Fee Option (Waive vs Add $85) */}
               <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-300">
-                    🔍 Mobile Diagnostic Hold ($85 on file)
+                    🔍 Diagnostic Visit Fee ($85 standard)
                   </span>
                   <span className="font-mono font-bold text-white">
                     {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
@@ -817,7 +817,7 @@ export const TechJobsTab: React.FC = () => {
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
                   >
-                    ✓ Waive Fee / Release Hold
+                    ✓ Waive Fee ($0.00)
                   </button>
                   <button
                     type="button"
@@ -828,13 +828,13 @@ export const TechJobsTab: React.FC = () => {
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
                   >
-                    + Charge $85 Diag Fee
+                    + Include $85 Diag Fee
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-tight">
                   {!includeDiagnosticFee
-                    ? 'Free diagnostic with repair — the $85 card hold is released/applied toward repairs with no extra diagnostic fee.'
-                    : 'The $85 diagnostic visit fee is charged on top of labor & parts.'}
+                    ? 'Free diagnostic with repair — diagnostic fee is 100% waived on the final invoice.'
+                    : 'The $85 diagnostic visit fee is added to the labor & parts invoice.'}
                 </p>
               </div>
 

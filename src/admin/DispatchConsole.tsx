@@ -1003,11 +1003,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             </p>
           )}
 
-          {/* 1. Diagnostic Hold Handling (Waive vs Apply) */}
+          {/* 1. Diagnostic Fee Option (Waive vs Add $85) */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300">
-                🔍 Mobile Diagnostic Hold ($85 on file)
+                🔍 Diagnostic Visit Fee ($85 standard)
               </span>
               <span className="font-mono font-bold text-white">
                 {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
@@ -1023,7 +1023,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
                     : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                 }`}
               >
-                ✓ Waive Fee / Release Hold
+                ✓ Waive Fee ($0.00)
               </button>
               <button
                 type="button"
@@ -1034,13 +1034,13 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
                     : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                 }`}
               >
-                + Charge $85 Diag Fee
+                + Include $85 Diag Fee
               </button>
             </div>
             <p className="text-[10px] text-slate-400 leading-tight">
               {!includeDiagnosticFee
-                ? 'Free diagnostic with repair — the $85 card hold is released/applied toward repairs with no extra diagnostic fee charged.'
-                : 'The $85 diagnostic visit fee is charged on top of labor & parts.'}
+                ? 'Free diagnostic with repair — diagnostic fee is 100% waived on the final invoice.'
+                : 'The $85 diagnostic visit fee is added to the labor & parts invoice.'}
             </p>
           </div>
 
@@ -1373,16 +1373,16 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             onClick={() => {
               if (
                 !window.confirm(
-                  'Capture $85 diagnostic hold for no-show / missed appointment and mark job completed?'
+                  'Mark customer no-show / missed appointment and close job?'
                 )
               ) {
                 return;
               }
-              void onAdjustCapture(booking.id, 85, true, noShowReason);
+              void onAdjustCapture(booking.id, 0, true, noShowReason);
             }}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2"
           >
-            No-show — capture $85 & complete
+            No-show — close & complete
           </button>
         </div>
       ) : null}

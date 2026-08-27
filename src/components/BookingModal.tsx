@@ -1,14 +1,24 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
-import { createBookingWithCardHold } from '../services/stripePaymentsApi';
-import { StripeBookingHoldSection } from './StripeBookingHoldSection';
-import { computeHoldQuote } from '../services/holdPricing';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import {
+  X,
+  Calendar,
+  MapPin,
+  Truck,
+  ShieldCheck,
+  Phone,
+  UserPlus,
+  Loader2,
+  Car,
+  AlertCircle,
+  RotateCcw,
+  PenLine,
+  Sparkles,
+} from 'lucide-react';
+import { useBookingContext } from '../context/BookingContext';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
-import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
-import { applyReferralCodeOnBooking } from '../services/referrals';
+import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { signUpPortal } from '../portal/portalAuth';
-import { portalPath } from '../portal/portalRoute';
 import {
   claimPendingGuestBooking,
   linkGuestBooking,
@@ -27,6 +37,12 @@ interface BookingModalProps {
   initialEstimateData?: {
     vehicle?: string;
     vin?: string;
+    year?: string;
+    make?: string;
+    model?: string;
+    licensePlate?: string;
+    mileage?: string;
+    symptoms?: string;
     locationType?: 'mobile' | 'shop';
     serviceAddress?: string;
     services?: string[];
@@ -51,11 +67,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   initialEstimateData,
   onBookingSubmitted,
 }) => {
-  const [step, setStep] = useState(1);
+  const { addBooking } = useBookingContext();
+
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [serviceMode, setServiceMode] = useState<'mobile' | 'shop'>('mobile');
-  const [vehicle, setVehicle] = useState('2020 Ford F-150');
+
+  // Individual vehicle fields
+  const [vehicleYear, setVehicleYear] = useState('');
+  const [vehicleMake, setVehicleMake] = useState('');
+  const [vehicleModel, setVehicleModel] = useState('');
   const [vinNumber, setVinNumber] = useState('');
-  const [serviceRequested, setServiceRequested] = useState('Mobile Diagnostic Visit');
+  const [licensePlate, setLicensePlate] = useState('');
+  const [mileage, setMileage] = useState('');
+  const [symptoms, setSymptoms] = useState('');
+
+  const [serviceRequested, setServiceRequested] = useState('Diagnostic & Inspection');
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [streetAddress, setStreetAddress] = useState('');
@@ -67,12 +93,143 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [notes, setNotes] = useState('');
   const [referralInput, setReferralInput] = useState('');
   const [bookingRef, setBookingRef] = useState('');
-  const [holdAmount, setHoldAmount] = useState(0);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isCreatingHold, setIsCreatingHold] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
   const [partnerLocationId, setPartnerLocationId] = useState<string>('');
+
+  // Agreement & Signature state
+  const [ackDiagnosticFee, setAckDiagnosticFee] = useState(false);
+  const [ackTerms, setAckTerms] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<'type' | 'draw'>('type');
+  const [typedSignatureFont, setTypedSignatureFont] = useState<number>(0);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawing = useRef(false);
+
+  const FONT_STYLES = useMemo(
+    () => [
+      { name: 'Dancing Script', label: 'Elegant Cursive', font: 'italic 34px "Dancing Script", "Brush Script MT", cursive', family: "'Dancing Script', cursive" },
+      { name: 'Caveat', label: 'Modern Script', font: '600 36px "Caveat", "Segoe Script", cursive', family: "'Caveat', cursive" },
+      { name: 'Great Vibes', label: 'Classic Calligraphy', font: '32px "Great Vibes", "Snell Roundhand", cursive', family: "'Great Vibes', cursive" },
+    ],
+    []
+  );
+
+  const drawTypedSignature = useCallback((name: string, fontIndex: number = typedSignatureFont) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#12141c';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const displayName = name.trim() || 'Signer Signature';
+    const styleObj = FONT_STYLES[fontIndex] || FONT_STYLES[0];
+
+    ctx.font = styleObj.font;
+    ctx.fillStyle = '#f97316';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(displayName, canvas.width / 2, canvas.height / 2 - 4);
+
+    // Decorative flourish line
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(canvas.width * 0.12, canvas.height * 0.78);
+    ctx.bezierCurveTo(
+      canvas.width * 0.35, canvas.height * 0.9,
+      canvas.width * 0.65, canvas.height * 0.68,
+      canvas.width * 0.88, canvas.height * 0.82
+    );
+    ctx.stroke();
+
+    if (name.trim()) {
+      setHasSignature(true);
+    }
+  }, [FONT_STYLES, typedSignatureFont]);
+
+  const initCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#12141c';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    setHasSignature(false);
+
+    if (signatureMode === 'type' && fullName.trim()) {
+      drawTypedSignature(fullName, typedSignatureFont);
+    }
+  }, [signatureMode, fullName, typedSignatureFont, drawTypedSignature]);
+
+  useEffect(() => {
+    if (step === 2) {
+      const timer = setTimeout(() => {
+        if (signatureMode === 'type' && fullName.trim()) {
+          drawTypedSignature(fullName, typedSignatureFont);
+        } else {
+          initCanvas();
+        }
+      }, 70);
+      return () => clearTimeout(timer);
+    }
+  }, [step, signatureMode, fullName, typedSignatureFont, drawTypedSignature, initCanvas]);
+
+  const clearSignature = () => {
+    initCanvas();
+  };
+
+  const adoptSignature = (fontIndex: number) => {
+    setTypedSignatureFont(fontIndex);
+    setSignatureMode('type');
+    const nameToUse = fullName.trim() || 'Customer';
+    drawTypedSignature(nameToUse, fontIndex);
+  };
+
+  const getCanvasPos = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+    isDrawing.current = true;
+    canvas.setPointerCapture(e.pointerId);
+    const p = getCanvasPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing.current) return;
+    const ctx = canvasRef.current?.getContext('2d');
+    if (!ctx) return;
+    const p = getCanvasPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    setHasSignature(true);
+  };
+
+  const handlePointerUp = () => {
+    isDrawing.current = false;
+  };
+
+  // Account creation state after booking
   const [accountPassword, setAccountPassword] = useState('');
   const [accountPasswordConfirm, setAccountPasswordConfirm] = useState('');
   const [accountBusy, setAccountBusy] = useState(false);
@@ -84,20 +241,36 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     [partners, partnerLocationId]
   );
 
-  const holdQuote = useMemo(() => {
-    const fromField = serviceRequested
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const fromInitial = initialEstimateData?.services || [];
-    return computeHoldQuote(fromField.length ? fromField : fromInitial.length ? fromInitial : ['diagnostic']);
-  }, [serviceRequested, initialEstimateData?.services]);
-  const holdPreview = holdQuote.holdDollars;
+  const fullVehicleName = useMemo(() => {
+    return [vehicleYear.trim(), vehicleMake.trim(), vehicleModel.trim()]
+      .filter(Boolean)
+      .join(' ') || 'Customer Vehicle';
+  }, [vehicleYear, vehicleMake, vehicleModel]);
 
   useEffect(() => {
     if (initialEstimateData) {
-      if (initialEstimateData.vehicle) setVehicle(initialEstimateData.vehicle);
+      if (initialEstimateData.year) setVehicleYear(initialEstimateData.year);
+      if (initialEstimateData.make) setVehicleMake(initialEstimateData.make);
+      if (initialEstimateData.model) setVehicleModel(initialEstimateData.model);
+
+      if (initialEstimateData.vehicle) {
+        const parts = initialEstimateData.vehicle.trim().split(/\s+/);
+        if (parts.length >= 3 && /^\d{4}$/.test(parts[0])) {
+          setVehicleYear(parts[0]);
+          setVehicleMake(parts[1]);
+          setVehicleModel(parts.slice(2).join(' '));
+        } else if (parts.length === 2 && /^\d{4}$/.test(parts[0])) {
+          setVehicleYear(parts[0]);
+          setVehicleMake(parts[1]);
+        } else {
+          setVehicleModel(initialEstimateData.vehicle);
+        }
+      }
+
       if (initialEstimateData.vin) setVinNumber(initialEstimateData.vin);
+      if (initialEstimateData.licensePlate) setLicensePlate(initialEstimateData.licensePlate);
+      if (initialEstimateData.mileage) setMileage(initialEstimateData.mileage);
+      if (initialEstimateData.symptoms) setSymptoms(initialEstimateData.symptoms);
       if (initialEstimateData.locationType) setServiceMode(initialEstimateData.locationType);
       if (initialEstimateData.serviceAddress) {
         setStreetAddress(initialEstimateData.serviceAddress);
@@ -112,36 +285,31 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         setServiceMode('shop');
       }
       if (initialEstimateData.referralCode) {
-        setReferralInput(initialEstimateData.referralCode.toUpperCase());
+        setReferralInput(initialEstimateData.referralCode);
       }
     }
   }, [initialEstimateData]);
 
+  // Load partners on mount
   useEffect(() => {
-    if (!isOpen) {
-      setStep(1);
-      setClientSecret(null);
-      setSubmitError(null);
-      setBookingRef('');
-      setAccountPassword('');
-      setAccountPasswordConfirm('');
-      setAccountBusy(false);
-      setAccountError(null);
-      setAccountStatus('idle');
-      setCity('');
-      return;
-    }
-    void fetchApprovedPartners()
-      .then((list) => {
-        setPartners(list);
-        setPartnerLocationId((prev) => {
-          if (prev && list.some((p) => p.id === prev)) return prev;
-          const owned = list.find((p) => p.isAdaptivityOwned);
-          return owned?.id || list[0]?.id || '';
-        });
-      })
-      .catch(() => setPartners([]));
-  }, [isOpen]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await fetchApprovedPartners();
+        if (!cancelled) {
+          setPartners(list);
+          if (list.length > 0 && !partnerLocationId) {
+            setPartnerLocationId(list[0].id);
+          }
+        }
+      } catch {
+        // Partners offline fallback
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [partnerLocationId]);
 
   if (!isOpen) return null;
 
@@ -149,7 +317,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     if (serviceMode === 'mobile') {
       return formatServiceAddress({
         street: streetAddress,
-        city,
+        city: city || 'Justin',
         state: 'TX',
         zip: zipCode,
       });
@@ -159,7 +327,40 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
   };
 
-  const handleContinueToCardHold = async (e: React.FormEvent) => {
+  const handleStep1Submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    if (!vehicleYear.trim() || !vehicleMake.trim() || !vehicleModel.trim()) {
+      setSubmitError('Please enter your vehicle Year, Make, and Model.');
+      return;
+    }
+
+    if (!mileage.trim()) {
+      setSubmitError('Current vehicle mileage is required for service intervals and warranty.');
+      return;
+    }
+
+    const cleanVin = vinNumber.trim().toUpperCase();
+    if (!cleanVin) {
+      setSubmitError('Vehicle VIN number is required for parts verification and dispatch.');
+      return;
+    }
+
+    if (cleanVin.length < 11 || cleanVin.length > 17 || !/^[A-HJ-NPR-Z0-9]+$/i.test(cleanVin)) {
+      setSubmitError('Please enter a valid VIN (17 alphanumeric characters, excluding letters I, O, Q).');
+      return;
+    }
+
+    if (!symptoms.trim() && !serviceRequested.trim()) {
+      setSubmitError('Please describe what is going on with your vehicle.');
+      return;
+    }
+
+    setStep(2);
+  };
+
+  const handleSubmitBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
 
@@ -173,58 +374,82 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       }
     }
 
-    setIsCreatingHold(true);
-    const amount = holdPreview;
-    setHoldAmount(amount);
+    if (!phone.trim()) {
+      setSubmitError('Phone number is required so dispatch can confirm your technician.');
+      return;
+    }
+
+    if (!ackDiagnosticFee) {
+      setSubmitError('Please check the required box confirming the $85 diagnostic fee and 12-hour waiver policy.');
+      return;
+    }
+
+    if (!ackTerms) {
+      setSubmitError('Please agree to the service authorization terms to proceed.');
+      return;
+    }
+
+    if (!hasSignature) {
+      setSubmitError('Please provide your digital signature in the authorization box to confirm your booking.');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const servicesList = serviceRequested
         .split(',')
-        .map(s => s.trim())
+        .map((s) => s.trim())
         .filter(Boolean);
 
-      const hold = await createBookingWithCardHold({
+      const combinedCustomerNotes = [
+        symptoms.trim() ? `Issue/Symptoms: ${symptoms.trim()}` : '',
+        mileage.trim() ? `Current Mileage: ${mileage.trim()}` : '',
+        licensePlate.trim() ? `License Plate: ${licensePlate.trim().toUpperCase()}` : '',
+        notes.trim() ? `Location/Access Notes: ${notes.trim()}` : '',
+        `[Authorization Signed] $85 Diagnostic Fee acknowledged ($0 if approved within 12h). Signed by: ${fullName.trim()} on ${new Date().toLocaleDateString()}.`,
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const resolvedRef = addBooking({
         customerName: fullName.trim(),
         customerPhone: phone.trim(),
-        customerEmail: email.trim(),
         customerAddress: buildAddress(),
         zipCode:
           serviceMode === 'shop'
             ? selectedPartner?.zipCode || zipCode.trim() || '76247'
             : zipCode.trim() || '76247',
-        vehicleDescription: vehicle.trim(),
-        vin: vinNumber.trim() || undefined,
+        vehicle: fullVehicleName,
+        vin: vinNumber.trim() ? vinNumber.trim().toUpperCase() : undefined,
         services: servicesList.length ? servicesList : [serviceRequested.trim()],
-        holdAmountDollars: amount,
+        totalEstimate: initialEstimateData?.totalEstimate || 85,
         locationType: serviceMode,
-        partnerLocationId:
-          serviceMode === 'shop' ? selectedPartner?.id || partnerLocationId || undefined : undefined,
+        distanceMiles: initialEstimateData?.calculatedDistanceMiles || 5,
+        etaMinutes: 15,
         preferredDate,
         preferredTimeWindow: preferredTime,
-        customerNotes: notes.trim() || undefined,
-        preferredMechanicId: initialEstimateData?.preferredMechanicId || undefined,
-        ...applyReferralCodeOnBooking(referralInput),
+        customerNotes: combinedCustomerNotes || undefined,
+        preferredMechanicId: initialEstimateData?.preferredMechanicId || null,
       });
 
-      setBookingRef(hold.bookingReference);
-      setClientSecret(hold.clientSecret);
+      setBookingRef(resolvedRef);
+      stashPendingGuestBooking(resolvedRef);
+
+      onBookingSubmitted?.({
+        bookingReference: resolvedRef,
+        holdAmountDollars: 0,
+        name: fullName.trim(),
+        phone: phone.trim(),
+        vehicle: fullVehicleName,
+      });
+
       setStep(3);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Could not start card hold');
+      setSubmitError(err instanceof Error ? err.message : 'Could not complete booking request.');
     } finally {
-      setIsCreatingHold(false);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleCardAuthorized = () => {
-    onBookingSubmitted?.({
-      bookingReference: bookingRef,
-      holdAmountDollars: holdAmount,
-      name: fullName,
-      phone,
-      vehicle,
-    });
-    setStep(4);
   };
 
   const handleCreateAccount = async (e: React.FormEvent) => {
@@ -274,105 +499,296 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
       <div className="bg-[#12141c] w-full max-w-xl rounded-3xl border border-orange-500/40 shadow-2xl overflow-hidden relative text-white max-h-[92vh] flex flex-col">
+        {/* Header */}
         <div className="bg-gradient-to-r from-[#181a26] to-[#0e1017] p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400">
-              <Calendar className="w-4 h-4" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/30">
+              <Calendar className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading text-base font-bold text-white">Schedule Service • Adaptivity Performance</h3>
+              <h3 className="font-heading text-base font-bold text-white">
+                Book Mobile Auto Repair • Adaptivity
+              </h3>
               <p className="text-xs text-slate-400">
-                Step {step} of 4 • Card hold, charge on completion
+                {step === 3
+                  ? 'Booking Confirmed • Zero Due Today'
+                  : `Step ${step} of 2 • Zero payment required now`}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10">
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-white rounded-xl bg-white/5 hover:bg-white/10 transition-colors"
+            aria-label="Close"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Step Indicator Bar */}
-        <div className="bg-[#0b0c10] px-6 py-3 border-b border-white/5 flex items-center justify-between text-xs">
-          {[
-            { num: 1, label: 'Vehicle Info' },
-            { num: 2, label: 'Driveway Location' },
-            { num: 3, label: 'Card Hold ($85)' },
-          ].map((s) => (
-            <div
-              key={s.num}
-              className={`flex items-center gap-1.5 font-bold ${
-                step === s.num
-                  ? 'text-orange-400'
-                  : step > s.num
-                  ? 'text-emerald-400'
-                  : 'text-slate-500'
-              }`}
-            >
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+        {/* Step Indicator (for Steps 1 & 2) */}
+        {step < 3 && (
+          <div className="bg-[#0b0c10] px-6 py-2.5 border-b border-white/5 flex items-center justify-between text-xs">
+            {[
+              { num: 1, label: 'Vehicle & Issue' },
+              { num: 2, label: 'Location & Contact' },
+            ].map((s) => (
+              <div
+                key={s.num}
+                className={`flex items-center gap-1.5 font-bold ${
                   step === s.num
-                    ? 'bg-orange-500 text-white'
+                    ? 'text-orange-400'
                     : step > s.num
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                    : 'bg-white/5 text-slate-500'
+                    ? 'text-emerald-400'
+                    : 'text-slate-500'
                 }`}
               >
-                {s.num}
-              </span>
-              <span className="hidden sm:inline">{s.label}</span>
-            </div>
-          ))}
-        </div>
+                <span
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                    step === s.num
+                      ? 'bg-orange-500 text-white'
+                      : step > s.num
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'bg-white/5 text-slate-500'
+                  }`}
+                >
+                  {s.num}
+                </span>
+                <span>{s.label}</span>
+              </div>
+            ))}
+            <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+              Zero Due Today
+            </span>
+          </div>
+        )}
 
+        {/* Content Area */}
         <div className="p-6 overflow-y-auto flex-1">
+          {/* STEP 1: Vehicle & Schedule Details */}
           {step === 1 && (
-            <form onSubmit={() => setStep(2)} className="space-y-4">
+            <form onSubmit={handleStep1Submit} className="space-y-4">
+              {/* Service Mode Selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5">Service Mode</label>
-                <div className="p-3.5 rounded-2xl border border-orange-500/40 bg-orange-500/10 flex items-center justify-between text-xs font-bold text-white">
-                  <div className="flex items-center space-x-2.5">
-                    <Truck className="w-4 h-4 text-orange-400 shrink-0" />
-                    <div>
-                      <div>100% Mobile Service — We Come To Your Driveway</div>
-                      <div className="text-[10px] text-slate-400 font-normal">DFW · Justin · Northlake · Denton · Fort Worth</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setServiceMode('mobile')}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      serviceMode === 'mobile'
+                        ? 'border-orange-500 bg-orange-500/10 text-white'
+                        : 'border-white/10 bg-[#0b0c10] text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-xs text-white">
+                      <Truck className="w-4 h-4 text-orange-400" />
+                      <span>Mobile Driveway</span>
                     </div>
-                  </div>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                    $0 Travel (15 mi)
-                  </span>
+                    <p className="text-[10px] text-slate-400 mt-1">We come to your location ($0 travel 15 mi)</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setServiceMode('shop')}
+                    className={`p-3 rounded-2xl border text-left transition-all ${
+                      serviceMode === 'shop'
+                        ? 'border-orange-500 bg-orange-500/10 text-white'
+                        : 'border-white/10 bg-[#0b0c10] text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-bold text-xs text-white">
+                      <MapPin className="w-4 h-4 text-sky-400" />
+                      <span>Shop Drop-off</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">Justin Hub or Partner Garage</p>
+                  </button>
                 </div>
               </div>
 
+              {/* Vehicle Details (Year, Make, Model, VIN) */}
+              <div className="space-y-2.5 bg-[#0b0c10] p-4 rounded-2xl border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <Car className="w-4 h-4 text-orange-400" /> Vehicle Information
+                  </span>
+                  <span className="text-[10px] text-slate-400">Year · Make · Model</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Year <span className="text-orange-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={vehicleYear}
+                      onChange={(e) => setVehicleYear(e.target.value)}
+                      className="w-full bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                      placeholder="e.g. 2021"
+                      maxLength={4}
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Make <span className="text-orange-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={vehicleMake}
+                      onChange={(e) => setVehicleMake(e.target.value)}
+                      className="w-full bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                      placeholder="Ford / Toyota"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Model <span className="text-orange-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={vehicleModel}
+                      onChange={(e) => setVehicleModel(e.target.value)}
+                      className="w-full bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none"
+                      placeholder="F-150 / Camry"
+                    />
+                  </div>
+                </div>
+
+                {/* Mileage (Required) & License Plate */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      Current Mileage <span className="text-orange-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={mileage}
+                      onChange={(e) => setMileage(e.target.value)}
+                      className="w-full bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-sm text-white focus:border-orange-500 focus:outline-none font-medium"
+                      placeholder="e.g. 52,000 mi"
+                      inputMode="numeric"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      License Plate
+                    </label>
+                    <input
+                      type="text"
+                      value={licensePlate}
+                      onChange={(e) => setLicensePlate(e.target.value.toUpperCase())}
+                      className="w-full bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-sm text-white uppercase font-mono tracking-wide focus:border-orange-500 focus:outline-none"
+                      placeholder="e.g. TX-ABC1234"
+                    />
+                  </div>
+                </div>
+
+                {/* Required VIN */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                      VIN Number <span className="text-orange-400">*</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400">17 characters (door jamb / insurance)</span>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={vinNumber}
+                    onChange={(e) => setVinNumber(e.target.value.toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/gi, ''))}
+                    className="w-full bg-[#12141c] border border-white/15 rounded-xl px-3.5 py-2 text-xs font-mono text-white tracking-wider focus:border-orange-500 focus:outline-none uppercase"
+                    placeholder="17-character VIN (e.g. 1FTFW1ED4MF...)"
+                    maxLength={17}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Required for parts fitment accuracy and verified CARFAX repair history reporting.
+                  </p>
+                </div>
+              </div>
+
+              {/* What's Going On / Problem Description */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Your Vehicle</label>
-                <input
-                  type="text"
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-300">
+                    What&apos;s going on with your vehicle? <span className="text-orange-400">*</span>
+                  </label>
+                  <span className="text-[10px] text-slate-400">Symptoms &amp; details</span>
+                </div>
+                <textarea
+                  rows={3}
                   required
-                  value={vehicle}
-                  onChange={e => setVehicle(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-3 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="e.g. 2021 Ford F-150 / 2019 Chevy Tahoe / 2020 Honda Civic"
+                  value={symptoms}
+                  onChange={(e) => setSymptoms(e.target.value)}
+                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none leading-relaxed"
+                  placeholder="Describe what's happening (e.g. squeaking brakes when stopping, check engine light flashing, car cranks but won't start, leaking fluid on driveway, weird noise when turning)..."
                 />
               </div>
 
+              {/* Primary Service Category */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Service Category <span className="text-orange-400">*</span>
+                </label>
+                <select
+                  value={
+                    ['Diagnostic & Inspection', 'Part Install', 'Brakes & Rotors'].includes(serviceRequested)
+                      ? serviceRequested
+                      : 'Other / Custom Service'
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Other / Custom Service') {
+                      setServiceRequested('Custom Repair');
+                    } else {
+                      setServiceRequested(val);
+                    }
+                  }}
+                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                >
+                  <option value="Diagnostic & Inspection">Diagnostic &amp; Inspection</option>
+                  <option value="Part Install">Part Install</option>
+                  <option value="Brakes & Rotors">Brakes &amp; Rotors</option>
+                  <option value="Other / Custom Service">Other / Custom Service</option>
+                </select>
+
+                {!['Diagnostic & Inspection', 'Part Install', 'Brakes & Rotors'].includes(serviceRequested) && (
+                  <input
+                    type="text"
+                    value={serviceRequested}
+                    onChange={(e) => setServiceRequested(e.target.value)}
+                    className="w-full mt-2 bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:border-orange-500 focus:outline-none"
+                    placeholder="Specify custom service request..."
+                  />
+                )}
+              </div>
+
+              {/* Date & Time Window */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Preferred Date</label>
                   <input
                     type="date"
                     required
+                    min={todayISODate()}
                     value={preferredDate}
-                    onChange={e => setPreferredDate(e.target.value)}
+                    onChange={(e) => setPreferredDate(e.target.value)}
                     className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Preferred Time Window</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Preferred Time</label>
                   <select
                     value={preferredTime}
-                    onChange={e => setPreferredTime(e.target.value)}
+                    onChange={(e) => setPreferredTime(e.target.value)}
                     className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                   >
                     {PREFERRED_TIME_WINDOWS.map((w) => (
@@ -384,42 +800,68 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </div>
 
-              {/* Reassuring Card Hold Explainer */}
-              <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 space-y-1.5 text-xs text-slate-400">
+              {/* Zero Due Today Reassurance */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-emerald-900/20 to-slate-900 border border-emerald-500/30 space-y-1 text-xs text-slate-300">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-white flex items-center gap-1.5">
+                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    Zero Charged Today ($85 Hold Only)
+                    Zero Payment Due Today
                   </span>
-                  <span className="font-mono text-orange-400 font-bold">${holdPreview.toFixed(2)} Hold</span>
+                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full">
+                    Pay On Completion
+                  </span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-slate-400">
-                  Holds your technician's time slot and is <strong>100% credited</strong> toward your final repair and parts cost on-site.
+                  No payment is charged today. Your certified technician inspects on-site,
+                  agrees on labor + parts pricing with you, and payment is completed upon job verification.
                 </p>
               </div>
 
+              {submitError && (
+                <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{submitError}</span>
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
+                className="w-full py-4 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center gap-2"
               >
-                Continue: Address & Contact Info →
+                <span>Continue: Location &amp; Contact Info →</span>
               </button>
             </form>
           )}
 
+          {/* STEP 2: Location & Contact Details */}
           {step === 2 && (
-            <form onSubmit={handleContinueToCardHold} className="space-y-4">
+            <form onSubmit={handleSubmitBooking} className="space-y-4">
+              {/* Summary Pill */}
+              <div className="p-3 bg-[#0b0c10] border border-white/10 rounded-2xl flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-slate-400 block text-[10px]">Vehicle:</span>
+                  <strong className="text-white">{fullVehicleName}</strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-xs text-orange-400 font-bold hover:underline"
+                >
+                  Edit Vehicle
+                </button>
+              </div>
+
               {serviceMode === 'mobile' ? (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">
-                      Street address (include street name)
+                      Street Address (include street name) <span className="text-orange-400">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={streetAddress}
-                      onChange={e => setStreetAddress(e.target.value)}
+                      onChange={(e) => setStreetAddress(e.target.value)}
                       className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                       placeholder="e.g. 1234 Canyon Falls Dr"
                       autoComplete="street-address"
@@ -427,24 +869,28 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">City</label>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        City <span className="text-orange-400">*</span>
+                      </label>
                       <input
                         type="text"
                         required
                         value={city}
-                        onChange={e => setCity(e.target.value)}
+                        onChange={(e) => setCity(e.target.value)}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                        placeholder="Northlake"
+                        placeholder="Northlake / Justin / DFW"
                         autoComplete="address-level2"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">Zip (DFW)</label>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Zip Code <span className="text-orange-400">*</span>
+                      </label>
                       <input
                         type="text"
                         required
                         value={zipCode}
-                        onChange={e => setZipCode(e.target.value)}
+                        onChange={(e) => setZipCode(e.target.value)}
                         className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                         placeholder="76226"
                         autoComplete="postal-code"
@@ -452,22 +898,16 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       />
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-500">
-                    Dispatch needs the full address — house number alone (e.g. 15637, 76177) is not enough.
-                  </p>
                 </>
               ) : (
                 <div className="p-3.5 bg-slate-900 rounded-xl border border-white/10 text-xs text-slate-300 space-y-1">
                   <div className="font-bold text-white flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-orange-400" /> Drop-off location:
+                    <MapPin className="w-3.5 h-3.5 text-orange-400" /> Drop-off Location:
                   </div>
                   {selectedPartner ? (
                     <>
                       <p className="text-white font-semibold">{selectedPartner.businessName}</p>
                       <p>{selectedPartner.address}</p>
-                      {selectedPartner.hoursNote && (
-                        <p className="text-slate-500">{selectedPartner.hoursNote}</p>
-                      )}
                     </>
                   ) : (
                     <p>Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247</p>
@@ -477,23 +917,33 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Your Full Name</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Your Full Name <span className="text-orange-400">*</span>
+                  </label>
                   <input
                     type="text"
                     required
                     value={fullName}
-                    onChange={e => setFullName(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFullName(val);
+                      if (signatureMode === 'type') {
+                        drawTypedSignature(val, typedSignatureFont);
+                      }
+                    }}
                     className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                     placeholder="John Doe"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Phone Number</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Phone Number <span className="text-orange-400">*</span>
+                  </label>
                   <input
                     type="tel"
                     required
                     value={phone}
-                    onChange={e => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value)}
                     className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
                     placeholder="(940) 304-0620"
                   />
@@ -501,302 +951,370 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Email (for receipt & card on file)</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Email Address <span className="text-orange-400">*</span> (for appointment confirmation)
+                </label>
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="you@email.com"
+                  placeholder="you@example.com"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Additional Issue Notes / Parking Info</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Access / Gate Code / Parking Notes (Optional)
+                </label>
                 <textarea
                   rows={2}
                   value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="e.g. Parked on left side driveway, key will be under mat."
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:border-orange-500 focus:outline-none"
+                  placeholder="e.g. Gate code #1234, vehicle parked in front driveway, key will be available."
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Referral code (optional)</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Referral Code (Optional)
+                </label>
                 <input
+                  type="text"
                   value={referralInput}
                   onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
                   className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-orange-500 focus:outline-none"
-                  placeholder="Friend's code"
+                  placeholder="e.g. FRIEND10"
                   autoCapitalize="characters"
                 />
               </div>
 
-              <div className="bg-[#0b0c10] border border-orange-500/30 p-3.5 rounded-xl space-y-2 text-[11px] text-slate-300">
-                <label className="flex items-start space-x-2.5 cursor-pointer">
+              {/* Diagnostic Fee & 12h Waiver Agreement */}
+              <div className="bg-[#0b0c10] border border-orange-500/30 bg-gradient-to-br from-orange-500/10 via-slate-900/80 to-[#0b0c10] p-4 rounded-2xl space-y-3 shadow-inner">
+                <div className="flex items-center gap-2 text-xs font-bold text-orange-400">
+                  <ShieldCheck className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                  <span>Diagnostic Fee &amp; 12-Hour Waiver Agreement</span>
+                </div>
+
+                <label className="flex items-start space-x-3 cursor-pointer">
                   <input
                     type="checkbox"
                     required
-                    defaultChecked
-                    className="mt-0.5 w-4 h-4 rounded border-slate-700 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0"
+                    checked={ackDiagnosticFee}
+                    onChange={(e) => setAckDiagnosticFee(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-600 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0 cursor-pointer"
                   />
-                  <span>
-                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $85 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
+                  <span className="text-xs text-slate-200 leading-relaxed font-medium">
+                    <strong className="text-white">I confirm that I will be charged an $85 diagnostic fee</strong>, and if I approve the recommended repair work within 12 hours, the <span className="text-emerald-400 font-bold">$85 diagnostic fee will be 100% waived</span> toward the repair total. <span className="text-orange-400 font-bold">*</span>
                   </span>
                 </label>
-                <p className="text-[10px] text-slate-500 leading-relaxed pl-6">
-                  By providing your number, you consent to receive service-related text messages
-                  (appointment updates, receipts, and secure payment links) from Adaptivity Performance.
-                  Message &amp; data rates may apply. Reply STOP to opt out, HELP for help.
-                </p>
+
+                <label className="flex items-start space-x-3 cursor-pointer pt-2 border-t border-white/10">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={ackTerms}
+                    onChange={(e) => setAckTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-600 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0 cursor-pointer"
+                  />
+                  <span className="text-[11px] text-slate-300 leading-relaxed">
+                    I agree to the{' '}
+                    <a
+                      href="/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orange-400 font-bold hover:underline"
+                    >
+                      Adaptivity Terms of Service &amp; 12-Month Warranty
+                    </a>
+                    . I understand that <strong className="text-white">we are not responsible for customer-provided parts</strong>, and the <strong className="text-white">12-month warranty is only valid if Adaptivity Performance provides the parts</strong>. I authorize certified technicians to inspect, scan, and diagnose my vehicle on-site. <span className="text-orange-400 font-bold">*</span>
+                  </span>
+                </label>
               </div>
 
-              <div className="bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-500/30 p-3 rounded-xl flex items-start space-x-2 text-[11px] text-slate-300">
-                <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <strong className="text-amber-400 font-bold block">Card hold — charge when complete</strong>
-                  <span>
-                    Next step saves your card and places a <strong className="text-white">${holdPreview.toFixed(2)}</strong>{' '}
-                    authorization hold
-                    {holdQuote.mode === 'diagnostic'
-                      ? ' for the diagnostic visit — your tech sets repair pricing on site'
-                      : ' until the job is completed'}
-                    . You are charged when the job is finished; your
-                    technician receives 70% through official platform checkout.
-                  </span>
+              {/* Digital Signature Pad (DocuSign Style + Draw) */}
+              <div className="bg-[#0b0c10] border border-white/15 p-4 rounded-2xl space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                    <PenLine className="w-4 h-4 text-orange-400" />
+                    <span>Customer Signature</span>
+                    <span className="text-orange-400 font-bold">*</span>
+                  </label>
+
+                  {/* Mode Toggles */}
+                  <div className="flex items-center gap-1.5 bg-[#12141c] p-1 rounded-xl border border-white/10 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSignatureMode('type');
+                        const nameToUse = fullName.trim() || 'Customer';
+                        drawTypedSignature(nameToUse, typedSignatureFont);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                        signatureMode === 'type'
+                          ? 'bg-orange-500 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>Adopt Name</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSignatureMode('draw');
+                        initCanvas();
+                      }}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                        signatureMode === 'draw'
+                          ? 'bg-orange-500 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <PenLine className="w-3 h-3" />
+                      <span>Draw</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* DocuSign Font Style Choices (when in Adopt mode) */}
+                {signatureMode === 'type' && (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>Choose DocuSign Calligraphy Style:</span>
+                      <span className="text-orange-400 font-medium">Auto-generated from Name</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {FONT_STYLES.map((st, idx) => (
+                        <button
+                          key={st.name}
+                          type="button"
+                          onClick={() => adoptSignature(idx)}
+                          className={`p-2.5 rounded-xl border text-center transition-all ${
+                            typedSignatureFont === idx
+                              ? 'border-orange-500 bg-orange-500/15 shadow-sm ring-1 ring-orange-500'
+                              : 'border-white/10 bg-[#12141c] hover:border-white/20 text-slate-300'
+                          }`}
+                        >
+                          <span
+                            className="block text-base sm:text-lg text-orange-400 truncate leading-none py-1"
+                            style={{ fontFamily: st.family }}
+                          >
+                            {fullName.trim() || 'Your Name'}
+                          </span>
+                          <span className="block text-[9px] text-slate-400 uppercase tracking-wider mt-1">
+                            {st.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Signature Canvas Box */}
+                <div className="relative rounded-xl border border-white/15 bg-[#12141c] overflow-hidden">
+                  <canvas
+                    ref={canvasRef}
+                    width={480}
+                    height={110}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    className={`w-full h-28 touch-none block ${
+                      signatureMode === 'draw' ? 'cursor-crosshair' : 'cursor-default'
+                    }`}
+                  />
+                  {!hasSignature && signatureMode === 'draw' && (
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center text-slate-500 text-xs font-medium italic select-none">
+                      ✍️ Draw signature here with finger or mouse
+                    </div>
+                  )}
+                  {signatureMode === 'type' && (
+                    <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded text-[9px] text-emerald-400 border border-emerald-500/20">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      <span>Adopted Signature</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-[10px] text-slate-400 flex items-center justify-between pt-0.5">
+                  <div className="flex items-center gap-2">
+                    <span>Signer: <strong className="text-slate-200">{fullName.trim() || 'Customer'}</strong></span>
+                    {signatureMode === 'draw' && (
+                      <button
+                        type="button"
+                        onClick={clearSignature}
+                        className="text-slate-400 hover:text-orange-400 flex items-center gap-1 transition px-1.5 py-0.5 rounded bg-white/5"
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        <span>Clear</span>
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-emerald-400 font-medium">E-SIGN Act Binding Authorization</span>
                 </div>
               </div>
 
               {submitError && (
-                <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{submitError}</p>
+                <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/30 rounded-lg px-3 py-2 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{submitError}</span>
+                </p>
               )}
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="w-1/3 py-3 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-700"
+                  className="w-1/3 py-3.5 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-700 transition"
                 >
                   ← Back
                 </button>
                 <button
                   type="submit"
-                  disabled={isCreatingHold}
-                  className="w-2/3 py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-2/3 py-3.5 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  {isCreatingHold ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Preparing secure hold…
+                      <span>Confirming booking…</span>
                     </>
                   ) : (
-                    <>Continue to card on file →</>
+                    <>Confirm Appointment (Zero Due) ✓</>
                   )}
                 </button>
               </div>
             </form>
           )}
 
-          {step === 3 && clientSecret && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-400">
-                Appointment <span className="font-mono text-orange-400 font-bold">#{bookingRef}</span>
-              </p>
-              <StripeBookingHoldSection
-                clientSecret={clientSecret}
-                holdAmountDollars={holdAmount}
-                customerName={fullName}
-                customerEmail={email}
-                onAuthorized={handleCardAuthorized}
-              />
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full py-2 text-xs text-slate-400 hover:text-white"
-              >
-                ← Back to contact details
-              </button>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="text-center space-y-5 py-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-2xl font-bold">
+          {/* STEP 3: Booking Confirmed Screen */}
+          {step === 3 && (
+            <div className="text-center space-y-5 py-2">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-3xl font-bold shadow-lg shadow-emerald-500/20">
                 ✓
               </div>
+
               <div>
                 <span className="text-xs bg-orange-500/10 text-orange-400 font-mono font-bold px-3 py-1 rounded-full border border-orange-500/30">
                   Confirmation #{bookingRef}
                 </span>
-                <h3 className="font-heading text-2xl font-bold text-white mt-2">Appointment booked — card on file</h3>
-                <p className="text-xs text-slate-300 max-w-sm mx-auto mt-1">
-                  A <strong className="text-white">${holdAmount.toFixed(2)}</strong> hold is active for your
-                  visit. We&apos;ll charge your card when the job is complete. Dispatch will reach you at{' '}
-                  <strong className="text-white">{phone}</strong> to confirm technician assignment.
+                <h3 className="font-heading text-2xl font-bold text-white mt-2">
+                  Appointment Booked &amp; Confirmed!
+                </h3>
+                <p className="text-xs text-slate-300 max-w-md mx-auto mt-1.5 leading-relaxed">
+                  <strong className="text-emerald-400 font-semibold">Zero payment was charged today.</strong>{' '}
+                  Our live dispatch team will contact you at{' '}
+                  <strong className="text-white">{phone}</strong> to confirm your technician assignment and arrival window.
                 </p>
               </div>
 
+              {/* Booking Summary Box */}
               <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/10 text-left text-xs space-y-2 max-w-md mx-auto">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Service Mode:</span>
-                  <span className="font-bold text-white capitalize">{serviceMode} Service</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Vehicle:</span>
-                  <span className="font-bold text-white">{vehicle}</span>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-slate-500">Vehicle:</span>
+                  <span className="font-semibold text-white">{fullVehicleName}</span>
                 </div>
                 {vinNumber && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">VIN Number:</span>
-                    <span className="font-bold font-mono text-orange-400">{vinNumber}</span>
+                  <div className="flex justify-between border-b border-white/5 pb-2">
+                    <span className="text-slate-500">VIN:</span>
+                    <span className="font-mono text-slate-300">{vinNumber}</span>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Scheduled:</span>
-                  <span className="font-bold text-orange-400">{preferredDate} ({preferredTime})</span>
+                {symptoms && (
+                  <div className="border-b border-white/5 pb-2">
+                    <span className="text-slate-500 block mb-0.5">Issue Description:</span>
+                    <span className="text-slate-300 font-medium">{symptoms}</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-slate-500">Preferred Date &amp; Time:</span>
+                  <span className="font-semibold text-orange-400">
+                    {preferredDate} ({preferredTime})
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Hold amount:</span>
-                  <span className="font-bold text-emerald-400">${holdAmount.toFixed(2)}</span>
+                  <span className="text-slate-500">Payment Status:</span>
+                  <span className="font-bold text-emerald-400">Zero Due Today • Pay On Site</span>
                 </div>
               </div>
 
-              <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" /> 12-Month / 12,000-Mile Warranty Auto-Registered
+              {/* Direct Dispatch Support Contact */}
+              <div className="p-3.5 bg-slate-900/80 rounded-2xl border border-white/10 flex items-center justify-between text-xs max-w-md mx-auto">
+                <div className="flex items-center gap-2 text-left">
+                  <Phone className="w-4 h-4 text-orange-400 shrink-0" />
+                  <div>
+                    <div className="font-bold text-white">Need immediate service or changes?</div>
+                    <div className="text-slate-400 text-[11px]">Dispatch line is open 8AM – 10PM Daily</div>
+                  </div>
+                </div>
+                <a
+                  href={SITE_PHONE_TEL}
+                  className="px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg font-bold text-xs"
+                >
+                  {SITE_PHONE_DISPLAY}
+                </a>
               </div>
 
+              {/* Optional Portal Account Creation */}
               {accountStatus === 'idle' && (
                 <form
-                  onSubmit={(e) => void handleCreateAccount(e)}
-                  className="max-w-md mx-auto text-left bg-[#0b0c10] border border-orange-500/30 rounded-2xl p-4 space-y-3"
+                  onSubmit={handleCreateAccount}
+                  className="bg-[#0b0c10] border border-orange-500/30 rounded-2xl p-4 text-left space-y-3 max-w-md mx-auto"
                 >
-                  <div className="flex items-start gap-2">
-                    <UserPlus className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4 text-orange-400" />
                     <div>
-                      <p className="text-sm font-bold text-white">Save your info — create a free account</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Track this job, save your vehicle details, and book faster next time in the customer portal.
-                      </p>
+                      <div className="text-xs font-bold text-white">Save this booking to your portal</div>
+                      <div className="text-[10px] text-slate-400">
+                        Create a password to track inspection photos, quotes &amp; warranty history
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-1.5 text-[11px]">
-                    <div className="flex justify-between gap-2">
-                      <span className="text-slate-500">Name</span>
-                      <span className="text-slate-200 font-medium truncate">{fullName || '—'}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-slate-500">Email</span>
-                      <span className="text-slate-200 font-medium truncate">{email || '—'}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-slate-500">Phone</span>
-                      <span className="text-slate-200 font-medium truncate">{phone || '—'}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
+
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="password"
-                      autoComplete="new-password"
-                      placeholder="Create password (8+ characters)"
+                      placeholder="Create password"
                       value={accountPassword}
                       onChange={(e) => setAccountPassword(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
-                      required
-                      minLength={8}
+                      className="bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-white text-xs"
                     />
                     <input
                       type="password"
-                      autoComplete="new-password"
                       placeholder="Confirm password"
                       value={accountPasswordConfirm}
                       onChange={(e) => setAccountPasswordConfirm(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
-                      required
-                      minLength={8}
+                      className="bg-[#12141c] border border-white/15 rounded-xl px-3 py-2 text-white text-xs"
                     />
                   </div>
-                  {accountError && (
-                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                      {accountError}
-                    </p>
-                  )}
+
+                  {accountError && <p className="text-[11px] text-rose-400">{accountError}</p>}
+
                   <button
                     type="submit"
                     disabled={accountBusy}
-                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl disabled:opacity-60 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-orange-400 font-bold text-xs rounded-xl border border-orange-500/30 transition disabled:opacity-50"
                   >
-                    {accountBusy ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Creating account…
-                      </>
-                    ) : (
-                      <>Create free account</>
-                    )}
+                    {accountBusy ? 'Creating account…' : 'Save Password & Link Booking →'}
                   </button>
                 </form>
               )}
 
               {accountStatus === 'created' && (
-                <div className="max-w-md mx-auto space-y-2">
-                  <p className="text-xs text-emerald-400 font-semibold">
-                    Account created. Your booking is saved to your portal.
-                  </p>
-                  <a
-                    href={portalPath()}
-                    className="block w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold text-xs rounded-xl text-center"
-                  >
-                    Open customer portal
-                  </a>
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3 text-xs text-emerald-400 font-semibold max-w-md mx-auto">
+                  ✓ Account created and linked to your garage profile!
                 </div>
               )}
-
-              {accountStatus === 'confirm_email' && (
-                <div className="max-w-md mx-auto space-y-2 text-left bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-4">
-                  <p className="text-xs text-amber-300 font-semibold">
-                    Account created. Confirm your email if required, then sign in at the customer portal — we&apos;ll
-                    attach appointment #{bookingRef} automatically.
-                  </p>
-                  <a
-                    href={portalPath()}
-                    className="block w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl text-center"
-                  >
-                    Go to customer portal
-                  </a>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-                <button
-                  type="button"
-                  onClick={() => {
-                    void shareAdaptivity({
-                      title: 'Adaptivity Performance',
-                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake & DFW.`,
-                    });
-                  }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-orange-500/40 text-orange-300 font-bold text-xs hover:bg-orange-500/10"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  Share with a neighbor
-                </button>
-                <a
-                  href={GOOGLE_REVIEW_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-white/15 text-slate-200 font-bold text-xs hover:border-amber-500/40 hover:text-amber-300"
-                >
-                  <Star className="w-3.5 h-3.5" />
-                  Leave a review
-                </a>
-              </div>
 
               <button
+                type="button"
                 onClick={onClose}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
+                className="w-full max-w-md mx-auto py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl shadow-lg transition"
               >
-                Done / Return to Website
+                Done / Close Window
               </button>
             </div>
           )}
