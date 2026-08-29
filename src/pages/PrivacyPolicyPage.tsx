@@ -99,14 +99,21 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 3. Sharing of Information */}
+        {/* 3. Sharing of Information & Data Sharing Disclosures */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
             <Share2 className="w-6 h-6 flex-shrink-0" />
-            <h2 className="font-heading text-xl font-bold text-white">3. How We Share Your Information</h2>
+            <h2 className="font-heading text-xl font-bold text-white">3. How We Share Your Information & Data Sharing Disclosures</h2>
+          </div>
+          <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl space-y-2 text-xs">
+            <p className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">Strict Data Sharing Policy</p>
+            <ul className="space-y-1 text-slate-200 leading-relaxed list-disc list-inside">
+              <li><strong>Customer data is not shared with 3rd parties for promotional or marketing purposes.</strong></li>
+              <li><strong>Mobile opt-in and consent are never shared with anyone for any purpose. Any information sharing that may be mentioned elsewhere in this policy excludes mobile opt-in data.</strong></li>
+            </ul>
           </div>
           <p className="text-xs text-slate-400">
-            We do <strong className="text-white">NOT</strong> sell or rent your personal information to third parties or data brokers. We share data only with trusted infrastructure partners necessary to perform our services:
+            We do <strong className="text-white">NOT</strong> sell or rent your personal information to third parties or data brokers. We share data only with trusted infrastructure partners strictly necessary to perform our operational automotive services:
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             {[
@@ -128,30 +135,52 @@ export const PrivacyPolicyPage: React.FC = () => {
           </p>
         </section>
 
-        {/* 4. SMS & Mobile Communications (TCPA Compliance) */}
-        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
+        {/* 4. Messaging Consent and Privacy & Messaging Terms and Conditions */}
+        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
           <div className="flex items-center space-x-3 text-emerald-400 border-b border-white/5 pb-4">
             <MessageSquare className="w-6 h-6 flex-shrink-0" />
-            <h2 className="font-heading text-xl font-bold text-white">4. SMS Communications & TCPA Compliance</h2>
-          </div>
-          <div className="text-xs text-slate-300 space-y-3">
-            <p className="leading-relaxed">
-              When booking an appointment or requesting an estimate, you provide consent to receive transactional text messages (SMS) regarding your dispatch, appointment arrival updates, digital inspection reports, and invoice links.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              <div className="bg-[#0b0c10] p-3.5 rounded-xl border border-white/5 space-y-1">
-                <p className="font-bold text-emerald-400 text-[11px]">Opting Out</p>
-                <p className="text-slate-400">
-                  You can opt out of SMS communications at any time by replying <strong>STOP</strong> to any message.
-                </p>
-              </div>
-              <div className="bg-[#0b0c10] p-3.5 rounded-xl border border-white/5 space-y-1">
-                <p className="font-bold text-emerald-400 text-[11px]">Customer Support</p>
-                <p className="text-slate-400">
-                  Reply <strong>HELP</strong> for assistance or call us at <strong>{SITE_PHONE_DISPLAY}</strong>. Message and data rates may apply.
-                </p>
-              </div>
+            <div>
+              <h2 className="font-heading text-xl font-bold text-white">4. Messaging Consent and Privacy</h2>
+              <p className="text-xs text-slate-400">10DLC & TCPA Compliant Mobile Messaging Policy</p>
             </div>
+          </div>
+
+          {/* Data Sharing Callout */}
+          <div className="bg-[#0b0c10] p-5 rounded-2xl border border-emerald-500/20 space-y-3 text-xs">
+            <h3 className="font-bold text-emerald-400 uppercase tracking-wider text-xs">Data Sharing</h3>
+            <ul className="space-y-1.5 text-slate-300 leading-relaxed list-disc list-inside">
+              <li>Customer data is not shared with 3rd parties for promotional or marketing purposes.</li>
+              <li>Mobile opt-in and consent are never shared with anyone for any purpose. Any information sharing that may be mentioned elsewhere in this policy excludes mobile opt-in data.</li>
+            </ul>
+          </div>
+
+          {/* Real Adaptivity Messaging Terms and Conditions */}
+          <div className="bg-[#0b0c10] p-5 sm:p-6 rounded-2xl border border-white/10 space-y-4 text-xs">
+            <h3 className="font-heading text-base font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-orange-400" />
+              Real Adaptivity Messaging Terms and Conditions
+            </h3>
+
+            <ol className="space-y-3 text-slate-300 leading-relaxed list-decimal list-inside">
+              <li className="pl-1">
+                <span className="font-semibold text-white">Program Description:</span> The messaging program consists of general conversational messaging to answer questions and provide support to customers.
+              </li>
+              <li className="pl-1">
+                <span className="font-semibold text-white">Cancellation &amp; Opt-Out:</span> You can cancel the SMS service at any time. Just text &apos;STOP&apos; to the phone number from which you received messages. After you send the SMS message &apos;STOP&apos; to us, we will send you an SMS message to confirm that you have been unsubscribed. After this, you will no longer receive SMS messages from us. If you want to join again, just sign up as you did the first time and we will start sending SMS messages to you again.
+              </li>
+              <li className="pl-1">
+                <span className="font-semibold text-white">Customer Support &amp; Help:</span> If you are experiencing issues with the messaging program you can reply with the keyword HELP for more assistance, or you can get help directly at <a href="mailto:michaelrobertsmith2002@gmail.com" className="text-orange-400 underline hover:text-orange-300">michaelrobertsmith2002@gmail.com</a>.
+              </li>
+              <li className="pl-1">
+                <span className="font-semibold text-white">Carrier Liability:</span> Carriers are not liable for delayed or undelivered messages.
+              </li>
+              <li className="pl-1">
+                <span className="font-semibold text-white">Rates &amp; Message Frequency:</span> As always, message and data rates may apply for any messages sent to you from us and to us from you. Message frequency will vary based on communication needs. If you have any questions about your text plan or data plan, it is best to contact your wireless provider.
+              </li>
+              <li className="pl-1">
+                <span className="font-semibold text-white">Privacy Questions:</span> If you have any questions regarding privacy, please read our privacy policy contained in the rest of this document/page.
+              </li>
+            </ol>
           </div>
         </section>
 
