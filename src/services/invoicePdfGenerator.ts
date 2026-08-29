@@ -97,12 +97,13 @@ export function buildInvoiceJsPdf(data: InvoicePdfData): jsPDF {
 
   // Payment Status Badge
   const statusColor = data.status === 'PAID' ? [5, 150, 105] : [217, 119, 6]; // Emerald vs Amber
+  const paymentBadgeText = data.paymentMethod ? data.paymentMethod.split(' ')[0] : 'Payment';
   doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
   doc.roundedRect(pageWidth - margin - 120, y + 46, 120, 15, 3, 3, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(255, 255, 255);
-  doc.text(`${data.status} — ${data.paymentMethod.split(' ')[0]}`, pageWidth - margin - 60, y + 57, { align: 'center' });
+  doc.text(`${data.status || 'DUE'} — ${paymentBadgeText}`, pageWidth - margin - 60, y + 57, { align: 'center' });
 
   y += 68;
 
@@ -134,9 +135,9 @@ export function buildInvoiceJsPdf(data: InvoicePdfData): jsPDF {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(`Phone: ${data.customerPhone}`, margin + 10, y + 39);
-  doc.text(`Email: ${data.customerEmail}`, margin + 10, y + 51);
-  doc.text(`Location: ${data.serviceAddress.substring(0, 36)}`, margin + 10, y + 63);
+  doc.text(`Phone: ${data.customerPhone || 'N/A'}`, margin + 10, y + 39);
+  doc.text(`Email: ${data.customerEmail || 'N/A'}`, margin + 10, y + 51);
+  doc.text(`Location: ${(data.serviceAddress || 'Justin / DFW, TX').substring(0, 36)}`, margin + 10, y + 63);
 
   // Vehicle Box
   const vBoxX = margin + boxWidth + 14;
@@ -151,14 +152,14 @@ export function buildInvoiceJsPdf(data: InvoicePdfData): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(data.vehicleYearMakeModel.substring(0, 32), vBoxX + 10, y + 26);
+  doc.text((data.vehicleYearMakeModel || 'Customer Vehicle').substring(0, 32), vBoxX + 10, y + 26);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(71, 85, 105);
   doc.text(`VIN: ${data.vehicleVin || 'N/A'}`, vBoxX + 10, y + 39);
   doc.text(`Odometer: ${data.vehicleMileage || 'N/A'}  •  Plate: ${data.vehiclePlate || 'N/A'}`, vBoxX + 10, y + 51);
-  doc.text(`Tech: ${data.technicianName}  (#${data.bookingRef})`, vBoxX + 10, y + 63);
+  doc.text(`Tech: ${data.technicianName || 'ASE Certified Tech'}  (#${data.bookingRef || 'AP-DIRECT'})`, vBoxX + 10, y + 63);
 
   y += boxHeight + 14;
 
