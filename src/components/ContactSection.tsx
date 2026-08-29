@@ -16,6 +16,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
   const [vehicle, setVehicle] = useState('');
   const [issue, setIssue] = useState('');
   const [preferredContact, setPreferredContact] = useState<'phone' | 'text' | 'email'>('text');
+  const [smsConsent, setSmsConsent] = useState<'yes' | 'no' | null>('yes');
   const [formState, setFormState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -259,6 +260,44 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                           <span>{item.label}</span>
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* SMS Messaging Consent (10DLC Compliant) */}
+                  <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/10 space-y-3 text-xs">
+                    <p className="text-slate-300 leading-relaxed text-[11px]">
+                      Real Adaptivity would like your consent to send informational text message communications from <strong className="text-white">+19403040620</strong> to your mobile number listed above, in response to your questions or to provide information relevant to your relationship with us.
+                    </p>
+                    <p className="text-slate-400 leading-relaxed text-[10.5px]">
+                      Consent is not a condition of purchase. Message frequency varies. Message and data rates may apply. Reply &apos;STOP&apos; to unsubscribe at any time. Reply &apos;HELP&apos; for assistance or more information. We do not share your mobile opt-in information with anyone. See our <a href="/privacy" className="text-orange-400 underline hover:text-orange-300">privacy policy and messaging terms and conditions</a> for more information.
+                    </p>
+
+                    <div className="space-y-2 pt-1 border-t border-white/5">
+                      <label className="flex items-start gap-2.5 cursor-pointer text-slate-200 hover:text-white">
+                        <input
+                          type="radio"
+                          name="sms-consent"
+                          checked={smsConsent === 'yes'}
+                          onChange={() => setSmsConsent('yes')}
+                          className="mt-0.5 accent-orange-500 w-4 h-4 cursor-pointer"
+                        />
+                        <span className="text-[11.5px] font-medium">
+                          Yes, I consent to receive informational messages from Real Adaptivity
+                        </span>
+                      </label>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer text-slate-400 hover:text-slate-200">
+                        <input
+                          type="radio"
+                          name="sms-consent"
+                          checked={smsConsent === 'no'}
+                          onChange={() => setSmsConsent('no')}
+                          className="mt-0.5 accent-orange-500 w-4 h-4 cursor-pointer"
+                        />
+                        <span className="text-[11.5px]">
+                          No, I do not want to receive any text messages from Real Adaptivity
+                        </span>
+                      </label>
                     </div>
                   </div>
 
