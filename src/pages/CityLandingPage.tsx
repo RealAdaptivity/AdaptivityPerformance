@@ -25,17 +25,12 @@ import {
 import { GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, shareAdaptivity } from '../site/seo';
 import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { navigateSite } from '../site/siteRoute';
+import { LocalLink } from '../site/LocalLink';
 
 type Props = {
   city: LocalCity;
   onOpenBooking: (opts?: { source?: string; city?: string }) => void;
 };
-
-function goTo(path: string) {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
 export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
   const nearby = nearbyCities(city);
@@ -152,14 +147,13 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
               );
 
               return hasServicePages ? (
-                <button
+                <LocalLink
                   key={service.slug}
-                  type="button"
-                  onClick={() => goTo(serviceCityPath(service.slug, city.slug))}
-                  className="text-left rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-1.5 hover:border-orange-500/40 transition-colors"
+                  href={serviceCityPath(service.slug, city.slug)}
+                  className="block text-left rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-1.5 hover:border-orange-500/40 transition-colors"
                 >
                   {body}
-                </button>
+                </LocalLink>
               ) : (
                 <div
                   key={service.slug}
@@ -225,14 +219,13 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           </h2>
           <div className="flex flex-wrap gap-2">
             {nearby.map((c) => (
-              <button
+              <LocalLink
                 key={c.slug}
-                type="button"
-                onClick={() => goTo(cityPathOf(c.slug))}
+                href={cityPathOf(c.slug)}
                 className="text-xs font-bold px-3 py-1.5 rounded-full border border-white/10 text-slate-300 hover:border-orange-500/40 hover:text-orange-300 transition-colors"
               >
                 {c.city}
-              </button>
+              </LocalLink>
             ))}
             <button
               type="button"

@@ -46,11 +46,16 @@ if (!CITY_SLUGS.length || !SERVICE_CITY_PATHS.length) {
   throw new Error('localSeoData.json produced no local URLs — refusing to write an empty sitemap');
 }
 
-const BLOG_SLUGS = [
-  'how-much-do-brakes-cost-northlake-tx',
-  'mobile-mechanic-vs-dealership-justin-tx',
-  'google-business-review-playbook',
-];
+const blogSrc = fs.readFileSync(path.join(root, 'src', 'services', 'blog.ts'), 'utf8');
+const internal = [...blogSrc.matchAll(/INTERNAL_BLOG_SLUGS = \[([^\]]*)\]/g)]
+  .flatMap((m) => [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
+const BLOG_SLUGS = [...blogSrc.matchAll(/^\s{4}slug: '([^']+)',$/gm)]
+  .map((m) => m[1])
+  .filter((slug) => !internal.includes(slug));
+
+if (!BLOG_SLUGS.length) {
+  throw new Error('no blog slugs parsed from src/services/blog.ts');
+}
 
 function urlEntry(loc, changefreq, priority) {
   return `  <url><loc>${loc}</loc><lastmod>${lastmod}</lastmod><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;

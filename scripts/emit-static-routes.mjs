@@ -1,0 +1,212 @@
+/**
+ * Emit a real HTML file for every public route.
+ *
+ * GitHub Pages serves `404.html` with an HTTP 404 status for any path that is
+ * not a real file. The SPA still renders, so a human sees the right page — but
+ * a crawler sees "not found" and drops the URL. Every city and service page in
+ * sitemap.xml was unindexable for exactly this reason.
+ *
+ * Each emitted file also carries its own title, description, canonical, social
+ * tags and JSON-LD, baked in at build time. Metadata comes from the same TS
+ * helpers the client uses, so the static HTML and the hydrated page cannot
+ * disagree. Crawlers that do not execute JS (most social and AI crawlers) get
+ * correct metadata instead of the generic homepage tags.
+ *
+ * Run: node scripts/emit-static-routes.mjs   (after vite build)
+ */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createJiti } from 'jiti';
+
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dist = path.join(root, 'dist');
+const indexPath = path.join(dist, 'index.html');
+
+if (!fs.existsSync(indexPath)) {
+  console.error('dist/index.html not found — run vite build first');
+  process.exit(1);
+}
+
+const jiti = createJiti(import.meta.url);
+const seo = await jiti.import(path.join(root, 'src/site/seo.ts'));
+const local = await jiti.import(path.join(root, 'src/site/localSeo.ts'));
+const ld = await jiti.import(path.join(root, 'src/site/structuredData.ts'));
+const ads = await jiti.import(path.join(root, 'src/site/adLandings.ts'));
+const blog = await jiti.import(path.join(root, 'src/services/blog.ts'));
+
+const { PAGE_SEO, SITE_ORIGIN, SITE_FAQS, citySeo } = seo;
+const { LOCAL_CITIES, SERVICE_PAGE_CITIES, LOCAL_SERVICES, serviceCityMeta, serviceCityFaqs } = local;
+const { cityJsonLd, serviceCityJsonLd } = ld;
+const { AD_LANDINGS, adLandingMeta, adLandingPath } = ads;
+const { FALLBACK_BLOG_POSTS, isInternalPost } = blog;
+
+const template = fs.readFileSync(indexPath, 'utf8');
+
+const escapeAttr = (s) =>
+  String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Replace a tag's attribute value in place, or report that the tag is missing. */
+function setAttr(html, selectorRe, attr, value) {
+  const match = html.match(selectorRe);
+  if (!match) return { html, missing: true };
+  const tag = match[0];
+  const next = tag.includes(`${attr}=`)
+    ? tag.replace(new RegExp(`${attr}="[^"]*"`), `${attr}="${escapeAttr(value)}"`)
+    : tag.replace(/\/?>$/, ` ${attr}="${escapeAttr(value)}">`);
+  return { html: html.replace(tag, next), missing: false };
+}
+
+const problems = [];
+
+function renderRoute({ meta, jsonLd = [], noindex = false }) {
+  let html = template;
+
+  html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeAttr(meta.title)}</title>`);
+
+  const url = `${SITE_ORIGIN}${meta.path === '/' ? '' : meta.path}`;
+  const image = `${SITE_ORIGIN}/og-image.png`;
+  const fields = [
+    [/<meta\s+name="title"[^>]*>/, 'content', meta.title],
+    [/<meta\s+name="description"[^>]*>/, 'content', meta.description],
+    [/<meta\s+property="og:title"[^>]*>/, 'content', meta.title],
+    [/<meta\s+property="og:description"[^>]*>/, 'content', meta.description],
+    [/<meta\s+property="og:url"[^>]*>/, 'content', url],
+    [/<meta\s+property="og:image"[^>]*>/, 'content', image],
+    [/<meta\s+property="twitter:title"[^>]*>/, 'content', meta.title],
+    [/<meta\s+property="twitter:description"[^>]*>/, 'content', meta.description],
+    [/<meta\s+property="twitter:url"[^>]*>/, 'content', url],
+    [/<meta\s+property="twitter:image"[^>]*>/, 'content', image],
+    [/<meta\s+name="robots"[^>]*>/, 'content', noindex ? 'noindex, nofollow' : 'index, follow'],
+  ];
+  for (const [re, attr, value] of fields) {
+    const res = setAttr(html, re, attr, value);
+    html = res.html;
+    if (res.missing) problems.push(`${meta.path}: no tag matching ${re}`);
+  }
+
+  const canonicalTag = `<link rel="canonical" href="${escapeAttr(url)}" />`;
+  html = /<link\s+rel="canonical"[^>]*>/.test(html)
+    ? html.replace(/<link\s+rel="canonical"[^>]*>/, canonicalTag)
+    : html.replace('</head>', `    ${canonicalTag}\n  </head>`);
+
+  if (jsonLd.length) {
+    // `</script>` inside a JSON string would close the tag early.
+    const blocks = jsonLd
+      .map(
+        (b) =>
+          `    <script type="application/ld+json" data-adaptivity-ld="true">${JSON.stringify(b).replace(
+            /<\//g,
+            '<\\/'
+          )}</script>`
+      )
+      .join('\n');
+    html = html.replace('</head>', `${blocks}\n  </head>`);
+  }
+
+  return html;
+}
+
+function write(routePath, html) {
+  const dir = routePath === '/' ? dist : path.join(dist, routePath.replace(/^\//, ''));
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'index.html'), html, 'utf8');
+}
+
+const written = [];
+
+/* Fixed marketing pages. */
+for (const meta of Object.values(PAGE_SEO)) {
+  if (meta.path === '/blog' && meta.title.startsWith('Article')) continue; // blogPost shares /blog
+  write(meta.path, renderRoute({ meta }));
+  written.push(meta.path);
+}
+
+/* City landing pages. */
+for (const city of LOCAL_CITIES) {
+  const meta = citySeo(city);
+  write(meta.path, renderRoute({ meta, jsonLd: cityJsonLd(city, SITE_FAQS.slice(0, 6)) }));
+  written.push(meta.path);
+}
+
+/* Service × city pages. */
+for (const city of SERVICE_PAGE_CITIES) {
+  for (const service of LOCAL_SERVICES) {
+    const meta = serviceCityMeta(service, city);
+    write(
+      meta.path,
+      renderRoute({ meta, jsonLd: serviceCityJsonLd(service, city, serviceCityFaqs(service, city)) })
+    );
+    written.push(meta.path);
+  }
+}
+
+/* Seed blog posts. Posts added later in Supabase fall through to 404.html — the
+   sitemap only ever advertises the seeds, so nothing indexable is left 404ing. */
+for (const post of FALLBACK_BLOG_POSTS) {
+  const internal = isInternalPost(post.slug);
+  const meta = {
+    title: `${post.title} | Adaptivity Performance`,
+    description: post.excerpt || post.title,
+    path: `/blog/${post.slug}`,
+  };
+  const jsonLd = internal
+    ? []
+    : [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: post.excerpt || undefined,
+          datePublished: post.published_at || undefined,
+          mainEntityOfPage: `${SITE_ORIGIN}${meta.path}`,
+          author: { '@type': 'Organization', name: 'Adaptivity Performance' },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Adaptivity Performance',
+            logo: { '@type': 'ImageObject', url: `${SITE_ORIGIN}/logo.png` },
+          },
+        },
+      ];
+  write(meta.path, renderRoute({ meta, jsonLd, noindex: internal }));
+  written.push(meta.path);
+}
+
+/* Paid landing pages — real files, but noindex. */
+for (const landing of AD_LANDINGS) {
+  write(adLandingPath(landing.slug), renderRoute({ meta: adLandingMeta(landing), noindex: true }));
+  written.push(adLandingPath(landing.slug));
+}
+
+/* App shells that must keep working as deep links. */
+for (const route of ['portal', 'admin', 'login']) {
+  write(`/${route}`, template);
+  written.push(`/${route}`);
+}
+
+/* Last-resort fallback for genuinely unknown paths (blog posts, referral codes). */
+fs.copyFileSync(indexPath, path.join(dist, '404.html'));
+
+/* Every sitemap URL must now be a real file, or it 404s to a crawler. */
+const sitemap = path.join(dist, 'sitemap.xml');
+if (fs.existsSync(sitemap)) {
+  const xml = fs.readFileSync(sitemap, 'utf8');
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(SITE_ORIGIN, '') || '/');
+  const unserved = locs.filter((loc) => {
+    const dir = loc === '/' ? dist : path.join(dist, loc.replace(/^\//, ''));
+    return !fs.existsSync(path.join(dir, 'index.html'));
+  });
+  if (unserved.length) {
+    problems.push(
+      `${unserved.length} sitemap URLs have no static file and will return HTTP 404 (e.g. ${unserved[0]})`
+    );
+  }
+}
+
+if (problems.length) {
+  console.error('✗ static route emit failed');
+  for (const p of problems) console.error(`  - ${p}`);
+  process.exit(1);
+}
+
+console.log(`Emitted ${written.length} static routes → dist/ (+ 404.html fallback)`);

@@ -23,18 +23,13 @@ import {
 } from '../site/localSeo';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
+import { LocalLink } from '../site/LocalLink';
 
 type Props = {
   service: LocalService;
   city: LocalCity;
   onOpenBooking: (opts?: { source?: string; service?: string; city?: string }) => void;
 };
-
-function goTo(path: string) {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
 export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking }) => {
   const faqs = serviceCityFaqs(service, city);
@@ -53,17 +48,13 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
       <div className="container mx-auto px-4 max-w-4xl py-14 space-y-12">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" className="text-xs text-slate-500 flex flex-wrap items-center gap-1.5">
-          <button type="button" onClick={() => goTo('/')} className="hover:text-orange-400">
+          <LocalLink href="/" className="hover:text-orange-400">
             Home
-          </button>
+          </LocalLink>
           <span aria-hidden>/</span>
-          <button
-            type="button"
-            onClick={() => goTo(cityPathOf(city.slug))}
-            className="hover:text-orange-400"
-          >
+          <LocalLink href={cityPathOf(city.slug)} className="hover:text-orange-400">
             {city.city}
-          </button>
+          </LocalLink>
           <span aria-hidden>/</span>
           <span className="text-slate-300">{service.shortName}</span>
         </nav>
@@ -246,14 +237,13 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
             </h2>
             <div className="flex flex-wrap gap-2">
               {siblings.map((s) => (
-                <button
+                <LocalLink
                   key={s.slug}
-                  type="button"
-                  onClick={() => goTo(serviceCityPath(s.slug, city.slug))}
+                  href={serviceCityPath(s.slug, city.slug)}
                   className="text-xs font-bold px-3 py-1.5 rounded-full border border-white/10 text-slate-300 hover:border-orange-500/40 hover:text-orange-300 transition-colors"
                 >
                   {s.shortName}
-                </button>
+                </LocalLink>
               ))}
             </div>
           </div>
@@ -263,14 +253,13 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
             </h2>
             <div className="flex flex-wrap gap-2">
               {nearby.map((c) => (
-                <button
+                <LocalLink
                   key={c.slug}
-                  type="button"
-                  onClick={() => goTo(serviceCityPath(service.slug, c.slug))}
+                  href={serviceCityPath(service.slug, c.slug)}
                   className="text-xs font-bold px-3 py-1.5 rounded-full border border-white/10 text-slate-300 hover:border-orange-500/40 hover:text-orange-300 transition-colors"
                 >
                   {c.city}
-                </button>
+                </LocalLink>
               ))}
             </div>
           </div>
