@@ -23,7 +23,7 @@ export type SeoMeta = {
 
 export const PAGE_SEO: Record<string, SeoMeta> = {
   home: {
-    title: 'Adaptivity Performance | Mechanic Shop & Mobile Auto Repair DFW',
+    title: 'Mobile Mechanic Justin TX | Driveway Auto Repair — Adaptivity Performance',
     description:
       `Mobile mechanic serving Justin, TX and every driveway within ${LOCAL_HUB.radiusMiles} miles — Northlake, Argyle, Roanoke, Denton, Keller, Haslet and north Fort Worth. On-site brakes, diagnostics, starters, batteries and oil changes. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/',
@@ -41,7 +41,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
     path: '/services',
   },
   contact: {
-    title: 'Contact Us | Auto Repair Mechanic Shop & Mobile Dispatch DFW',
+    title: 'Contact Us | Mobile Mechanic Dispatch — Justin, TX',
     description:
       `Same-day mobile dispatch, phone quotes, and 8AM–10PM support for Justin and the surrounding ${LOCAL_HUB.radiusMiles} miles. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/contact',
@@ -208,7 +208,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Can you service my vehicle at my workplace or apartment complex?',
-    a: 'Yes! Any accessible paved parking lot with reasonable overhead clearance works for mobile service. We have served vehicles at office campuses, HOA communities, apartment complexes, and retail parking lots across Justin, Northlake, and DFW. We need the property owner or management permission for the location.',
+    a: 'Yes! Any accessible paved parking lot with reasonable overhead clearance works for mobile service. We have served vehicles at office campuses, HOA communities, apartment complexes, and retail parking lots across Justin, Northlake, Argyle, and Denton. We need the property owner or management permission for the location.',
   },
   {
     q: 'Do you offer fleet or HOA community service contracts?',
@@ -316,7 +316,7 @@ export async function shareAdaptivity(opts?: { title?: string; text?: string; ur
   const title = opts?.title || 'Adaptivity Performance';
   const text =
     opts?.text ||
-    `Mobile mechanic for Justin, Northlake & DFW — book a $85 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
+    `Mobile mechanic for Justin, Northlake & 20 miles around — book a $85 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
   const url = opts?.url || SITE_ORIGIN;
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {

@@ -72,7 +72,7 @@ const REQUIREMENTS = [
   {
     title: 'Vehicle & coverage',
     items: [
-      'Valid driver’s license and reliable transportation for DFW / Fort Worth jobs',
+      'Valid driver’s license and reliable transportation for jobs around Justin and north Fort Worth',
       'Ability to work from a home base zip we can dispatch near (Justin hub: 76247)',
       'Willingness to text customers when you’re on the way and keep status updated',
     ],
@@ -136,7 +136,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
             </span>
           </h1>
           <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            Adaptivity is a DFW / Fort Worth mobile + shop network. Independent techs claim jobs by trade,
+            Adaptivity is a mobile + shop network working a 20-mile radius out of Justin, TX. Independent techs claim jobs by trade,
             keep 70% of labor billed (30% to Adaptivity), and get paid through Stripe — Instant or Standard.
             Start as a normal tech; as you complete jobs and grow your own shop or business, you can advance
             into a partnered host with us. Already own a shop or garage? You can partner as a host sooner.
@@ -289,7 +289,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
                 Multi-job
               </div>
               <p className="text-sm text-slate-300 leading-relaxed">
-                Claim several active dispatches. Best if you want volume and can juggle routing across DFW.
+                Claim several active dispatches. Best if you want volume and can juggle routing across the radius.
               </p>
             </article>
             <article className="rounded-2xl border border-sky-500/30 bg-sky-950/20 p-5 sm:p-6 space-y-2 text-left">

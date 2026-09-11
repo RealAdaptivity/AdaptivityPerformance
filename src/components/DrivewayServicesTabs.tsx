@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SERVICE_RADIUS_MILES, lookupServiceZip } from '../services/serviceArea';
 import {
   Wrench,
   Zap,
@@ -115,10 +116,15 @@ export const DrivewayServicesTabs: React.FC<DrivewayServicesTabsProps> = ({ onOp
     e.preventDefault();
     const clean = zipInput.trim();
     if (!clean) return;
-    if (/^(75|76)\d{3}$/.test(clean)) {
-      setZipResult(`✅ Great news! We provide 100% mobile doorstep service to ${clean} with zero towing fees.`);
+    const covered = lookupServiceZip(clean);
+    if (covered) {
+      setZipResult(
+        `✅ ${covered.city} is covered — ${covered.distanceMiles} mi from our Justin hub, about ${covered.responseTime} out. Doorstep service, no towing fee.`
+      );
     } else {
-      setZipResult(`📍 We service the entire DFW Metroplex (zips 750–762). Contact us for emergency dispatch to ${clean}.`);
+      setZipResult(
+        `📍 ${clean} is outside our ${SERVICE_RADIUS_MILES}-mile radius from Justin. You're welcome at the Justin shop — call and we'll tell you straight whether the drive is worth it.`
+      );
     }
   };
 

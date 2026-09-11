@@ -14,14 +14,14 @@ export const Testimonials: React.FC = () => {
         <div className="max-w-2xl mx-auto text-center space-y-4">
           <div className="inline-flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
             <Star className="w-3.5 h-3.5 fill-amber-400" />
-            <span>Google Reviews — Justin & Northlake DFW</span>
+            <span>Google Reviews — Justin & Northlake, TX</span>
           </div>
           <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-white">
             Trusted By Your <span className="text-orange-500">Neighbors.</span>
           </h2>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
             We let our work speak for itself. Read verified reviews from vehicle owners across Justin,
-            Northlake, Denton, and the DFW area on our Google Business Profile — and if we've earned it,
+            Northlake, Argyle, and Denton on our Google Business Profile — and if we've earned it,
             we'd be grateful if you left one too.
           </p>
 

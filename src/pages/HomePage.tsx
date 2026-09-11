@@ -103,7 +103,7 @@ const LINKS: {
     {
       to: 'coverage',
       title: 'Service Area',
-      blurb: 'DFW / Fort Worth mobile coverage from our Justin hub.',
+      blurb: 'Every zip within 20 miles of our Justin hub.',
       icon: <MapPin className="w-5 h-5" />,
       accent: 'text-orange-300 bg-orange-500/10 border-orange-500/30',
     },

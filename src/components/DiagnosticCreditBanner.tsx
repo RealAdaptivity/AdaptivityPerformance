@@ -59,7 +59,7 @@ export const DiagnosticCreditBanner: React.FC<DiagnosticCreditBannerProps> = ({ 
               </div>
               <div className="flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span>On-site mobile inspection in DFW</span>
+                <span>On-site mobile inspection, 20 miles around Justin</span>
               </div>
             </div>
           </div>

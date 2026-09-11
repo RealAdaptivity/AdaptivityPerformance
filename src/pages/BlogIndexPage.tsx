@@ -38,7 +38,7 @@ export const BlogIndexPage: React.FC = () => {
             Adaptivity <span className="text-orange-500">Blog</span>
           </h1>
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
-            Mobile repair pricing, Justin hub tips, and growth notes for DFW drivers.
+            Mobile repair pricing, Justin hub tips, and local notes for drivers around Justin.
           </p>
         </div>
 

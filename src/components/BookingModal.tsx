@@ -336,7 +336,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <Truck className="w-4 h-4 text-orange-400 shrink-0" />
                     <div>
                       <div>100% Mobile Service — We Come To Your Driveway</div>
-                      <div className="text-[10px] text-slate-400 font-normal">DFW · Justin · Northlake · Denton · Fort Worth</div>
+                      <div className="text-[10px] text-slate-400 font-normal">Justin · Northlake · Argyle · Denton · Keller · North Fort Worth</div>
                     </div>
                   </div>
                   <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
@@ -439,7 +439,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">Zip (DFW)</label>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">Zip</label>
                       <input
                         type="text"
                         required
@@ -773,7 +773,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   onClick={() => {
                     void shareAdaptivity({
                       title: 'Adaptivity Performance',
-                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake & DFW.`,
+                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake and 20 miles around.`,
                     });
                   }}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-orange-500/40 text-orange-300 font-bold text-xs hover:bg-orange-500/10"

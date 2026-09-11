@@ -31,7 +31,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ isOpen, onClose, o
           </div>
           <div>
             <span className="px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-              🛡️ Official DFW Service Certificate
+              🛡️ Official Service Certificate
             </span>
             <h3 className="font-heading text-2xl sm:text-3xl font-extrabold text-white mt-2">
               12-Month / 12,000-Mile Guarantee
