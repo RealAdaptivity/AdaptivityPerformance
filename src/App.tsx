@@ -1,21 +1,10 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { BookingProvider, useBookingContext, type Booking } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
-import { RepairTrackerDemo } from './components/RepairTrackerDemo';
-import { BookingModal } from './components/BookingModal';
-import { CustomerGarageModal } from './components/CustomerGarageModal';
-import { InspectionReportModal } from './components/InspectionReportModal';
-import { TechRecruitmentModal } from './components/TechRecruitmentModal';
-import { PartnerApplyModal } from './components/PartnerApplyModal';
-import { MembershipModal } from './components/MembershipModal';
-import { PaymentCheckoutModal } from './components/PaymentCheckoutModal';
-import { WarrantyModal } from './components/WarrantyModal';
-import { ReferralModal } from './components/ReferralModal';
 import { StickyMobileActionBar } from './components/StickyMobileActionBar';
-import { AIMechanicChatbot } from './components/AIMechanicChatbot';
 import { Footer } from './components/Footer';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
-import { Capacitor } from '@capacitor/core';
+import { isNativeShell } from './site/nativeShell';
 import { useAdminConsoleRoute } from './admin/adminRoute';
 import { usePortalRoute } from './portal/portalRoute';
 
@@ -23,9 +12,29 @@ import { usePortalRoute } from './portal/portalRoute';
 // visitors never download them.
 const AdminApp = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m.AdminApp })));
 const PortalApp = lazy(() => import('./portal/PortalApp').then((m) => ({ default: m.PortalApp })));
+
+// Modals and the chat widget are code-split: none of them is needed to paint a
+// landing page, and together they pulled Stripe and the whole booking flow into
+// the first request. Each mounts only while open, so the chunk is fetched on the
+// click that needs it — with the booking chunk warmed on idle so the primary CTA
+// still opens instantly.
+const RepairTrackerDemo = lazy(() => import('./components/RepairTrackerDemo').then((m) => ({ default: m.RepairTrackerDemo })));
+const BookingModal = lazy(() => import('./components/BookingModal').then((m) => ({ default: m.BookingModal })));
+const CustomerGarageModal = lazy(() => import('./components/CustomerGarageModal').then((m) => ({ default: m.CustomerGarageModal })));
+const InspectionReportModal = lazy(() => import('./components/InspectionReportModal').then((m) => ({ default: m.InspectionReportModal })));
+const TechRecruitmentModal = lazy(() => import('./components/TechRecruitmentModal').then((m) => ({ default: m.TechRecruitmentModal })));
+const PartnerApplyModal = lazy(() => import('./components/PartnerApplyModal').then((m) => ({ default: m.PartnerApplyModal })));
+const MembershipModal = lazy(() => import('./components/MembershipModal').then((m) => ({ default: m.MembershipModal })));
+const PaymentCheckoutModal = lazy(() => import('./components/PaymentCheckoutModal').then((m) => ({ default: m.PaymentCheckoutModal })));
+const WarrantyModal = lazy(() => import('./components/WarrantyModal').then((m) => ({ default: m.WarrantyModal })));
+const ReferralModal = lazy(() => import('./components/ReferralModal').then((m) => ({ default: m.ReferralModal })));
+const AIMechanicChatbot = lazy(() => import('./components/AIMechanicChatbot').then((m) => ({ default: m.AIMechanicChatbot })));
+const MarketingPage = lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m.MarketingPage })));
+const ReferralLandingPage = lazy(() => import('./pages/ReferralLandingPage').then((m) => ({ default: m.ReferralLandingPage })));
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })));
+const PayLinkPage = lazy(() => import('./pages/PayLinkPage').then((m) => ({ default: m.PayLinkPage })));
 import { SERVICE_CATALOG } from './services/serviceCatalog';
 import { HomePage } from './pages/HomePage';
-import { renderMarketingPage } from './pages/MarketingPages';
 import { navigateSite, useSitePage, useSitePathname } from './site/siteRoute';
 import {
   applyDocumentSeo,
@@ -36,10 +45,7 @@ import {
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
-import { BlogPostPage } from './pages/BlogPostPage';
-import { ReferralLandingPage, referralCodeFromPath } from './pages/ReferralLandingPage';
-import { PayLinkPage, payReferenceFromPath } from './pages/PayLinkPage';
-import { blogSlugFromPath } from './services/blog';
+import { blogSlugFromPath, payReferenceFromPath, referralCodeFromPath } from './site/routePaths';
 import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
 import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
 import { ServiceCityPage } from './pages/ServiceCityPage';
@@ -117,7 +123,7 @@ function MainAppContent() {
       future: 'about',
       services: 'services',
       contact: 'contact',
-      estimator: 'quotes',
+      estimator: 'services',
       membership: 'membership',
       diagnostics: 'diagnostics',
       partners: 'partners',
@@ -145,6 +151,24 @@ function MainAppContent() {
     }, 80);
     return () => window.clearTimeout(t);
   }, [page]);
+
+  /**
+   * Hold the chat widget back until the page is idle, and warm the booking chunk
+   * at the same time so the primary CTA never waits on a network round trip.
+   */
+  const [deferredWidgetsReady, setDeferredWidgetsReady] = useState(false);
+  useEffect(() => {
+    const onIdle = () => {
+      void import('./components/BookingModal');
+      setDeferredWidgetsReady(true);
+    };
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(onIdle, { timeout: 3000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(onIdle, 1200);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const openBooking = (opts?: {
     referralCode?: string;
@@ -259,7 +283,11 @@ function MainAppContent() {
   // Public customer pay link (card or BNPL) — full-screen, no marketing chrome.
   const payReference = payReferenceFromPath(pathname);
   if (payReference) {
-    return <PayLinkPage reference={payReference} />;
+    return (
+      <Suspense fallback={null}>
+        <PayLinkPage reference={payReference} />
+      </Suspense>
+    );
   }
 
   return (
@@ -298,11 +326,17 @@ function MainAppContent() {
             onOpenBooking={openBooking}
           />
         ) : page === 'referral' && referralCode ? (
-          <ReferralLandingPage onOpenBooking={openBooking} />
+          <Suspense fallback={null}>
+            <ReferralLandingPage onOpenBooking={openBooking} />
+          </Suspense>
         ) : page === 'blogPost' && blogSlug ? (
-          <BlogPostPage slug={blogSlug} />
+          <Suspense fallback={null}>
+            <BlogPostPage slug={blogSlug} />
+          </Suspense>
         ) : (
-          renderMarketingPage(page, pageActions)
+          <Suspense fallback={null}>
+            <MarketingPage page={page} actions={pageActions} />
+          </Suspense>
         )}
       </main>
 
@@ -316,92 +350,119 @@ function MainAppContent() {
         </>
       )}
 
-      <WarrantyModal
-        isOpen={isWarrantyOpen}
-        onClose={() => setIsWarrantyOpen(false)}
-        onOpenBooking={() => openBooking({ source: 'modal' })}
-      />
+      {/* Fetched on the interaction that opens them, not on first paint. */}
+      <Suspense fallback={null}>
+        {isWarrantyOpen && (
+        <WarrantyModal
+          isOpen={isWarrantyOpen}
+          onClose={() => setIsWarrantyOpen(false)}
+          onOpenBooking={() => openBooking({ source: 'modal' })}
+        />
+        )}
 
-      <ReferralModal
-        isOpen={isReferralOpen}
-        onClose={() => setIsReferralOpen(false)}
-      />
+        {isReferralOpen && (
+        <ReferralModal
+          isOpen={isReferralOpen}
+          onClose={() => setIsReferralOpen(false)}
+        />
+        )}
 
-      <BookingModal
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        initialEstimateData={estimateDataForBooking}
-        onBookingSubmitted={handleBookingSubmittedInModal}
-      />
+        {isBookingOpen && (
+        <BookingModal
+          isOpen={isBookingOpen}
+          onClose={() => setIsBookingOpen(false)}
+          initialEstimateData={estimateDataForBooking}
+          onBookingSubmitted={handleBookingSubmittedInModal}
+        />
+        )}
 
-      <RepairTrackerDemo
-        isOpen={isTrackerOpen}
-        onClose={() => setIsTrackerOpen(false)}
-        onOpenCheckout={(booking) => {
-          setCheckoutBooking(booking);
-          setIsCheckoutOpen(true);
-        }}
-      />
+        {isTrackerOpen && (
+        <RepairTrackerDemo
+          isOpen={isTrackerOpen}
+          onClose={() => setIsTrackerOpen(false)}
+          onOpenCheckout={(booking) => {
+            setCheckoutBooking(booking);
+            setIsCheckoutOpen(true);
+          }}
+        />
+        )}
 
-      <CustomerGarageModal
-        isOpen={isGarageOpen}
-        onClose={() => setIsGarageOpen(false)}
-        onBookService={handleBookFromGarage}
-        onOpenDVIReport={() => setIsInspectionOpen(true)}
-      />
+        {isGarageOpen && (
+        <CustomerGarageModal
+          isOpen={isGarageOpen}
+          onClose={() => setIsGarageOpen(false)}
+          onBookService={handleBookFromGarage}
+          onOpenDVIReport={() => setIsInspectionOpen(true)}
+        />
+        )}
 
-      <InspectionReportModal
-        isOpen={isInspectionOpen}
-        onClose={() => setIsInspectionOpen(false)}
-        onApproveAndBook={handleApproveDVIAndBook}
-      />
+        {isInspectionOpen && (
+        <InspectionReportModal
+          isOpen={isInspectionOpen}
+          onClose={() => setIsInspectionOpen(false)}
+          onApproveAndBook={handleApproveDVIAndBook}
+        />
+        )}
 
-      <TechRecruitmentModal
-        isOpen={isRecruitmentOpen}
-        onClose={() => setIsRecruitmentOpen(false)}
-      />
+        {isRecruitmentOpen && (
+        <TechRecruitmentModal
+          isOpen={isRecruitmentOpen}
+          onClose={() => setIsRecruitmentOpen(false)}
+        />
+        )}
 
-      <PartnerApplyModal
-        isOpen={isPartnerApplyOpen}
-        onClose={() => setIsPartnerApplyOpen(false)}
-      />
+        {isPartnerApplyOpen && (
+        <PartnerApplyModal
+          isOpen={isPartnerApplyOpen}
+          onClose={() => setIsPartnerApplyOpen(false)}
+        />
+        )}
 
-      <MembershipModal
-        isOpen={isMembershipOpen}
-        onClose={() => setIsMembershipOpen(false)}
-        initialPlanId={selectedMembershipPlan}
-      />
+        {isMembershipOpen && (
+        <MembershipModal
+          isOpen={isMembershipOpen}
+          onClose={() => setIsMembershipOpen(false)}
+          initialPlanId={selectedMembershipPlan}
+        />
+        )}
 
-      <PaymentCheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => {
-          setIsCheckoutOpen(false);
-          setCheckoutBooking(null);
-        }}
-        bookingDetails={
-          checkoutBooking
-            ? {
-                id: checkoutBooking.id,
-                customerName: checkoutBooking.customerName,
-                serviceAddress: checkoutBooking.customerAddress,
-                vehicle: checkoutBooking.vehicle,
-                services: checkoutBooking.services,
-                totalAmount: checkoutBooking.totalEstimate,
-                techName: checkoutBooking.claimedBy?.name,
-                techStripeAccountId: checkoutBooking.claimedBy?.stripeAccountId ?? null,
-              }
-            : undefined
-        }
-      />
+        {isCheckoutOpen && (
+        <PaymentCheckoutModal
+          isOpen={isCheckoutOpen}
+          onClose={() => {
+            setIsCheckoutOpen(false);
+            setCheckoutBooking(null);
+          }}
+          bookingDetails={
+            checkoutBooking
+              ? {
+                  id: checkoutBooking.id,
+                  customerName: checkoutBooking.customerName,
+                  serviceAddress: checkoutBooking.customerAddress,
+                  vehicle: checkoutBooking.vehicle,
+                  services: checkoutBooking.services,
+                  totalAmount: checkoutBooking.totalEstimate,
+                  techName: checkoutBooking.claimedBy?.name,
+                  techStripeAccountId: checkoutBooking.claimedBy?.stripeAccountId ?? null,
+                }
+              : undefined
+          }
+        />
+        )}
+      </Suspense>
 
-      <AIMechanicChatbot onBookService={handleBookFromAIChat} />
+      {deferredWidgetsReady && (
+        <Suspense fallback={null}>
+          <AIMechanicChatbot onBookService={handleBookFromAIChat} />
+        </Suspense>
+      )}
     </div>
   );
 }
 
 export function App() {
   const isAdmin = useAdminConsoleRoute();
-  const isPortal = usePortalRoute() || Capacitor.isNativePlatform();
+  const isPortal = usePortalRoute() || isNativeShell();
 
   const routeFallback = (
     <div className="min-h-screen bg-[#0b0c10] flex items-center justify-center text-slate-400 text-sm animate-pulse">

@@ -33,6 +33,7 @@ const seo = await jiti.import(path.join(root, 'src/site/seo.ts'));
 const local = await jiti.import(path.join(root, 'src/site/localSeo.ts'));
 const ld = await jiti.import(path.join(root, 'src/site/structuredData.ts'));
 const ads = await jiti.import(path.join(root, 'src/site/adLandings.ts'));
+const routes = await jiti.import(path.join(root, 'src/site/siteRoute.ts'));
 const blog = await jiti.import(path.join(root, 'src/services/blog.ts'));
 
 const { PAGE_SEO, SITE_ORIGIN, SITE_FAQS, citySeo } = seo;
@@ -40,6 +41,7 @@ const { LOCAL_CITIES, SERVICE_PAGE_CITIES, LOCAL_SERVICES, serviceCityMeta, serv
 const { cityJsonLd, serviceCityJsonLd } = ld;
 const { AD_LANDINGS, adLandingMeta, adLandingPath } = ads;
 const { FALLBACK_BLOG_POSTS, isInternalPost } = blog;
+const { LEGACY_PATH_REDIRECTS } = routes;
 
 const template = fs.readFileSync(indexPath, 'utf8');
 
@@ -176,6 +178,31 @@ for (const post of FALLBACK_BLOG_POSTS) {
 for (const landing of AD_LANDINGS) {
   write(adLandingPath(landing.slug), renderRoute({ meta: adLandingMeta(landing), noindex: true }));
   written.push(adLandingPath(landing.slug));
+}
+
+/* Retired paths. GitHub Pages cannot issue a 301, so the next best thing is a
+   real file that canonicalises to the survivor and bounces the visitor — an
+   old link keeps its value instead of 404ing. */
+for (const [from, to] of Object.entries(LEGACY_PATH_REDIRECTS)) {
+  const target = `${SITE_ORIGIN}${to}`;
+  write(
+    from,
+    `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Moved to ${escapeAttr(to)}</title>
+    <link rel="canonical" href="${escapeAttr(target)}" />
+    <meta name="robots" content="noindex, follow" />
+    <meta http-equiv="refresh" content="0; url=${escapeAttr(to)}" />
+  </head>
+  <body>
+    <p>This page moved to <a href="${escapeAttr(to)}">${escapeAttr(to)}</a>.</p>
+  </body>
+</html>
+`
+  );
+  written.push(from);
 }
 
 /* App shells that must keep working as deep links. */

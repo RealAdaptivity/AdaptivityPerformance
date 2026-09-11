@@ -13,7 +13,7 @@ const webhook = read('supabase/functions/stripe-webhook/index.ts');
 const webhookSync = read('supabase/functions/configure-stripe-webhook-events/index.ts');
 const terms = read('src/pages/TermsPrivacyPage.tsx');
 
-requireText(app, 'usePortalRoute() || Capacitor.isNativePlatform()', 'Native portal authentication');
+requireText(app, 'usePortalRoute() || isNativeShell()', 'Native portal authentication');
 if (app.includes('StandaloneTechApp') || existsSync(new URL('../src/components/StandaloneTechApp.tsx', import.meta.url))) {
   throw new Error('Demo technician shell is still reachable');
 }

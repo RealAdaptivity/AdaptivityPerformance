@@ -57,7 +57,7 @@ export const NotFoundPage: React.FC = () => {
             {([
               ['Book Service', 'home'],
               ['Services', 'services'],
-              ['Get a Quote', 'quotes'],
+              ['Get a Quote', 'services'],
               ['About Us', 'about'],
               ['Coverage Area', 'coverage'],
               ['FAQ', 'faq'],

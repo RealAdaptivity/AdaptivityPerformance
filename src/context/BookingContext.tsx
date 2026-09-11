@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import {
-  createBooking,
-  fetchAllBookings,
-  subscribeAllBookings,
-  updateBookingStatusRemote,
-} from '../services/bookingsApi';
+/**
+ * `bookingsApi` is loaded on demand rather than imported. It pulls in the
+ * Supabase client — 200 KB — and this provider wraps the whole site, so a
+ * static import put the entire database layer on the critical path of every
+ * marketing and landing page, none of which need it to render.
+ */
+const bookingsApi = () => import('../services/bookingsApi');
 
 export type JobStatus = 'UNASSIGNED' | 'EN_ROUTE' | 'ON_SITE' | 'COMPLETED' | 'CANCELED';
 
@@ -76,17 +77,27 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeTech, setActiveTech] = useState<TechProfile>(DEFAULT_TECHS[0]);
 
   const refreshBookings = useCallback(async () => {
-    const remote = await fetchAllBookings();
-    setBookings(remote);
+    const { fetchAllBookings } = await bookingsApi();
+    setBookings(await fetchAllBookings());
   }, []);
 
   useEffect(() => {
-    refreshBookings();
-    const channel = subscribeAllBookings(() => {
-      refreshBookings();
-    });
+    let cancelled = false;
+    let channel: { unsubscribe: () => void } | null = null;
+
+    void (async () => {
+      const { subscribeAllBookings } = await bookingsApi();
+      if (cancelled) return;
+      await refreshBookings();
+      if (cancelled) return;
+      channel = subscribeAllBookings(() => {
+        void refreshBookings();
+      });
+    })();
+
     return () => {
-      channel.unsubscribe();
+      cancelled = true;
+      channel?.unsubscribe();
     };
   }, [refreshBookings]);
 
@@ -102,6 +113,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBookings(prev => [newBooking, ...prev]);
 
     void (async () => {
+      const { createBooking } = await bookingsApi();
       const created = await createBooking(bookingData);
       if (created) {
         setBookings(prev => [
@@ -122,11 +134,13 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
           : b
       )
     );
-    void updateBookingStatusRemote(bookingId, 'EN_ROUTE', {
-      distanceMiles: 5,
-      etaMinutes: 12,
-      mechanicId: activeTech.id.startsWith('tech-') ? null : activeTech.id,
-    });
+    void bookingsApi().then(({ updateBookingStatusRemote }) =>
+      updateBookingStatusRemote(bookingId, 'EN_ROUTE', {
+        distanceMiles: 5,
+        etaMinutes: 12,
+        mechanicId: activeTech.id.startsWith('tech-') ? null : activeTech.id,
+      })
+    );
   };
 
   const updateBookingStatus = (bookingId: string, status: JobStatus, distanceMiles?: number, etaMinutes?: number) => {
@@ -143,7 +157,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return b;
       })
     );
-    void updateBookingStatusRemote(bookingId, status, { distanceMiles, etaMinutes });
+    void bookingsApi().then(({ updateBookingStatusRemote }) =>
+      updateBookingStatusRemote(bookingId, status, { distanceMiles, etaMinutes })
+    );
   };
 
   const getBookingById = (bookingId: string) => {
