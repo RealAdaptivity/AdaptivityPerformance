@@ -60,6 +60,7 @@ export const CONVERSION_EVENTS = {
   textClicked: 'text_clicked',
   quoteStarted: 'quote_started',
   referralShared: 'referral_shared',
+  referralLanded: 'referral_landed',
   reviewClicked: 'review_clicked',
   serviceCityView: 'service_city_view',
   adLandingView: 'ad_landing_view',
