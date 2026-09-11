@@ -31,6 +31,8 @@ import {
   applyDocumentSeo,
   cityFromPath,
   citySeo,
+  SITE_FAQS,
+  setRobots,
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
@@ -38,20 +40,43 @@ import { BlogPostPage } from './pages/BlogPostPage';
 import { ReferralLandingPage, referralCodeFromPath } from './pages/ReferralLandingPage';
 import { PayLinkPage, payReferenceFromPath } from './pages/PayLinkPage';
 import { blogSlugFromPath } from './services/blog';
+import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
+import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
+import { ServiceCityPage } from './pages/ServiceCityPage';
+import { AdLandingPage } from './pages/AdLandingPage';
+import { adLandingFromPath, adLandingMeta } from './site/adLandings';
+import { CONVERSION_EVENTS, trackEvent } from './site/analytics';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
   const page = useSitePage();
   const pathname = useSitePathname();
   const cityLanding = cityFromPath(pathname);
+  const serviceCity = serviceCityFromPath(pathname);
+  const adLanding = adLandingFromPath(pathname);
   const blogSlug = blogSlugFromPath(pathname);
   const referralCode = referralCodeFromPath(pathname);
 
   useEffect(() => {
-    if (page === 'city' && cityLanding) {
-      applyDocumentSeo(citySeo(cityLanding));
+    if (page === 'adLanding' && adLanding) {
+      applyDocumentSeo(adLandingMeta(adLanding));
+      setRobots('noindex,nofollow');
+      applyJsonLd([]);
       return;
     }
+    setRobots('index,follow');
+    if (page === 'city' && cityLanding) {
+      applyDocumentSeo(citySeo(cityLanding));
+      applyJsonLd(cityJsonLd(cityLanding, SITE_FAQS.slice(0, 6)));
+      return;
+    }
+    if (page === 'serviceCity' && serviceCity) {
+      const { service, city } = serviceCity;
+      applyDocumentSeo(serviceCityMeta(service, city));
+      applyJsonLd(serviceCityJsonLd(service, city, serviceCityFaqs(service, city)));
+      return;
+    }
+    applyJsonLd([]);
     if (page === 'blogPost') {
       // BlogPostPage applies post-specific SEO once loaded
       applyDocumentSeo(PAGE_SEO.blogPost);
@@ -61,7 +86,7 @@ function MainAppContent() {
       return;
     }
     applyDocumentSeo(PAGE_SEO[page as keyof typeof PAGE_SEO] || PAGE_SEO.home);
-  }, [page, cityLanding]);
+  }, [page, cityLanding, serviceCity, adLanding]);
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
@@ -121,10 +146,23 @@ function MainAppContent() {
     return () => window.clearTimeout(t);
   }, [page]);
 
-  const openBooking = (opts?: { referralCode?: string }) => {
+  const openBooking = (opts?: {
+    referralCode?: string;
+    source?: string;
+    /** Extra attribution (city, service, landing, utm_*) forwarded to analytics. */
+    [key: string]: string | undefined;
+  }) => {
+    const { referralCode, source, ...attribution } = opts ?? {};
+    trackEvent(CONVERSION_EVENTS.bookingOpened, {
+      source: source ?? 'site',
+      page,
+      ...(pathname !== '/' ? { path: pathname } : {}),
+      ...(referralCode ? { referred: true } : {}),
+      ...(attribution as Record<string, string>),
+    });
     setEstimateDataForBooking({
       locationType: 'mobile',
-      ...(opts?.referralCode ? { referralCode: opts.referralCode } : {}),
+      ...(referralCode ? { referralCode } : {}),
     });
     setIsBookingOpen(true);
   };
@@ -226,8 +264,9 @@ function MainAppContent() {
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+      {!adLanding && (
       <Navbar
-        onOpenBooking={openBooking}
+        onOpenBooking={() => openBooking({ source: 'navbar' })}
         onOpenTracker={() => setIsTrackerOpen(true)}
         onOpenGarage={() => setIsGarageOpen(true)}
         onOpenInspection={() => setIsInspectionOpen(true)}
@@ -238,9 +277,12 @@ function MainAppContent() {
           handleOpenMembershipModal('vip');
         }}
       />
+      )}
 
       <main className="flex-grow pb-16 md:pb-0">
-        {page === 'home' ? (
+        {page === 'adLanding' && adLanding ? (
+          <AdLandingPage landing={adLanding} onOpenBooking={openBooking} />
+        ) : page === 'home' ? (
           <HomePage
             onOpenBooking={openBooking}
             onSelectServiceMode={setActiveServiceMode}
@@ -249,6 +291,12 @@ function MainAppContent() {
           />
         ) : page === 'city' && cityLanding ? (
           <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
+        ) : page === 'serviceCity' && serviceCity ? (
+          <ServiceCityPage
+            service={serviceCity.service}
+            city={serviceCity.city}
+            onOpenBooking={openBooking}
+          />
         ) : page === 'referral' && referralCode ? (
           <ReferralLandingPage onOpenBooking={openBooking} />
         ) : page === 'blogPost' && blogSlug ? (
@@ -258,14 +306,20 @@ function MainAppContent() {
         )}
       </main>
 
-      <Footer onOpenBooking={openBooking} onOpenTracker={() => setIsTrackerOpen(true)} />
-
-      <StickyMobileActionBar onOpenBooking={openBooking} />
+      {!adLanding && (
+        <>
+          <Footer
+            onOpenBooking={() => openBooking({ source: 'footer' })}
+            onOpenTracker={() => setIsTrackerOpen(true)}
+          />
+          <StickyMobileActionBar onOpenBooking={() => openBooking({ source: 'sticky_mobile' })} />
+        </>
+      )}
 
       <WarrantyModal
         isOpen={isWarrantyOpen}
         onClose={() => setIsWarrantyOpen(false)}
-        onOpenBooking={openBooking}
+        onOpenBooking={() => openBooking({ source: 'modal' })}
       />
 
       <ReferralModal

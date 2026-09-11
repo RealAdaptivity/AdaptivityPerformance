@@ -3,6 +3,7 @@ import { supabase } from '../../services/supabaseClient';
 import { openReceiptPrintWindow } from '../../services/receiptPdf';
 import { openReceiptEmail } from '../../services/receiptEmail';
 import { addFavoriteTech, submitWarrantyClaim } from '../../services/customerExtras';
+import { ReviewRequestCard } from '../../components/ReviewRequestCard';
 
 export type RebookPrefill = {
   vehicleDescription?: string;
@@ -43,6 +44,9 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+
+  /** Newest completed job — the one worth asking about. */
+  const latestCompleted = rows.find((r) => r.status === 'COMPLETED') ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -198,6 +202,13 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
 
   return (
     <div className="space-y-6">
+      {latestCompleted && (
+        <ReviewRequestCard
+          bookingId={latestCompleted.id}
+          vehicleDescription={latestCompleted.vehicle_description}
+        />
+      )}
+
       <section>
         <h3 className="text-sm font-bold text-white mb-3">Past services</h3>
         {loading && <p className="text-xs text-slate-500">Loading…</p>}

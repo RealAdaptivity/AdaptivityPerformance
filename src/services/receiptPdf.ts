@@ -267,7 +267,7 @@ export function buildReceiptHtml(data: ReceiptData): string {
           <div class="brand-mark">AP</div>
           <div>
             <h1 class="brand-name">Adaptivity Performance</h1>
-            <p class="brand-tag">Mobile ASE service · Justin &amp; Northlake · DFW</p>
+            <p class="brand-tag">Mobile ASE service · Justin &amp; Northlake, TX</p>
           </div>
         </div>
         <div class="doc-meta">

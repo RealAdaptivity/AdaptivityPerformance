@@ -6,4 +6,8 @@ Disallow: /login
 Disallow: /admin
 Disallow: /tech-stripe-
 
+# Paid-traffic landing pages — they must not compete with the organic
+# service pages for the same query.
+Disallow: /lp/
+
 Sitemap: https://adaptivityperformance.com/sitemap.xml

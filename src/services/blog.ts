@@ -42,6 +42,17 @@ export const FALLBACK_BLOG_POSTS: BlogPost[] = [
   },
 ];
 
+/**
+ * Posts written for the team, not for customers. They stay readable at their URL
+ * but are kept out of the sitemap and marked noindex — an internal ops checklist
+ * competing for crawl budget on a customer-facing blog helps nobody.
+ */
+export const INTERNAL_BLOG_SLUGS = ['google-business-review-playbook'];
+
+export function isInternalPost(slug: string): boolean {
+  return INTERNAL_BLOG_SLUGS.includes(slug);
+}
+
 function mapRow(row: Record<string, unknown>): BlogPost {
   return {
     slug: String(row.slug ?? ''),

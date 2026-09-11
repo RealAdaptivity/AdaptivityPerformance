@@ -61,7 +61,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[
-                'Mobile dispatch across DFW / Fort Worth',
+                'Mobile dispatch within 20 miles of Justin',
                 'Transparent $85 holds — tech sets repair price after diagnosis',
                 'Garage history, receipts, and repair tracking in one place',
               ].map((item) => (
@@ -129,7 +129,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             <h3 className="font-heading text-xl font-extrabold text-white">How we serve the community</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
               Reliable transportation keeps people working, picking up kids, and getting to appointments.
-              We focus on DFW neighborhoods — Justin, Northlake, Fort Worth, and surrounding zips — so
+              We focus on the neighborhoods around the hub — Justin, Northlake, Argyle, Denton, Keller and north Fort Worth — so
               maintenance stays local, honest, and reachable before small problems become roadside emergencies.
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
@@ -192,7 +192,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
                 </p>
                 <div className="flex items-start gap-2 text-xs text-slate-400">
                   <MapPin className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                  <span>Serving DFW / Fort Worth with fully-equipped mobile service vans dispatched daily.</span>
+                  <span>Serving a 20-mile radius around Justin with fully-equipped mobile service vans dispatched daily.</span>
                 </div>
               </div>
               <button
@@ -271,7 +271,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
                 </p>
                 <ul className="space-y-2 text-xs text-slate-300 pt-1">
                   {[
-                    'Start local: deepen roots in DFW neighborhoods we already serve',
+                    'Start local: deepen roots in the neighborhoods we already serve',
                     'Expand the playbook: partner shops + mobile techs in new markets',
                     'Benefit people worldwide with access to trustworthy, affordable care',
                   ].map((item) => (

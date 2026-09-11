@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { navigateSite } from '../site/siteRoute';
 import { applyDocumentSeo, SITE_PHONE_DISPLAY } from '../site/seo';
+import { LOCAL_HUB } from '../site/localSeo';
+import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { supabase } from '../services/supabaseClient';
 
 function codeFromPath(pathname: string): string | null {
@@ -9,7 +11,7 @@ function codeFromPath(pathname: string): string | null {
 }
 
 type Props = {
-  onOpenBooking: (opts?: { referralCode?: string }) => void;
+  onOpenBooking: (opts?: { referralCode?: string; source?: string }) => void;
 };
 
 export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
@@ -25,7 +27,7 @@ export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
         ? `Referral ${code} | Adaptivity Performance`
         : 'Referral | Adaptivity Performance',
       description:
-        'Get $25 credit when you book with a friend’s Adaptivity referral code — mobile mechanic service across DFW.',
+        `Get $25 credit when you book with a friend’s Adaptivity referral code — mobile mechanic service within ${LOCAL_HUB.radiusMiles} miles of Justin, TX.`,
       path: code ? `/r/${code}` : '/r',
     });
   }, [code]);
@@ -50,6 +52,10 @@ export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
     };
   }, [code]);
 
+  useEffect(() => {
+    if (code) trackEvent(CONVERSION_EVENTS.referralLanded, { code });
+  }, [code]);
+
   return (
     <main className="min-h-[70vh] bg-[#090a0f] text-slate-100">
       <div className="max-w-xl mx-auto px-4 py-16 space-y-6">
@@ -71,7 +77,7 @@ export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => onOpenBooking({ referralCode: code || undefined })}
+            onClick={() => onOpenBooking({ referralCode: code || undefined, source: 'referral_landing' })}
             className="px-5 py-3 rounded-xl bg-orange-500 text-white text-sm font-bold"
           >
             Book with this code

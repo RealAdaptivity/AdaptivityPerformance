@@ -105,7 +105,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Service Area</div>
                 <div className="font-bold text-white text-sm">100% Mobile — We Come To You</div>
-                <div className="text-xs text-slate-500">Dispatched across Justin, Northlake, Denton & DFW</div>
+                <div className="text-xs text-slate-500">Dispatched across Justin, Northlake, Argyle, Denton & 20 miles around</div>
               </div>
             </div>
 
@@ -116,7 +116,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hours</div>
                 <div className="font-bold text-white text-sm">Every day · 8AM–10PM</div>
-                <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Denton & DFW</div>
+                <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Argyle, Denton & 20 miles around</div>
               </div>
             </div>
 

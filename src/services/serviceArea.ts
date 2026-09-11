@@ -1,119 +1,65 @@
 /**
- * Mobile dispatch coverage: DFW metro with Fort Worth / North Texas focus.
- * Hub for free-radius ETA math remains Justin (76247).
+ * Mobile dispatch coverage: Justin, TX hub with a hard 20-mile service radius.
+ *
+ * Coverage is an explicit ZIP allow-list derived from `localSeoData.json`, not a
+ * 3-digit prefix match — a prefix like `752` would silently pull in Dallas, which
+ * is twice as far as we are willing to dispatch.
  */
+import { LOCAL_CITIES, LOCAL_HUB } from '../site/localSeo';
 
 export const SERVICE_HUB = {
-  zip: '76247',
-  city: 'Justin',
-  label: 'Adaptivity Justin hub',
-  lat: 33.0848,
-  lng: -97.2961,
+  zip: LOCAL_HUB.zip,
+  city: LOCAL_HUB.city,
+  label: `Adaptivity ${LOCAL_HUB.city} hub`,
+  lat: LOCAL_HUB.lat,
+  lng: LOCAL_HUB.lng,
 };
 
-/** 3-digit ZIP prefixes we accept for mobile dispatch. */
-export const COVERED_ZIP_PREFIXES = [
-  '750', // Plano, Irving, Carrollton, Frisco, etc.
-  '751', // Mid-cities / south DFW
-  '752', // Dallas
-  '760', // Arlington, Mansfield, Grand Prairie, Haslet, etc.
-  '761', // Fort Worth
-  '762', // Denton, Justin, Northlake, Keller north, Argyle
-] as const;
-
-export const FREE_MILES_THRESHOLD = 15;
+/** Hard outer limit for mobile dispatch, in miles from the Justin hub. */
+export const SERVICE_RADIUS_MILES = LOCAL_HUB.radiusMiles;
+export const FREE_MILES_THRESHOLD = LOCAL_HUB.freeRadiusMiles;
 export const PER_MILE_RATE = 2;
 
-/** Named hubs for ETA preview (everything else in covered prefixes still books). */
-export const NAMED_SERVICE_ZIPS: Record<
-  string,
-  { city: string; area: string; distanceMiles: number; responseTime: string; status: 'Local Radius' | 'Extended Per-Mile' }
-> = {
-  '76247': {
-    city: 'Justin',
-    area: 'Downtown Justin, Hardeman, Wildcat Ridge',
-    distanceMiles: 3,
-    responseTime: '15 - 30 Mins',
-    status: 'Local Radius',
-  },
-  '76226': {
-    city: 'Northlake',
-    area: 'Canyon Falls, Harvest, Pecan Square',
-    distanceMiles: 6,
-    responseTime: '15 - 30 Mins',
-    status: 'Local Radius',
-  },
-  '76262': {
-    city: 'Roanoke / Northlake',
-    area: 'Town Center, Alliance corridor',
-    distanceMiles: 11,
-    responseTime: '20 - 35 Mins',
-    status: 'Local Radius',
-  },
-  '76227': {
-    city: 'Argyle',
-    area: 'Village of Argyle, Country Club',
-    distanceMiles: 18,
-    responseTime: '25 - 40 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '76052': {
-    city: 'Haslet',
-    area: 'Haslet Town Center, Sendera Ranch',
-    distanceMiles: 16,
-    responseTime: '20 - 35 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '76177': {
-    city: 'Fort Worth (Alliance)',
-    area: 'Alliance Town Center / north Fort Worth',
-    distanceMiles: 20,
-    responseTime: '25 - 40 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '76102': {
-    city: 'Fort Worth (Downtown)',
-    area: 'Downtown Fort Worth / near southside',
-    distanceMiles: 28,
-    responseTime: '35 - 55 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '76011': {
-    city: 'Arlington',
-    area: 'Arlington / Entertainment District',
-    distanceMiles: 32,
-    responseTime: '40 - 60 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '75034': {
-    city: 'Frisco',
-    area: 'Frisco / North Dallas corridor',
-    distanceMiles: 35,
-    responseTime: '40 - 65 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '75201': {
-    city: 'Dallas',
-    area: 'Downtown Dallas / Uptown',
-    distanceMiles: 40,
-    responseTime: '45 - 70 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '76201': {
-    city: 'Denton',
-    area: 'Denton Metro & Loop 288',
-    distanceMiles: 22,
-    responseTime: '30 - 45 Mins',
-    status: 'Extended Per-Mile',
-  },
-  '76248': {
-    city: 'Keller',
-    area: 'Keller / Alliance corridor',
-    distanceMiles: 24,
-    responseTime: '30 - 45 Mins',
-    status: 'Extended Per-Mile',
-  },
+export type ServiceZipInfo = {
+  city: string;
+  area: string;
+  distanceMiles: number;
+  responseTime: string;
+  status: 'Local Radius' | 'Extended Per-Mile';
 };
+
+function responseWindow(driveMinutes: number): string {
+  const low = Math.max(15, Math.round((driveMinutes - 5) / 5) * 5);
+  const high = low + 20;
+  return `${low} - ${high} Mins`;
+}
+
+/**
+ * ZIP → coverage detail, built from the city catalog. When two cities share a
+ * ZIP (76262 covers Roanoke and Trophy Club) the closer one wins, since that is
+ * the shorter drive we would actually quote.
+ */
+export const NAMED_SERVICE_ZIPS: Record<string, ServiceZipInfo> = (() => {
+  const table: Record<string, ServiceZipInfo> = {};
+  for (const city of LOCAL_CITIES) {
+    if (city.distanceMiles > LOCAL_HUB.radiusMiles) continue;
+    for (const zip of city.zips) {
+      const existing = table[zip];
+      if (existing && existing.distanceMiles <= city.distanceMiles) continue;
+      table[zip] = {
+        city: city.city,
+        area: city.neighborhoods,
+        distanceMiles: city.distanceMiles,
+        responseTime: responseWindow(city.driveMinutes),
+        status: city.distanceMiles <= FREE_MILES_THRESHOLD ? 'Local Radius' : 'Extended Per-Mile',
+      };
+    }
+  }
+  return table;
+})();
+
+/** Every ZIP we dispatch to, sorted for display. */
+export const COVERED_ZIPS: string[] = Object.keys(NAMED_SERVICE_ZIPS).sort();
 
 export function normalizeZip(input: string | null | undefined): string | null {
   if (!input?.trim()) return null;
@@ -123,39 +69,22 @@ export function normalizeZip(input: string | null | undefined): string | null {
 
 export function isCoveredZip(zipCode: string | null | undefined): boolean {
   const zip = normalizeZip(zipCode);
-  if (!zip) return false;
-  return COVERED_ZIP_PREFIXES.some((p) => zip.startsWith(p));
+  return !!zip && zip in NAMED_SERVICE_ZIPS;
 }
 
 export function lookupServiceZip(zipCode: string | null | undefined) {
   const zip = normalizeZip(zipCode);
-  if (!zip || !isCoveredZip(zip)) return null;
-  if (NAMED_SERVICE_ZIPS[zip]) return { zip, ...NAMED_SERVICE_ZIPS[zip] };
-
-  const prefix = zip.slice(0, 3);
-  const cityGuess =
-    prefix === '761'
-      ? 'Fort Worth'
-      : prefix === '760'
-        ? 'DFW Mid-Cities'
-        : prefix === '762'
-          ? 'North DFW / Denton County'
-          : prefix === '752'
-            ? 'Dallas'
-            : 'DFW Metro';
-
-  return {
-    zip,
-    city: cityGuess,
-    area: 'Dallas–Fort Worth mobile dispatch coverage',
-    distanceMiles: prefix === '762' ? 18 : 30,
-    responseTime: prefix === '762' ? '25 - 45 Mins' : '35 - 65 Mins',
-    status: (prefix === '762' && Number(zip) <= 76262 ? 'Local Radius' : 'Extended Per-Mile') as
-      | 'Local Radius'
-      | 'Extended Per-Mile',
-  };
+  if (!zip) return null;
+  const info = NAMED_SERVICE_ZIPS[zip];
+  return info ? { zip, ...info } : null;
 }
 
 export function resolveServiceZip(zipCode: string | null | undefined, address: string | null | undefined) {
   return normalizeZip(zipCode) || normalizeZip(address) || null;
+}
+
+/** Travel fee past the free radius, in dollars. */
+export function travelFeeForMiles(distanceMiles: number): number {
+  const extra = Math.max(0, distanceMiles - FREE_MILES_THRESHOLD);
+  return Math.round(extra * PER_MILE_RATE * 100) / 100;
 }

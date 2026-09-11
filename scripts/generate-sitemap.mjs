@@ -33,26 +33,29 @@ const PAGES = [
   { path: '/refund-policy', changefreq: 'monthly', priority: '0.4' },
 ];
 
-const CITY_SLUGS = [
-  'justin',
-  'northlake',
-  'fort-worth',
-  'arlington',
-  'frisco',
-  'denton',
-  'roanoke',
-  'argyle',
-  'haslet',
-  'keller',
-  'flower-mound',
-  'southlake',
-];
+/** Cities + services come from the same catalog the router uses. */
+const catalog = JSON.parse(
+  fs.readFileSync(path.join(root, 'src', 'site', 'localSeoData.json'), 'utf8')
+);
+const CITY_SLUGS = catalog.cities.map((c) => c.slug);
+const SERVICE_CITY_PATHS = catalog.cities
+  .filter((c) => c.servicePages)
+  .flatMap((c) => catalog.services.map((s) => `/${s.slug}-${c.slug}-tx`));
 
-const BLOG_SLUGS = [
-  'how-much-do-brakes-cost-northlake-tx',
-  'mobile-mechanic-vs-dealership-justin-tx',
-  'google-business-review-playbook',
-];
+if (!CITY_SLUGS.length || !SERVICE_CITY_PATHS.length) {
+  throw new Error('localSeoData.json produced no local URLs — refusing to write an empty sitemap');
+}
+
+const blogSrc = fs.readFileSync(path.join(root, 'src', 'services', 'blog.ts'), 'utf8');
+const internal = [...blogSrc.matchAll(/INTERNAL_BLOG_SLUGS = \[([^\]]*)\]/g)]
+  .flatMap((m) => [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
+const BLOG_SLUGS = [...blogSrc.matchAll(/^\s{4}slug: '([^']+)',$/gm)]
+  .map((m) => m[1])
+  .filter((slug) => !internal.includes(slug));
+
+if (!BLOG_SLUGS.length) {
+  throw new Error('no blog slugs parsed from src/services/blog.ts');
+}
 
 function urlEntry(loc, changefreq, priority) {
   return `  <url><loc>${loc}</loc><lastmod>${lastmod}</lastmod><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
@@ -63,6 +66,7 @@ const urls = [
   ...CITY_SLUGS.map((slug) =>
     urlEntry(`${ORIGIN}/mobile-mechanic-${slug}-tx`, 'weekly', slug === 'justin' || slug === 'northlake' ? '0.85' : '0.8')
   ),
+  ...SERVICE_CITY_PATHS.map((p) => urlEntry(`${ORIGIN}${p}`, 'weekly', '0.75')),
   ...BLOG_SLUGS.map((slug) => urlEntry(`${ORIGIN}/blog/${slug}`, 'monthly', '0.65')),
 ];
 

@@ -26,7 +26,7 @@ export const NotFoundPage: React.FC = () => {
             Page Not Found
           </h1>
           <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
-            Looks like this page drove off the lot. Let's get you back on the road — our mobile mechanics are standing by in the DFW area.
+            Looks like this page drove off the lot. Let's get you back on the road — our mobile mechanics are standing by around Justin.
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export const NotFoundPage: React.FC = () => {
         {/* Location badge */}
         <div className="inline-flex items-center gap-1.5 text-xs text-slate-500">
           <MapPin className="w-3.5 h-3.5 text-orange-400" />
-          Mobile Mechanic Serving Justin, Northlake, Argyle & DFW
+          Mobile Mechanic Serving Justin, Northlake, Argyle & 20 Miles Around
         </div>
 
       </div>

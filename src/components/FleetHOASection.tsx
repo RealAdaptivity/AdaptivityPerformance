@@ -101,7 +101,7 @@ export const FleetHOASection: React.FC<FleetHOASectionProps> = ({ onOpenBooking,
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="text-white block text-sm">Multi-Vehicle Discount Rates</strong>
-                    <p className="text-slate-400">Volume labor discounts for local fleets with 3+ commercial vehicles in DFW.</p>
+                    <p className="text-slate-400">Volume labor discounts for local fleets with 3+ commercial vehicles inside our service radius.</p>
                   </div>
                 </div>
               </div>

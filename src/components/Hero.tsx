@@ -41,7 +41,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                 ADAPTIVITY PERFORMANCE
               </span>
               <span className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
-                ⭐ <strong>5.0 Google Rating</strong> across DFW
+                ⭐ <strong>5.0 Google Rating</strong> from Justin-area drivers
               </span>
             </div>
 
@@ -55,7 +55,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                 Partner
               </h1>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl font-medium drop-shadow-sm">
-                Expert certified technicians bringing the full auto repair mechanic shop directly to your driveway across DFW. 
+                Expert certified technicians bringing the full auto repair mechanic shop directly to your driveway, anywhere within 20 miles of Justin. 
                 On-site diagnostics, precision brake repairs, battery swaps, starters, and maintenance with <strong className="text-white">zero towing needed</strong>.
               </p>
             </div>
