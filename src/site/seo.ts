@@ -1,4 +1,5 @@
 /** Site SEO helpers — document title, meta, city landings. */
+import { LOCAL_CITIES, LOCAL_HUB, cityPathOf, type LocalCity } from './localSeo';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -24,52 +25,51 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   home: {
     title: 'Adaptivity Performance | Mechanic Shop & Mobile Auto Repair DFW',
     description:
-      `Top-rated mechanic shop & mobile auto repair serving Justin, Northlake, Denton, and Fort Worth DFW. On-site brake repair, diagnostics, starters, and oil changes. Call ${SITE_PHONE_DISPLAY}.`,
+      `Mobile mechanic serving Justin, TX and every driveway within ${LOCAL_HUB.radiusMiles} miles — Northlake, Argyle, Roanoke, Denton, Keller, Haslet and north Fort Worth. On-site brakes, diagnostics, starters, batteries and oil changes. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/',
   },
   about: {
     title: 'About Us | Premier Mechanic Shop & Mobile Auto Repair — Adaptivity',
     description:
-      'Learn about Adaptivity Performance — Justin TX auto repair shop hub and mobile mechanic fleet delivering transparent on-site automotive care across DFW.',
+      `Adaptivity Performance runs one shop hub in Justin, TX and a mobile fleet that stays inside a ${LOCAL_HUB.radiusMiles}-mile radius — so the van that quotes you is the van that shows up.`,
     path: '/about',
   },
   services: {
     title: 'Auto Repair Services | Mechanic Shop & Mobile Van Dispatch — Adaptivity',
     description:
-      'Explore professional auto repair services: brake replacements, engine OBD diagnostics, battery & starter swaps, and synthetic oil changes at your driveway.',
+      'Brake replacement, check engine diagnostics, battery and starter swaps, A/C repair, pre-purchase inspections and full synthetic oil changes — done in your driveway.',
     path: '/services',
   },
   contact: {
     title: 'Contact Us | Auto Repair Mechanic Shop & Mobile Dispatch DFW',
     description:
-      `Contact Adaptivity Performance for immediate mechanic shop dispatch, phone quotes, and daily 8AM–10PM customer support across North Texas. Call ${SITE_PHONE_DISPLAY}.`,
+      `Same-day mobile dispatch, phone quotes, and 8AM–10PM support for Justin and the surrounding ${LOCAL_HUB.radiusMiles} miles. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/contact',
   },
   quotes: {
     title: 'Rough Estimate Calculator | Adaptivity Performance',
-    description: 'Ballpark labor + parts for DFW mobile service, then book an $85 diagnostic hold.',
+    description: 'Ballpark labor + parts for mobile service inside our Justin radius, then book an $85 diagnostic hold.',
     path: '/quotes',
   },
   coverage: {
-    title: 'Service Area | Mobile Mechanic Coverage Across DFW',
-    description:
-      'Check zip coverage for Justin, Northlake, Fort Worth, Arlington, Frisco, Denton, and more.',
+    title: `Service Area | ${LOCAL_HUB.radiusMiles} Miles From Justin, TX`,
+    description: `Check your zip against our ${LOCAL_HUB.radiusMiles}-mile mobile radius — Justin, Northlake, Argyle, Roanoke, Denton, Keller, Haslet, Southlake, Grapevine and north Fort Worth.`,
     path: '/coverage',
   },
   faq: {
     title: 'FAQ | Mobile Mechanic Justin & Northlake TX — Adaptivity',
     description:
-      'Travel fees, labor rates, warranty, mobile vs shop — answers for Justin and Northlake customers.',
+      'Travel fees, labor rates, warranty, and mobile vs shop — answers for Justin, Northlake, Argyle and Denton customers.',
     path: '/faq',
   },
   partners: {
     title: 'Partner Shops & Garages | Adaptivity Performance',
-    description: 'Host Adaptivity jobs at your DFW shop or garage. We book, hold cards, and dispatch.',
+    description: 'Host Adaptivity jobs at your shop or garage inside our Justin radius. We book, hold cards, and dispatch.',
     path: '/partners',
   },
   join: {
     title: 'Join as a Tech | 1099 Mobile Mechanic Jobs — Adaptivity',
-    description: 'Keep 70% of labor. Stripe Express payouts. Apply for DFW mobile dispatch.',
+    description: 'Keep 70% of labor. Stripe Express payouts. Apply for mobile dispatch out of our Justin hub.',
     path: '/join',
   },
   careers: {
@@ -79,7 +79,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   membership: {
     title: 'Membership Plans | Adaptivity Performance',
-    description: 'Priority dispatch and member perks for DFW drivers.',
+    description: 'Priority dispatch and member perks for drivers inside our Justin service radius.',
     path: '/membership',
   },
   diagnostics: {
@@ -105,7 +105,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   blog: {
     title: 'Blog | Mobile Mechanic Tips — Adaptivity Performance',
     description:
-      'DFW mobile repair guides: brake pricing, Justin vs dealership, and local service tips for Northlake and beyond.',
+      'Local repair guides: brake pricing, mobile mechanic vs dealership, and service tips for Justin, Northlake and Denton drivers.',
     path: '/blog',
   },
   blogPost: {
@@ -130,115 +130,13 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
 };
 
-export type CityLanding = {
-  slug: string;
-  city: string;
-  zips: string[];
-  neighborhoods: string;
-  blurb: string;
-};
+export type CityLanding = LocalCity;
 
-export const CITY_LANDINGS: CityLanding[] = [
-  {
-    slug: 'justin',
-    city: 'Justin',
-    zips: ['76247'],
-    neighborhoods: 'Downtown Justin, Hardeman, Wildcat Ridge',
-    blurb:
-      'Our Justin hub is the home base for free-radius mobile dispatch. Same-day driveway service for brakes, oil, batteries, and diagnostics.',
-  },
-  {
-    slug: 'northlake',
-    city: 'Northlake',
-    zips: ['76226', '76262'],
-    neighborhoods: 'Canyon Falls, Harvest, Pecan Square, Town Center',
-    blurb:
-      'Northlake’s go-to mobile mechanic — we come to Canyon Falls, Harvest, and Pecan Square with ASE-level tools and transparent on-site pricing.',
-  },
-  {
-    slug: 'fort-worth',
-    city: 'Fort Worth',
-    zips: ['76102', '76177', '76131'],
-    neighborhoods: 'Alliance, Downtown, North Fort Worth',
-    blurb:
-      'Mobile auto repair for Fort Worth and Alliance. Book an $85 diagnostic hold and get labor + parts priced on site.',
-  },
-  {
-    slug: 'arlington',
-    city: 'Arlington',
-    zips: ['76010', '76011', '76015'],
-    neighborhoods: 'Central Arlington, Entertainment District corridor',
-    blurb:
-      'Need a mobile mechanic in Arlington? Adaptivity dispatches certified techs for brakes, oil changes, and check-engine diagnostics.',
-  },
-  {
-    slug: 'frisco',
-    city: 'Frisco',
-    zips: ['75034', '75035', '75033'],
-    neighborhoods: 'Frisco, The Star corridor, west Frisco',
-    blurb:
-      'Frisco driveway service without the dealership wait. Mobile brakes, fluids, batteries, and full diagnostic visits.',
-  },
-  {
-    slug: 'denton',
-    city: 'Denton',
-    zips: ['76201', '76205', '76209'],
-    neighborhoods: 'Downtown Denton, UNT area, south Denton',
-    blurb:
-      'Mobile mechanic coverage for Denton. Flat-rate style transparency with an $85 diagnostic hold and on-site repair pricing.',
-  },
-  {
-    slug: 'roanoke',
-    city: 'Roanoke',
-    zips: ['76262'],
-    neighborhoods: 'Town Center, Alliance corridor',
-    blurb:
-      'Fast mobile dispatch to Roanoke from our Justin hub — free travel inside the local radius for many nearby streets.',
-  },
-  {
-    slug: 'argyle',
-    city: 'Argyle',
-    zips: ['76227'],
-    neighborhoods: 'Village of Argyle, Country Club',
-    blurb:
-      'Argyle mobile auto repair with clear per-mile travel past our free radius. Book online in minutes.',
-  },
-  {
-    slug: 'haslet',
-    city: 'Haslet',
-    zips: ['76052'],
-    neighborhoods: 'Haslet Town Center, Sendera Ranch',
-    blurb:
-      'Haslet and Sendera Ranch mobile service — brakes, oil, batteries, and diagnostics at your driveway.',
-  },
-  {
-    slug: 'keller',
-    city: 'Keller',
-    zips: ['76248', '76262'],
-    neighborhoods: 'Keller Town Center, Hidden Lakes, Solana',
-    blurb:
-      'Mobile mechanic for Keller — driveway brakes, oil, batteries, and diagnostics with a $85 hold and on-site pricing.',
-  },
-  {
-    slug: 'flower-mound',
-    city: 'Flower Mound',
-    zips: ['75022', '75028'],
-    neighborhoods: 'Flower Mound, Lakeside, Bridlewood corridor',
-    blurb:
-      'Flower Mound mobile auto repair without the shop wait. Book online for same-day driveway service across DFW north.',
-  },
-  {
-    slug: 'southlake',
-    city: 'Southlake',
-    zips: ['76092'],
-    neighborhoods: 'Southlake Town Square, Timarron, Westlake edge',
-    blurb:
-      'Southlake driveway service from Adaptivity — ASE-level mobile techs, transparent labor + parts after inspection.',
-  },
-];
+/** Every city inside the Justin 20-mile radius. Source of truth: localSeoData.json. */
+export const CITY_LANDINGS: CityLanding[] = LOCAL_CITIES;
 
 export function cityPath(slug: string): string {
-  return `/mobile-mechanic-${slug}-tx`;
+  return cityPathOf(slug);
 }
 
 export function cityFromPath(pathname: string): CityLanding | null {
@@ -249,8 +147,8 @@ export function cityFromPath(pathname: string): CityLanding | null {
 
 export function citySeo(city: CityLanding): SeoMeta {
   return {
-    title: `Mobile Mechanic ${city.city} TX | Adaptivity Performance`,
-    description: `Mobile mechanic in ${city.city}, TX (${city.zips.join(', ')}). ${city.blurb.slice(0, 120)} Call ${SITE_PHONE_DISPLAY}.`,
+    title: `Mobile Mechanic ${city.city}, TX | Same-Day Driveway Repair — Adaptivity`,
+    description: `Mobile mechanic in ${city.city}, TX (${city.zips.join(', ')}) — ${city.distanceMiles} miles from our Justin hub, about ${city.driveMinutes} minutes out. Brakes, diagnostics, batteries, A/C and oil service at your driveway. Call ${SITE_PHONE_DISPLAY}.`,
     path: cityPath(city.slug),
   };
 }

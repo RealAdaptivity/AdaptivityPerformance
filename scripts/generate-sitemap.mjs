@@ -33,20 +33,18 @@ const PAGES = [
   { path: '/refund-policy', changefreq: 'monthly', priority: '0.4' },
 ];
 
-const CITY_SLUGS = [
-  'justin',
-  'northlake',
-  'fort-worth',
-  'arlington',
-  'frisco',
-  'denton',
-  'roanoke',
-  'argyle',
-  'haslet',
-  'keller',
-  'flower-mound',
-  'southlake',
-];
+/** Cities + services come from the same catalog the router uses. */
+const catalog = JSON.parse(
+  fs.readFileSync(path.join(root, 'src', 'site', 'localSeoData.json'), 'utf8')
+);
+const CITY_SLUGS = catalog.cities.map((c) => c.slug);
+const SERVICE_CITY_PATHS = catalog.cities
+  .filter((c) => c.servicePages)
+  .flatMap((c) => catalog.services.map((s) => `/${s.slug}-${c.slug}-tx`));
+
+if (!CITY_SLUGS.length || !SERVICE_CITY_PATHS.length) {
+  throw new Error('localSeoData.json produced no local URLs — refusing to write an empty sitemap');
+}
 
 const BLOG_SLUGS = [
   'how-much-do-brakes-cost-northlake-tx',
@@ -63,6 +61,7 @@ const urls = [
   ...CITY_SLUGS.map((slug) =>
     urlEntry(`${ORIGIN}/mobile-mechanic-${slug}-tx`, 'weekly', slug === 'justin' || slug === 'northlake' ? '0.85' : '0.8')
   ),
+  ...SERVICE_CITY_PATHS.map((p) => urlEntry(`${ORIGIN}${p}`, 'weekly', '0.75')),
   ...BLOG_SLUGS.map((slug) => urlEntry(`${ORIGIN}/blog/${slug}`, 'monthly', '0.65')),
 ];
 

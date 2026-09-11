@@ -29,3 +29,37 @@ export function initSiteAnalytics() {
     document.head.appendChild(inline);
   }
 }
+
+type EventProps = Record<string, string | number | boolean>;
+
+declare global {
+  interface Window {
+    plausible?: (event: string, opts?: { props?: EventProps }) => void;
+    gtag?: (...args: unknown[]) => void;
+  }
+}
+
+/**
+ * Fire a conversion event to whichever analytics provider is configured.
+ * No-ops silently when neither is set, so call sites never need a guard.
+ */
+export function trackEvent(event: string, props?: EventProps) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.plausible?.(event, props ? { props } : undefined);
+    window.gtag?.('event', event, props ?? {});
+  } catch {
+    /* analytics must never break a booking flow */
+  }
+}
+
+/** The events worth optimizing against — keep names stable for reporting. */
+export const CONVERSION_EVENTS = {
+  bookingOpened: 'booking_opened',
+  callClicked: 'call_clicked',
+  quoteStarted: 'quote_started',
+  referralShared: 'referral_shared',
+  reviewClicked: 'review_clicked',
+  serviceCityView: 'service_city_view',
+  adLandingView: 'ad_landing_view',
+} as const;

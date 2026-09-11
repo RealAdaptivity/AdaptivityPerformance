@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { cityFromPath } from './seo';
+import { serviceCityFromPath } from './localSeo';
 import { blogSlugFromPath } from '../services/blog';
 
 export type SitePage =
@@ -21,13 +22,17 @@ export type SitePage =
   | 'blog'
   | 'blogPost'
   | 'city'
+  | 'serviceCity'
   | 'terms'
   | 'privacy'
   | 'refunds'
   | 'notFound'
   | 'referral';
 
-const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>, string> = {
+/** Pages addressed by a fixed path segment (everything but the dynamic routes). */
+type DynamicFreePage = Exclude<SitePage, 'city' | 'serviceCity' | 'blogPost' | 'referral'>;
+
+const PAGE_SEGMENTS: Record<DynamicFreePage, string> = {
   home: '',
   about: 'about',
   services: 'services',
@@ -50,11 +55,11 @@ const PAGE_SEGMENTS: Record<Exclude<SitePage, 'city' | 'blogPost' | 'referral'>,
   notFound: '404',
 };
 
-const SEGMENT_TO_PAGE: Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>> = Object.fromEntries(
-  (Object.entries(PAGE_SEGMENTS) as [Exclude<SitePage, 'city' | 'blogPost' | 'referral'>, string][])
+const SEGMENT_TO_PAGE: Record<string, Exclude<DynamicFreePage, 'home'>> = Object.fromEntries(
+  (Object.entries(PAGE_SEGMENTS) as [DynamicFreePage, string][])
     .filter(([, seg]) => seg)
     .map(([page, seg]) => [seg, page])
-) as Record<string, Exclude<SitePage, 'city' | 'blogPost' | 'referral' | 'home'>>;
+) as Record<string, Exclude<DynamicFreePage, 'home'>>;
 
 /** Unknown paths that don't match any segment show the 404 page */
 export function pageFromSegmentOrNotFound(segment: string): SitePage {
@@ -107,7 +112,7 @@ export function sitePath(page: SitePage, hashOrOpts?: string | NavigateOpts): st
   const base = import.meta.env.BASE_URL || '/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
 
-  if (page === 'city') {
+  if (page === 'city' || page === 'serviceCity') {
     const cleaned = normalizedBase.replace(/\/+/g, '/');
     return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
   }
@@ -127,7 +132,7 @@ export function sitePath(page: SitePage, hashOrOpts?: string | NavigateOpts): st
       ? 'blog'
       : page === 'referral'
         ? ''
-        : PAGE_SEGMENTS[page as Exclude<SitePage, 'city' | 'blogPost' | 'referral'>];
+        : PAGE_SEGMENTS[page as DynamicFreePage];
   const path = seg ? `${normalizedBase}${seg}` : normalizedBase;
   const cleaned = path.replace(/\/+/g, '/');
   return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
@@ -137,6 +142,7 @@ export function readSitePage(): SitePage {
   if (typeof window === 'undefined') return 'home';
   const path = normalizePath(window.location.pathname);
   if (cityFromPath(path)) return 'city';
+  if (serviceCityFromPath(path)) return 'serviceCity';
   if (/^\/r\/[A-Za-z0-9_-]{4,16}\/?$/.test(path)) return 'referral';
   if (blogSlugFromPath(path)) return 'blogPost';
   if (path === '/blog') return 'blog';

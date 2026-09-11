@@ -31,6 +31,7 @@ import {
   applyDocumentSeo,
   cityFromPath,
   citySeo,
+  SITE_FAQS,
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
@@ -38,20 +39,32 @@ import { BlogPostPage } from './pages/BlogPostPage';
 import { ReferralLandingPage, referralCodeFromPath } from './pages/ReferralLandingPage';
 import { PayLinkPage, payReferenceFromPath } from './pages/PayLinkPage';
 import { blogSlugFromPath } from './services/blog';
+import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
+import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
+import { ServiceCityPage } from './pages/ServiceCityPage';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
   const page = useSitePage();
   const pathname = useSitePathname();
   const cityLanding = cityFromPath(pathname);
+  const serviceCity = serviceCityFromPath(pathname);
   const blogSlug = blogSlugFromPath(pathname);
   const referralCode = referralCodeFromPath(pathname);
 
   useEffect(() => {
     if (page === 'city' && cityLanding) {
       applyDocumentSeo(citySeo(cityLanding));
+      applyJsonLd(cityJsonLd(cityLanding, SITE_FAQS.slice(0, 6)));
       return;
     }
+    if (page === 'serviceCity' && serviceCity) {
+      const { service, city } = serviceCity;
+      applyDocumentSeo(serviceCityMeta(service, city));
+      applyJsonLd(serviceCityJsonLd(service, city, serviceCityFaqs(service, city)));
+      return;
+    }
+    applyJsonLd([]);
     if (page === 'blogPost') {
       // BlogPostPage applies post-specific SEO once loaded
       applyDocumentSeo(PAGE_SEO.blogPost);
@@ -61,7 +74,7 @@ function MainAppContent() {
       return;
     }
     applyDocumentSeo(PAGE_SEO[page as keyof typeof PAGE_SEO] || PAGE_SEO.home);
-  }, [page, cityLanding]);
+  }, [page, cityLanding, serviceCity]);
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
@@ -249,6 +262,12 @@ function MainAppContent() {
           />
         ) : page === 'city' && cityLanding ? (
           <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
+        ) : page === 'serviceCity' && serviceCity ? (
+          <ServiceCityPage
+            service={serviceCity.service}
+            city={serviceCity.city}
+            onOpenBooking={openBooking}
+          />
         ) : page === 'referral' && referralCode ? (
           <ReferralLandingPage onOpenBooking={openBooking} />
         ) : page === 'blogPost' && blogSlug ? (

@@ -1,0 +1,581 @@
+{
+  "hub": {
+    "city": "Justin",
+    "state": "TX",
+    "zip": "76247",
+    "lat": 33.0848,
+    "lng": -97.2961,
+    "radiusMiles": 20,
+    "freeRadiusMiles": 15
+  },
+  "services": [
+    {
+      "slug": "brake-repair",
+      "name": "Mobile Brake Repair",
+      "shortName": "Brake repair",
+      "keyword": "brake repair",
+      "priceFrom": 180,
+      "priceTo": 420,
+      "priceUnit": "per axle, parts + labor",
+      "durationLabel": "1.5 - 3 hours",
+      "blurb": "Pads, rotors, calipers, and hardware replaced in your driveway. We measure pad thickness and rotor runout on site, show you the numbers, then price the job before anything comes apart.",
+      "symptoms": [
+        "Squealing or grinding when you slow down",
+        "Steering wheel or pedal shudder under braking",
+        "Brake warning light or low pedal",
+        "Visible scoring on the rotor face"
+      ],
+      "included": [
+        "Four-wheel pad and rotor measurement",
+        "Caliper slide and piston inspection",
+        "Brake fluid condition check",
+        "Torque-to-spec reinstall and road test"
+      ],
+      "faqs": [
+        {
+          "q": "Can brakes really be done in a driveway?",
+          "a": "Yes. Brake service is the single most common mobile job we run. Our vans carry jack stands, torque wrenches, a rotor kit, and a full pad inventory for the most common makes, so most brake jobs finish in one visit without your car ever leaving the house."
+        },
+        {
+          "q": "Do I need rotors or just pads?",
+          "a": "We measure before we quote. If the rotor is above the manufacturer's minimum thickness and running true, pads alone are fine and you pay less. If it is under spec or warped, replacing it is the only safe call and we will show you the measurement."
+        },
+        {
+          "q": "Is the brake job warrantied?",
+          "a": "Yes - 12 months or 12,000 miles on parts and labor, whichever comes first. If a pad or rotor we installed fails in that window, we come back out and make it right at no charge."
+        }
+      ]
+    },
+    {
+      "slug": "check-engine-diagnostic",
+      "name": "Check Engine Light Diagnostic",
+      "shortName": "Check engine diagnostic",
+      "keyword": "check engine light diagnostic",
+      "priceFrom": 85,
+      "priceTo": 85,
+      "priceUnit": "diagnostic hold, applied to the repair",
+      "durationLabel": "45 - 90 minutes",
+      "blurb": "A real diagnosis, not a parts-store code read. We pull live data, run the manufacturer test procedure for the stored code, and tell you what actually failed and what it costs to fix.",
+      "symptoms": [
+        "Check engine or service engine soon light",
+        "Rough idle, misfire, or hesitation",
+        "Failed state inspection on emissions",
+        "Sudden drop in fuel economy"
+      ],
+      "included": [
+        "Full OBD-II scan with freeze-frame data",
+        "Live sensor data under load",
+        "Manufacturer test procedure for the stored code",
+        "Written findings plus a priced repair plan"
+      ],
+      "faqs": [
+        {
+          "q": "Why pay for a scan when a parts store does it free?",
+          "a": "A free scan reads the code and stops there. A P0171 code, for example, can be a vacuum leak, a failing mass airflow sensor, a weak fuel pump, or an exhaust leak upstream of the sensor. We run the test that separates them, so you replace the part that actually failed instead of guessing."
+        },
+        {
+          "q": "What happens to the $85 hold?",
+          "a": "It is a hold, not a separate fee. If you approve the repair with us, the full $85 is credited against the job. You only lose it if you decline the work entirely."
+        },
+        {
+          "q": "Can you clear the code so I can pass inspection?",
+          "a": "We can clear it, but clearing a code without fixing the cause resets the emissions readiness monitors and you will fail inspection anyway until the drive cycle completes. We would rather fix the fault and clear it properly."
+        }
+      ]
+    },
+    {
+      "slug": "battery-replacement",
+      "name": "Mobile Battery Replacement",
+      "shortName": "Battery replacement",
+      "keyword": "battery replacement",
+      "priceFrom": 180,
+      "priceTo": 340,
+      "priceUnit": "installed, battery included",
+      "durationLabel": "30 - 60 minutes",
+      "blurb": "We come to the dead car. Load test first, because a battery that fails to crank is sometimes a charging system problem, then swap it, register it if your vehicle needs it, and clean the terminals.",
+      "symptoms": [
+        "Slow crank or a click when you turn the key",
+        "Dash lights dim when cranking",
+        "Battery or charging warning light",
+        "Needing a jump more than once"
+      ],
+      "included": [
+        "Load test on the existing battery",
+        "Alternator output and parasitic draw check",
+        "Battery registration on vehicles that require it",
+        "Terminal and cable cleaning, old battery recycled"
+      ],
+      "faqs": [
+        {
+          "q": "My car will not start at all. Can you still come?",
+          "a": "That is exactly the job. The car does not need to run for us to work on it - we bring power, tools, and the replacement battery to wherever it is parked."
+        },
+        {
+          "q": "Is it the battery or the alternator?",
+          "a": "We test both before selling you anything. A battery that keeps dying is often a failing alternator or a parasitic draw, and replacing the battery alone would leave you stranded again in a few weeks."
+        },
+        {
+          "q": "Do newer cars need the battery registered?",
+          "a": "Many do. Most BMW, Mercedes, Audi, VW, and a growing number of domestic vehicles run a charging strategy tied to battery age. We register the new battery to the vehicle so the charging system treats it correctly."
+        }
+      ]
+    },
+    {
+      "slug": "starter-alternator-replacement",
+      "name": "Starter & Alternator Replacement",
+      "shortName": "Starter & alternator",
+      "keyword": "starter and alternator replacement",
+      "priceFrom": 320,
+      "priceTo": 780,
+      "priceUnit": "installed, parts + labor",
+      "durationLabel": "2 - 4 hours",
+      "blurb": "Charging and starting system work done on site. We confirm the failure with a voltage drop and output test before we sell a part, then replace it with the car where it sits.",
+      "symptoms": [
+        "Battery light on while driving",
+        "Headlights dimming at idle",
+        "Single loud click, no crank",
+        "Whining or grinding when starting"
+      ],
+      "included": [
+        "Charging system output test under load",
+        "Voltage drop test on the starter circuit",
+        "Belt and tensioner inspection",
+        "Post-install output verification"
+      ],
+      "faqs": [
+        {
+          "q": "Is this really a driveway job?",
+          "a": "On most vehicles, yes. Some transverse V6 layouts bury the starter under the intake, and if yours is one of them we will tell you up front and route the job to our Justin shop hub instead of burning your afternoon."
+        },
+        {
+          "q": "How do you know it is the alternator and not the battery?",
+          "a": "An alternator should hold roughly 13.5 to 14.7 volts at the battery with the engine running and a load applied. We test that, plus ripple voltage, which catches a failing diode that a simple voltage check misses."
+        },
+        {
+          "q": "Do you use remanufactured parts?",
+          "a": "We offer both. Remanufactured units cost less and carry a shorter warranty; new units cost more and last longer. We quote both and let you pick - and either way the 12-month/12,000-mile labor warranty applies."
+        }
+      ]
+    },
+    {
+      "slug": "mobile-oil-change",
+      "name": "Mobile Oil Change",
+      "shortName": "Oil change",
+      "keyword": "mobile oil change",
+      "priceFrom": 75,
+      "priceTo": 145,
+      "priceUnit": "full synthetic, filter included",
+      "durationLabel": "30 - 45 minutes",
+      "blurb": "Full synthetic oil and a quality filter, done in your driveway while you keep working. No waiting room, no upsell board, and we haul the used oil away for recycling.",
+      "symptoms": [
+        "Oil life monitor at or below 15%",
+        "Six months or more since the last change",
+        "Dark, gritty oil on the dipstick",
+        "Due for a service before a road trip"
+      ],
+      "included": [
+        "Full synthetic oil to manufacturer spec",
+        "New oil filter and drain plug gasket",
+        "Multi-point courtesy inspection",
+        "Tire pressure set, fluids topped, oil recycled"
+      ],
+      "faqs": [
+        {
+          "q": "What does an oil change cost?",
+          "a": "Most four and six cylinder vehicles land between $75 and $110 with full synthetic. Larger diesel and performance sumps that take 8+ quarts or a cartridge filter run toward $145. You get the exact number before we start."
+        },
+        {
+          "q": "Do you check anything else while you are here?",
+          "a": "Yes, and it is included. Brakes, belts, filters, tire tread and pressure, and all under-hood fluids get a look. If we find something, you get a photo and a price - never a surprise charge."
+        },
+        {
+          "q": "Where does the used oil go?",
+          "a": "Back in the van and to a licensed recycler. Nothing gets poured out at your house, which matters for anyone on a septic system or near a storm drain."
+        }
+      ]
+    },
+    {
+      "slug": "pre-purchase-inspection",
+      "name": "Pre-Purchase Inspection",
+      "shortName": "Pre-purchase inspection",
+      "keyword": "pre-purchase inspection",
+      "priceFrom": 145,
+      "priceTo": 195,
+      "priceUnit": "flat, report included",
+      "durationLabel": "60 - 90 minutes",
+      "blurb": "Before you hand over money for a used car, we meet you at the seller and go through it. Scan, lift check, fluid condition, frame and paint depth, road test - with a written report and photos you can negotiate with.",
+      "symptoms": [
+        "Buying private party and cannot verify history",
+        "Dealer will not allow a shop inspection",
+        "Out-of-state vehicle with unknown rust history",
+        "Anything with a rebuilt or salvage title"
+      ],
+      "included": [
+        "Full OBD-II scan including pending and history codes",
+        "Undercarriage, frame rail, and leak inspection",
+        "Paint depth readings for hidden bodywork",
+        "Road test plus a photo report within the hour"
+      ],
+      "faqs": [
+        {
+          "q": "Can you inspect a car at a dealership?",
+          "a": "Usually yes. Most independent lots allow it and many franchise dealers will too. We work around what the seller permits - if we cannot get it in the air, the report says so explicitly rather than glossing over it."
+        },
+        {
+          "q": "How fast do I get the report?",
+          "a": "Typically within the hour, while you are still standing there. That is the whole point - a report that lands the next day is useless when someone else is looking at the same car."
+        },
+        {
+          "q": "Is it worth $145 on a cheap car?",
+          "a": "On a $6,000 car it routinely finds $2,000 of deferred work. Either you walk away or you negotiate with a written report in hand. It pays for itself or it confirms you found a good one."
+        }
+      ]
+    },
+    {
+      "slug": "lift-and-leveling-kit",
+      "name": "Lift & Leveling Kit Install",
+      "shortName": "Lifts & leveling",
+      "keyword": "lift and leveling kit install",
+      "priceFrom": 450,
+      "priceTo": 2400,
+      "priceUnit": "install, kit and alignment separate",
+      "durationLabel": "4 hours - 2 days",
+      "blurb": "Leveling kits, 2 to 8 inch suspension lifts, coilovers, and the geometry work that has to follow. This is shop work at our Justin hub, not a driveway job, because lift installs require an alignment afterward.",
+      "symptoms": [
+        "Want to clear a larger tire",
+        "Factory rake you want to level out",
+        "Sagging rear on a work or tow truck",
+        "Planning an off-road build"
+      ],
+      "included": [
+        "Kit fitment review against your tire and wheel plan",
+        "Full suspension install to manufacturer torque spec",
+        "Driveline angle and brake line clearance check",
+        "Post-install alignment coordination"
+      ],
+      "faqs": [
+        {
+          "q": "Do you install a kit I bought myself?",
+          "a": "Yes. Bring the kit and we will install it. We will also flag fitment problems before we start - the wrong kit for your tire size or a kit missing the hardware to correct driveline angle is a problem worth catching in the parking lot, not halfway through."
+        },
+        {
+          "q": "Is an alignment required after a lift?",
+          "a": "Always. Changing ride height changes camber, caster, and toe. Skipping the alignment will chew through a set of tires in a few thousand miles, so we build it into the plan."
+        },
+        {
+          "q": "Why is this shop work instead of mobile?",
+          "a": "Lift work needs a lift, a press, and alignment equipment. We run it at the Justin hub. Everything else on this site comes to you - this one you bring to us."
+        }
+      ]
+    },
+    {
+      "slug": "ac-repair",
+      "name": "Mobile A/C Repair",
+      "shortName": "A/C repair",
+      "keyword": "A/C repair",
+      "priceFrom": 160,
+      "priceTo": 690,
+      "priceUnit": "diagnosis through recharge",
+      "durationLabel": "1.5 - 4 hours",
+      "blurb": "Texas summer work. We pressure test, find the actual leak with dye or an electronic sniffer, then evacuate and recharge to the exact factory weight - not a can of stop-leak from a parts store.",
+      "symptoms": [
+        "Air blows cool but never cold",
+        "A/C works at highway speed, not at idle",
+        "Compressor clutch not engaging",
+        "Musty smell or weak airflow at the vents"
+      ],
+      "included": [
+        "High and low side pressure readings",
+        "Electronic leak detection",
+        "Evacuate and recharge to factory refrigerant weight",
+        "Vent temperature verification before we leave"
+      ],
+      "faqs": [
+        {
+          "q": "Can you just top it off?",
+          "a": "A system low on refrigerant is leaking - refrigerant does not get used up. We will recharge it, but we find the leak first, because otherwise you are paying us again in six weeks."
+        },
+        {
+          "q": "Do you handle R-1234yf?",
+          "a": "Yes. Most 2015-and-newer vehicles use R-1234yf, which needs different equipment and costs more per pound than R-134a. Our vans are equipped for both."
+        },
+        {
+          "q": "How cold should the vents actually get?",
+          "a": "On a 100-degree North Texas afternoon, a healthy system pulls vent temperature down to roughly 40 to 50 degrees. We measure it before we leave and show you the reading."
+        }
+      ]
+    }
+  ],
+  "cities": [
+    {
+      "slug": "justin",
+      "city": "Justin",
+      "zips": ["76247"],
+      "neighborhoods": "Downtown Justin, Hardeman, Wildcat Ridge, Timberbrook",
+      "distanceMiles": 0,
+      "driveMinutes": 15,
+      "servicePages": true,
+      "blurb": "Justin is home. Our shop hub and every service van start their day here, which makes Justin the fastest dispatch on the board - often same-day, always inside the free travel radius."
+    },
+    {
+      "slug": "northlake",
+      "city": "Northlake",
+      "zips": ["76226", "76262"],
+      "neighborhoods": "Canyon Falls, Harvest, Pecan Square, Northlake Town Center",
+      "distanceMiles": 7,
+      "driveMinutes": 20,
+      "servicePages": true,
+      "blurb": "Seven miles from the Justin hub, Northlake is core territory. We run Canyon Falls, Harvest, and Pecan Square constantly - HOA driveways and all, with no travel fee inside the free radius."
+    },
+    {
+      "slug": "argyle",
+      "city": "Argyle",
+      "zips": ["76226"],
+      "neighborhoods": "Village of Argyle, Country Club, Bartonville, Lantana edge",
+      "distanceMiles": 9,
+      "driveMinutes": 20,
+      "servicePages": true,
+      "blurb": "Argyle and Bartonville sit well inside our free travel radius. Acreage properties and long driveways are no problem - our vans carry their own power, air, and lighting."
+    },
+    {
+      "slug": "roanoke",
+      "city": "Roanoke",
+      "zips": ["76262"],
+      "neighborhoods": "Oak Street, Fairway Ranch, Briarwyck, Alliance corridor",
+      "distanceMiles": 11,
+      "driveMinutes": 22,
+      "servicePages": true,
+      "blurb": "Roanoke is an 11-mile run from Justin. We work the Oak Street district and the Fairway Ranch side regularly, including workplace visits along the Alliance corridor."
+    },
+    {
+      "slug": "trophy-club",
+      "city": "Trophy Club",
+      "zips": ["76262"],
+      "neighborhoods": "The Highlands, Trophy Club Country Club, Trophy Wood",
+      "distanceMiles": 12,
+      "driveMinutes": 25,
+      "servicePages": true,
+      "blurb": "Trophy Club driveway service without the dealership shuttle. We handle the European and late-model domestic work most mobile outfits turn down, including battery registration."
+    },
+    {
+      "slug": "haslet",
+      "city": "Haslet",
+      "zips": ["76052"],
+      "neighborhoods": "Haslet Town Center, Sendera Ranch, Blue Mound edge",
+      "distanceMiles": 14,
+      "driveMinutes": 25,
+      "servicePages": true,
+      "blurb": "Sendera Ranch is one of our busiest single neighborhoods. Haslet sits inside the free travel radius, and we are frequently out there twice in a day already."
+    },
+    {
+      "slug": "keller",
+      "city": "Keller",
+      "zips": ["76248", "76244"],
+      "neighborhoods": "Keller Town Center, Hidden Lakes, Marshall Ridge, Bear Creek",
+      "distanceMiles": 12,
+      "driveMinutes": 25,
+      "servicePages": true,
+      "blurb": "Keller service without dropping the car for two days. We bring the shop to Hidden Lakes, Marshall Ridge, and Town Center and price labor plus parts on site."
+    },
+    {
+      "slug": "fort-worth-north",
+      "city": "North Fort Worth",
+      "zips": ["76177", "76131", "76179", "76137"],
+      "neighborhoods": "Alliance Town Center, Presidio, Park Glen, Heritage, Saginaw edge",
+      "distanceMiles": 15,
+      "driveMinutes": 28,
+      "servicePages": true,
+      "blurb": "We cover north Fort Worth - Alliance, Presidio, Park Glen, and Heritage. Downtown and south Fort Worth fall outside our 20-mile service radius, so we stay north of the loop."
+    },
+    {
+      "slug": "southlake",
+      "city": "Southlake",
+      "zips": ["76092"],
+      "neighborhoods": "Town Square, Timarron, Carillon, Clariden Ranch",
+      "distanceMiles": 14,
+      "driveMinutes": 27,
+      "servicePages": true,
+      "blurb": "Southlake driveway service from ASE-level techs. Transparent labor and parts pricing after the inspection, and we come to Timarron and Carillon rather than asking you to sit in a lounge."
+    },
+    {
+      "slug": "grapevine",
+      "city": "Grapevine",
+      "zips": ["76051"],
+      "neighborhoods": "Historic Main Street, Silver Lake, Western Oaks, Grapevine Mills edge",
+      "distanceMiles": 16,
+      "driveMinutes": 30,
+      "servicePages": true,
+      "blurb": "Grapevine sits at the southeast edge of our 20-mile radius. We run it daily - driveway work, plus airport-area workplace visits where the car sits all day anyway."
+    },
+    {
+      "slug": "denton",
+      "city": "Denton",
+      "zips": ["76201", "76205", "76207", "76208", "76209", "76210"],
+      "neighborhoods": "Downtown Square, UNT area, Robson Ranch, Rayzor Ranch, south Denton",
+      "distanceMiles": 13,
+      "driveMinutes": 25,
+      "servicePages": true,
+      "blurb": "Denton is 13 miles up FM 156 from the hub. Student budgets and Robson Ranch alike get the same thing: a priced repair plan before anything comes apart."
+    },
+    {
+      "slug": "flower-mound",
+      "city": "Flower Mound",
+      "zips": ["75022", "75028"],
+      "neighborhoods": "Bridlewood, Lakeside, Wellington, Canyon Falls south",
+      "distanceMiles": 13,
+      "driveMinutes": 25,
+      "servicePages": true,
+      "blurb": "Flower Mound mobile repair without the shop wait. Bridlewood and Wellington are regular stops, and most jobs finish in a single driveway visit."
+    },
+    {
+      "slug": "highland-village",
+      "city": "Highland Village",
+      "zips": ["75077"],
+      "neighborhoods": "Copperas Branch, Highland Shores, Briarhill",
+      "distanceMiles": 14,
+      "driveMinutes": 27,
+      "servicePages": false,
+      "blurb": "Highland Village is inside the radius and inside the free travel band. Brakes, batteries, diagnostics, and oil service at the house."
+    },
+    {
+      "slug": "lewisville",
+      "city": "Lewisville",
+      "zips": ["75067", "75057"],
+      "neighborhoods": "Old Town, Vista Ridge, Castle Hills edge",
+      "distanceMiles": 18,
+      "driveMinutes": 32,
+      "servicePages": false,
+      "blurb": "Lewisville sits near the outer edge of our 20-mile radius. Still fully covered - expect a modest per-mile travel line on the quote."
+    },
+    {
+      "slug": "ponder",
+      "city": "Ponder",
+      "zips": ["76259"],
+      "neighborhoods": "Downtown Ponder, FM 156 corridor",
+      "distanceMiles": 7,
+      "driveMinutes": 18,
+      "servicePages": false,
+      "blurb": "Ponder is seven miles from the hub and gets some of our fastest response times. Free travel radius, no minimum job size."
+    },
+    {
+      "slug": "krum",
+      "city": "Krum",
+      "zips": ["76249"],
+      "neighborhoods": "Downtown Krum, Krum ISD corridor",
+      "distanceMiles": 13,
+      "driveMinutes": 24,
+      "servicePages": false,
+      "blurb": "Krum is well inside the radius. Small-town rates from a shop that is not going to tell you the nearest option is Denton."
+    },
+    {
+      "slug": "sanger",
+      "city": "Sanger",
+      "zips": ["76266"],
+      "neighborhoods": "Downtown Sanger, I-35 corridor, Marion Road",
+      "distanceMiles": 19,
+      "driveMinutes": 30,
+      "servicePages": false,
+      "blurb": "Sanger is the northern edge of our service radius. Covered, with a per-mile travel line beyond the free band."
+    },
+    {
+      "slug": "rhome",
+      "city": "Rhome",
+      "zips": ["76078"],
+      "neighborhoods": "Rhome, Newark edge, FM 3433",
+      "distanceMiles": 9,
+      "driveMinutes": 20,
+      "servicePages": false,
+      "blurb": "Rhome is a nine-mile run west of the hub - free travel radius, same-day slots most weeks."
+    },
+    {
+      "slug": "boyd",
+      "city": "Boyd",
+      "zips": ["76023"],
+      "neighborhoods": "Boyd, Aurora edge, FM 730",
+      "distanceMiles": 15,
+      "driveMinutes": 27,
+      "servicePages": false,
+      "blurb": "Boyd and the surrounding acreage are inside our radius. Our vans are self-contained, so a gravel drive and no shop power is not a problem."
+    },
+    {
+      "slug": "newark",
+      "city": "Newark",
+      "zips": ["76071"],
+      "neighborhoods": "Newark, Briar edge",
+      "distanceMiles": 12,
+      "driveMinutes": 23,
+      "servicePages": false,
+      "blurb": "Newark is 12 miles out and fully covered. Diagnostics, brakes, batteries, and fluid service at the house."
+    },
+    {
+      "slug": "decatur",
+      "city": "Decatur",
+      "zips": ["76234"],
+      "neighborhoods": "Downtown Square, US-380 corridor, Deer Park",
+      "distanceMiles": 19,
+      "driveMinutes": 30,
+      "servicePages": false,
+      "blurb": "Decatur sits at the western edge of the 20-mile radius. Covered, with per-mile travel beyond the free band."
+    },
+    {
+      "slug": "azle",
+      "city": "Azle",
+      "zips": ["76020"],
+      "neighborhoods": "Azle, Eagle Mountain Lake, Reno edge",
+      "distanceMiles": 19,
+      "driveMinutes": 32,
+      "servicePages": false,
+      "blurb": "Azle and the Eagle Mountain Lake side are at our southwestern edge. Still inside the radius and still same-week."
+    },
+    {
+      "slug": "saginaw",
+      "city": "Saginaw",
+      "zips": ["76179", "76131"],
+      "neighborhoods": "Saginaw, Willow Creek, Bailey Boswell corridor",
+      "distanceMiles": 14,
+      "driveMinutes": 26,
+      "servicePages": false,
+      "blurb": "Saginaw is a straight shot south of the hub and sits inside the free travel band for most addresses."
+    },
+    {
+      "slug": "watauga",
+      "city": "Watauga",
+      "zips": ["76148"],
+      "neighborhoods": "Watauga, Whitley Road corridor",
+      "distanceMiles": 16,
+      "driveMinutes": 28,
+      "servicePages": false,
+      "blurb": "Watauga is inside the radius. Driveway brakes, batteries, diagnostics, and A/C work without a shop drop-off."
+    },
+    {
+      "slug": "north-richland-hills",
+      "city": "North Richland Hills",
+      "zips": ["76180", "76182"],
+      "neighborhoods": "Smithfield, HomeTown, Davis Boulevard corridor",
+      "distanceMiles": 17,
+      "driveMinutes": 30,
+      "servicePages": false,
+      "blurb": "North Richland Hills is near our southeastern edge and fully covered - expect a small per-mile travel line past the free radius."
+    },
+    {
+      "slug": "colleyville",
+      "city": "Colleyville",
+      "zips": ["76034"],
+      "neighborhoods": "Whittier Heights, Glade Road corridor, Colleyville Town Center",
+      "distanceMiles": 16,
+      "driveMinutes": 28,
+      "servicePages": false,
+      "blurb": "Colleyville is inside the radius. We do a lot of European and late-model work out here, including coded battery replacements."
+    },
+    {
+      "slug": "corinth",
+      "city": "Corinth",
+      "zips": ["76210"],
+      "neighborhoods": "Corinth, Lake Dallas, Shady Shores",
+      "distanceMiles": 16,
+      "driveMinutes": 28,
+      "servicePages": false,
+      "blurb": "Corinth, Lake Dallas, and Shady Shores all sit inside the 20-mile radius from the Justin hub."
+    }
+  ]
+}
