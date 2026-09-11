@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { cityFromPath } from './seo';
 import { serviceCityFromPath } from './localSeo';
+import { adLandingFromPath } from './adLandings';
 import { blogSlugFromPath } from '../services/blog';
 
 export type SitePage =
@@ -23,6 +24,7 @@ export type SitePage =
   | 'blogPost'
   | 'city'
   | 'serviceCity'
+  | 'adLanding'
   | 'terms'
   | 'privacy'
   | 'refunds'
@@ -30,7 +32,7 @@ export type SitePage =
   | 'referral';
 
 /** Pages addressed by a fixed path segment (everything but the dynamic routes). */
-type DynamicFreePage = Exclude<SitePage, 'city' | 'serviceCity' | 'blogPost' | 'referral'>;
+type DynamicFreePage = Exclude<SitePage, 'city' | 'serviceCity' | 'adLanding' | 'blogPost' | 'referral'>;
 
 const PAGE_SEGMENTS: Record<DynamicFreePage, string> = {
   home: '',
@@ -112,7 +114,7 @@ export function sitePath(page: SitePage, hashOrOpts?: string | NavigateOpts): st
   const base = import.meta.env.BASE_URL || '/';
   const normalizedBase = base.endsWith('/') ? base : `${base}/`;
 
-  if (page === 'city' || page === 'serviceCity') {
+  if (page === 'city' || page === 'serviceCity' || page === 'adLanding') {
     const cleaned = normalizedBase.replace(/\/+/g, '/');
     return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
   }
@@ -143,6 +145,7 @@ export function readSitePage(): SitePage {
   const path = normalizePath(window.location.pathname);
   if (cityFromPath(path)) return 'city';
   if (serviceCityFromPath(path)) return 'serviceCity';
+  if (adLandingFromPath(path)) return 'adLanding';
   if (/^\/r\/[A-Za-z0-9_-]{4,16}\/?$/.test(path)) return 'referral';
   if (blogSlugFromPath(path)) return 'blogPost';
   if (path === '/blog') return 'blog';

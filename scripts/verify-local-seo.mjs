@@ -65,7 +65,20 @@ for (const city of LOCAL_CITIES) {
   }
 }
 
-/* 5. The sitemap on disk matches what the catalog produces. */
+/* 5. Paid landing pages resolve, and never leak into the organic index. */
+const ads = await jiti.import(path.join(root, 'src/site/adLandings.ts'));
+const { AD_LANDINGS, adLandingFromPath, adLandingPath } = ads;
+
+for (const landing of AD_LANDINGS) {
+  const p = adLandingPath(landing.slug);
+  if (adLandingFromPath(p)?.slug !== landing.slug) fail(`${p} does not resolve to an ad landing`);
+  if (serviceCityFromPath(p)) fail(`${p} is being matched as a service page`);
+}
+
+const robots = fs.readFileSync(path.join(root, 'public', 'robots.txt'), 'utf8');
+if (!robots.includes('Disallow: /lp/')) fail('robots.txt does not disallow /lp/');
+
+/* 6. The sitemap on disk matches what the catalog produces. */
 const sitemapPath = path.join(root, 'public', 'sitemap.xml');
 if (fs.existsSync(sitemapPath)) {
   const xml = fs.readFileSync(sitemapPath, 'utf8');
@@ -73,6 +86,7 @@ if (fs.existsSync(sitemapPath)) {
   if (missing.length) {
     fail(`${missing.length} service pages missing from sitemap.xml (e.g. ${missing[0]}) — run generate-sitemap`);
   }
+  if (xml.includes('/lp/')) fail('ad landing pages leaked into sitemap.xml');
 }
 
 if (failures.length) {
@@ -83,5 +97,6 @@ if (failures.length) {
 
 console.log(
   `✓ local SEO OK — ${LOCAL_CITIES.length} cities, ${LOCAL_SERVICES.length} services, ` +
-    `${paths.length} service pages, all within ${LOCAL_HUB.radiusMiles} mi of ${LOCAL_HUB.city}`
+    `${paths.length} service pages, ${AD_LANDINGS.length} ad landings, ` +
+    `all within ${LOCAL_HUB.radiusMiles} mi of ${LOCAL_HUB.city}`
 );

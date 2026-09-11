@@ -297,6 +297,21 @@ export function applyDocumentSeo(meta: SeoMeta) {
   canonical.href = url;
 }
 
+/**
+ * Control indexing per route. Paid landing pages must not compete with the
+ * organic service pages for the same query.
+ */
+export function setRobots(directive: 'index,follow' | 'noindex,nofollow') {
+  if (typeof document === 'undefined') return;
+  let tag = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+  if (!tag) {
+    tag = document.createElement('meta');
+    tag.name = 'robots';
+    document.head.appendChild(tag);
+  }
+  tag.content = directive;
+}
+
 export async function shareAdaptivity(opts?: { title?: string; text?: string; url?: string }) {
   const title = opts?.title || 'Adaptivity Performance';
   const text =

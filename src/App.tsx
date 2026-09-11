@@ -32,6 +32,7 @@ import {
   cityFromPath,
   citySeo,
   SITE_FAQS,
+  setRobots,
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
@@ -42,6 +43,8 @@ import { blogSlugFromPath } from './services/blog';
 import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
 import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
 import { ServiceCityPage } from './pages/ServiceCityPage';
+import { AdLandingPage } from './pages/AdLandingPage';
+import { adLandingFromPath, adLandingMeta } from './site/adLandings';
 import { CONVERSION_EVENTS, trackEvent } from './site/analytics';
 
 function MainAppContent() {
@@ -50,10 +53,18 @@ function MainAppContent() {
   const pathname = useSitePathname();
   const cityLanding = cityFromPath(pathname);
   const serviceCity = serviceCityFromPath(pathname);
+  const adLanding = adLandingFromPath(pathname);
   const blogSlug = blogSlugFromPath(pathname);
   const referralCode = referralCodeFromPath(pathname);
 
   useEffect(() => {
+    if (page === 'adLanding' && adLanding) {
+      applyDocumentSeo(adLandingMeta(adLanding));
+      setRobots('noindex,nofollow');
+      applyJsonLd([]);
+      return;
+    }
+    setRobots('index,follow');
     if (page === 'city' && cityLanding) {
       applyDocumentSeo(citySeo(cityLanding));
       applyJsonLd(cityJsonLd(cityLanding, SITE_FAQS.slice(0, 6)));
@@ -75,7 +86,7 @@ function MainAppContent() {
       return;
     }
     applyDocumentSeo(PAGE_SEO[page as keyof typeof PAGE_SEO] || PAGE_SEO.home);
-  }, [page, cityLanding, serviceCity]);
+  }, [page, cityLanding, serviceCity, adLanding]);
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
@@ -135,16 +146,23 @@ function MainAppContent() {
     return () => window.clearTimeout(t);
   }, [page]);
 
-  const openBooking = (opts?: { referralCode?: string; source?: string }) => {
+  const openBooking = (opts?: {
+    referralCode?: string;
+    source?: string;
+    /** Extra attribution (city, service, landing, utm_*) forwarded to analytics. */
+    [key: string]: string | undefined;
+  }) => {
+    const { referralCode, source, ...attribution } = opts ?? {};
     trackEvent(CONVERSION_EVENTS.bookingOpened, {
-      source: opts?.source ?? 'site',
+      source: source ?? 'site',
       page,
       ...(pathname !== '/' ? { path: pathname } : {}),
-      ...(opts?.referralCode ? { referred: true } : {}),
+      ...(referralCode ? { referred: true } : {}),
+      ...(attribution as Record<string, string>),
     });
     setEstimateDataForBooking({
       locationType: 'mobile',
-      ...(opts?.referralCode ? { referralCode: opts.referralCode } : {}),
+      ...(referralCode ? { referralCode } : {}),
     });
     setIsBookingOpen(true);
   };
@@ -246,6 +264,7 @@ function MainAppContent() {
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
+      {!adLanding && (
       <Navbar
         onOpenBooking={() => openBooking({ source: 'navbar' })}
         onOpenTracker={() => setIsTrackerOpen(true)}
@@ -258,9 +277,12 @@ function MainAppContent() {
           handleOpenMembershipModal('vip');
         }}
       />
+      )}
 
       <main className="flex-grow pb-16 md:pb-0">
-        {page === 'home' ? (
+        {page === 'adLanding' && adLanding ? (
+          <AdLandingPage landing={adLanding} onOpenBooking={openBooking} />
+        ) : page === 'home' ? (
           <HomePage
             onOpenBooking={openBooking}
             onSelectServiceMode={setActiveServiceMode}
@@ -284,9 +306,15 @@ function MainAppContent() {
         )}
       </main>
 
-      <Footer onOpenBooking={() => openBooking({ source: 'footer' })} onOpenTracker={() => setIsTrackerOpen(true)} />
-
-      <StickyMobileActionBar onOpenBooking={() => openBooking({ source: 'sticky_mobile' })} />
+      {!adLanding && (
+        <>
+          <Footer
+            onOpenBooking={() => openBooking({ source: 'footer' })}
+            onOpenTracker={() => setIsTrackerOpen(true)}
+          />
+          <StickyMobileActionBar onOpenBooking={() => openBooking({ source: 'sticky_mobile' })} />
+        </>
+      )}
 
       <WarrantyModal
         isOpen={isWarrantyOpen}
