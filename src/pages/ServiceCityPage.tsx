@@ -27,7 +27,7 @@ import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 type Props = {
   service: LocalService;
   city: LocalCity;
-  onOpenBooking: () => void;
+  onOpenBooking: (opts?: { source?: string; service?: string; city?: string }) => void;
 };
 
 function goTo(path: string) {
@@ -45,14 +45,8 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
     trackEvent(CONVERSION_EVENTS.serviceCityView, { service: service.slug, city: city.slug });
   }, [service.slug, city.slug]);
 
-  const book = () => {
-    trackEvent(CONVERSION_EVENTS.bookingOpened, {
-      source: 'service_city',
-      service: service.slug,
-      city: city.slug,
-    });
-    onOpenBooking();
-  };
+  const book = (source = 'service_city') =>
+    onOpenBooking({ source, service: service.slug, city: city.slug });
 
   return (
     <section className="bg-[#0b0c10] border-t border-white/10">
@@ -111,7 +105,7 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               type="button"
-              onClick={book}
+              onClick={() => book()}
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Calendar className="w-4 h-4" />
@@ -225,7 +219,7 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               type="button"
-              onClick={book}
+              onClick={() => book('service_city_footer')}
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Calendar className="w-4 h-4" />

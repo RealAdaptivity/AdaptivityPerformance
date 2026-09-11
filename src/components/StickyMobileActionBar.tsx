@@ -1,6 +1,7 @@
 import React from 'react';
 import { Phone, MessageSquare, Calendar } from 'lucide-react';
 import { SITE_PHONE_E164 } from '../site/seo';
+import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 
 interface StickyMobileActionBarProps {
   onOpenBooking: () => void;
@@ -16,6 +17,7 @@ export const StickyMobileActionBar: React.FC<StickyMobileActionBarProps> = ({ on
         {/* Call Button */}
         <a
           href={`tel:${SITE_PHONE_E164}`}
+          onClick={() => trackEvent(CONVERSION_EVENTS.callClicked, { source: 'sticky_mobile' })}
           className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-slate-800/90 border border-slate-700/60 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all"
         >
           <Phone className="w-4 h-4 text-orange-400 mb-0.5" />
@@ -25,6 +27,7 @@ export const StickyMobileActionBar: React.FC<StickyMobileActionBarProps> = ({ on
         {/* Text SMS Button */}
         <a
           href={`sms:${SITE_PHONE_E164}?body=Hi%20Adaptivity%20-%20I%20need%20a%20quote%20for%20a%20mobile%20mechanic%20service%20in%20Justin/Northlake.`}
+          onClick={() => trackEvent(CONVERSION_EVENTS.textClicked, { source: 'sticky_mobile' })}
           className="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-slate-800/90 border border-slate-700/60 text-slate-200 hover:bg-slate-700 active:scale-95 transition-all"
         >
           <MessageSquare className="w-4 h-4 text-emerald-400 mb-0.5" />

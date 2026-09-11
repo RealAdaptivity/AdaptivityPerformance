@@ -57,6 +57,7 @@ export function trackEvent(event: string, props?: EventProps) {
 export const CONVERSION_EVENTS = {
   bookingOpened: 'booking_opened',
   callClicked: 'call_clicked',
+  textClicked: 'text_clicked',
   quoteStarted: 'quote_started',
   referralShared: 'referral_shared',
   reviewClicked: 'review_clicked',

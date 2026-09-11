@@ -42,6 +42,7 @@ import { blogSlugFromPath } from './services/blog';
 import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
 import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
 import { ServiceCityPage } from './pages/ServiceCityPage';
+import { CONVERSION_EVENTS, trackEvent } from './site/analytics';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
@@ -134,7 +135,13 @@ function MainAppContent() {
     return () => window.clearTimeout(t);
   }, [page]);
 
-  const openBooking = (opts?: { referralCode?: string }) => {
+  const openBooking = (opts?: { referralCode?: string; source?: string }) => {
+    trackEvent(CONVERSION_EVENTS.bookingOpened, {
+      source: opts?.source ?? 'site',
+      page,
+      ...(pathname !== '/' ? { path: pathname } : {}),
+      ...(opts?.referralCode ? { referred: true } : {}),
+    });
     setEstimateDataForBooking({
       locationType: 'mobile',
       ...(opts?.referralCode ? { referralCode: opts.referralCode } : {}),
@@ -240,7 +247,7 @@ function MainAppContent() {
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
       <Navbar
-        onOpenBooking={openBooking}
+        onOpenBooking={() => openBooking({ source: 'navbar' })}
         onOpenTracker={() => setIsTrackerOpen(true)}
         onOpenGarage={() => setIsGarageOpen(true)}
         onOpenInspection={() => setIsInspectionOpen(true)}
@@ -277,14 +284,14 @@ function MainAppContent() {
         )}
       </main>
 
-      <Footer onOpenBooking={openBooking} onOpenTracker={() => setIsTrackerOpen(true)} />
+      <Footer onOpenBooking={() => openBooking({ source: 'footer' })} onOpenTracker={() => setIsTrackerOpen(true)} />
 
-      <StickyMobileActionBar onOpenBooking={openBooking} />
+      <StickyMobileActionBar onOpenBooking={() => openBooking({ source: 'sticky_mobile' })} />
 
       <WarrantyModal
         isOpen={isWarrantyOpen}
         onClose={() => setIsWarrantyOpen(false)}
-        onOpenBooking={openBooking}
+        onOpenBooking={() => openBooking({ source: 'modal' })}
       />
 
       <ReferralModal
