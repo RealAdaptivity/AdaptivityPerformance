@@ -5,11 +5,7 @@ import { getStripe } from '../services/stripeConnectService';
 import { createCheckoutPaymentIntent, type CreatePaymentIntentResult } from '../services/stripePaymentsApi';
 import { StripeCheckoutForm } from '../components/StripeCheckoutForm';
 
-/** Extract the booking reference from a `/pay/<ref>` path. */
-export function payReferenceFromPath(pathname: string): string | null {
-  const match = pathname.replace(/\/+$/, '').match(/^\/pay\/([A-Za-z0-9_-]{3,40})$/);
-  return match ? decodeURIComponent(match[1]) : null;
-}
+export { payReferenceFromPath } from '../site/routePaths';
 
 interface PayLinkPageProps {
   reference: string;

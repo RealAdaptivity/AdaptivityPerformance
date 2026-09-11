@@ -4,11 +4,8 @@ import { applyDocumentSeo, SITE_PHONE_DISPLAY } from '../site/seo';
 import { LOCAL_HUB } from '../site/localSeo';
 import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { supabase } from '../services/supabaseClient';
+import { referralCodeFromPath as codeFromPath } from '../site/routePaths';
 
-function codeFromPath(pathname: string): string | null {
-  const m = pathname.match(/\/r\/([A-Za-z0-9_-]{4,16})\/?$/);
-  return m ? m[1].toUpperCase() : null;
-}
 
 type Props = {
   onOpenBooking: (opts?: { referralCode?: string; source?: string }) => void;
@@ -96,6 +93,3 @@ export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
   );
 };
 
-export function referralCodeFromPath(pathname: string): string | null {
-  return codeFromPath(pathname);
-}

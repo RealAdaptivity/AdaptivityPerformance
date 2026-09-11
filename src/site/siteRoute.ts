@@ -2,14 +2,13 @@ import { useSyncExternalStore } from 'react';
 import { cityFromPath } from './seo';
 import { serviceCityFromPath } from './localSeo';
 import { adLandingFromPath } from './adLandings';
-import { blogSlugFromPath } from '../services/blog';
+import { blogSlugFromPath } from './routePaths';
 
 export type SitePage =
   | 'home'
   | 'about'
   | 'services'
   | 'contact'
-  | 'quotes'
   | 'membership'
   | 'diagnostics'
   | 'join'
@@ -39,7 +38,6 @@ const PAGE_SEGMENTS: Record<DynamicFreePage, string> = {
   about: 'about',
   services: 'services',
   contact: 'contact',
-  quotes: 'quotes',
   membership: 'membership',
   diagnostics: 'diagnostics',
   join: 'join',
@@ -68,12 +66,21 @@ export function pageFromSegmentOrNotFound(segment: string): SitePage {
   return SEGMENT_TO_PAGE[segment] || 'notFound';
 }
 
+/**
+ * Paths that used to be their own page. `/quotes` rendered the identical
+ * component as `/services`, so it was duplicate content at two URLs; it now
+ * redirects rather than competing with the page it duplicated.
+ */
+export const LEGACY_PATH_REDIRECTS: Record<string, string> = {
+  '/quotes': '/services',
+};
+
 /** Legacy homepage anchors → page routes */
 const HASH_TO_PAGE: Record<string, SitePage> = {
   about: 'about',
   future: 'about',
   services: 'services',
-  estimator: 'quotes',
+  estimator: 'services',
   membership: 'membership',
   diagnostics: 'diagnostics',
   partners: 'partners',
@@ -142,7 +149,12 @@ export function sitePath(page: SitePage, hashOrOpts?: string | NavigateOpts): st
 
 export function readSitePage(): SitePage {
   if (typeof window === 'undefined') return 'home';
-  const path = normalizePath(window.location.pathname);
+  let path = normalizePath(window.location.pathname);
+  const redirect = LEGACY_PATH_REDIRECTS[path];
+  if (redirect) {
+    window.history.replaceState({}, '', redirect);
+    path = redirect;
+  }
   if (cityFromPath(path)) return 'city';
   if (serviceCityFromPath(path)) return 'serviceCity';
   if (adLandingFromPath(path)) return 'adLanding';

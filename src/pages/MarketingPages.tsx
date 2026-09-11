@@ -20,7 +20,7 @@ import { RefundPolicyPage } from './RefundPolicyPage';
 import { NotFoundPage } from './NotFoundPage';
 import type { SitePage } from '../site/siteRoute';
 
-type SharedActions = {
+export type SharedActions = {
   onOpenBooking: () => void;
   onOpenRecruitment: () => void;
   onOpenPartnerApply: () => void;
@@ -48,14 +48,6 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
         />
       );
     case 'services':
-      return reveal(
-        <ServicesSection
-          onOpenBooking={actions.onOpenBooking}
-          onBookService={actions.onBookService}
-        />,
-        'scale'
-      );
-    case 'quotes':
       return reveal(
         <ServicesSection
           onOpenBooking={actions.onOpenBooking}
@@ -120,3 +112,13 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return <NotFoundPage />;
   }
 }
+
+/**
+ * Component wrapper so App can code-split this module. A visitor landing on a
+ * city or service page has no use for the careers, terms, or partner pages, and
+ * eager imports put all twenty of them in the first request.
+ */
+export const MarketingPage: React.FC<{ page: SitePage; actions: SharedActions }> = ({
+  page,
+  actions,
+}) => <>{renderMarketingPage(page, actions)}</>;

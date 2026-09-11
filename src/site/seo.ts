@@ -46,11 +46,6 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
       `Same-day mobile dispatch, phone quotes, and 8AM–10PM support for Justin and the surrounding ${LOCAL_HUB.radiusMiles} miles. Call ${SITE_PHONE_DISPLAY}.`,
     path: '/contact',
   },
-  quotes: {
-    title: 'Rough Estimate Calculator | Adaptivity Performance',
-    description: 'Ballpark labor + parts for mobile service inside our Justin radius, then book an $85 diagnostic hold.',
-    path: '/quotes',
-  },
   coverage: {
     title: `Service Area | ${LOCAL_HUB.radiusMiles} Miles From Justin, TX`,
     description: `Check your zip against our ${LOCAL_HUB.radiusMiles}-mile mobile radius — Justin, Northlake, Argyle, Roanoke, Denton, Keller, Haslet, Southlake, Grapevine and north Fort Worth.`,

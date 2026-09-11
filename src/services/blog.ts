@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+export { blogSlugFromPath } from '../site/routePaths';
 
 export type BlogPost = {
   slug: string;
@@ -100,10 +101,6 @@ export function blogPath(slug?: string): string {
   return slug ? `/blog/${slug}` : '/blog';
 }
 
-export function blogSlugFromPath(pathname: string): string | null {
-  const m = pathname.match(/\/blog\/([a-z0-9-]+)\/?$/i);
-  return m ? m[1].toLowerCase() : null;
-}
 
 /** Lightweight markdown → React-friendly blocks (headers + paragraphs). */
 export function splitMarkdownBlocks(md: string): Array<{ type: 'h1' | 'h2' | 'p'; text: string }> {
