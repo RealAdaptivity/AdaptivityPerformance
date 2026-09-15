@@ -1,4 +1,5 @@
 import React from 'react';
+import { LOCAL_HUB } from '../site/localSeo';
 import {
   ArrowRight,
   Wrench,
@@ -103,7 +104,7 @@ const LINKS: {
     {
       to: 'coverage',
       title: 'Service Area',
-      blurb: 'Every zip within 20 miles of our Justin hub.',
+      blurb: `Every zip within ${LOCAL_HUB.radiusMiles} miles of our Justin hub.`,
       icon: <MapPin className="w-5 h-5" />,
       accent: 'text-orange-300 bg-orange-500/10 border-orange-500/30',
     },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { LOCAL_HUB } from '../site/localSeo';
 import {
   Users,
   Building2,
@@ -61,7 +62,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[
-                'Mobile dispatch within 20 miles of Justin',
+                `Mobile dispatch within ${LOCAL_HUB.radiusMiles} miles of Justin`,
                 'Transparent $85 holds — tech sets repair price after diagnosis',
                 'Garage history, receipts, and repair tracking in one place',
               ].map((item) => (
@@ -192,7 +193,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
                 </p>
                 <div className="flex items-start gap-2 text-xs text-slate-400">
                   <MapPin className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                  <span>Serving a 20-mile radius around Justin with fully-equipped mobile service vans dispatched daily.</span>
+                  <span>Serving a {LOCAL_HUB.radiusMiles}-mile radius around Justin with fully-equipped mobile service vans dispatched daily.</span>
                 </div>
               </div>
               <button

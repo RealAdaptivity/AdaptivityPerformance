@@ -1,4 +1,5 @@
 import { Truck, ArrowRight, Calendar, Phone, ShieldCheck, Wrench } from 'lucide-react';
+import { LOCAL_HUB } from '../site/localSeo';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
@@ -55,7 +56,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
                 Partner
               </h1>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl font-medium drop-shadow-sm">
-                Expert certified technicians bringing the full auto repair mechanic shop directly to your driveway, anywhere within 20 miles of Justin. 
+                Expert certified technicians bringing the full auto repair mechanic shop directly to your driveway, anywhere within {LOCAL_HUB.radiusMiles} miles of Justin. 
                 On-site diagnostics, precision brake repairs, battery swaps, starters, and maintenance with <strong className="text-white">zero towing needed</strong>.
               </p>
             </div>

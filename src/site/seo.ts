@@ -311,7 +311,7 @@ export async function shareAdaptivity(opts?: { title?: string; text?: string; ur
   const title = opts?.title || 'Adaptivity Performance';
   const text =
     opts?.text ||
-    `Mobile mechanic for Justin, Northlake & 20 miles around — book a $85 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
+    `Mobile mechanic for Justin, Northlake & ${LOCAL_HUB.radiusMiles} miles around — book a $85 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
   const url = opts?.url || SITE_ORIGIN;
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {

@@ -64,6 +64,36 @@ export const AD_LANDINGS: AdLanding[] = [
     ctaLabel: 'Diagnose my check engine light',
   },
   {
+    slug: 'dallas',
+    headline: 'A mobile mechanic who comes to you in Dallas',
+    subhead:
+      'We run out of a shop in Justin and dispatch across the metroplex. Brakes, diagnostics, batteries, starters and A/C done in your driveway or your office parking lot — no tow, no drop-off, no waiting room.',
+    offer: '$85 diagnostic — credited in full toward the repair',
+    bullets: [
+      'We come to your home or your workplace anywhere in Dallas',
+      'Labor and parts priced on site, before anything comes apart',
+      'Travel is quoted up front — you see the number before you approve anything',
+      '12-month / 12,000-mile warranty on parts and labor',
+    ],
+    proof: ['ASE-level techs', 'Fully equipped vans', 'Priced before we start'],
+    ctaLabel: 'Book a Dallas visit',
+  },
+  {
+    slug: 'fort-worth',
+    headline: 'A mobile mechanic who comes to you in Fort Worth',
+    subhead:
+      'We are already in north Fort Worth most days — Alliance, Presidio, Park Glen, Heritage — and we cover downtown, the Cultural District and the near west side from our Justin shop.',
+    offer: '$85 diagnostic — credited in full toward the repair',
+    bullets: [
+      'Driveway and workplace visits across Fort Worth',
+      'Same-day and next-day slots most weekdays',
+      'Labor and parts priced on site, before anything comes apart',
+      '12-month / 12,000-mile warranty on parts and labor',
+    ],
+    proof: ['Already north of the loop daily', 'No tow, no drop-off', 'Warrantied'],
+    ctaLabel: 'Book a Fort Worth visit',
+  },
+  {
     slug: 'pre-purchase-inspection',
     headline: 'Do not buy that used car yet',
     subhead:

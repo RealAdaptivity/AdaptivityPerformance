@@ -70,7 +70,7 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
                   {FREE_MILES_THRESHOLD} – {SERVICE_RADIUS_MILES} MILES
                 </span>
                 <div className="font-bold text-base text-white mt-1">Outer ring</div>
-                <div className="text-xs text-slate-400">Grapevine, Southlake, Lewisville, Decatur, Azle, NRH</div>
+                <div className="text-xs text-slate-400">Fort Worth, Euless, N. Arlington, Grapevine, Southlake, Lewisville, Decatur, Azle</div>
               </div>
               <span className="text-xl font-extrabold text-orange-400 font-heading">${PER_MILE_RATE.toFixed(2)} / mi</span>
             </div>
