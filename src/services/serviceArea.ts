@@ -1,5 +1,5 @@
 /**
- * Mobile dispatch coverage: Justin, TX hub with a hard 20-mile service radius.
+ * Mobile dispatch coverage: Justin, TX hub with a hard radius (see localSeoData.json).
  *
  * Coverage is an explicit ZIP allow-list derived from `localSeoData.json`, not a
  * 3-digit prefix match — a prefix like `752` would silently pull in Dallas, which

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { LOCAL_HUB } from '../site/localSeo';
 import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
 import { createBookingWithCardHold } from '../services/stripePaymentsApi';
 import { StripeBookingHoldSection } from './StripeBookingHoldSection';
@@ -773,7 +774,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   onClick={() => {
                     void shareAdaptivity({
                       title: 'Adaptivity Performance',
-                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake and 20 miles around.`,
+                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake and ${LOCAL_HUB.radiusMiles} miles around.`,
                     });
                   }}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-orange-500/40 text-orange-300 font-bold text-xs hover:bg-orange-500/10"

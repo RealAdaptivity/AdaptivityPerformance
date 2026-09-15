@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { LOCAL_HUB } from '../site/localSeo';
 import { Send, Phone, Mail, MapPin, CheckCircle2, Loader2, MessageSquare, Car, Wrench, Clock } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
@@ -105,7 +106,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Service Area</div>
                 <div className="font-bold text-white text-sm">100% Mobile — We Come To You</div>
-                <div className="text-xs text-slate-500">Dispatched across Justin, Northlake, Argyle, Denton & 20 miles around</div>
+                <div className="text-xs text-slate-500">Dispatched across Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around</div>
               </div>
             </div>
 
@@ -116,7 +117,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hours</div>
                 <div className="font-bold text-white text-sm">Every day · 8AM–10PM</div>
-                <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Argyle, Denton & 20 miles around</div>
+                <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around</div>
               </div>
             </div>
 

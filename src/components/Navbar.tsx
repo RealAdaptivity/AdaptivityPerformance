@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { LOCAL_HUB } from '../site/localSeo';
 import {
   Phone,
   Calendar,
@@ -92,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-2 min-w-0">
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping flex-shrink-0" />
             <span className="truncate">
-              <strong>NOW ACTIVE:</strong> 100% Mobile Service within <strong>20 miles</strong> of <strong>Justin, TX</strong>
+              <strong>NOW ACTIVE:</strong> 100% Mobile Service within <strong>{LOCAL_HUB.radiusMiles} miles</strong> of <strong>Justin, TX</strong>
             </span>
           </div>
           <span className="hidden sm:flex items-center space-x-1.5 flex-shrink-0 opacity-95 text-[11px] font-bold">

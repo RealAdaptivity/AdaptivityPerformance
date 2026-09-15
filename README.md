@@ -37,7 +37,7 @@ checker and `scripts/generate-sitemap.mjs` all read it.
 search surface:
 
 - `scripts/verify-local-seo.mjs` — every sitemap URL round-trips through the
-  router's own matcher, no city sits outside the 20-mile radius, ad landings
+  router's own matcher, no city sits outside the dispatch radius, ad landings
   never leak into the sitemap.
 - `scripts/emit-static-routes.mjs` — writes a real HTML file per route with its
   own title, canonical and JSON-LD, and fails if any sitemap URL would fall

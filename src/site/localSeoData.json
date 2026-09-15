@@ -5,7 +5,7 @@
     "zip": "76247",
     "lat": 33.0848,
     "lng": -97.2961,
-    "radiusMiles": 20,
+    "radiusMiles": 25,
     "freeRadiusMiles": 15
   },
   "services": [
@@ -310,7 +310,9 @@
     {
       "slug": "justin",
       "city": "Justin",
-      "zips": ["76247"],
+      "zips": [
+        "76247"
+      ],
       "neighborhoods": "Downtown Justin, Hardeman, Wildcat Ridge, Timberbrook",
       "distanceMiles": 0,
       "driveMinutes": 15,
@@ -320,7 +322,10 @@
     {
       "slug": "northlake",
       "city": "Northlake",
-      "zips": ["76226", "76262"],
+      "zips": [
+        "76226",
+        "76262"
+      ],
       "neighborhoods": "Canyon Falls, Harvest, Pecan Square, Northlake Town Center",
       "distanceMiles": 7,
       "driveMinutes": 20,
@@ -330,7 +335,9 @@
     {
       "slug": "argyle",
       "city": "Argyle",
-      "zips": ["76226"],
+      "zips": [
+        "76226"
+      ],
       "neighborhoods": "Village of Argyle, Country Club, Bartonville, Lantana edge",
       "distanceMiles": 9,
       "driveMinutes": 20,
@@ -340,7 +347,9 @@
     {
       "slug": "roanoke",
       "city": "Roanoke",
-      "zips": ["76262"],
+      "zips": [
+        "76262"
+      ],
       "neighborhoods": "Oak Street, Fairway Ranch, Briarwyck, Alliance corridor",
       "distanceMiles": 11,
       "driveMinutes": 22,
@@ -350,7 +359,9 @@
     {
       "slug": "trophy-club",
       "city": "Trophy Club",
-      "zips": ["76262"],
+      "zips": [
+        "76262"
+      ],
       "neighborhoods": "The Highlands, Trophy Club Country Club, Trophy Wood",
       "distanceMiles": 12,
       "driveMinutes": 25,
@@ -360,7 +371,9 @@
     {
       "slug": "haslet",
       "city": "Haslet",
-      "zips": ["76052"],
+      "zips": [
+        "76052"
+      ],
       "neighborhoods": "Haslet Town Center, Sendera Ranch, Blue Mound edge",
       "distanceMiles": 14,
       "driveMinutes": 25,
@@ -370,7 +383,10 @@
     {
       "slug": "keller",
       "city": "Keller",
-      "zips": ["76248", "76244"],
+      "zips": [
+        "76248",
+        "76244"
+      ],
       "neighborhoods": "Keller Town Center, Hidden Lakes, Marshall Ridge, Bear Creek",
       "distanceMiles": 12,
       "driveMinutes": 25,
@@ -380,7 +396,12 @@
     {
       "slug": "fort-worth-north",
       "city": "North Fort Worth",
-      "zips": ["76177", "76131", "76179", "76137"],
+      "zips": [
+        "76177",
+        "76131",
+        "76179",
+        "76137"
+      ],
       "neighborhoods": "Alliance Town Center, Presidio, Park Glen, Heritage, Saginaw edge",
       "distanceMiles": 15,
       "driveMinutes": 28,
@@ -390,7 +411,9 @@
     {
       "slug": "southlake",
       "city": "Southlake",
-      "zips": ["76092"],
+      "zips": [
+        "76092"
+      ],
       "neighborhoods": "Town Square, Timarron, Carillon, Clariden Ranch",
       "distanceMiles": 14,
       "driveMinutes": 27,
@@ -400,7 +423,9 @@
     {
       "slug": "grapevine",
       "city": "Grapevine",
-      "zips": ["76051"],
+      "zips": [
+        "76051"
+      ],
       "neighborhoods": "Historic Main Street, Silver Lake, Western Oaks, Grapevine Mills edge",
       "distanceMiles": 16,
       "driveMinutes": 30,
@@ -410,7 +435,14 @@
     {
       "slug": "denton",
       "city": "Denton",
-      "zips": ["76201", "76205", "76207", "76208", "76209", "76210"],
+      "zips": [
+        "76201",
+        "76205",
+        "76207",
+        "76208",
+        "76209",
+        "76210"
+      ],
       "neighborhoods": "Downtown Square, UNT area, Robson Ranch, Rayzor Ranch, south Denton",
       "distanceMiles": 13,
       "driveMinutes": 25,
@@ -420,7 +452,10 @@
     {
       "slug": "flower-mound",
       "city": "Flower Mound",
-      "zips": ["75022", "75028"],
+      "zips": [
+        "75022",
+        "75028"
+      ],
       "neighborhoods": "Bridlewood, Lakeside, Wellington, Canyon Falls south",
       "distanceMiles": 13,
       "driveMinutes": 25,
@@ -430,7 +465,9 @@
     {
       "slug": "highland-village",
       "city": "Highland Village",
-      "zips": ["75077"],
+      "zips": [
+        "75077"
+      ],
       "neighborhoods": "Copperas Branch, Highland Shores, Briarhill",
       "distanceMiles": 14,
       "driveMinutes": 27,
@@ -440,7 +477,10 @@
     {
       "slug": "lewisville",
       "city": "Lewisville",
-      "zips": ["75067", "75057"],
+      "zips": [
+        "75067",
+        "75057"
+      ],
       "neighborhoods": "Old Town, Vista Ridge, Castle Hills edge",
       "distanceMiles": 18,
       "driveMinutes": 32,
@@ -450,7 +490,9 @@
     {
       "slug": "ponder",
       "city": "Ponder",
-      "zips": ["76259"],
+      "zips": [
+        "76259"
+      ],
       "neighborhoods": "Downtown Ponder, FM 156 corridor",
       "distanceMiles": 7,
       "driveMinutes": 18,
@@ -460,7 +502,9 @@
     {
       "slug": "krum",
       "city": "Krum",
-      "zips": ["76249"],
+      "zips": [
+        "76249"
+      ],
       "neighborhoods": "Downtown Krum, Krum ISD corridor",
       "distanceMiles": 13,
       "driveMinutes": 24,
@@ -470,7 +514,9 @@
     {
       "slug": "sanger",
       "city": "Sanger",
-      "zips": ["76266"],
+      "zips": [
+        "76266"
+      ],
       "neighborhoods": "Downtown Sanger, I-35 corridor, Marion Road",
       "distanceMiles": 19,
       "driveMinutes": 30,
@@ -480,7 +526,9 @@
     {
       "slug": "rhome",
       "city": "Rhome",
-      "zips": ["76078"],
+      "zips": [
+        "76078"
+      ],
       "neighborhoods": "Rhome, Newark edge, FM 3433",
       "distanceMiles": 9,
       "driveMinutes": 20,
@@ -490,7 +538,9 @@
     {
       "slug": "boyd",
       "city": "Boyd",
-      "zips": ["76023"],
+      "zips": [
+        "76023"
+      ],
       "neighborhoods": "Boyd, Aurora edge, FM 730",
       "distanceMiles": 15,
       "driveMinutes": 27,
@@ -500,7 +550,9 @@
     {
       "slug": "newark",
       "city": "Newark",
-      "zips": ["76071"],
+      "zips": [
+        "76071"
+      ],
       "neighborhoods": "Newark, Briar edge",
       "distanceMiles": 12,
       "driveMinutes": 23,
@@ -510,7 +562,9 @@
     {
       "slug": "decatur",
       "city": "Decatur",
-      "zips": ["76234"],
+      "zips": [
+        "76234"
+      ],
       "neighborhoods": "Downtown Square, US-380 corridor, Deer Park",
       "distanceMiles": 19,
       "driveMinutes": 30,
@@ -520,7 +574,9 @@
     {
       "slug": "azle",
       "city": "Azle",
-      "zips": ["76020"],
+      "zips": [
+        "76020"
+      ],
       "neighborhoods": "Azle, Eagle Mountain Lake, Reno edge",
       "distanceMiles": 19,
       "driveMinutes": 32,
@@ -530,7 +586,10 @@
     {
       "slug": "saginaw",
       "city": "Saginaw",
-      "zips": ["76179", "76131"],
+      "zips": [
+        "76179",
+        "76131"
+      ],
       "neighborhoods": "Saginaw, Willow Creek, Bailey Boswell corridor",
       "distanceMiles": 14,
       "driveMinutes": 26,
@@ -540,7 +599,9 @@
     {
       "slug": "watauga",
       "city": "Watauga",
-      "zips": ["76148"],
+      "zips": [
+        "76148"
+      ],
       "neighborhoods": "Watauga, Whitley Road corridor",
       "distanceMiles": 16,
       "driveMinutes": 28,
@@ -550,7 +611,10 @@
     {
       "slug": "north-richland-hills",
       "city": "North Richland Hills",
-      "zips": ["76180", "76182"],
+      "zips": [
+        "76180",
+        "76182"
+      ],
       "neighborhoods": "Smithfield, HomeTown, Davis Boulevard corridor",
       "distanceMiles": 17,
       "driveMinutes": 30,
@@ -560,7 +624,9 @@
     {
       "slug": "colleyville",
       "city": "Colleyville",
-      "zips": ["76034"],
+      "zips": [
+        "76034"
+      ],
       "neighborhoods": "Whittier Heights, Glade Road corridor, Colleyville Town Center",
       "distanceMiles": 16,
       "driveMinutes": 28,
@@ -570,12 +636,104 @@
     {
       "slug": "corinth",
       "city": "Corinth",
-      "zips": ["76210"],
+      "zips": [
+        "76210"
+      ],
       "neighborhoods": "Corinth, Lake Dallas, Shady Shores",
       "distanceMiles": 16,
       "driveMinutes": 28,
       "servicePages": false,
       "blurb": "Corinth, Lake Dallas, and Shady Shores all sit inside the 20-mile radius from the Justin hub."
+    },
+    {
+      "slug": "fort-worth",
+      "city": "Fort Worth",
+      "zips": [
+        "76102",
+        "76104",
+        "76107",
+        "76114",
+        "76164"
+      ],
+      "neighborhoods": "Downtown, Near Southside, Cultural District, River Oaks, Fairmount",
+      "distanceMiles": 23,
+      "driveMinutes": 38,
+      "servicePages": true,
+      "blurb": "Fort Worth proper sits at the outer edge of our radius — 23 miles down from Justin. We run downtown, the Cultural District and the near west side, and the travel line is on the quote before you approve anything."
+    },
+    {
+      "slug": "euless",
+      "city": "Euless",
+      "zips": [
+        "76039",
+        "76040"
+      ],
+      "neighborhoods": "Midway Park, Bear Creek, Glade Parks corridor, South Euless",
+      "distanceMiles": 21,
+      "driveMinutes": 35,
+      "servicePages": true,
+      "blurb": "Euless anchors our Mid-Cities coverage. Driveway service and workplace visits along the 183 and Glade Road corridors, 21 miles from the hub."
+    },
+    {
+      "slug": "north-arlington",
+      "city": "North Arlington",
+      "zips": [
+        "76006",
+        "76011"
+      ],
+      "neighborhoods": "Entertainment District, Lincoln Square, Randol Mill corridor, Six Flags area",
+      "distanceMiles": 22,
+      "driveMinutes": 36,
+      "servicePages": true,
+      "blurb": "We cover north Arlington — the Entertainment District, Lincoln Square and the Randol Mill corridor. Central and south Arlington fall outside the radius, so we stay north of Division."
+    },
+    {
+      "slug": "white-settlement",
+      "city": "White Settlement",
+      "zips": [
+        "76108"
+      ],
+      "neighborhoods": "White Settlement, Las Vegas Trail corridor, west Fort Worth edge",
+      "distanceMiles": 24,
+      "driveMinutes": 40,
+      "servicePages": false,
+      "blurb": "White Settlement and the west Fort Worth edge are inside the 25-mile ring, with a per-mile travel line past the free radius."
+    },
+    {
+      "slug": "little-elm",
+      "city": "Little Elm",
+      "zips": [
+        "75068"
+      ],
+      "neighborhoods": "Little Elm, Lakewood Village, Frisco west edge",
+      "distanceMiles": 21,
+      "driveMinutes": 35,
+      "servicePages": false,
+      "blurb": "Little Elm sits 21 miles east of the hub across the top of Lewisville Lake. Fully covered, travel billed past the free radius."
+    },
+    {
+      "slug": "the-colony",
+      "city": "The Colony",
+      "zips": [
+        "75056"
+      ],
+      "neighborhoods": "The Colony, Austin Ranch, Stewart Creek",
+      "distanceMiles": 24,
+      "driveMinutes": 38,
+      "servicePages": false,
+      "blurb": "The Colony is at our eastern edge. Covered for driveway work, with the travel line shown up front."
+    },
+    {
+      "slug": "aubrey",
+      "city": "Aubrey",
+      "zips": [
+        "76227"
+      ],
+      "neighborhoods": "Aubrey, Cross Roads, Providence Village, Krugerville",
+      "distanceMiles": 23,
+      "driveMinutes": 36,
+      "servicePages": false,
+      "blurb": "Aubrey, Cross Roads and Providence Village are inside the 25-mile ring — the north-east corner of our coverage."
     }
   ]
 }

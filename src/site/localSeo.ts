@@ -1,5 +1,5 @@
 /**
- * Local SEO catalog — Justin hub + 20-mile service radius.
+ * Local SEO catalog — Justin hub + its dispatch radius.
  *
  * `localSeoData.json` is the single source of truth for every indexable local
  * URL. `scripts/generate-sitemap.mjs` reads the same file, so the sitemap and

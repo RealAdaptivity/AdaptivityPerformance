@@ -1,4 +1,5 @@
 import React from 'react';
+import { LOCAL_HUB } from '../site/localSeo';
 import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
@@ -28,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            Justin, TX mobile auto repair and garage performance specialist, serving every driveway within 20 miles of the hub. Quality OE parts, transparent $85 holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
+            Justin, TX mobile auto repair and garage performance specialist, serving every driveway within {LOCAL_HUB.radiusMiles} miles of the hub. Quality OE parts, transparent $85 holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
           </p>
 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">
@@ -62,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <li><SiteLink to="wantToTeach" className="hover:text-orange-400 transition-colors">Want to Teach</SiteLink></li>
             <li><SiteLink to="careers" className="hover:text-orange-400 transition-colors">Careers</SiteLink></li>
             <li><SiteLink to="partners" className="hover:text-orange-400 transition-colors">Shop & garage partners</SiteLink></li>
-            <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">Service area — 20 miles from Justin</SiteLink></li>
+            <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">Service area — {LOCAL_HUB.radiusMiles} miles from Justin</SiteLink></li>
             <li><SiteLink to="performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</SiteLink></li>
             <li><SiteLink to="faq" className="hover:text-orange-400 transition-colors">FAQ</SiteLink></li>
             <li><button onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Book Service Online</button></li>
@@ -79,7 +80,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
               <span className="font-bold text-white">8AM–10PM</span>
             </div>
             <p className="text-[11px] text-slate-500 pt-1">
-              Mobile dispatch every day, 8AM–10PM, anywhere inside our 20-mile radius.
+              Mobile dispatch every day, 8AM–10PM, anywhere inside our {LOCAL_HUB.radiusMiles}-mile radius.
             </p>
           </div>
 
@@ -113,7 +114,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
               <MapPin className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
                 <strong className="text-white">Shop Base:</strong> 410 FM 156, Justin, TX 76247
-                <p className="text-[11px] text-slate-500">Dispatching within 20 miles of Justin, TX (76247)</p>
+                <p className="text-[11px] text-slate-500">Dispatching within {LOCAL_HUB.radiusMiles} miles of Justin, TX ({LOCAL_HUB.zip})</p>
               </div>
             </div>
 
@@ -133,7 +134,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
       <div className="container mx-auto px-4 mt-12 pt-6 border-t border-white/5 text-center text-slate-500 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <span>© 2026 Adaptivity Performance LLC. Servicing Justin, Northlake, Argyle, Denton & 20 miles around.</span>
+          <span>© 2026 Adaptivity Performance LLC. Servicing Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around.</span>
           <span className="bg-slate-900 border border-white/10 text-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
             🔒 Powered by Stripe Connect
           </span>
