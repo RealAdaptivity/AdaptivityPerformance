@@ -15,6 +15,22 @@ const terms = read('src/pages/TermsPrivacyPage.tsx');
 
 requireText(app, 'usePortalRoute() || isNativeShell()', 'Native portal authentication');
 
+// Supabase orders migrations by the numeric timestamp prefix. A name that is not
+// exactly 14 digits sorts unpredictably or is skipped outright, so the migration
+// silently never runs. Catch it here rather than in production.
+{
+  const { readdirSync } = await import('node:fs');
+  const migrationsDir = new URL('../supabase/migrations/', import.meta.url);
+  const bad = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .filter((f) => !/^\d{14}_/.test(f));
+  if (bad.length) {
+    throw new Error(
+      `Migration filenames must start with a 14-digit timestamp then "_": ${bad.join(', ')}`
+    );
+  }
+}
+
 // The contractor agreement version lives in two places: the TS constant the app
 // signs against, and the app_config row the claim gate compares. If they drift,
 // either every tech is locked out or a stale signature passes. Fail the build.
