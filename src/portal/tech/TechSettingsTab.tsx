@@ -368,6 +368,12 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
             Accepted earlier without a drawn signature. Complete the digital signature below so we have a signed copy
             on file.
           </p>
+        ) : agreement?.signedAt && agreement.agreementVersion !== CONTRACTOR_AGREEMENT_VERSION ? (
+          <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
+            The agreement has been updated since you signed
+            {agreement.agreementVersion ? ` (you signed ${agreement.agreementVersion})` : ''}. Read and sign the
+            current version to keep claiming jobs.
+          </p>
         ) : (
           <p className="text-[11px] text-amber-300 leading-relaxed border border-amber-500/30 rounded-lg px-3 py-2">
             Not signed yet. Open the signer, type your legal name, draw your signature, and save.
@@ -406,7 +412,9 @@ export const TechSettingsTab: React.FC<Props> = ({ onSignOut, stripeReturnSync, 
           >
             {agreement?.signed && !agreement.signaturePath
               ? 'Complete digital signature →'
-              : 'Sign agreement digitally →'}
+              : agreement?.signedAt && agreement.agreementVersion !== CONTRACTOR_AGREEMENT_VERSION
+                ? 'Review and sign the updated agreement →'
+                : 'Sign agreement digitally →'}
           </button>
         )}
       </div>

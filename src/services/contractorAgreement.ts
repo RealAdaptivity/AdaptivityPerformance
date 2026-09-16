@@ -3,9 +3,15 @@
 import { supabase } from './supabaseClient';
 import { ensureTechProfile } from './techDispatch';
 
-export const CONTRACTOR_AGREEMENT_VERSION = '2026-07-v1';
+/**
+ * Bump this whenever the agreement text changes materially. A signature is only
+ * current if it was made against this exact version: `signed` goes false and the
+ * database claim gate refuses the job, so every contractor re-signs.
+ */
+export const CONTRACTOR_AGREEMENT_VERSION = '2026-09-v2';
 
 export type ContractorAgreementStatus = {
+  /** True only for a signature made against CONTRACTOR_AGREEMENT_VERSION. */
   signed: boolean;
   signedAt: string | null;
   signerName: string | null;
@@ -54,12 +60,14 @@ export async function fetchContractorAgreementStatus(): Promise<ContractorAgreem
   }
 
   if (data?.contractor_agreement_signed_at && data?.contractor_agreement_signature_path) {
+    const version = (data.contractor_agreement_version as string) || null;
     return {
-      signed: true,
+      // A signature against an older version is not consent to the current terms.
+      signed: version === CONTRACTOR_AGREEMENT_VERSION,
       signedAt: (data.contractor_agreement_signed_at as string) || null,
       signerName: (data.contractor_agreement_signer_name as string) || null,
       signaturePath: (data.contractor_agreement_signature_path as string) || null,
-      agreementVersion: (data.contractor_agreement_version as string) || null,
+      agreementVersion: version,
     };
   }
 
@@ -77,17 +85,20 @@ export async function fetchContractorAgreementStatus(): Promise<ContractorAgreem
   }
 
   if (sig?.signed_at && sig?.signature_path) {
+    const sigVersion = (sig.agreement_version as string) || null;
     return {
-      signed: true,
+      signed: sigVersion === CONTRACTOR_AGREEMENT_VERSION,
       signedAt: sig.signed_at as string,
       signerName: (sig.signer_name as string) || null,
       signaturePath: (sig.signature_path as string) || null,
-      agreementVersion: (sig.agreement_version as string) || null,
+      agreementVersion: sigVersion,
     };
   }
 
   return {
-    signed: Boolean(data?.contractor_agreement_signed_at),
+    signed:
+      Boolean(data?.contractor_agreement_signed_at) &&
+      (data?.contractor_agreement_version as string) === CONTRACTOR_AGREEMENT_VERSION,
     signedAt: (data?.contractor_agreement_signed_at as string) || null,
     signerName: (data?.contractor_agreement_signer_name as string) || null,
     signaturePath: (data?.contractor_agreement_signature_path as string) || null,
