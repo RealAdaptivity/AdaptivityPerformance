@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { CONTRACTOR_AGREEMENT_SECTIONS } from '../../content/contractorAgreementText';
 import { X } from 'lucide-react';
 import {
   TECH_INSURANCE_RECOMMENDATION,
@@ -191,6 +192,39 @@ export const ContractorAgreementSignModal: React.FC<Props> = ({ open, onClose, o
               onPointerCancel={onPointerUp}
             />
             <p className="text-[10px] text-slate-500 mt-1">Use mouse or finger. Saved to Adaptivity records.</p>
+          </div>
+
+          {/* The terms themselves. Attesting to having read an agreement that was
+              never displayed is not meaningful consent. */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Independent Contractor Agreement
+            </p>
+            <div className="max-h-64 overflow-y-auto rounded-xl border border-white/10 bg-[#0b0c10] px-4 py-3 space-y-3">
+              {CONTRACTOR_AGREEMENT_SECTIONS.map((section) => (
+                <section key={section.heading} className="space-y-1.5">
+                  <h4 className="text-[12px] font-bold text-white">{section.heading}</h4>
+                  {section.blocks.map((block, i) =>
+                    block.kind === 'p' ? (
+                      <p key={i} className="text-[11px] text-slate-300 leading-relaxed">
+                        {block.text}
+                      </p>
+                    ) : (
+                      <ul
+                        key={i}
+                        className={`text-[11px] text-slate-300 leading-relaxed pl-4 space-y-1 ${
+                          block.kind === 'ol' ? 'list-decimal' : 'list-disc'
+                        }`}
+                      >
+                        {block.items.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    )
+                  )}
+                </section>
+              ))}
+            </div>
           </div>
 
           <label className="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer">

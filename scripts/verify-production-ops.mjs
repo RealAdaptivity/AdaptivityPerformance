@@ -14,6 +14,32 @@ const webhookSync = read('supabase/functions/configure-stripe-webhook-events/ind
 const terms = read('src/pages/TermsPrivacyPage.tsx');
 
 requireText(app, 'usePortalRoute() || isNativeShell()', 'Native portal authentication');
+
+// The contractor agreement version lives in two places: the TS constant the app
+// signs against, and the app_config row the claim gate compares. If they drift,
+// either every tech is locked out or a stale signature passes. Fail the build.
+{
+  const agreementSrc = read('src/services/contractorAgreement.ts');
+  const m = agreementSrc.match(/CONTRACTOR_AGREEMENT_VERSION = '([^']+)'/);
+  if (!m) throw new Error('Contractor agreement: CONTRACTOR_AGREEMENT_VERSION not found');
+  const version = m[1];
+  const migrationsDir = new URL('../supabase/migrations/', import.meta.url);
+  const { readdirSync } = await import('node:fs');
+  const seeded = readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .some((f) =>
+      readFileSync(new URL(f, migrationsDir), 'utf8').includes(
+        `'contractor_agreement_version', '${version}'`
+      )
+    );
+  if (!seeded) {
+    throw new Error(
+      `Contractor agreement: version ${version} is not seeded into app_config by any migration — ` +
+        'add a migration setting contractor_agreement_version, or the claim gate will reject every tech'
+    );
+  }
+}
+
 if (app.includes('StandaloneTechApp') || existsSync(new URL('../src/components/StandaloneTechApp.tsx', import.meta.url))) {
   throw new Error('Demo technician shell is still reachable');
 }
