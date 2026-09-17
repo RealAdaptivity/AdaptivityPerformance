@@ -34,13 +34,11 @@ const local = await jiti.import(path.join(root, 'src/site/localSeo.ts'));
 const ld = await jiti.import(path.join(root, 'src/site/structuredData.ts'));
 const ads = await jiti.import(path.join(root, 'src/site/adLandings.ts'));
 const routes = await jiti.import(path.join(root, 'src/site/siteRoute.ts'));
-const blog = await jiti.import(path.join(root, 'src/services/blog.ts'));
 
 const { PAGE_SEO, SITE_ORIGIN, SITE_FAQS, citySeo } = seo;
 const { LOCAL_CITIES, SERVICE_PAGE_CITIES, LOCAL_SERVICES, serviceCityMeta, serviceCityFaqs } = local;
 const { cityJsonLd, serviceCityJsonLd, buildLocalBusinessLd, BUSINESS_ID } = ld;
 const { AD_LANDINGS, adLandingMeta, adLandingPath } = ads;
-const { FALLBACK_BLOG_POSTS, isInternalPost } = blog;
 const { LEGACY_PATH_REDIRECTS } = routes;
 
 const template = fs.readFileSync(indexPath, 'utf8');
@@ -127,7 +125,6 @@ const written = [];
 
 /* Fixed marketing pages. */
 for (const meta of Object.values(PAGE_SEO)) {
-  if (meta.path === '/blog' && meta.title.startsWith('Article')) continue; // blogPost shares /blog
   write(meta.path, renderRoute({ meta }));
   written.push(meta.path);
 }
@@ -149,37 +146,6 @@ for (const city of SERVICE_PAGE_CITIES) {
     );
     written.push(meta.path);
   }
-}
-
-/* Seed blog posts. Posts added later in Supabase fall through to 404.html — the
-   sitemap only ever advertises the seeds, so nothing indexable is left 404ing. */
-for (const post of FALLBACK_BLOG_POSTS) {
-  const internal = isInternalPost(post.slug);
-  const meta = {
-    title: `${post.title} | Adaptivity Performance`,
-    description: post.excerpt || post.title,
-    path: `/blog/${post.slug}`,
-  };
-  const jsonLd = internal
-    ? []
-    : [
-        {
-          '@context': 'https://schema.org',
-          '@type': 'BlogPosting',
-          headline: post.title,
-          description: post.excerpt || undefined,
-          datePublished: post.published_at || undefined,
-          mainEntityOfPage: `${SITE_ORIGIN}${meta.path}`,
-          author: { '@type': 'Organization', name: 'Adaptivity Performance' },
-          publisher: {
-            '@type': 'Organization',
-            name: 'Adaptivity Performance',
-            logo: { '@type': 'ImageObject', url: `${SITE_ORIGIN}/logo.png` },
-          },
-        },
-      ];
-  write(meta.path, renderRoute({ meta, jsonLd, noindex: internal }));
-  written.push(meta.path);
 }
 
 /* Paid landing pages — real files, but noindex. */
@@ -237,7 +203,7 @@ for (const [route, label] of [
   written.push(`/${route}`);
 }
 
-/* Last-resort fallback for genuinely unknown paths (blog posts, referral codes). */
+/* Last-resort fallback for genuinely unknown paths (referral codes, pay links). */
 fs.copyFileSync(indexPath, path.join(dist, '404.html'));
 
 /* Every sitemap URL must now be a real file, or it 404s to a crawler. */

@@ -13,7 +13,6 @@ import { JoinAsTechPage } from './JoinAsTechPage';
 import { CareersPage } from './CareersPage';
 import { WantToLearnPage } from './WantToLearnPage';
 import { WantToTeachPage } from './WantToTeachPage';
-import { BlogIndexPage } from './BlogIndexPage';
 import { TermsPrivacyPage } from './TermsPrivacyPage';
 import { PrivacyPolicyPage } from './PrivacyPolicyPage';
 import { RefundPolicyPage } from './RefundPolicyPage';
@@ -94,8 +93,6 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return reveal(<PerformanceSection onOpenBooking={actions.onOpenBooking} />);
     case 'faq':
       return reveal(<SEOContentBlock />, 'fade');
-    case 'blog':
-      return reveal(<BlogIndexPage />);
     case 'terms':
       return reveal(<TermsPrivacyPage />, 'fade');
     case 'privacy':
@@ -104,7 +101,6 @@ export function renderMarketingPage(page: SitePage, actions: SharedActions): Rea
       return reveal(<RefundPolicyPage />, 'fade');
     case 'notFound':
       return <NotFoundPage />;
-    case 'blogPost':
     case 'city':
     case 'home':
       return null;

@@ -266,15 +266,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <SiteLink to="faq" onNavigate={close} className={itemClass}>
                       FAQ
                     </SiteLink>
-                    <SiteLink
-                      to="blog"
-                      onNavigate={close}
-                      className={`${itemClass} ${
-                        page === 'blog' || page === 'blogPost' ? 'text-orange-400' : ''
-                      }`}
-                    >
-                      Blog
-                    </SiteLink>
                     <button
                       type="button"
                       onClick={() => {

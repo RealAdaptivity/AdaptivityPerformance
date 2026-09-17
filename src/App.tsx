@@ -31,7 +31,6 @@ const ReferralModal = lazy(() => import('./components/ReferralModal').then((m) =
 const AIMechanicChatbot = lazy(() => import('./components/AIMechanicChatbot').then((m) => ({ default: m.AIMechanicChatbot })));
 const MarketingPage = lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m.MarketingPage })));
 const ReferralLandingPage = lazy(() => import('./pages/ReferralLandingPage').then((m) => ({ default: m.ReferralLandingPage })));
-const BlogPostPage = lazy(() => import('./pages/BlogPostPage').then((m) => ({ default: m.BlogPostPage })));
 const PayLinkPage = lazy(() => import('./pages/PayLinkPage').then((m) => ({ default: m.PayLinkPage })));
 import { SERVICE_CATALOG } from './services/serviceCatalog';
 import { HomePage } from './pages/HomePage';
@@ -45,7 +44,7 @@ import {
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
-import { blogSlugFromPath, payReferenceFromPath, referralCodeFromPath } from './site/routePaths';
+import { payReferenceFromPath, referralCodeFromPath } from './site/routePaths';
 import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
 import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
 import { ServiceCityPage } from './pages/ServiceCityPage';
@@ -60,7 +59,6 @@ function MainAppContent() {
   const cityLanding = cityFromPath(pathname);
   const serviceCity = serviceCityFromPath(pathname);
   const adLanding = adLandingFromPath(pathname);
-  const blogSlug = blogSlugFromPath(pathname);
   const referralCode = referralCodeFromPath(pathname);
 
   useEffect(() => {
@@ -83,11 +81,6 @@ function MainAppContent() {
       return;
     }
     applyJsonLd([]);
-    if (page === 'blogPost') {
-      // BlogPostPage applies post-specific SEO once loaded
-      applyDocumentSeo(PAGE_SEO.blogPost);
-      return;
-    }
     if (page === 'referral') {
       return;
     }
@@ -328,10 +321,6 @@ function MainAppContent() {
         ) : page === 'referral' && referralCode ? (
           <Suspense fallback={null}>
             <ReferralLandingPage onOpenBooking={openBooking} />
-          </Suspense>
-        ) : page === 'blogPost' && blogSlug ? (
-          <Suspense fallback={null}>
-            <BlogPostPage slug={blogSlug} />
           </Suspense>
         ) : (
           <Suspense fallback={null}>

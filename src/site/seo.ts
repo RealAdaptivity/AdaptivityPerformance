@@ -164,17 +164,6 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
     description: 'Hands-on learning paths for aspiring mobile and shop technicians.',
     path: '/learn',
   },
-  blog: {
-    title: 'Blog | Mobile Mechanic Tips — Adaptivity Performance',
-    description:
-      'Local repair guides: brake pricing, mobile mechanic vs dealership, and service tips for Justin, Northlake and Denton drivers.',
-    path: '/blog',
-  },
-  blogPost: {
-    title: 'Article | Adaptivity Performance Blog',
-    description: 'Mobile mechanic tips and local auto repair guides from Adaptivity Performance.',
-    path: '/blog',
-  },
   terms: {
     title: 'Terms of Service | Adaptivity Performance',
     description: 'Master service agreement and legal disclosures for Adaptivity Performance LLC.',

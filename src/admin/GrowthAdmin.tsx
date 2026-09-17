@@ -10,7 +10,6 @@ import {
   ShieldAlert,
   Star,
 } from 'lucide-react';
-import { FALLBACK_BLOG_POSTS, blogPath } from '../services/blog';
 import { CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY } from '../site/seo';
 import {
   exportPartnerReportCsv,
@@ -297,23 +296,6 @@ export const GrowthAdmin: React.FC = () => {
               </p>
             </div>
           </div>
-        </li>
-        <li className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-2">
-          <p className="text-sm font-bold text-white">Blog seeds</p>
-          <ul className="space-y-1.5">
-            {FALLBACK_BLOG_POSTS.map((post) => (
-              <li key={post.slug}>
-                <a
-                  href={blogPath(post.slug)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-orange-300 hover:underline"
-                >
-                  {post.title}
-                </a>
-              </li>
-            ))}
-          </ul>
         </li>
       </ul>
     </div>
