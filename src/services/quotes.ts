@@ -2,9 +2,16 @@
 
 import { supabase } from './supabaseClient';
 import { SALES_TAX_BASIS_POINTS, salesTaxCents, type TaxMode } from './salesTax';
+import { LABOR_RATE_CENTS, laborCentsForHours } from './laborRate';
 
 export type QuoteLine = {
   title: string;
+  /**
+   * Billable hours for this line. When set, labor is hours x the quote's rate
+   * and laborDollars is derived from it. Left unset for flat-fee work like the
+   * $85 diagnostic, where labor is typed directly.
+   */
+  hours?: number;
   laborDollars: number;
   partsDollars: number;
   note?: string;
@@ -27,6 +34,7 @@ export type Quote = {
   taxRateBasisPoints: number;
   taxCents: number;
   totalCents: number;
+  laborRateCents: number;
   notes: string | null;
   validUntil: string | null;
   status: QuoteStatus;
@@ -41,6 +49,7 @@ export type QuoteDraft = {
   vehicle?: string;
   lineItems: QuoteLine[];
   taxMode: TaxMode;
+  laborRateCents?: number;
   notes?: string;
   validUntil?: string | null;
   status?: QuoteStatus;
@@ -53,8 +62,18 @@ const dollarsToCents = (n: number) => Math.round((Number(n) || 0) * 100);
  * the PDF, the number in the row and the number the customer is told are the
  * same arithmetic in one place.
  */
-export function totalsFor(lineItems: QuoteLine[], taxMode: TaxMode) {
-  const laborCents = lineItems.reduce((sum, l) => sum + dollarsToCents(l.laborDollars), 0);
+export function lineLaborCents(line: QuoteLine, rateCents = LABOR_RATE_CENTS): number {
+  return line.hours && line.hours > 0
+    ? laborCentsForHours(line.hours, rateCents)
+    : dollarsToCents(line.laborDollars);
+}
+
+export function totalsFor(
+  lineItems: QuoteLine[],
+  taxMode: TaxMode,
+  rateCents = LABOR_RATE_CENTS
+) {
+  const laborCents = lineItems.reduce((sum, l) => sum + lineLaborCents(l, rateCents), 0);
   const partsCents = lineItems.reduce((sum, l) => sum + dollarsToCents(l.partsDollars), 0);
   const taxCents = salesTaxCents({ laborCents, partsCents, mode: taxMode });
   return {
@@ -81,6 +100,7 @@ function rowToQuote(row: Record<string, unknown>): Quote {
     taxRateBasisPoints: (row.tax_rate_basis_points as number) ?? SALES_TAX_BASIS_POINTS,
     taxCents: (row.tax_cents as number) ?? 0,
     totalCents: (row.total_cents as number) ?? 0,
+    laborRateCents: (row.labor_rate_cents as number) ?? LABOR_RATE_CENTS,
     notes: (row.notes as string) ?? null,
     validUntil: (row.valid_until as string) ?? null,
     status: (row.status as QuoteStatus) ?? 'draft',
@@ -105,7 +125,8 @@ export async function createQuote(draft: QuoteDraft): Promise<Quote> {
   const lines = draft.lineItems.filter((l) => l.title.trim());
   if (!lines.length) throw new Error('Add at least one line item');
 
-  const totals = totalsFor(lines, draft.taxMode);
+  const rateCents = draft.laborRateCents ?? LABOR_RATE_CENTS;
+  const totals = totalsFor(lines, draft.taxMode, rateCents);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -125,6 +146,7 @@ export async function createQuote(draft: QuoteDraft): Promise<Quote> {
       tax_rate_basis_points: SALES_TAX_BASIS_POINTS,
       tax_cents: totals.taxCents,
       total_cents: totals.totalCents,
+      labor_rate_cents: rateCents,
       notes: draft.notes?.trim() || null,
       valid_until: draft.validUntil || null,
       status: draft.status ?? 'draft',

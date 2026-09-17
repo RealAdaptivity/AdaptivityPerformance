@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { LABOR_RATE_LABEL } from '../services/laborRate';
 import { ChevronDown, MapPin, CheckCircle2 } from 'lucide-react';
 import { SITE_FAQS, SITE_PHONE_DISPLAY } from '../site/seo';
 
@@ -61,7 +62,7 @@ export const SEOContentBlock: React.FC = () => {
               In addition to our mobile units, Adaptivity Performance operates a state-of-the-art
               garage hub in Justin, TX for heavy-duty truck lifts, custom exhaust installations,
               suspension tuning, and in-depth engine diagnostics. We charge a flat{' '}
-              <strong className="text-white">$125/hr labor rate</strong> with zero hidden fees and
+              <strong className="text-white">{LABOR_RATE_LABEL} labor rate</strong> with zero hidden fees and
               back every job with a 12-month warranty. Call{' '}
               <strong className="text-orange-400 font-bold">{SITE_PHONE_DISPLAY}</strong> today.
             </p>

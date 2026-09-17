@@ -4,6 +4,7 @@ import { openPrintableHtmlWindow } from './openPrintableHtml';
 import { PRINT_DOCUMENT_STYLES } from './printDocumentStyles';
 import { SALES_TAX_LABEL, type TaxMode } from './salesTax';
 import { SITE_ORIGIN, SITE_PHONE_DISPLAY } from '../site/seo';
+import { lineLaborCents } from './quotes';
 import type { Quote } from './quotes';
 
 function money(cents: number) {
@@ -40,13 +41,20 @@ function formatDate(iso: string | null | undefined) {
 export function buildQuoteHtml(quote: Quote): string {
   const lines = quote.lineItems.filter((l) => l.title?.trim());
 
+  const rateCents = quote.laborRateCents || 12_500;
+
   const rows = lines
     .map((l) => {
-      const labor = Math.round((Number(l.laborDollars) || 0) * 100);
+      const labor = lineLaborCents(l, rateCents);
       const parts = Math.round((Number(l.partsDollars) || 0) * 100);
-      const note = l.note?.trim()
-        ? `<div class="line-detail">${escapeHtml(l.note.trim())}</div>`
-        : '';
+      // Show the customer the arithmetic rather than an unexplained figure —
+      // "2.5 hrs x $125/hr" answers the question before they ask it.
+      const hoursBit =
+        l.hours && l.hours > 0
+          ? `${l.hours} hr${l.hours === 1 ? '' : 's'} \u00d7 ${money(rateCents)}/hr`
+          : '';
+      const detail = [hoursBit, l.note?.trim()].filter(Boolean).join(' \u00b7 ');
+      const note = detail ? `<div class="line-detail">${escapeHtml(detail)}</div>` : '';
       return `<tr>
         <td>
           <div class="line-title">${escapeHtml(l.title.trim())}</div>
