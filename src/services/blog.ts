@@ -37,7 +37,7 @@ export const FALLBACK_BLOG_POSTS: BlogPost[] = [
     title: 'Google Business review playbook for Adaptivity',
     excerpt: 'Internal growth checklist: ask for reviews, reply fast, post weekly.',
     body_md:
-      '# Google Business review playbook\n\n1. After every completed job, send the review link\n2. Reply to every review within 48 hours\n3. Post a weekly Google Business update (photo from a job + city keyword)\n4. Keep NAP consistent: 410 FM 156, Justin TX 76247 · (940) 304-0620\n\nReview URL: set VITE_GOOGLE_REVIEW_URL in production.',
+      '# Google Business review playbook\n\n1. After every completed job, send the review link (live and already wired into the portal, booking modal and city pages)\n2. Reply to every review within 48 hours\n3. Post a weekly Google Business update (photo from a job + city keyword)\n4. Keep NAP consistent everywhere \u2014 Adaptivity Performance \u00b7 Justin, TX 76247 \u00b7 (940) 304-0620. Use that exact name, with no service-keyword suffix, so the site schema, the Google listing and every directory match. As a service-area business, keep the street address hidden on the Google profile and list the service cities instead.\n\nReview URL: https://g.page/r/CaIynDu9Qo0SEBM/review (VITE_GOOGLE_REVIEW_URL overrides it for previews).',
     city_slug: null,
     published_at: '2026-07-28T00:00:00.000Z',
   },

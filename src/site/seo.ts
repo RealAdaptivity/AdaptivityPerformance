@@ -10,10 +10,27 @@ export const SITE_PHONE_DIGITS = '9403040620';
 /** Ready for href={SITE_PHONE_TEL} */
 export const SITE_PHONE_TEL = `tel:${SITE_PHONE_E164}`;
 
-/** Swap for your live Google Business “Write a review” URL when ready. */
+/**
+ * Live Google Business “Write a review” deep link. The env var is an override
+ * for previews and staging; the default below is the real production link, so a
+ * missing env var degrades to the correct behaviour rather than a dead CTA.
+ */
 export const GOOGLE_REVIEW_URL =
   (import.meta.env.VITE_GOOGLE_REVIEW_URL as string | undefined)?.trim() ||
   'https://g.page/r/CaIynDu9Qo0SEBM/review';
+
+/**
+ * Profiles that belong to this business, for schema.org `sameAs`.
+ *
+ * This is how a search engine ties the website to the map listing and the
+ * social profiles as one entity rather than several look-alike businesses, so
+ * only add a URL that is confirmed to be ours. Query strings are stripped —
+ * `?hl=en` and the like are viewer state, not part of the profile's identity.
+ */
+export const SOCIAL_PROFILE_URLS: readonly string[] = [
+  'https://www.facebook.com/profile.php?id=61593460179618',
+  'https://www.instagram.com/adaptivityperformance/',
+];
 
 export type SeoMeta = {
   title: string;

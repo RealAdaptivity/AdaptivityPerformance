@@ -1,11 +1,19 @@
 /**
- * Per-route JSON-LD. The static block in index.html describes the business as a
- * whole; these builders add the page-specific graph (Service, FAQPage,
- * BreadcrumbList) that lets a landing page rank for its own intent.
+ * Per-route JSON-LD, including the business entity itself.
+ *
+ * index.html used to carry its own hand-written business block. It drifted:
+ * it still advertised a 20-mile radius after the catalog moved to 25, and it
+ * used a different `name` than this file while sharing the same `@id`, so a
+ * crawler merging by @id was handed two contradictory answers about the two
+ * facts that matter most for a map listing. Everything is generated from the
+ * catalog here now, so the radius and the service-area list cannot go stale
+ * again, and there is exactly one definition of the business.
  */
-import { SITE_ORIGIN, SITE_PHONE_E164 } from './seo';
+import { SITE_ORIGIN, SITE_PHONE_E164, SOCIAL_PROFILE_URLS } from './seo';
 import {
+  LOCAL_CITIES,
   LOCAL_HUB,
+  LOCAL_SERVICES,
   cityPathOf,
   priceRangeLabel,
   serviceCityPath,
@@ -19,7 +27,7 @@ export type JsonLdBlock = Record<string, unknown>;
 /** Marks the nodes we own, so a re-render replaces them instead of stacking. */
 const DYNAMIC_LD_ATTR = 'data-adaptivity-ld';
 
-const BUSINESS_ID = `${SITE_ORIGIN}/#business`;
+export const BUSINESS_ID = `${SITE_ORIGIN}/#business`;
 
 function absolute(path: string): string {
   return `${SITE_ORIGIN}${path === '/' ? '' : path}`;
@@ -29,16 +37,47 @@ export function businessReference(): JsonLdBlock {
   return { '@id': BUSINESS_ID };
 }
 
+/**
+ * The business name must match the Google Business Profile exactly. Keyword
+ * suffixes ("… - Mechanic Shop & Mobile Auto Repair", as index.html carried)
+ * are against Google's business-name guidelines and weaken the match between
+ * the site and the listing, so the plain legal-style name is what we publish.
+ */
+export const BUSINESS_NAME = 'Adaptivity Performance';
+
+/** Mobile service: dispatched any hour, so no weekly closing time to declare. */
+function openingHours(): JsonLdBlock {
+  return {
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    opens: '00:00',
+    closes: '23:59',
+  };
+}
+
 export function buildLocalBusinessLd(city?: LocalCity): JsonLdBlock {
   return {
     '@context': 'https://schema.org',
-    '@type': 'AutoRepair',
+    '@type': ['AutoRepair', 'AutomotiveBusiness'],
     '@id': BUSINESS_ID,
-    name: 'Adaptivity Performance',
+    name: BUSINESS_NAME,
+    description: `Mobile mechanic dispatched to driveways and workplaces within ${LOCAL_HUB.radiusMiles} miles of ${LOCAL_HUB.city}, ${LOCAL_HUB.state}.`,
     telephone: SITE_PHONE_E164,
     url: SITE_ORIGIN,
     image: `${SITE_ORIGIN}/og-image.png`,
+    logo: `${SITE_ORIGIN}/logo.png`,
     priceRange: '$$',
+    sameAs: [...SOCIAL_PROFILE_URLS],
+    serviceType: LOCAL_SERVICES.map((s) => s.name),
+    openingHoursSpecification: [openingHours()],
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Mobile auto repair services',
+      itemListElement: LOCAL_SERVICES.map((s) => ({
+        '@type': 'Offer',
+        itemOffered: { '@type': 'Service', name: s.name, description: s.blurb },
+      })),
+    },
     address: {
       '@type': 'PostalAddress',
       addressLocality: LOCAL_HUB.city,
@@ -51,15 +90,24 @@ export function buildLocalBusinessLd(city?: LocalCity): JsonLdBlock {
       latitude: LOCAL_HUB.lat,
       longitude: LOCAL_HUB.lng,
     },
-    areaServed: {
-      '@type': 'GeoCircle',
-      geoMidpoint: {
-        '@type': 'GeoCoordinates',
-        latitude: LOCAL_HUB.lat,
-        longitude: LOCAL_HUB.lng,
+    areaServed: [
+      {
+        '@type': 'GeoCircle',
+        geoMidpoint: {
+          '@type': 'GeoCoordinates',
+          latitude: LOCAL_HUB.lat,
+          longitude: LOCAL_HUB.lng,
+        },
+        geoRadius: `${LOCAL_HUB.radiusMiles} mi`,
       },
-      geoRadius: `${LOCAL_HUB.radiusMiles} mi`,
-    },
+      // Naming the towns as well as the circle: the circle states the rule, the
+      // list is what a crawler can actually match a "<service> near <town>"
+      // query against.
+      ...LOCAL_CITIES.map((c) => ({
+        '@type': 'City' as const,
+        name: `${c.city}, ${LOCAL_HUB.state}`,
+      })),
+    ],
     ...(city
       ? {
           serviceArea: {

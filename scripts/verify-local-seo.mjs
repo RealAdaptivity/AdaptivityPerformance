@@ -89,6 +89,42 @@ if (fs.existsSync(sitemapPath)) {
   if (xml.includes('/lp/')) fail('ad landing pages leaked into sitemap.xml');
 }
 
+/* 7. Exactly one business entity, and it agrees with the catalog.
+      index.html used to hand-write its own block: it drifted to a 20-mile
+      radius and a different `name` while sharing the generated block's @id, so
+      a crawler merging by @id saw two answers for the radius and the business
+      name. Both are load-bearing for a map listing, so assert there is one
+      definition and that it still matches the catalog. */
+const sd = await jiti.import(path.join(root, 'src/site/structuredData.ts'));
+const { buildLocalBusinessLd, BUSINESS_ID, BUSINESS_NAME } = sd;
+
+const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+if (/<script[^>]*application\/ld\+json/.test(indexHtml)) {
+  fail('index.html hand-writes JSON-LD again — the business block is generated per route');
+}
+
+const biz = buildLocalBusinessLd();
+if (biz['@id'] !== BUSINESS_ID) fail('business block @id does not match BUSINESS_ID');
+if (biz.name !== BUSINESS_NAME) fail('business block name does not match BUSINESS_NAME');
+if (/[-–|]/.test(String(biz.name))) {
+  fail(`business name "${biz.name}" carries a keyword suffix — it must match the Google listing exactly`);
+}
+
+const circle = (biz.areaServed || []).find((a) => a['@type'] === 'GeoCircle');
+if (!circle) fail('business block has no GeoCircle areaServed');
+else if (circle.geoRadius !== `${LOCAL_HUB.radiusMiles} mi`) {
+  fail(`business geoRadius ${circle.geoRadius} != catalog ${LOCAL_HUB.radiusMiles} mi`);
+}
+
+const namedCities = (biz.areaServed || []).filter((a) => a['@type'] === 'City').length;
+if (namedCities !== LOCAL_CITIES.length) {
+  fail(`business areaServed names ${namedCities} cities, catalog has ${LOCAL_CITIES.length}`);
+}
+
+for (const url of biz.sameAs || []) {
+  if (!/^https:\/\//.test(url)) fail(`sameAs entry is not an https URL: ${url}`);
+}
+
 if (failures.length) {
   console.error(`✗ local SEO check failed (${failures.length})`);
   for (const f of failures) console.error(`  - ${f}`);
