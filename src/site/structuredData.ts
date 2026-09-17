@@ -65,7 +65,7 @@ export function buildLocalBusinessLd(city?: LocalCity): JsonLdBlock {
     telephone: SITE_PHONE_E164,
     url: SITE_ORIGIN,
     image: `${SITE_ORIGIN}/og-image.png`,
-    logo: `${SITE_ORIGIN}/logo.png`,
+    logo: `${SITE_ORIGIN}/logo-512.png`,
     priceRange: '$$',
     sameAs: [...SOCIAL_PROFILE_URLS],
     serviceType: LOCAL_SERVICES.map((s) => s.name),

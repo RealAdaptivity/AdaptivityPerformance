@@ -21,9 +21,16 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
           
           {/* Full-Bleed Real Mechanic Background Image */}
           <div className="absolute inset-0 z-0">
+            {/* The LCP element on every marketing page. Intrinsic size prevents
+                the reflow as it loads; fetchpriority pairs with the preload in
+                index.html so the browser does not discover it late. */}
             <img
               src="/images/hero-full-bg.jpg"
               alt="Adaptivity Performance certified technician diagnosing vehicle in residential driveway"
+              width={1376}
+              height={768}
+              fetchPriority="high"
+              decoding="async"
               className="w-full h-full object-cover object-right md:object-[75%_center]"
             />
             {/* Smooth Linear Gradient Fade Overlay: Dark Obsidian on Left fading to Image on Right */}

@@ -3,14 +3,16 @@
   "name": "Adaptivity Performance",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "logo-256.png",
       "type": "image/png",
-      "sizes": "1024x1024"
+      "sizes": "256x256",
+      "purpose": "any"
     },
     {
-      "src": "app-icon.png",
+      "src": "logo-512.png",
       "type": "image/png",
-      "sizes": "1024x1024"
+      "sizes": "512x512",
+      "purpose": "any"
     }
   ],
   "start_url": "./",
