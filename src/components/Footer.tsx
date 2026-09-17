@@ -8,7 +8,7 @@ import {
   GOOGLE_REVIEW_URL,
   SITE_PHONE_DISPLAY,
   SITE_PHONE_TEL,
-  SOCIAL_PROFILE_URLS,
+  SOCIAL_PROFILES,
   cityPath,
 } from '../site/seo';
 
@@ -139,20 +139,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
                 lists in sameAs. A search engine corroborates the entity from
                 both, so the two must not disagree. */}
             <div className="flex items-center gap-4 pt-2">
-              {SOCIAL_PROFILE_URLS.map((url) => {
-                const label = url.includes('facebook') ? 'Facebook' : 'Instagram';
-                return (
-                  <a
-                    key={url}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer me"
-                    className="hover:text-orange-400 transition-colors font-semibold"
-                  >
-                    {label}
-                  </a>
-                );
-              })}
+              {SOCIAL_PROFILES.map(({ label, url }) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer me"
+                  className="hover:text-orange-400 transition-colors font-semibold"
+                >
+                  {label}
+                </a>
+              ))}
               <a
                 href={GOOGLE_REVIEW_URL}
                 target="_blank"

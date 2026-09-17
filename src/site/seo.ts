@@ -27,10 +27,22 @@ export const GOOGLE_REVIEW_URL =
  * only add a URL that is confirmed to be ours. Query strings are stripped —
  * `?hl=en` and the like are viewer state, not part of the profile's identity.
  */
-export const SOCIAL_PROFILE_URLS: readonly string[] = [
-  'https://www.facebook.com/profile.php?id=61593460179618',
-  'https://www.instagram.com/adaptivityperformance/',
+export type SocialProfile = { label: string; url: string };
+
+export const SOCIAL_PROFILES: readonly SocialProfile[] = [
+  {
+    label: 'Google',
+    // From Google's own Share dialog. share.google is a redirector rather than
+    // a canonical maps URL — if it is replaced with the expanded
+    // https://www.google.com/maps/place/... form, swap it here and both the
+    // footer link and sameAs follow.
+    url: 'https://share.google/OttBrvyUOiI6R6svU',
+  },
+  { label: 'Facebook', url: 'https://www.facebook.com/profile.php?id=61593460179618' },
+  { label: 'Instagram', url: 'https://www.instagram.com/adaptivityperformance/' },
 ];
+
+export const SOCIAL_PROFILE_URLS: readonly string[] = SOCIAL_PROFILES.map((p) => p.url);
 
 export type SeoMeta = {
   title: string;
