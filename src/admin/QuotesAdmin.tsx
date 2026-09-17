@@ -3,6 +3,7 @@ import { Plus, Printer, Trash2, X } from 'lucide-react';
 import {
   createQuote,
   deleteQuote,
+  lineLaborCents,
   listQuotes,
   setQuoteStatus,
   totalsFor,
@@ -12,6 +13,11 @@ import {
 } from '../services/quotes';
 import { openQuotePrintWindow } from '../services/quotePdf';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
+import {
+  LABOR_RATE_CENTS,
+  fetchDefaultLaborRateCents,
+  setDefaultLaborRateCents,
+} from '../services/laborRate';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -45,12 +51,21 @@ export const QuotesAdmin: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
+  const [rateDollars, setRateDollars] = useState<number>(LABOR_RATE_CENTS / 100);
+  /* The shop default, owner-set and stored in app_config. Quotes start here. */
+  const [shopRateCents, setShopRateCents] = useState<number>(LABOR_RATE_CENTS);
+  const [shopRateDraft, setShopRateDraft] = useState<string>('');
+  const [savingRate, setSavingRate] = useState(false);
   const [lines, setLines] = useState<QuoteLine[]>([emptyLine()]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await listQuotes());
+      const [quotes, rate] = await Promise.all([listQuotes(), fetchDefaultLaborRateCents()]);
+      setRows(quotes);
+      setShopRateCents(rate);
+      setShopRateDraft(String(rate / 100));
+      setRateDollars(rate / 100);
       setError(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load quotes');
@@ -65,9 +80,10 @@ export const QuotesAdmin: React.FC = () => {
 
   /* Same arithmetic the service uses on save, so the figure on screen and the
      figure on the PDF cannot disagree. */
+  const rateCents = Math.round((Number(rateDollars) || 0) * 100);
   const totals = useMemo(
-    () => totalsFor(lines.filter((l) => l.title.trim()), taxMode),
-    [lines, taxMode]
+    () => totalsFor(lines.filter((l) => l.title.trim()), taxMode, rateCents),
+    [lines, taxMode, rateCents]
   );
 
   const resetForm = () => {
@@ -79,6 +95,7 @@ export const QuotesAdmin: React.FC = () => {
     setNotes('');
     setValidUntil('');
     setTaxMode('parts');
+    setRateDollars(shopRateCents / 100);
     setLines([emptyLine()]);
   };
 
@@ -98,6 +115,7 @@ export const QuotesAdmin: React.FC = () => {
         vehicle,
         lineItems: lines,
         taxMode,
+        laborRateCents: rateCents,
         notes,
         validUntil: validUntil || null,
         status: andPrint ? 'sent' : 'draft',
@@ -158,6 +176,56 @@ export const QuotesAdmin: React.FC = () => {
           {building ? 'Close builder' : 'New quote'}
         </button>
       </div>
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+            Shop labor rate $/hr
+          </label>
+          <input
+            type="number" min="0" step="1"
+            className="w-36 bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white"
+            value={shopRateDraft}
+            onChange={(e) => setShopRateDraft(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          disabled={savingRate || Number(shopRateDraft) * 100 === shopRateCents}
+          onClick={() => {
+            void (async () => {
+              setSavingRate(true);
+              setError(null);
+              try {
+                const cents = Math.round(Number(shopRateDraft) * 100);
+                await setDefaultLaborRateCents(cents);
+                setShopRateCents(cents);
+                setRateDollars(cents / 100);
+                setMessage(`Shop labor rate set to $${(cents / 100).toFixed(2)}/hr.`);
+              } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : 'Could not save labor rate');
+              } finally {
+                setSavingRate(false);
+              }
+            })();
+          }}
+          className="py-2.5 px-4 rounded-xl border border-white/15 text-slate-200 text-xs font-bold disabled:opacity-40"
+        >
+          {savingRate ? 'Saving…' : 'Save default'}
+        </button>
+        <p className="text-[10px] text-slate-500 flex-1 min-w-[200px]">
+          New quotes start at this rate. Change it here any time — no code change needed.
+        </p>
+      </div>
+
+      {shopRateCents !== LABOR_RATE_CENTS && (
+        <p className="text-xs text-amber-300 border border-amber-500/30 bg-amber-500/10 rounded-xl px-3 py-2">
+          Your website advertises <strong>${(LABOR_RATE_CENTS / 100).toFixed(2)}/hr</strong> but your
+          quoting default is <strong>${(shopRateCents / 100).toFixed(2)}/hr</strong>. The site copy is
+          baked in at build time — it needs a code change and a deploy to match, or customers will be
+          quoted a different rate than they were shown.
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-red-300 border border-red-500/30 bg-red-500/10 rounded-xl px-3 py-2">
@@ -235,12 +303,35 @@ export const QuotesAdmin: React.FC = () => {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-[10px] text-slate-500 mb-1">Labor $</label>
-                    <input type="number" min="0" step="0.01" className={inputCls}
-                      value={line.laborDollars || ''}
-                      onChange={(e) => updateLine(i, { laborDollars: Number(e.target.value) || 0 })} />
+                    <label className="block text-[10px] text-slate-500 mb-1">Hours</label>
+                    <input
+                      type="number" min="0" step="0.25" className={inputCls}
+                      value={line.hours || ''}
+                      placeholder="2.5"
+                      onChange={(e) => {
+                        const hours = Number(e.target.value) || 0;
+                        // Hours drive labor; clearing hours hands the field back
+                        // so flat-fee lines can still be typed directly.
+                        updateLine(i, hours > 0 ? { hours } : { hours: undefined });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-slate-500 mb-1">
+                      Labor ${line.hours ? '' : ' (flat)'}
+                    </label>
+                    <input
+                      type="number" min="0" step="0.01" className={inputCls}
+                      disabled={Boolean(line.hours && line.hours > 0)}
+                      value={
+                        line.hours && line.hours > 0
+                          ? (lineLaborCents(line, rateCents) / 100).toFixed(2)
+                          : line.laborDollars || ''
+                      }
+                      onChange={(e) => updateLine(i, { laborDollars: Number(e.target.value) || 0 })}
+                    />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-500 mb-1">Parts $</label>
@@ -256,7 +347,21 @@ export const QuotesAdmin: React.FC = () => {
             ))}
           </div>
 
-          <div className="grid sm:grid-cols-3 gap-3">
+          <div className="grid sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                Labor rate $/hr
+              </label>
+              <input
+                type="number" min="0" step="1" className={inputCls}
+                value={rateDollars || ''}
+                onChange={(e) => setRateDollars(Number(e.target.value) || 0)}
+              />
+              <p className="text-[10px] text-slate-500 mt-1">
+                Applies to every line with hours. Saved on the quote, so a reprint
+                shows the rate you quoted.
+              </p>
+            </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">Sales tax</label>
               <select className={inputCls} value={taxMode}
