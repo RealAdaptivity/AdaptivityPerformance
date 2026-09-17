@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BUSINESS_HOURS } from '../site/seo';
 import { X, ShieldCheck, Check, Sparkles, Sliders, Zap } from 'lucide-react';
 
 interface MembershipModalProps {
@@ -195,7 +196,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel/Dispatch Fees</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 10% Off All Repairs & Labor</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 1 Free Annual Digital Inspection</li>
-                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Priority Phone Support · 8AM–10PM Daily</li>
+                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Priority Phone Support · {BUSINESS_HOURS.label} Daily</li>
                     </ul>
                   </div>
                   <div className="pt-4">

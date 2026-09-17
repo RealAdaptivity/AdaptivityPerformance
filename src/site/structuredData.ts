@@ -10,6 +10,7 @@
  * again, and there is exactly one definition of the business.
  */
 import {
+  BUSINESS_HOURS,
   GOOGLE_BUSINESS_PROFILE_NAME,
   SITE_ORIGIN,
   SITE_PHONE_E164,
@@ -45,13 +46,13 @@ export function businessReference(): JsonLdBlock {
 /** Published verbatim from the listing — see GOOGLE_BUSINESS_PROFILE_NAME. */
 export const BUSINESS_NAME = GOOGLE_BUSINESS_PROFILE_NAME;
 
-/** Mobile service: dispatched any hour, so no weekly closing time to declare. */
+/** Must match both the on-site copy and the Google listing — see BUSINESS_HOURS. */
 function openingHours(): JsonLdBlock {
   return {
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    opens: '00:00',
-    closes: '23:59',
+    opens: BUSINESS_HOURS.opens,
+    closes: BUSINESS_HOURS.closes,
   };
 }
 

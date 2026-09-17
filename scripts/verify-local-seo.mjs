@@ -134,6 +134,43 @@ if (namedCities !== LOCAL_CITIES.length) {
   fail(`business areaServed names ${namedCities} cities, catalog has ${LOCAL_CITIES.length}`);
 }
 
+/* Schema hours must match the hours the site shows customers, and both must
+   match the Google listing. Declaring 00:00-23:59 while the copy said 8AM-10PM
+   put the business in "open now" results overnight. */
+const { BUSINESS_HOURS } = seoMod;
+const hours = (biz.openingHoursSpecification || [])[0];
+if (!hours) fail('business block declares no opening hours');
+else {
+  if (hours.opens !== BUSINESS_HOURS.opens || hours.closes !== BUSINESS_HOURS.closes) {
+    fail(`schema hours ${hours.opens}-${hours.closes} != BUSINESS_HOURS ${BUSINESS_HOURS.opens}-${BUSINESS_HOURS.closes}`);
+  }
+  if (hours.opens === '00:00' && hours.closes === '23:59') {
+    fail('schema declares 24/7 — say the real dispatch hours or the listing and the site disagree');
+  }
+  if ((hours.dayOfWeek || []).length !== 7) fail('opening hours do not cover all seven days');
+}
+
+/* No hand-written hours left to drift from the constant. */
+const srcDir = path.join(root, 'src');
+const stack = [srcDir];
+const strays = [];
+while (stack.length) {
+  const dir = stack.pop();
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) stack.push(full);
+    else if (/\.tsx$/.test(entry.name)) {
+      const text = fs.readFileSync(full, 'utf8');
+      if (text.includes(BUSINESS_HOURS.label) && !text.includes('BUSINESS_HOURS')) {
+        strays.push(path.relative(root, full));
+      }
+    }
+  }
+}
+if (strays.length) {
+  fail(`hours hardcoded instead of BUSINESS_HOURS.label in: ${strays.join(', ')}`);
+}
+
 for (const url of biz.sameAs || []) {
   if (!/^https:\/\//.test(url)) fail(`sameAs entry is not an https URL: ${url}`);
 }

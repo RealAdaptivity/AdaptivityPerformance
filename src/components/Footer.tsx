@@ -3,14 +3,7 @@ import { LOCAL_HUB } from '../site/localSeo';
 import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
-import {
-  CITY_LANDINGS,
-  GOOGLE_REVIEW_URL,
-  SITE_PHONE_DISPLAY,
-  SITE_PHONE_TEL,
-  SOCIAL_PROFILES,
-  cityPath,
-} from '../site/seo';
+import { BUSINESS_HOURS, CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, SOCIAL_PROFILES, cityPath } from '../site/seo';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -84,10 +77,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           <div className="space-y-1.5 text-slate-300">
             <div className="flex justify-between border-b border-white/5 pb-1">
               <span>Every day:</span>
-              <span className="font-bold text-white">8AM–10PM</span>
+              <span className="font-bold text-white">{BUSINESS_HOURS.label}</span>
             </div>
             <p className="text-[11px] text-slate-500 pt-1">
-              Mobile dispatch every day, 8AM–10PM, anywhere inside our {LOCAL_HUB.radiusMiles}-mile radius.
+              Mobile dispatch every day, {BUSINESS_HOURS.label}, anywhere inside our {LOCAL_HUB.radiusMiles}-mile radius.
             </p>
           </div>
 

@@ -41,6 +41,30 @@ export const GOOGLE_REVIEW_URL =
  */
 export const GOOGLE_BUSINESS_PROFILE_NAME = 'Adaptivity Performance - Mobile Auto Repair';
 
+/**
+ * Dispatch hours, declared once.
+ *
+ * The site told customers "8AM–10PM" in six hand-written places while the
+ * schema told Google 00:00–23:59 — open around the clock. That mismatch puts
+ * the business in "open now" results at 3am, so the call lands on nobody and
+ * the customer writes the review that follows from that. These values feed both
+ * the copy and the schema, and must also match the Google listing's hours.
+ */
+export const BUSINESS_HOURS = {
+  opens: '08:00',
+  closes: '22:00',
+  /** For display; derived so the label cannot drift from the times above. */
+  get label(): string {
+    const fmt = (t: string) => {
+      const [h] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      return `${hour12}${suffix}`;
+    };
+    return `${fmt(this.opens)}\u2013${fmt(this.closes)}`;
+  },
+} as const;
+
 export type SocialProfile = { label: string; url: string };
 
 export const SOCIAL_PROFILES: readonly SocialProfile[] = [
