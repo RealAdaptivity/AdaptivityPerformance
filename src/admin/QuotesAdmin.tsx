@@ -13,7 +13,11 @@ import {
 } from '../services/quotes';
 import { openQuotePrintWindow } from '../services/quotePdf';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
-import { LABOR_RATE_CENTS } from '../services/laborRate';
+import {
+  LABOR_RATE_CENTS,
+  fetchDefaultLaborRateCents,
+  setDefaultLaborRateCents,
+} from '../services/laborRate';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -48,12 +52,20 @@ export const QuotesAdmin: React.FC = () => {
   const [validUntil, setValidUntil] = useState('');
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
   const [rateDollars, setRateDollars] = useState<number>(LABOR_RATE_CENTS / 100);
+  /* The shop default, owner-set and stored in app_config. Quotes start here. */
+  const [shopRateCents, setShopRateCents] = useState<number>(LABOR_RATE_CENTS);
+  const [shopRateDraft, setShopRateDraft] = useState<string>('');
+  const [savingRate, setSavingRate] = useState(false);
   const [lines, setLines] = useState<QuoteLine[]>([emptyLine()]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setRows(await listQuotes());
+      const [quotes, rate] = await Promise.all([listQuotes(), fetchDefaultLaborRateCents()]);
+      setRows(quotes);
+      setShopRateCents(rate);
+      setShopRateDraft(String(rate / 100));
+      setRateDollars(rate / 100);
       setError(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load quotes');
@@ -83,7 +95,7 @@ export const QuotesAdmin: React.FC = () => {
     setNotes('');
     setValidUntil('');
     setTaxMode('parts');
-    setRateDollars(LABOR_RATE_CENTS / 100);
+    setRateDollars(shopRateCents / 100);
     setLines([emptyLine()]);
   };
 
@@ -164,6 +176,56 @@ export const QuotesAdmin: React.FC = () => {
           {building ? 'Close builder' : 'New quote'}
         </button>
       </div>
+
+      <div className="bg-[#12141c] border border-white/10 rounded-2xl p-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+            Shop labor rate $/hr
+          </label>
+          <input
+            type="number" min="0" step="1"
+            className="w-36 bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-sm text-white"
+            value={shopRateDraft}
+            onChange={(e) => setShopRateDraft(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          disabled={savingRate || Number(shopRateDraft) * 100 === shopRateCents}
+          onClick={() => {
+            void (async () => {
+              setSavingRate(true);
+              setError(null);
+              try {
+                const cents = Math.round(Number(shopRateDraft) * 100);
+                await setDefaultLaborRateCents(cents);
+                setShopRateCents(cents);
+                setRateDollars(cents / 100);
+                setMessage(`Shop labor rate set to $${(cents / 100).toFixed(2)}/hr.`);
+              } catch (e: unknown) {
+                setError(e instanceof Error ? e.message : 'Could not save labor rate');
+              } finally {
+                setSavingRate(false);
+              }
+            })();
+          }}
+          className="py-2.5 px-4 rounded-xl border border-white/15 text-slate-200 text-xs font-bold disabled:opacity-40"
+        >
+          {savingRate ? 'Saving…' : 'Save default'}
+        </button>
+        <p className="text-[10px] text-slate-500 flex-1 min-w-[200px]">
+          New quotes start at this rate. Change it here any time — no code change needed.
+        </p>
+      </div>
+
+      {shopRateCents !== LABOR_RATE_CENTS && (
+        <p className="text-xs text-amber-300 border border-amber-500/30 bg-amber-500/10 rounded-xl px-3 py-2">
+          Your website advertises <strong>${(LABOR_RATE_CENTS / 100).toFixed(2)}/hr</strong> but your
+          quoting default is <strong>${(shopRateCents / 100).toFixed(2)}/hr</strong>. The site copy is
+          baked in at build time — it needs a code change and a deploy to match, or customers will be
+          quoted a different rate than they were shown.
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-red-300 border border-red-500/30 bg-red-500/10 rounded-xl px-3 py-2">
