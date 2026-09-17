@@ -27,6 +27,20 @@ export const GOOGLE_REVIEW_URL =
  * only add a URL that is confirmed to be ours. Query strings are stripped —
  * `?hl=en` and the like are viewer state, not part of the profile's identity.
  */
+/**
+ * The business name exactly as the Google Business Profile carries it.
+ *
+ * schema.org `name` must match the listing character for character — that match
+ * is part of how a search engine decides the website and the map listing are
+ * one business. This constant is the single place the site declares it, so the
+ * two cannot drift the way index.html and structuredData.ts did.
+ *
+ * If the listing is ever renamed — including by Google, which does edit names
+ * that carry service keywords — change this line to match and the schema, the
+ * build check and anything else reading it follow.
+ */
+export const GOOGLE_BUSINESS_PROFILE_NAME = 'Adaptivity Performance - Mobile Auto Repair';
+
 export type SocialProfile = { label: string; url: string };
 
 export const SOCIAL_PROFILES: readonly SocialProfile[] = [

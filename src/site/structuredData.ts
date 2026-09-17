@@ -9,7 +9,12 @@
  * catalog here now, so the radius and the service-area list cannot go stale
  * again, and there is exactly one definition of the business.
  */
-import { SITE_ORIGIN, SITE_PHONE_E164, SOCIAL_PROFILE_URLS } from './seo';
+import {
+  GOOGLE_BUSINESS_PROFILE_NAME,
+  SITE_ORIGIN,
+  SITE_PHONE_E164,
+  SOCIAL_PROFILE_URLS,
+} from './seo';
 import {
   LOCAL_CITIES,
   LOCAL_HUB,
@@ -37,13 +42,8 @@ export function businessReference(): JsonLdBlock {
   return { '@id': BUSINESS_ID };
 }
 
-/**
- * The business name must match the Google Business Profile exactly. Keyword
- * suffixes ("… - Mechanic Shop & Mobile Auto Repair", as index.html carried)
- * are against Google's business-name guidelines and weaken the match between
- * the site and the listing, so the plain legal-style name is what we publish.
- */
-export const BUSINESS_NAME = 'Adaptivity Performance';
+/** Published verbatim from the listing — see GOOGLE_BUSINESS_PROFILE_NAME. */
+export const BUSINESS_NAME = GOOGLE_BUSINESS_PROFILE_NAME;
 
 /** Mobile service: dispatched any hour, so no weekly closing time to declare. */
 function openingHours(): JsonLdBlock {

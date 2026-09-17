@@ -97,6 +97,8 @@ if (fs.existsSync(sitemapPath)) {
       definition and that it still matches the catalog. */
 const sd = await jiti.import(path.join(root, 'src/site/structuredData.ts'));
 const { buildLocalBusinessLd, BUSINESS_ID, BUSINESS_NAME } = sd;
+const seoMod = await jiti.import(path.join(root, 'src/site/seo.ts'));
+const { GOOGLE_BUSINESS_PROFILE_NAME } = seoMod;
 
 const indexHtml = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 if (/<script[^>]*application\/ld\+json/.test(indexHtml)) {
@@ -105,9 +107,20 @@ if (/<script[^>]*application\/ld\+json/.test(indexHtml)) {
 
 const biz = buildLocalBusinessLd();
 if (biz['@id'] !== BUSINESS_ID) fail('business block @id does not match BUSINESS_ID');
-if (biz.name !== BUSINESS_NAME) fail('business block name does not match BUSINESS_NAME');
-if (/[-–|]/.test(String(biz.name))) {
-  fail(`business name "${biz.name}" carries a keyword suffix — it must match the Google listing exactly`);
+
+/* The schema name must be the Google listing's name, character for character:
+   that match is part of how the site and the listing are read as one business.
+   GOOGLE_BUSINESS_PROFILE_NAME is the one place it is declared, so this catches
+   a second name being hardcoded anywhere in the chain — the exact drift that
+   put two different names under one @id before. */
+if (!GOOGLE_BUSINESS_PROFILE_NAME || !String(GOOGLE_BUSINESS_PROFILE_NAME).trim()) {
+  fail('GOOGLE_BUSINESS_PROFILE_NAME is empty — it must carry the live listing name');
+}
+if (BUSINESS_NAME !== GOOGLE_BUSINESS_PROFILE_NAME) {
+  fail(`BUSINESS_NAME "${BUSINESS_NAME}" is not GOOGLE_BUSINESS_PROFILE_NAME "${GOOGLE_BUSINESS_PROFILE_NAME}"`);
+}
+if (biz.name !== GOOGLE_BUSINESS_PROFILE_NAME) {
+  fail(`business block name "${biz.name}" does not match the Google listing "${GOOGLE_BUSINESS_PROFILE_NAME}"`);
 }
 
 const circle = (biz.areaServed || []).find((a) => a['@type'] === 'GeoCircle');
