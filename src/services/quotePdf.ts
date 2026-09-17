@@ -174,8 +174,7 @@ ${PRINT_DOCUMENT_STYLES}
       <p class="thanks">Thank you for considering Adaptivity Performance.</p>
     </div>
   </div>
-  <p class="print-hint">Use Print → Save as PDF if the dialog does not open automatically.</p>
-  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});</script>
+  <p class="print-hint"><button type="button" class="print-btn" onclick="window.print()">Print / Save as PDF</button><br/><span>If the print dialog did not open automatically, tap the button above.</span></p>
 </body>
 </html>`;
 }
