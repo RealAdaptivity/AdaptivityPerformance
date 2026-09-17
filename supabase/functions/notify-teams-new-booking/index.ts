@@ -22,6 +22,14 @@ const corsHeaders = {
  *   OR { record: BookingRow }   — raw record from Supabase DB webhook trigger
  */
 
+/**
+ * The card's button pointed at https://realadaptivity.github.io/AdaptivityPerformance/admin,
+ * the old project-pages URL from before the custom domain. Every other Edge
+ * Function uses adaptivityperformance.com, so the one link a dispatcher would
+ * actually tap was the only broken one. Overridable for previews.
+ */
+const SITE_ORIGIN = Deno.env.get('ADAPTIVITY_SITE_ORIGIN')?.trim() || 'https://adaptivityperformance.com';
+
 type BookingRecord = {
   id: string;
   reference_code: string;
@@ -146,7 +154,7 @@ function buildTeamsCard(booking: BookingRecord): object {
             {
               type: 'Action.OpenUrl',
               title: '🖥️ Open Admin Dispatch',
-              url: 'https://realadaptivity.github.io/AdaptivityPerformance/admin',
+              url: `${SITE_ORIGIN}/admin`,
             },
           ],
           msteams: {
