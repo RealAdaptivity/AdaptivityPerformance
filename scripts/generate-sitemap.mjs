@@ -18,7 +18,6 @@ const PAGES = [
   { path: '/coverage', changefreq: 'weekly', priority: '0.8' },
   { path: '/about', changefreq: 'monthly', priority: '0.7' },
   { path: '/faq', changefreq: 'monthly', priority: '0.7' },
-  { path: '/blog', changefreq: 'weekly', priority: '0.7' },
   { path: '/join', changefreq: 'monthly', priority: '0.6' },
   { path: '/partners', changefreq: 'monthly', priority: '0.6' },
   { path: '/careers', changefreq: 'monthly', priority: '0.5' },
@@ -45,17 +44,6 @@ if (!CITY_SLUGS.length || !SERVICE_CITY_PATHS.length) {
   throw new Error('localSeoData.json produced no local URLs — refusing to write an empty sitemap');
 }
 
-const blogSrc = fs.readFileSync(path.join(root, 'src', 'services', 'blog.ts'), 'utf8');
-const internal = [...blogSrc.matchAll(/INTERNAL_BLOG_SLUGS = \[([^\]]*)\]/g)]
-  .flatMap((m) => [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]));
-const BLOG_SLUGS = [...blogSrc.matchAll(/^\s{4}slug: '([^']+)',$/gm)]
-  .map((m) => m[1])
-  .filter((slug) => !internal.includes(slug));
-
-if (!BLOG_SLUGS.length) {
-  throw new Error('no blog slugs parsed from src/services/blog.ts');
-}
-
 function urlEntry(loc, changefreq, priority) {
   return `  <url><loc>${loc}</loc><lastmod>${lastmod}</lastmod><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
 }
@@ -66,7 +54,6 @@ const urls = [
     urlEntry(`${ORIGIN}/mobile-mechanic-${slug}-tx`, 'weekly', slug === 'justin' || slug === 'northlake' ? '0.85' : '0.8')
   ),
   ...SERVICE_CITY_PATHS.map((p) => urlEntry(`${ORIGIN}${p}`, 'weekly', '0.75')),
-  ...BLOG_SLUGS.map((slug) => urlEntry(`${ORIGIN}/blog/${slug}`, 'monthly', '0.65')),
 ];
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?>

@@ -2,7 +2,6 @@ import { useSyncExternalStore } from 'react';
 import { cityFromPath } from './seo';
 import { serviceCityFromPath } from './localSeo';
 import { adLandingFromPath } from './adLandings';
-import { blogSlugFromPath } from './routePaths';
 
 export type SitePage =
   | 'home'
@@ -19,8 +18,6 @@ export type SitePage =
   | 'coverage'
   | 'performance'
   | 'faq'
-  | 'blog'
-  | 'blogPost'
   | 'city'
   | 'serviceCity'
   | 'adLanding'
@@ -31,7 +28,7 @@ export type SitePage =
   | 'referral';
 
 /** Pages addressed by a fixed path segment (everything but the dynamic routes). */
-type DynamicFreePage = Exclude<SitePage, 'city' | 'serviceCity' | 'adLanding' | 'blogPost' | 'referral'>;
+type DynamicFreePage = Exclude<SitePage, 'city' | 'serviceCity' | 'adLanding' | 'referral'>;
 
 const PAGE_SEGMENTS: Record<DynamicFreePage, string> = {
   home: '',
@@ -48,7 +45,6 @@ const PAGE_SEGMENTS: Record<DynamicFreePage, string> = {
   coverage: 'coverage',
   performance: 'performance',
   faq: 'faq',
-  blog: 'blog',
   terms: 'terms',
   privacy: 'privacy',
   refunds: 'refund-policy',
@@ -73,6 +69,13 @@ export function pageFromSegmentOrNotFound(segment: string): SitePage {
  */
 export const LEGACY_PATH_REDIRECTS: Record<string, string> = {
   '/quotes': '/services',
+  /* The blog is retired. These three URLs were live and may be indexed, so each
+     one points at the page that now answers the same question rather than
+     404ing and dropping whatever value it had. */
+  '/blog': '/services',
+  '/blog/how-much-do-brakes-cost-northlake-tx': '/brake-repair-northlake-tx',
+  '/blog/mobile-mechanic-vs-dealership-justin-tx': '/mobile-mechanic-justin-tx',
+  '/blog/google-business-review-playbook': '/',
 };
 
 /** Legacy homepage anchors → page routes */
@@ -94,7 +97,6 @@ const HASH_TO_PAGE: Record<string, SitePage> = {
   train: 'learn',
   training: 'learn',
   faq: 'faq',
-  blog: 'blog',
 };
 
 function basePrefix(): string {
@@ -126,22 +128,13 @@ export function sitePath(page: SitePage, hashOrOpts?: string | NavigateOpts): st
     return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
   }
 
-  if (page === 'blogPost' && opts.slug) {
-    const path = `${normalizedBase}blog/${opts.slug}`.replace(/\/+/g, '/');
-    return opts.hash ? `${path}#${opts.hash}` : path;
-  }
 
   if (page === 'referral' && opts.slug) {
     const path = `${normalizedBase}r/${opts.slug}`.replace(/\/+/g, '/');
     return opts.hash ? `${path}#${opts.hash}` : path;
   }
 
-  const seg =
-    page === 'blogPost'
-      ? 'blog'
-      : page === 'referral'
-        ? ''
-        : PAGE_SEGMENTS[page as DynamicFreePage];
+  const seg = page === 'referral' ? '' : PAGE_SEGMENTS[page as DynamicFreePage];
   const path = seg ? `${normalizedBase}${seg}` : normalizedBase;
   const cleaned = path.replace(/\/+/g, '/');
   return opts.hash ? `${cleaned}#${opts.hash}` : cleaned;
@@ -159,8 +152,6 @@ export function readSitePage(): SitePage {
   if (serviceCityFromPath(path)) return 'serviceCity';
   if (adLandingFromPath(path)) return 'adLanding';
   if (/^\/r\/[A-Za-z0-9_-]{4,16}\/?$/.test(path)) return 'referral';
-  if (blogSlugFromPath(path)) return 'blogPost';
-  if (path === '/blog') return 'blog';
   if (path === '/refunds' || path === '/refund-policy' || path === '/cancellation-policy') return 'refunds';
   if (path === '/' || path === '') {
     const hash = window.location.hash.replace(/^#/, '');
