@@ -10,10 +10,77 @@ export const SITE_PHONE_DIGITS = '9403040620';
 /** Ready for href={SITE_PHONE_TEL} */
 export const SITE_PHONE_TEL = `tel:${SITE_PHONE_E164}`;
 
-/** Swap for your live Google Business “Write a review” URL when ready. */
+/**
+ * Live Google Business “Write a review” deep link. The env var is an override
+ * for previews and staging; the default below is the real production link, so a
+ * missing env var degrades to the correct behaviour rather than a dead CTA.
+ */
 export const GOOGLE_REVIEW_URL =
   (import.meta.env.VITE_GOOGLE_REVIEW_URL as string | undefined)?.trim() ||
   'https://g.page/r/CaIynDu9Qo0SEBM/review';
+
+/**
+ * Profiles that belong to this business, for schema.org `sameAs`.
+ *
+ * This is how a search engine ties the website to the map listing and the
+ * social profiles as one entity rather than several look-alike businesses, so
+ * only add a URL that is confirmed to be ours. Query strings are stripped —
+ * `?hl=en` and the like are viewer state, not part of the profile's identity.
+ */
+/**
+ * The business name exactly as the Google Business Profile carries it.
+ *
+ * schema.org `name` must match the listing character for character — that match
+ * is part of how a search engine decides the website and the map listing are
+ * one business. This constant is the single place the site declares it, so the
+ * two cannot drift the way index.html and structuredData.ts did.
+ *
+ * If the listing is ever renamed — including by Google, which does edit names
+ * that carry service keywords — change this line to match and the schema, the
+ * build check and anything else reading it follow.
+ */
+export const GOOGLE_BUSINESS_PROFILE_NAME = 'Adaptivity Performance - Mobile Auto Repair';
+
+/**
+ * Dispatch hours, declared once.
+ *
+ * The site told customers "8AM–10PM" in six hand-written places while the
+ * schema told Google 00:00–23:59 — open around the clock. That mismatch puts
+ * the business in "open now" results at 3am, so the call lands on nobody and
+ * the customer writes the review that follows from that. These values feed both
+ * the copy and the schema, and must also match the Google listing's hours.
+ */
+export const BUSINESS_HOURS = {
+  opens: '08:00',
+  closes: '22:00',
+  /** For display; derived so the label cannot drift from the times above. */
+  get label(): string {
+    const fmt = (t: string) => {
+      const [h] = t.split(':').map(Number);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      return `${hour12}${suffix}`;
+    };
+    return `${fmt(this.opens)}\u2013${fmt(this.closes)}`;
+  },
+} as const;
+
+export type SocialProfile = { label: string; url: string };
+
+export const SOCIAL_PROFILES: readonly SocialProfile[] = [
+  {
+    label: 'Google',
+    // From Google's own Share dialog. share.google is a redirector rather than
+    // a canonical maps URL — if it is replaced with the expanded
+    // https://www.google.com/maps/place/... form, swap it here and both the
+    // footer link and sameAs follow.
+    url: 'https://share.google/OttBrvyUOiI6R6svU',
+  },
+  { label: 'Facebook', url: 'https://www.facebook.com/profile.php?id=61593460179618' },
+  { label: 'Instagram', url: 'https://www.instagram.com/adaptivityperformance/' },
+];
+
+export const SOCIAL_PROFILE_URLS: readonly string[] = SOCIAL_PROFILES.map((p) => p.url);
 
 export type SeoMeta = {
   title: string;

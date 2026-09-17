@@ -1,4 +1,5 @@
 import React from 'react';
+import { BUSINESS_HOURS } from '../site/seo';
 import { ShieldCheck, Check, Sparkles, ArrowRight } from 'lucide-react';
 
 interface MembershipSectionProps {
@@ -50,7 +51,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Dispatch Fees</strong> ($45 value/visit)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>10% Off</strong> All Labor & Diagnostics</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 1 Free Annual Digital Inspection (DVI)</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Priority Hotline · 8AM–10PM Daily</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Priority Hotline · {BUSINESS_HOURS.label} Daily</li>
               </ul>
             </div>
             <button

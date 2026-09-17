@@ -12,7 +12,7 @@ import {
   Shield,
   RotateCcw,
 } from 'lucide-react';
-import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { BUSINESS_HOURS, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { SiteLink } from '../site/SiteLink';
 
 export const RefundPolicyPage: React.FC = () => {
@@ -220,7 +220,7 @@ export const RefundPolicyPage: React.FC = () => {
               <Clock className="w-5 h-5 text-emerald-400" />
               <div>
                 <strong className="text-white block">Operating Hours</strong>
-                <span className="text-slate-400">Every day 8AM–10PM CT</span>
+                <span className="text-slate-400">Every day {BUSINESS_HOURS.label} CT</span>
               </div>
             </div>
           </div>

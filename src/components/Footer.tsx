@@ -3,7 +3,7 @@ import { LOCAL_HUB } from '../site/localSeo';
 import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
-import { CITY_LANDINGS, cityPath, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { BUSINESS_HOURS, CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, SOCIAL_PROFILES, cityPath } from '../site/seo';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -77,10 +77,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           <div className="space-y-1.5 text-slate-300">
             <div className="flex justify-between border-b border-white/5 pb-1">
               <span>Every day:</span>
-              <span className="font-bold text-white">8AM–10PM</span>
+              <span className="font-bold text-white">{BUSINESS_HOURS.label}</span>
             </div>
             <p className="text-[11px] text-slate-500 pt-1">
-              Mobile dispatch every day, 8AM–10PM, anywhere inside our {LOCAL_HUB.radiusMiles}-mile radius.
+              Mobile dispatch every day, {BUSINESS_HOURS.label}, anywhere inside our {LOCAL_HUB.radiusMiles}-mile radius.
             </p>
           </div>
 
@@ -126,6 +126,31 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
             <div className="flex items-center space-x-2">
               <Mail className="w-4 h-4 text-orange-400 flex-shrink-0" />
               <span>service@adaptivityperformance.com</span>
+            </div>
+
+            {/* Real crawlable links to the same profiles the business schema
+                lists in sameAs. A search engine corroborates the entity from
+                both, so the two must not disagree. */}
+            <div className="flex items-center gap-4 pt-2">
+              {SOCIAL_PROFILES.map(({ label, url }) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer me"
+                  className="hover:text-orange-400 transition-colors font-semibold"
+                >
+                  {label}
+                </a>
+              ))}
+              <a
+                href={GOOGLE_REVIEW_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-orange-400 transition-colors font-semibold"
+              >
+                Review us on Google
+              </a>
             </div>
           </div>
         </div>

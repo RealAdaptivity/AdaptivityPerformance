@@ -38,7 +38,7 @@ const blog = await jiti.import(path.join(root, 'src/services/blog.ts'));
 
 const { PAGE_SEO, SITE_ORIGIN, SITE_FAQS, citySeo } = seo;
 const { LOCAL_CITIES, SERVICE_PAGE_CITIES, LOCAL_SERVICES, serviceCityMeta, serviceCityFaqs } = local;
-const { cityJsonLd, serviceCityJsonLd } = ld;
+const { cityJsonLd, serviceCityJsonLd, buildLocalBusinessLd, BUSINESS_ID } = ld;
 const { AD_LANDINGS, adLandingMeta, adLandingPath } = ads;
 const { FALLBACK_BLOG_POSTS, isInternalPost } = blog;
 const { LEGACY_PATH_REDIRECTS } = routes;
@@ -63,6 +63,14 @@ const problems = [];
 
 function renderRoute({ meta, jsonLd = [], noindex = false }) {
   let html = template;
+
+  /* Every indexable page states who the business is. City pages already carry
+     it (with their own serviceArea), so only add it where it is missing —
+     two nodes sharing @id is exactly the drift this replaced. A noindex page
+     is not an entity signal, so it gets none. */
+  if (!noindex && !jsonLd.some((b) => b && b['@id'] === BUSINESS_ID)) {
+    jsonLd = [buildLocalBusinessLd(), ...jsonLd];
+  }
 
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${escapeAttr(meta.title)}</title>`);
 
@@ -205,9 +213,27 @@ for (const [from, to] of Object.entries(LEGACY_PATH_REDIRECTS)) {
   written.push(from);
 }
 
-/* App shells that must keep working as deep links. */
-for (const route of ['portal', 'admin', 'login']) {
-  write(`/${route}`, template);
+/* App shells that must keep working as deep links. They are sign-in surfaces,
+   not content: served as-is they inherited index.html's "index, follow" and the
+   homepage's title, so Google was invited to index an admin and a login page
+   under the brand name. Real files, so the deep link still boots the SPA, but
+   noindex and titled for what they are. */
+for (const [route, label] of [
+  ['portal', 'Customer & Tech Portal'],
+  ['admin', 'Admin'],
+  ['login', 'Sign in'],
+]) {
+  write(
+    `/${route}`,
+    renderRoute({
+      meta: {
+        title: `${label} | Adaptivity Performance`,
+        description: `${label} for Adaptivity Performance. Sign-in required.`,
+        path: `/${route}`,
+      },
+      noindex: true,
+    })
+  );
   written.push(`/${route}`);
 }
 

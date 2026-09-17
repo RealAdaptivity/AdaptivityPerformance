@@ -20,7 +20,7 @@ import {
 import { portalPath } from '../portal/portalRoute';
 import { SiteLink } from '../site/SiteLink';
 import { navigateSite, useSitePage } from '../site/siteRoute';
-import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { BUSINESS_HOURS, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { BrandLogo } from './BrandLogo';
 
 interface NavbarProps {
@@ -98,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <span className="hidden sm:flex items-center space-x-1.5 flex-shrink-0 opacity-95 text-[11px] font-bold">
             <Clock className="w-3.5 h-3.5" />
-            <span>Mobile Dispatch · 8AM–10PM Daily</span>
+            <span>Mobile Dispatch · {BUSINESS_HOURS.label} Daily</span>
           </span>
         </div>
       </div>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
 import { Send, Phone, Mail, MapPin, CheckCircle2, Loader2, MessageSquare, Car, Wrench, Clock } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
-import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { BUSINESS_HOURS, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -62,7 +62,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
             Contact <span className="text-orange-500">Adaptivity</span>
           </h2>
           <p className="text-slate-400 text-sm">
-            Send us a message and we'll get back to you within 1 hour (8AM–10PM daily) — or call for immediate dispatch.
+            Send us a message and we'll get back to you within 1 hour ({BUSINESS_HOURS.label} daily) — or call for immediate dispatch.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Call or Text</div>
                 <div className="font-bold text-white text-lg group-hover:text-orange-400 transition-colors">{SITE_PHONE_DISPLAY}</div>
-                <div className="text-xs text-slate-500">Open every day · 8AM–10PM</div>
+                <div className="text-xs text-slate-500">Open every day · {BUSINESS_HOURS.label}</div>
               </div>
             </a>
 
@@ -116,7 +116,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               </div>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hours</div>
-                <div className="font-bold text-white text-sm">Every day · 8AM–10PM</div>
+                <div className="font-bold text-white text-sm">Every day · {BUSINESS_HOURS.label}</div>
                 <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around</div>
               </div>
             </div>
