@@ -44,7 +44,7 @@ export function buildContractorAgreementHtml(opts?: {
   li{margin:0 0 6px}
   .sign{margin-top:36px;border-top:1px solid #ddd;padding-top:16px}
   .esign{font-size:11px;color:#555;margin-top:12px}
-  @media print{body{margin:12px}h2{page-break-after:avoid}}
+  @media print{button{display:none}body{margin:12px}h2{page-break-after:avoid}}
 </style></head><body>
   <h1>Independent Contractor Agreement</h1>
   <p class="sub">Adaptivity Performance LLC \u00b7 1099 contractor terms \u00b7 Version ${version}</p>
@@ -58,7 +58,7 @@ export function buildContractorAgreementHtml(opts?: {
     <p><strong>Date signed:</strong> ${signed}</p>
     <p class="esign">By signing, you agree this electronic signature is the legal equivalent of your handwritten signature under the federal E-SIGN Act (15 U.S.C. \u00a7 7001) and applicable Texas law. Record retained by Adaptivity Performance LLC.</p>
   </div>
-  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},350)});</script>
+  <p style="text-align:center;margin:18px 0 28px"><button type="button" onclick="window.print()" style="appearance:none;border:0;cursor:pointer;font:inherit;background:#ea580c;color:#fff;font-weight:700;font-size:13px;padding:11px 22px;border-radius:10px">Print / Save as PDF</button><br/><span style="color:#94a3b8;font-size:11px">If the print dialog did not open automatically, tap the button above.</span></p>
 </body></html>`;
 }
 

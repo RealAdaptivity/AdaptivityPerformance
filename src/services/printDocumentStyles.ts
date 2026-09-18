@@ -125,6 +125,12 @@ export const PRINT_DOCUMENT_STYLES = `
   .footer strong { color: var(--ink); display: block; margin-bottom: 4px; font-size: 12px; }
   .thanks { margin-top: 20px; text-align: center; font-size: 13px; color: var(--ink); font-weight: 600; }
   .print-hint { text-align: center; color: #94a3b8; font-size: 11px; margin: 12px 0 28px; }
+  .print-btn {
+    appearance: none; border: 0; cursor: pointer; font: inherit;
+    background: var(--brand); color: #fff; font-weight: 700; font-size: 13px;
+    padding: 11px 22px; border-radius: 10px; margin-bottom: 8px;
+  }
+  .print-btn:hover { background: var(--brand-dark); }
 
   @media print {
     body { background: #fff; }

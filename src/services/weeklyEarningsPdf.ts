@@ -69,7 +69,7 @@ export function buildWeeklyEarningsHtml(rows: WeeklyPayoutLine[]): string {
   th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px;color:#111}
   th{background:#f5f5f5}
   .total{margin-top:20px;font-size:16px;font-weight:700;color:#111}
-  @media print{body{margin:12px}}
+  @media print{button{display:none}body{margin:12px}}
 </style></head><body>
   <h1>Weekly earnings summary</h1>
   <p class="sub">Adaptivity Performance · last 7 days · ${escapeHtml(new Date().toLocaleString())}</p>
@@ -78,7 +78,7 @@ export function buildWeeklyEarningsHtml(rows: WeeklyPayoutLine[]): string {
     <tbody>${bodyRows}</tbody>
   </table>
   <p class="total">Total tech share: $${total.toFixed(2)}</p>
-  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},250)});</script>
+  <p style="text-align:center;margin:18px 0 28px" class="no-print"><button type="button" onclick="window.print()" style="appearance:none;border:0;cursor:pointer;font:inherit;background:#ea580c;color:#fff;font-weight:700;font-size:13px;padding:11px 22px;border-radius:10px">Print / Save as PDF</button><br/><span style="color:#94a3b8;font-size:11px">If the print dialog did not open automatically, tap the button above.</span></p>
 </body></html>`;
 }
 
