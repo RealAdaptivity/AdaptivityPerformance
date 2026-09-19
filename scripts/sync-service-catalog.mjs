@@ -16,8 +16,16 @@ const start = src.indexOf('export const DIRECT_BOOK_KINDS');
 const end = src.indexOf('export function getCatalogById');
 if (start < 0 || end < 0) throw new Error('Could not locate catalog block');
 
+/* Read the real value rather than restating it. This script used to strip the
+   source constant and prepend its own hardcoded 100, so the generated server
+   file could silently disagree with src/services/serviceCatalog.ts — and did:
+   the source said 85 while this said 100. */
+const holdMatch = src.match(/export const DIAGNOSTIC_HOLD_DOLLARS\s*=\s*(\d+)\s*;/);
+if (!holdMatch) throw new Error('Could not read DIAGNOSTIC_HOLD_DOLLARS from serviceCatalog.ts');
+const SOURCE_HOLD_DOLLARS = Number(holdMatch[1]);
+
 const consultFn = `
-const DIAGNOSTIC_HOLD_DOLLARS = 100;
+const DIAGNOSTIC_HOLD_DOLLARS = ${SOURCE_HOLD_DOLLARS};
 function consult(id, title, description, icon, kind, duration = '45–60 mins consult', typicalMinDollars, typicalMaxDollars) {
   return {
     id, title, description, price: DIAGNOSTIC_HOLD_DOLLARS, duration, icon, kind, directBook: false,
@@ -35,6 +43,12 @@ const block = consultFn + src
   .replace(/: CatalogService\[\]/g, '')
   .replace(/: CatalogService/g, '')
   .replace(/: ServiceKind/g, '')
+  /* Return-type annotations: the list above only covered parameter types, so
+     `function isServiceAvailable(kind): boolean {` reached Node as-is and this
+     whole script died on it. It has been unrunnable, which is why the generated
+     server file drifted from the source. Requiring a `)` before the colon keeps
+     this to function signatures. */
+  .replace(/\)\s*:\s*[A-Za-z_][\w<>'|[\]. ]*\s*\{/g, ') {')
   .replace(/function consult\([\s\S]*?\n\}/, '')
   .replace(/const DIAGNOSTIC_HOLD_DOLLARS[\s\S]*?;/, '')
   .replace(/function formatCatalogPriceRange[\s\S]*?\n\}/, '');
@@ -88,7 +102,19 @@ const compact = SERVICE_CATALOG.map((s) => ({
   directBook: s.directBook,
 }));
 
-const edgePath = path.join(root, 'supabase', 'functions', '_shared', 'holdPricing.ts');
+/* Functions that bundle their own nested _shared copy import THAT one, not the
+   top-level file. Writing only the top-level copy left
+   capture-booking-payment/_shared/holdPricing.ts stale — it still said 85 after
+   the source moved to 100, so the function that captures money would have used
+   the old hold. Every copy gets written. */
+const edgePaths = [
+  path.join(root, 'supabase', 'functions', '_shared', 'holdPricing.ts'),
+  ...fs
+    .readdirSync(path.join(root, 'supabase', 'functions'), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name !== '_shared')
+    .map((d) => path.join(root, 'supabase', 'functions', d.name, '_shared', 'holdPricing.ts'))
+    .filter((p) => fs.existsSync(p)),
+];
 const edge = `/** Server-side quote hold rules (keep in sync with src/services/holdPricing.ts). Auto-synced. */
 
 export const DIAGNOSTIC_HOLD_DOLLARS = ${DIAGNOSTIC_HOLD_DOLLARS};
@@ -205,7 +231,8 @@ export function computeHoldFromServices(services: unknown): ServerHoldQuote {
   };
 }
 `;
-fs.writeFileSync(edgePath, edge);
+for (const p of edgePaths) fs.writeFileSync(p, edge);
+console.log(`wrote ${edgePaths.length} holdPricing copies`);
 
 // Customer app catalog
 const customerCatalog = SERVICE_CATALOG.map((s) => ({
@@ -269,7 +296,18 @@ export function getCatalogById(id: string): CatalogService | undefined {
 ${matchFn}
 `;
 
-fs.writeFileSync(customerPath, customer);
+/* The customer app is a sibling checkout that is not always present — in CI, or
+   on a machine that only cloned this repo, it is not. Writing to it was
+   unconditional, so the script threw ENOENT after it had already regenerated the
+   edge function, leaving the run looking like a failure when the important half
+   had succeeded. Skip it when it is not there and say so. */
+if (fs.existsSync(path.dirname(customerPath))) {
+  fs.writeFileSync(customerPath, customer);
+  console.log(`synced customer app -> ${customerPath}`);
+} else {
+  console.log(`skipped customer app (not checked out at ${path.dirname(customerPath)})`);
+}
 fs.unlinkSync(tmp);
+console.log(`hold = $${SOURCE_HOLD_DOLLARS}; edge + catalog regenerated`);
 
 console.log(`Synced ${SERVICE_CATALOG.length} services → edge holdPricing + customer catalog`);

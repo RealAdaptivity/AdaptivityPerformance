@@ -169,7 +169,7 @@ export const CustomerTrackTab: React.FC = () => {
     <div className="space-y-4">
       <p className="text-xs text-slate-400">
         Enter your job reference from booking confirmation (e.g. AP-8492). Your tech sets the repair price on
-        site after diagnosing — Adaptivity holds $85 at booking.
+        site after diagnosing — Adaptivity holds $100 at booking.
       </p>
       <input
         value={reference}

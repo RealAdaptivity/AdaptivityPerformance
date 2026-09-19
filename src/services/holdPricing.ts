@@ -16,7 +16,7 @@ export type HoldQuote = {
 };
 
 /**
- * All bookings use an $85 diagnostic card hold.
+ * All bookings use a $100 diagnostic card hold.
  * The assigned tech sets labor + parts on site and charges through Adaptivity (70/30).
  */
 export function computeHoldQuote(selectedIdsOrTitles: string[]): HoldQuote {

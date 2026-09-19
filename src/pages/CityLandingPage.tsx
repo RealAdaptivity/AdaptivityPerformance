@@ -78,7 +78,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4">
               <dt className="text-slate-400">Diagnostic</dt>
-              <dd className="font-heading text-lg font-bold text-white mt-0.5">$85</dd>
+              <dd className="font-heading text-lg font-bold text-white mt-0.5">$100</dd>
             </div>
           </dl>
 
@@ -89,7 +89,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Calendar className="w-4 h-4" />
-              Book {city.city} service — $85 hold
+              Book {city.city} service — $100 hold
             </button>
             <a
               href={SITE_PHONE_TEL}
@@ -111,7 +111,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           {[
             [ShieldCheck, '12 mo / 12k warranty', 'Parts and labor, in writing'],
             [Truck, 'Driveway dispatch', `We come to ${city.city} — no drop-off`],
-            [CheckCircle2, 'Priced before we start', 'The $85 hold comes off the repair'],
+            [CheckCircle2, 'Priced before we start', 'The $100 hold comes off the repair'],
           ].map(([Icon, title, sub]) => {
             const I = Icon as typeof ShieldCheck;
             return (
@@ -173,7 +173,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           </h2>
           <p className="text-sm text-slate-300 max-w-lg mx-auto">
             {city.city} is {city.distanceMiles} miles from the Justin hub — roughly {city.driveMinutes} minutes.
-            Book the $85 diagnostic hold and it comes straight off the repair.
+            Book the $100 diagnostic hold and it comes straight off the repair.
           </p>
           <button
             type="button"
@@ -190,7 +190,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
                 trackEvent(CONVERSION_EVENTS.referralShared, { source: 'city_page', city: city.slug });
                 void shareAdaptivity({
                   title: `Mobile mechanic ${city.city} TX`,
-                  text: `Adaptivity Performance — mobile mechanic in ${city.city}, TX. $85 diagnostic hold, and they come to your driveway.`,
+                  text: `Adaptivity Performance — mobile mechanic in ${city.city}, TX. $100 diagnostic hold, and they come to your driveway.`,
                   url: `https://adaptivityperformance.com${cityPathOf(city.slug)}`,
                 }).then((r) => setShareState(r === 'shared' ? 'shared' : r === 'copied' ? 'copied' : 'idle'));
               }}

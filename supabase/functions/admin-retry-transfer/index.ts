@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
 
     // The correct 70% share (incl. any repair remainder + tax/parts rules) was
     // computed and stored at capture. Reuse it — captured_amount_cents / the hold
-    // PaymentIntent reflect only the $85 hold, which would badly under-pay a job
+    // PaymentIntent reflect only the $100 hold, which would badly under-pay a job
     // that had a repair remainder charge.
     const storedTechCents =
       typeof paymentRow?.tech_transfer_cents === 'number'

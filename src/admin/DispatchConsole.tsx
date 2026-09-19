@@ -41,7 +41,7 @@ import {
 import { captureBookingPayment } from '../services/techDispatch';
 import { sendChargeReceiptSmsAuto } from '../services/sendSms';
 import { FORM_1099_NEC_NOTICE, FORM_1099_NEC_THRESHOLD_DOLLARS } from '../content/taxForms';
-import { techCanClaimServices } from '../services/serviceCatalog';
+import { DIAGNOSTIC_HOLD_DOLLARS, techCanClaimServices } from '../services/serviceCatalog';
 import {
   CANCEL_REASON_PRESETS,
   NO_SHOW_REASON_PRESETS,
@@ -659,7 +659,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
   const [isChargingInvoice, setIsChargingInvoice] = useState(false);
 
-  const holdDollars = (booking.holdAmountCents ?? 8500) / 100;
+  const holdDollars = (booking.holdAmountCents ?? DIAGNOSTIC_HOLD_DOLLARS * 100) / 100;
   const appliedDiagnosticDollars = includeDiagnosticFee ? holdDollars : 0;
   const laborTotal = laborLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
   const partsTotal = partsLines.reduce((s, p) => s + (Number(p.amount) || 0), 0);
@@ -1007,7 +1007,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-300">
-                🔍 Mobile Diagnostic Hold ($85 on file)
+                🔍 Mobile Diagnostic Hold (${holdDollars.toFixed(2)} on file)
               </span>
               <span className="font-mono font-bold text-white">
                 {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
@@ -1034,13 +1034,13 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
                     : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                 }`}
               >
-                + Charge $85 Diag Fee
+                + Charge ${holdDollars.toFixed(0)} Diag Fee
               </button>
             </div>
             <p className="text-[10px] text-slate-400 leading-tight">
               {!includeDiagnosticFee
-                ? 'Free diagnostic with repair — the $85 card hold is released/applied toward repairs with no extra diagnostic fee charged.'
-                : 'The $85 diagnostic visit fee is charged on top of labor & parts.'}
+                ? `Free diagnostic with repair — the $${holdDollars.toFixed(2)} card hold is released/applied toward repairs with no extra diagnostic fee charged.`
+                : `The $${holdDollars.toFixed(2)} diagnostic visit fee is charged on top of labor & parts.`}
             </p>
           </div>
 
@@ -1373,16 +1373,16 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             onClick={() => {
               if (
                 !window.confirm(
-                  'Capture $85 diagnostic hold for no-show / missed appointment and mark job completed?'
+                  `Capture $${holdDollars.toFixed(2)} diagnostic hold for no-show / missed appointment and mark job completed?`
                 )
               ) {
                 return;
               }
-              void onAdjustCapture(booking.id, 85, true, noShowReason);
+              void onAdjustCapture(booking.id, holdDollars, true, noShowReason);
             }}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2"
           >
-            No-show — capture $85 & complete
+            No-show — capture ${holdDollars.toFixed(2)} & complete
           </button>
         </div>
       ) : null}

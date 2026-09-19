@@ -2,6 +2,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse, stripeRequest } from './_shared/stripe.ts';
+import { DIAGNOSTIC_HOLD_DOLLARS } from './_shared/holdPricing.ts';
 import { captureHoldAndRemainder } from './_shared/captureHold.ts';
 import {
   resolveTechStripeAccountId,
@@ -194,7 +195,11 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'No card hold on this booking' }, 400);
     }
 
-    const holdCents = booking.hold_amount_cents ?? 8500;
+    /* Every booking stores its own hold, so an existing $100 authorization stays
+       $100 — a customer is never captured for more than they approved. This
+       fallback only covers a row with no stored amount, and tracks the current
+       diagnostic hold rather than a stale literal. */
+    const holdCents = booking.hold_amount_cents ?? DIAGNOSTIC_HOLD_DOLLARS * 100;
     if (holdCents < 50) {
       return jsonResponse({ error: 'Invalid hold amount' }, 400);
     }
@@ -249,7 +254,7 @@ Deno.serve(async (req: Request) => {
         return jsonResponse(
           {
             error:
-              'Add labor/parts line items to charge the customer, or use diagnostic_only to charge the $85 visit only.',
+              'Add labor/parts line items to charge the customer, or use diagnostic_only to charge the $100 visit only.',
           },
           400
         );
@@ -495,7 +500,7 @@ Deno.serve(async (req: Request) => {
       await supabase.from('gbp_post_drafts').insert({
         city_slug: cityHint,
         booking_id: booking.id,
-        caption: `Another driveway job wrapped in ${cityLabel}, TX — mobile brakes, diagnostics, and more. Book a $85 diagnostic hold at adaptivityperformance.com. #MobileMechanic #${cityLabel}TX`,
+        caption: `Another driveway job wrapped in ${cityLabel}, TX — mobile brakes, diagnostics, and more. Book a $100 diagnostic hold at adaptivityperformance.com. #MobileMechanic #${cityLabel}TX`,
         status: 'draft',
       });
     } catch (e) {
