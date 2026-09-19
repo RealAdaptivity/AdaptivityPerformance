@@ -41,7 +41,7 @@ export type CatalogService = {
   duration: string;
   icon: string;
   kind: ServiceKind;
-  /** Always false — all bookings use $85 diagnostic hold; tech sets price on site. */
+  /** Always false — all bookings use $100 diagnostic hold; tech sets price on site. */
   directBook: boolean;
   /** Illustrative labor+parts ballpark (not a final bill). */
   typicalMinDollars?: number;
@@ -52,7 +52,7 @@ export type CatalogService = {
 export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
 // Standard diagnostic authorization hold.
-export const DIAGNOSTIC_HOLD_DOLLARS = 85;
+export const DIAGNOSTIC_HOLD_DOLLARS = 100;
 
 function consult(
   id: string,

@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Missing required booking fields' }, 400);
     }
 
-    // Server computes hold: $85 diagnostic unless only direct-book services
+    // Server computes hold: $100 diagnostic unless only direct-book services
     // (brakes / oil / transmission oil / differential).
     const quote = computeHoldFromServices(services);
     const hold = quote.holdDollars;
@@ -291,7 +291,7 @@ Deno.serve(async (req) => {
       holdMode: quote.mode,
       holdExpiresAt,
       message:
-        'Confirm your card for the $85 diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.',
+        `Confirm your card for the $${hold} diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.`,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Booking authorization failed';

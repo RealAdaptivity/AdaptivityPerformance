@@ -299,7 +299,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           {[
             { num: 1, label: 'Vehicle Info' },
             { num: 2, label: 'Driveway Location' },
-            { num: 3, label: 'Card Hold ($85)' },
+            { num: 3, label: 'Card Hold ($100)' },
           ].map((s) => (
             <div
               key={s.num}
@@ -390,7 +390,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    Zero Charged Today ($85 Hold Only)
+                    Zero Charged Today ($100 Hold Only)
                   </span>
                   <span className="font-mono text-orange-400 font-bold">${holdPreview.toFixed(2)} Hold</span>
                 </div>
@@ -543,7 +543,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     className="mt-0.5 w-4 h-4 rounded border-slate-700 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0"
                   />
                   <span>
-                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $85 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
+                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $100 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
                   </span>
                 </label>
                 <p className="text-[10px] text-slate-500 leading-relaxed pl-6">
