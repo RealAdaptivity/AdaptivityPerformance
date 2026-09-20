@@ -67,7 +67,7 @@ for (const event of ['payment_intent.canceled', 'charge.refunded', 'charge.dispu
   requireText(webhook, event, 'Stripe reconciliation');
   requireText(webhookSync, event, 'Stripe event subscription');
 }
-requireText(terms, '$10 diagnostic hold', 'Cancellation terms');
+requireText(terms, '${DIAGNOSTIC_HOLD_DOLLARS} diagnostic hold', 'Cancellation terms');
 if (terms.includes('$50 late dispatch fee')) throw new Error('Conflicting $50 cancellation fee remains');
 const dispatch = read('src/services/techDispatch.ts');
 const settings = read('src/portal/tech/TechSettingsTab.tsx');
@@ -81,4 +81,120 @@ requireText(w9Migration, 'and mechanic_id = (select auth.uid())', 'Claim RLS');
 requireText(stripeConnect, 'account.individual?.id_number_provided', 'Stripe individual tax verification');
 requireText(stripeConnect, 'account.company?.tax_id_provided', 'Stripe company tax verification');
 requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
+// The diagnostic hold is money. serviceCatalog.ts is the source of truth, but the
+// edge functions cannot import from src/, so sync-service-catalog.mjs copies it
+// into a holdPricing.ts beside each function. Those copies are generated files
+// that are committed, so they can be stale in a way nothing else notices: the
+// nested capture-booking-payment copy really did still say 85 after the source
+// moved to 100, and that is the copy the function capturing cards imports.
+{
+  const { readdirSync } = await import('node:fs');
+  const holdOf = (path, src) => {
+    const m = src.match(/export const DIAGNOSTIC_HOLD_DOLLARS\s*=\s*(\d+)\s*;/);
+    if (!m) throw new Error(`Diagnostic hold: DIAGNOSTIC_HOLD_DOLLARS not declared in ${path}`);
+    return Number(m[1]);
+  };
+
+  const sourcePath = 'src/services/serviceCatalog.ts';
+  const hold = holdOf(sourcePath, read(sourcePath));
+
+  const fnDir = new URL('../supabase/functions/', import.meta.url);
+  const copies = ['supabase/functions/_shared/holdPricing.ts'];
+  for (const entry of readdirSync(fnDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name === '_shared') continue;
+    const rel = `supabase/functions/${entry.name}/_shared/holdPricing.ts`;
+    if (existsSync(new URL(`../${rel}`, import.meta.url))) copies.push(rel);
+  }
+  for (const rel of copies) {
+    const copied = holdOf(rel, read(rel));
+    if (copied !== hold) {
+      throw new Error(
+        `Diagnostic hold: ${rel} says $${copied} but ${sourcePath} says $${hold} — ` +
+          'run `npm run sync:service-catalog` and commit the result'
+      );
+    }
+  }
+
+  // Two shapes the prose scan below cannot see, because neither writes a "$".
+  // Both were live: localSeoData priced the diagnostic at 85 (and fed that to
+  // schema.org as minPrice/maxPrice, so Google was quoted a number the page
+  // contradicted), and a no-show button captured a hardcoded 85 while its label
+  // said otherwise.
+  const seo = JSON.parse(read('src/site/localSeoData.json'));
+  for (const service of seo.services ?? []) {
+    if (!/diagnostic hold/i.test(service.priceUnit ?? '')) continue;
+    if (service.priceFrom !== hold || service.priceTo !== hold) {
+      throw new Error(
+        `Diagnostic hold: localSeoData service "${service.slug}" prices the hold at ` +
+          `${service.priceFrom}-${service.priceTo} but the hold is ${hold} — schema.org Offer would quote the wrong price`
+      );
+    }
+  }
+
+  // In the two consoles that charge cards, every dollar figure must come from the
+  // booking, never from a literal — even one matching today's hold. The five
+  // bookings taken at $85 keep that hold forever, so a hardcoded "$100 on file"
+  // would misstate both what the customer authorized and what the button captures.
+  // A literal zero is the exception: "WAIVED ($0.00)" is a state, not a price.
+  const literalMoney = /(?<!\$)\$(\d+(?:\.\d+)?)/g;
+  for (const rel of ['src/admin/DispatchConsole.tsx', 'src/portal/tech/TechJobsTab.tsx']) {
+    for (const [match, figure] of read(rel).matchAll(literalMoney)) {
+      if (Number(figure) === 0) continue;
+      throw new Error(
+        `Diagnostic hold: ${rel} hardcodes "${match}" — these consoles charge real cards, ` +
+          "so render holdDollars (the booking's own hold) instead of a literal"
+      );
+    }
+  }
+
+  // A booking stores the hold its customer authorized; any fallback for a row
+  // without one must be the current hold, not a frozen literal.
+  const fallback = /holdAmountCents\s*\?\?\s*(\d+)/g;
+  for (const rel of ['src/admin/DispatchConsole.tsx', 'src/portal/tech/TechJobsTab.tsx']) {
+    for (const [match, cents] of read(rel).matchAll(fallback)) {
+      throw new Error(
+        `Diagnostic hold: ${rel} falls back to a literal in "${match}" (${cents} cents) — ` +
+          'use DIAGNOSTIC_HOLD_DOLLARS * 100 so it tracks the hold'
+      );
+    }
+  }
+
+  // Prose drifts too, and this one is customer-facing: the terms page promised a
+  // $10 forfeit for eighteen commits while the hold was $85. Both orders occur in
+  // this copy ("$100 diagnostic", "diagnostic fee of $100"), so check both.
+  const root = new URL('../', import.meta.url).pathname;
+  const walk = (dir) => {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const next = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) out.push(...walk(next));
+      else if (/\.(ts|tsx|json)$/.test(entry.name)) out.push(next);
+    }
+    return out;
+  };
+  const patterns = [
+    /\$(\d+)(?=[\s—-]*(?:diagnostic|hold))/gi,
+    /(?:diagnostic|hold)[a-z]*(?:[\s—-]+(?:fee|hold|visit|card|of|is|at|costs?))*[\s—-]+\$(\d+)/gi,
+  ];
+  const scanned = [...walk(new URL('src/', new URL(root, 'file:'))), ...walk(fnDir)];
+  if (scanned.length < 50) {
+    throw new Error(`Diagnostic hold: prose scan walked only ${scanned.length} files — the walk is broken`);
+  }
+  for (const file of scanned) {
+    const rel = file.pathname.slice(root.length);
+    if (rel.endsWith('holdPricing.ts')) continue; // generated; checked exactly above
+    const src = read(rel);
+    for (const pattern of patterns) {
+      for (const [match, figure] of src.matchAll(pattern)) {
+        if (Number(figure) !== hold) {
+          throw new Error(
+            `Diagnostic hold: ${rel} quotes "${match.trim()}" but the hold is $${hold} — ` +
+              'interpolate DIAGNOSTIC_HOLD_DOLLARS instead of writing the figure'
+          );
+        }
+      }
+    }
+  }
+}
+
 console.log('Production operations verification passed.');

@@ -61,7 +61,7 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
             Pay <strong className="text-orange-400">${holdAmountDollars.toFixed(2)}</strong> Diagnostic Fee & Save Card on File
           </p>
           <p className="text-slate-400 text-[10px] leading-relaxed">
-            Your $85 payment reserves your certified technician. Additional labor & parts are quoted on-site and charged upon completion.
+            Your $100 payment reserves your certified technician. Additional labor & parts are quoted on-site and charged upon completion.
           </p>
         </div>
       </div>
@@ -101,7 +101,7 @@ export const StripeBookingHoldForm: React.FC<StripeBookingHoldFormProps> = ({
         {isProcessing ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Processing $85.00 payment…</span>
+            <span>Processing $100.00 payment…</span>
           </>
         ) : (
           <>

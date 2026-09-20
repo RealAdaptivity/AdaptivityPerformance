@@ -42,7 +42,7 @@ export const RefundPolicyPage: React.FC = () => {
             </div>
             <h3 className="font-bold text-white text-base">Free Cancellation (2+ hrs)</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Cancel or reschedule at least 2 hours before your appointment window for a 100% full release of your $85 hold with zero penalty.
+              Cancel or reschedule at least 2 hours before your appointment window for a 100% full release of your $100 hold with zero penalty.
             </p>
           </div>
 
@@ -67,17 +67,17 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* SECTION 1: Diagnostic Authorization Holds ($85) */}
+        {/* SECTION 1: Diagnostic Authorization Holds ($100) */}
         <section className="bg-[#0e1017] p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
           <div className="flex items-center space-x-3 text-orange-400 border-b border-white/10 pb-4">
             <CreditCard className="w-6 h-6 text-orange-500" />
             <h2 className="font-heading text-xl font-extrabold text-white">
-              1. Diagnostic Authorization Holds ($85.00)
+              1. Diagnostic Authorization Holds ($100.00)
             </h2>
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            When booking mobile repair or on-site diagnosis, a temporary pre-authorization hold of <strong>$85.00</strong> is placed on your credit or debit card. 
+            When booking mobile repair or on-site diagnosis, a temporary pre-authorization hold of <strong>$100.00</strong> is placed on your credit or debit card. 
             This is <em>not an immediate charge</em> — it ensures technician scheduling and reserves your dedicated dispatch slot.
           </p>
 
@@ -98,7 +98,7 @@ export const RefundPolicyPage: React.FC = () => {
                 <AlertCircle className="w-4 h-4" /> Late Cancellation / No-Show Fee
               </div>
               <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                <li><strong>Late Cancellation:</strong> Cancellations made within 2 hours of the arrival window forfeit the $85 hold to cover tech dispatch and fuel costs.</li>
+                <li><strong>Late Cancellation:</strong> Cancellations made within 2 hours of the arrival window forfeit the $100 hold to cover tech dispatch and fuel costs.</li>
                 <li><strong>No-Show on Site:</strong> If the vehicle or customer is unreachable for 15+ minutes after technician arrival.</li>
               </ul>
             </div>

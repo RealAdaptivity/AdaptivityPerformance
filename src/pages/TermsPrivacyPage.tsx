@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { DIAGNOSTIC_HOLD_DOLLARS } from '../services/serviceCatalog';
 
 export const TermsPrivacyPage: React.FC = () => {
   return (
@@ -297,7 +298,7 @@ export const TermsPrivacyPage: React.FC = () => {
                   <Clock className="w-4 h-4" /> Late Cancellation & No-Show Policy
                 </div>
                 <p className="text-slate-300 leading-relaxed">
-                  Mobile dispatch appointments canceled with less than 2 hours notice, or customer no-shows after the technician arrives, may forfeit the $10 diagnostic hold as the late cancellation or no-show fee. No additional late-dispatch fee is charged unless the customer separately approves it before service.
+                  Mobile dispatch appointments canceled with less than 2 hours notice, or customer no-shows after the technician arrives, may forfeit the ${DIAGNOSTIC_HOLD_DOLLARS} diagnostic hold as the late cancellation or no-show fee. No additional late-dispatch fee is charged unless the customer separately approves it before service.
                 </p>
               </div>
 

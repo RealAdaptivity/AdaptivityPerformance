@@ -17,6 +17,7 @@ import { uploadJobPhoto } from '../../services/jobPhotos';
 import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
 import { todayISODate } from '../../services/scheduleWindows';
 import { JobChatPanel } from '../../components/JobChatPanel';
+import { DIAGNOSTIC_HOLD_DOLLARS } from '../../services/serviceCatalog';
 
 type LineDraft = { title: string; laborDollars: string; partsDollars: string };
 type JobsFilter = 'today' | 'available' | 'active' | 'completed';
@@ -198,7 +199,7 @@ export const TechJobsTab: React.FC = () => {
   const partsSubtotal = lines.reduce((s, l) => s + (Number(l.partsDollars) || 0), 0);
   const mileageTotal = Number(mileageFee) || 0;
   const repairsSubtotal = laborSubtotal + partsSubtotal + mileageTotal;
-  const holdDollars = (activeJob?.holdAmountCents ?? 8500) / 100;
+  const holdDollars = (activeJob?.holdAmountCents ?? DIAGNOSTIC_HOLD_DOLLARS * 100) / 100;
   const appliedDiagnosticDollars = includeDiagnosticFee ? holdDollars : 0;
   const subtotalBeforeTax = appliedDiagnosticDollars + repairsSubtotal;
 
@@ -293,7 +294,7 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && (l.laborDollars > 0 || l.partsDollars > 0));
 
     if (!lineItems.length && !includeDiagnosticFee) {
-      setMessage('⚠️ Please enter a labor or parts dollar amount (or enable the $85 Diagnostic Fee) to charge.');
+      setMessage(`⚠️ Please enter a labor or parts dollar amount (or enable the $${holdDollars.toFixed(0)} Diagnostic Fee) to charge.`);
       return;
     }
 
@@ -370,7 +371,7 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && (l.laborDollars > 0 || l.partsDollars > 0));
 
     if (!lineItems.length && !includeDiagnosticFee) {
-      setMessage('⚠️ Enter a labor or parts amount (or enable the $85 Diagnostic Fee) before sending a link.');
+      setMessage(`⚠️ Enter a labor or parts amount (or enable the $${holdDollars.toFixed(0)} Diagnostic Fee) before sending a link.`);
       return;
     }
     if (mileageTotal > 0) {
@@ -408,7 +409,7 @@ export const TechJobsTab: React.FC = () => {
 
   const handleDiagnosticOnly = async () => {
     if (!activeJob) return;
-    if (!confirm('Charge the $85 diagnostic only and close the job?')) return;
+    if (!confirm(`Charge the $${holdDollars.toFixed(2)} diagnostic only and close the job?`)) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -429,7 +430,7 @@ export const TechJobsTab: React.FC = () => {
 
   const handleNoShow = async () => {
     if (!activeJob) return;
-    if (!confirm('Customer no-show? Capture the $85 diagnostic hold and close the job.')) return;
+    if (!confirm(`Customer no-show? Capture the $${holdDollars.toFixed(2)} diagnostic hold and close the job.`)) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -499,7 +500,9 @@ export const TechJobsTab: React.FC = () => {
             )}
             {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
           </div>
-          <span className="text-[10px] text-amber-400 font-bold shrink-0">$85 hold</span>
+          <span className="text-[10px] text-amber-400 font-bold shrink-0">
+            ${((job.holdAmountCents ?? DIAGNOSTIC_HOLD_DOLLARS * 100) / 100).toFixed(0)} hold
+          </span>
         </div>
         <div className="flex gap-2">
           {job.phone && (
@@ -694,7 +697,7 @@ export const TechJobsTab: React.FC = () => {
                 )}
               </div>
               <span className="text-[10px] text-amber-400 font-bold px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg shrink-0">
-                $85 hold on file
+                ${holdDollars.toFixed(2)} hold on file
               </span>
             </div>
 
@@ -703,7 +706,7 @@ export const TechJobsTab: React.FC = () => {
               <p className="text-xs text-slate-300 font-medium">{activeJob.address}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">{activeJob.services.join(' · ')}</p>
               <p className="text-[10px] text-amber-400/90 mt-1">
-                $85 diagnostic hold on file — you set labor + parts after diagnosis.
+                ${holdDollars.toFixed(2)} diagnostic hold on file — you set labor + parts after diagnosis.
               </p>
             </div>
           </div>
@@ -797,11 +800,11 @@ export const TechJobsTab: React.FC = () => {
                 </span>
               </div>
 
-              {/* 1. Diagnostic Hold (Waive vs Charge $85) */}
+              {/* 1. Diagnostic Hold (waive, or charge the hold on file) */}
               <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-300">
-                    🔍 Mobile Diagnostic Hold ($85 on file)
+                    🔍 Mobile Diagnostic Hold (${holdDollars.toFixed(2)} on file)
                   </span>
                   <span className="font-mono font-bold text-white">
                     {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
@@ -828,13 +831,13 @@ export const TechJobsTab: React.FC = () => {
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
                   >
-                    + Charge $85 Diag Fee
+                    + Charge ${holdDollars.toFixed(0)} Diag Fee
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-tight">
                   {!includeDiagnosticFee
-                    ? 'Free diagnostic with repair — the $85 card hold is released/applied toward repairs with no extra diagnostic fee.'
-                    : 'The $85 diagnostic visit fee is charged on top of labor & parts.'}
+                    ? `Free diagnostic with repair — the $${holdDollars.toFixed(2)} card hold is released/applied toward repairs with no extra diagnostic fee.`
+                    : `The $${holdDollars.toFixed(2)} diagnostic visit fee is charged on top of labor & parts.`}
                 </p>
               </div>
 
@@ -1120,7 +1123,7 @@ export const TechJobsTab: React.FC = () => {
                   onClick={() => void handleDiagnosticOnly()}
                   className="py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60 transition-colors"
                 >
-                  Diag only ($85)
+                  Diag only (${holdDollars.toFixed(0)})
                 </button>
                 <button
                   type="button"
@@ -1128,7 +1131,7 @@ export const TechJobsTab: React.FC = () => {
                   onClick={() => void handleNoShow()}
                   className="py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60 transition-colors"
                 >
-                  No-show ($85 hold)
+                  No-show (${holdDollars.toFixed(0)} hold)
                 </button>
               </div>
             </div>

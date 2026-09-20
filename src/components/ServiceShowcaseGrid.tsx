@@ -24,7 +24,7 @@ export const ServiceShowcaseGrid: React.FC<ServiceShowcaseGridProps> = ({ onBook
       id: 'motorcycle',
       title: 'Motorcycle Repair & Service',
       subtitle: 'Two-Wheel Mechanical',
-      description: 'Diagnostics, maintenance, and mechanical repair for motorcycles — same upfront $85 diagnostic visit and on-site pricing.',
+      description: 'Diagnostics, maintenance, and mechanical repair for motorcycles — same upfront $100 diagnostic visit and on-site pricing.',
       icon: <Bike className="w-6 h-6 text-orange-400" />,
       accent: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.12)]',
       badge: 'Active Service',

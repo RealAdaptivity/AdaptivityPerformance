@@ -204,7 +204,7 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
             Ready for {service.shortName.toLowerCase()} in {city.city}?
           </h2>
           <p className="text-sm text-slate-300 max-w-lg mx-auto">
-            Book the $85 diagnostic hold and we&rsquo;ll be in your driveway in about {city.driveMinutes} minutes
+            Book the $100 diagnostic hold and we&rsquo;ll be in your driveway in about {city.driveMinutes} minutes
             of drive time. The hold comes straight off the repair.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

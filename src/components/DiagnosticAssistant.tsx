@@ -45,7 +45,7 @@ const SYMPTOMS: DiagnosticScenario[] = [
     urgency: 'Medium',
     potentialCauses: ['Failing spark plug or ignition coil misfire', 'Dirty mass airflow sensor', 'Vacuum leak or O2 sensor error'],
     recommendedFix: 'Full Computer Diagnostic & Spark Plug / Coil Replacement',
-    estimatedPriceRange: '$85 (Diag) / $180 (Tune-up)',
+    estimatedPriceRange: '$100 (Diag) / $180 (Tune-up)',
   },
   {
     id: 'symph-4',

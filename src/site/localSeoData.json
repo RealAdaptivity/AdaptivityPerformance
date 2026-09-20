@@ -51,8 +51,8 @@
       "name": "Check Engine Light Diagnostic",
       "shortName": "Check engine diagnostic",
       "keyword": "check engine light diagnostic",
-      "priceFrom": 85,
-      "priceTo": 85,
+      "priceFrom": 100,
+      "priceTo": 100,
       "priceUnit": "diagnostic hold, applied to the repair",
       "durationLabel": "45 - 90 minutes",
       "blurb": "A real diagnosis, not a parts-store code read. We pull live data, run the manufacturer test procedure for the stored code, and tell you what actually failed and what it costs to fix.",
@@ -74,8 +74,8 @@
           "a": "A free scan reads the code and stops there. A P0171 code, for example, can be a vacuum leak, a failing mass airflow sensor, a weak fuel pump, or an exhaust leak upstream of the sensor. We run the test that separates them, so you replace the part that actually failed instead of guessing."
         },
         {
-          "q": "What happens to the $85 hold?",
-          "a": "It is a hold, not a separate fee. If you approve the repair with us, the full $85 is credited against the job. You only lose it if you decline the work entirely."
+          "q": "What happens to the $100 hold?",
+          "a": "It is a hold, not a separate fee. If you approve the repair with us, the full $100 is credited against the job. You only lose it if you decline the work entirely."
         },
         {
           "q": "Can you clear the code so I can pass inspection?",

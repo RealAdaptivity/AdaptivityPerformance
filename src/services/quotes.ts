@@ -9,7 +9,7 @@ export type QuoteLine = {
   /**
    * Billable hours for this line. When set, labor is hours x the quote's rate
    * and laborDollars is derived from it. Left unset for flat-fee work like the
-   * $85 diagnostic, where labor is typed directly.
+   * $100 diagnostic, where labor is typed directly.
    */
   hours?: number;
   laborDollars: number;
