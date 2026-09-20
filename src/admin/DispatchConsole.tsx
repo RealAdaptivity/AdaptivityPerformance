@@ -332,6 +332,15 @@ export const DispatchConsole: React.FC = () => {
                 <p className="text-[10px] text-slate-500">
                   {t.toolsVerified ? 'Tools verified' : 'Tools not verified'}
                 </p>
+                <p
+                  className={`text-[11px] font-bold ${
+                    t.onShiftSince ? 'text-emerald-400' : 'text-slate-500'
+                  }`}
+                >
+                  {t.onShiftSince
+                    ? `● On shift since ${new Date(t.onShiftSince).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                    : '○ Off shift — cannot claim jobs'}
+                </p>
                 <p className="text-[10px] text-slate-500 flex items-center gap-1 pt-0.5">
                   <span className={`inline-block w-1.5 h-1.5 rounded-full ${
                     t.lastSignInAt &&

@@ -17,6 +17,13 @@ import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
 import { todayISODate } from '../../services/scheduleWindows';
 import { JobChatPanel } from '../../components/JobChatPanel';
 import { DIAGNOSTIC_FEE_DOLLARS } from '../../services/serviceCatalog';
+import {
+  clockIn,
+  clockOut,
+  fetchMyShiftStatus,
+  shiftElapsedLabel,
+  type ShiftStatus,
+} from '../../services/techShifts';
 
 type LineDraft = { title: string; laborDollars: string; partsDollars: string };
 type JobsFilter = 'today' | 'available' | 'active' | 'completed';
@@ -46,6 +53,36 @@ export const TechJobsTab: React.FC = () => {
   ]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const [shift, setShift] = useState<ShiftStatus>({ onShift: false, since: null });
+  const [shiftBusy, setShiftBusy] = useState(false);
+
+  const loadShift = useCallback(async () => {
+    try {
+      setShift(await fetchMyShiftStatus());
+    } catch {
+      /* the claim gate is the real enforcement; a failed read just leaves the banner as-is */
+    }
+  }, []);
+
+  const handleClock = async () => {
+    setShiftBusy(true);
+    setMessage(null);
+    try {
+      if (shift.onShift) {
+        await clockOut();
+        setMessage('Clocked out. You will not see new jobs until you clock back in.');
+      } else {
+        await clockIn();
+        setMessage('Clocked in — you can claim jobs now.');
+      }
+      await loadShift();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Could not update your shift');
+    } finally {
+      setShiftBusy(false);
+    }
+  };
+
   const loadJobs = useCallback(async () => {
     try {
       setIsRefreshing(true);
@@ -63,11 +100,12 @@ export const TechJobsTab: React.FC = () => {
     void supabase.auth.getSession().then(({ data }) => setMechanicId(data.session?.user?.id ?? null));
     void fetchMyTechSpecialties().then(setMySpecialties);
     loadJobs();
+    void loadShift();
     const ch = subscribeDispatchBookings(() => loadJobs());
     return () => {
       void ch.unsubscribe();
     };
-  }, [loadJobs]);
+  }, [loadJobs, loadShift]);
 
   useEffect(() => {
     if (!activeJob) return;
@@ -551,6 +589,37 @@ export const TechJobsTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      <div
+        className={`rounded-xl border px-3.5 py-3 flex items-center justify-between gap-3 ${
+          shift.onShift
+            ? 'border-emerald-500/30 bg-emerald-500/10'
+            : 'border-amber-500/30 bg-amber-500/10'
+        }`}
+      >
+        <div className="min-w-0">
+          <p className={`text-xs font-bold ${shift.onShift ? 'text-emerald-300' : 'text-amber-300'}`}>
+            {shift.onShift ? 'On shift' : 'Off shift'}
+          </p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            {shift.onShift
+              ? `Clocked in ${shiftElapsedLabel(shift.since)} ago. Clock out when you finish for the day.`
+              : 'Clock in to see and claim jobs.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={shiftBusy}
+          onClick={() => void handleClock()}
+          className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold disabled:opacity-60 transition-colors ${
+            shift.onShift
+              ? 'border border-white/15 text-slate-200 hover:bg-white/5'
+              : 'bg-emerald-500 text-white hover:bg-emerald-400'
+          }`}
+        >
+          {shiftBusy ? 'Saving…' : shift.onShift ? 'Clock out' : 'Clock in'}
+        </button>
+      </div>
+
       {message && (
         <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
           {message}
@@ -605,10 +674,20 @@ export const TechJobsTab: React.FC = () => {
 
       {filter === 'available' && (
         <div className="space-y-2">
-          {available.length === 0 && (
-            <p className="text-xs text-slate-500">No open jobs matching your specialties.</p>
+          {!shift.onShift ? (
+            /* The claim itself is refused server-side while clocked out; hiding the
+               board here just avoids offering a button that cannot work. */
+            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
+              Clock in to see open jobs. Jobs cannot be claimed while you are off shift.
+            </p>
+          ) : (
+            <>
+              {available.length === 0 && (
+                <p className="text-xs text-slate-500">No open jobs matching your specialties.</p>
+              )}
+              {available.map((job) => renderAvailableCard(job))}
+            </>
           )}
-          {available.map((job) => renderAvailableCard(job))}
         </div>
       )}
 

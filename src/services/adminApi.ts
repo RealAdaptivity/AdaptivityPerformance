@@ -48,6 +48,8 @@ export type DispatchTech = {
   toolsVerified: boolean;
   specialties: string[];
   lastSignInAt: string | null;
+  /** Open shift start, or null when the tech is clocked out. */
+  onShiftSince: string | null;
 };
 
 export type AdminPaymentRow = {
@@ -121,6 +123,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       toolsVerified: Boolean(row.tools_verified),
       specialties: specialties.length ? specialties : ['mechanical'],
       lastSignInAt: null,
+      onShiftSince: null,
     });
   }
 
@@ -142,6 +145,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       toolsVerified: Boolean(details?.tools_verified),
       specialties: specialties.length ? specialties : ['mechanical'],
       lastSignInAt: null,
+      onShiftSince: null,
     });
   }
 
@@ -159,6 +163,17 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
     }
   } catch {
     // Non-fatal: last login data unavailable
+  }
+
+  // Who is clocked in right now. Admins can read every shift row; a tech never
+  // reaches this function.
+  const { data: openShifts } = await supabase
+    .from('tech_shifts')
+    .select('profile_id, clocked_in_at')
+    .is('clocked_out_at', null);
+  for (const shift of openShifts ?? []) {
+    const tech = byId.get(shift.profile_id as string);
+    if (tech) tech.onShiftSince = shift.clocked_in_at as string;
   }
 
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
