@@ -131,7 +131,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   join: {
     title: 'Join as a Tech | 1099 Mobile Mechanic Jobs — Adaptivity',
-    description: 'Keep 70% of labor. Stripe Express payouts. Apply for mobile dispatch out of our Justin hub.',
+    description: 'Keep 70% of labor. Apply for mobile dispatch out of our Justin hub.',
     path: '/join',
   },
   careers: {
@@ -176,7 +176,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   refunds: {
     title: 'Refund & Cancellation Policy | Adaptivity Performance',
-    description: 'Clear refund terms for $100 diagnostic holds, 12-month warranties, and customer cancellations.',
+    description: 'Clear refund terms for the $100 diagnostic, 12-month warranties, and customer cancellations.',
     path: '/refund-policy',
   },
 };
@@ -229,15 +229,15 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you accept cash?',
-    a: 'No. Adaptivity Performance is a cashless business. We accept all major credit and debit cards (Visa, Mastercard, Amex, Discover) processed securely via Stripe. We also accept Zelle for applicable balances. A card on file is required at booking to place a $100 authorization hold. Cash payments are not accepted under any circumstances.',
+    a: 'We take payment in person when the work is done. Your technician accepts all major credit and debit cards (Visa, Mastercard, Amex, Discover) by card, tap or chip on a Square reader, and we also accept Zelle for applicable balances. Nothing is charged online and no card is needed to book.',
   },
   {
-    q: 'Why is a credit card hold required before my appointment?',
-    a: 'The $100 pre-authorization hold secures your appointment slot and covers our technician\'s drive time to your location. The hold is not a charge — it is released automatically if you cancel within the allowable window. If you approve a repair, the hold is applied toward your final invoice. This protects both you and our technicians from no-shows.',
+    q: 'Do I need to pay anything to book an appointment?',
+    a: 'No. Booking takes no card and charges nothing. You pay your technician in person when the work is done, by card, tap or chip on their reader. If you approve a repair, the $100 diagnostic is credited in full toward your final invoice.',
   },
   {
     q: 'What happens if I need to cancel or reschedule my appointment?',
-    a: 'Cancellations made more than 2 hours before the scheduled appointment window are fully refunded with no penalty. Cancellations within 2 hours of the appointment forfeit the $100 diagnostic hold as a late cancellation fee. Same-day no-shows without notice forfeit the full hold. Rescheduling more than 2 hours in advance is always free.',
+    a: 'Cancellations made more than 2 hours before the scheduled appointment window are fully refunded with no penalty. Cancellations within 2 hours of the appointment are billed the $100 diagnostic as a late cancellation fee. Same-day no-shows without notice are billed the same. Rescheduling more than 2 hours in advance is always free.',
   },
 
   // SERVICES
@@ -269,7 +269,7 @@ export const SITE_FAQS = [
   // BOOKING PROCESS
   {
     q: 'How do I book an appointment?',
-    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, choose an appointment window, and place a $100 card hold to confirm. You will receive an SMS and email confirmation immediately. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
+    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, and choose an appointment window. No card is needed and nothing is charged online; you pay in person when the job is done. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
   },
   {
     q: 'How long does a typical mobile repair take?',
@@ -367,7 +367,7 @@ export async function shareAdaptivity(opts?: { title?: string; text?: string; ur
   const title = opts?.title || 'Adaptivity Performance';
   const text =
     opts?.text ||
-    `Mobile mechanic for Justin, Northlake & ${LOCAL_HUB.radiusMiles} miles around — book a $100 diagnostic hold. ${SITE_PHONE_DISPLAY}`;
+    `Mobile mechanic for Justin, Northlake & ${LOCAL_HUB.radiusMiles} miles around — book a $100 diagnostic visit. ${SITE_PHONE_DISPLAY}`;
   const url = opts?.url || SITE_ORIGIN;
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {

@@ -1,18 +1,6 @@
-import { isStripeLive } from './stripeEnvironment';
-
-export function stripeDashboardMode(): 'test' | 'live' {
-  return isStripeLive() ? 'live' : 'test';
-}
-
-export function stripePaymentIntentDashboardUrl(paymentIntentId: string): string {
-  const mode = stripeDashboardMode();
-  return `https://dashboard.stripe.com/${mode}/payments/${paymentIntentId}`;
-}
-
-export function stripeConnectAccountDashboardUrl(accountId: string): string {
-  const mode = stripeDashboardMode();
-  return `https://dashboard.stripe.com/${mode}/connect/accounts/${accountId}`;
-}
+/** Map deep links and the dispatch hub centre. These lived in config/stripeDashboard.ts
+ *  alongside the Stripe dashboard URLs, which had nothing to do with maps; that file is
+ *  gone with the rest of the Stripe code, so they live here now. */
 
 export function googleMapsSearchUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;

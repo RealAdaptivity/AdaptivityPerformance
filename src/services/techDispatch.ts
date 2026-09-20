@@ -1,11 +1,5 @@
 import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
-import { techStripeConnectUrls } from '../config/stripeConnectReturn';
-import {
-  clearCachedTechConnectStatus,
-  readCachedTechConnectStatus,
-  writeCachedTechConnectStatus,
-} from './techConnectCache';
 
 export type DispatchBooking = {
   id: string;
@@ -123,57 +117,50 @@ export async function claimBookingRow(referenceCode: string, mechanicId: string)
   }
 }
 
+/** Money is taken at the vehicle on Square, so the app records what was
+ *  collected rather than moving it. Replaces captureBookingPayment. */
+export async function recordInPersonPayment(
+  referenceCode: string,
+  opts?: {
+    lineItems?: QuoteLineInput[];
+    includeDiagnosticFee?: boolean;
+    salesTaxDollars?: number;
+    totalCollectedDollars?: number;
+  }
+) {
+  const total =
+    opts?.totalCollectedDollars ??
+    (opts?.lineItems ?? []).reduce((sum, li) => sum + (li.laborDollars || 0) + (li.partsDollars || 0), 0) +
+      (opts?.salesTaxDollars ?? 0);
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({
+      status: 'COMPLETED',
+      payment_status: 'paid_in_person',
+      total_estimate: total,
+      updated_at: new Date().toISOString(),
+    })
+    .ilike('reference_code', referenceCode.trim());
+  if (error) throw error;
+  return { ok: true, collectedDollars: total };
+}
+
+/** Release a claimed job back to the open pool. Nothing to void — no card was held. */
+export async function releaseJob(referenceCode: string) {
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'UNASSIGNED', mechanic_id: null, updated_at: new Date().toISOString() })
+    .ilike('reference_code', referenceCode.trim());
+  if (error) throw error;
+}
+
 export async function updateBookingRow(
   referenceCode: string,
   patch: Partial<{ status: string; distance_miles: number; eta_minutes: number; dispatch_lat: number; dispatch_lng: number }>
 ) {
   const { error } = await supabase.from('bookings').update(patch).ilike('reference_code', referenceCode.trim());
   if (error) throw error;
-}
-
-export async function cancelJobWithHold(referenceCode: string) {
-  return invokeEdgeFunction('cancel-booking-hold', {
-    bookingReference: referenceCode,
-    releaseJob: true,
-  });
-}
-
-export async function captureBookingPayment(
-  bookingReference: string,
-  opts?: {
-    mode?: 'charge' | 'diagnostic_only' | 'no_show';
-    lineItems?: QuoteLineInput[];
-    techNotes?: string;
-    customerAgreedOnSite?: boolean;
-    includeDiagnosticFee?: boolean;
-    waiveDiagnosticFee?: boolean;
-    salesTaxDollars?: number;
-    partsPurchasedBy?: 'tech' | 'company';
-  }
-) {
-  return invokeEdgeFunction<{
-    ok: boolean;
-    capturedAmountDollars?: number;
-    salesTaxDollars?: number;
-    taxWarning?: string | null;
-    techPayoutDollars?: number;
-    remainderDollars?: number;
-    alreadyCaptured?: boolean;
-    transferId?: string | null;
-    transferWarning?: string | null;
-    connectAccountId?: string | null;
-    message?: string;
-  }>('capture-booking-payment', {
-    bookingReference,
-    mode: opts?.mode ?? 'charge',
-    lineItems: opts?.lineItems,
-    techNotes: opts?.techNotes,
-    customerAgreedOnSite: opts?.customerAgreedOnSite,
-    includeDiagnosticFee: opts?.includeDiagnosticFee,
-    waiveDiagnosticFee: opts?.waiveDiagnosticFee,
-    salesTaxDollars: opts?.salesTaxDollars,
-    partsPurchasedBy: opts?.partsPurchasedBy,
-  });
 }
 
 export type QuoteLineInput = {
@@ -184,39 +171,8 @@ export type QuoteLineInput = {
 };
 
 /** @deprecated Use captureBookingPayment with line items — quote approval removed. */
-export async function submitBookingQuote(
-  bookingReference: string,
-  lineItems: QuoteLineInput[],
-  techNotes?: string
-) {
-  return captureBookingPayment(bookingReference, {
-    mode: 'charge',
-    lineItems,
-    techNotes,
-  }).then((r) => ({
-    ok: r.ok,
-    quoteId: '',
-    totalDollars: r.capturedAmountDollars ?? 0,
-    repairsDollars: 0,
-    diagnosticFeeDollars: 100,
-    message: r.message,
-  }));
-}
-
 /** @deprecated Customer quote approval removed — tech charges on site. */
-export async function approveBookingQuote(_bookingReference: string) {
-  throw new Error(
-    'Quote approval is no longer used. Your tech sets the price on site and charges through Adaptivity.'
-  );
-}
-
 /** @deprecated Use captureBookingPayment({ mode: 'diagnostic_only' }) from the tech. */
-export async function declineBookingQuote(_bookingReference: string, _reason?: string) {
-  throw new Error(
-    'Decline-quote is no longer used. Ask your tech to charge diagnostic only if you skip repairs.'
-  );
-}
-
 export function subscribeDispatchBookings(onChange: () => void) {
   return supabase
     .channel('web-tech-dispatch')
@@ -224,22 +180,6 @@ export function subscribeDispatchBookings(onChange: () => void) {
     .subscribe();
 }
 
-export type TechConnectStatus = {
-  accountId: string | null;
-  detailsSubmitted: boolean;
-  chargesEnabled: boolean;
-  payoutsEnabled: boolean;
-  transfersEnabled?: boolean;
-  readyForPayouts: boolean;
-  taxIdProvided?: boolean;
-  requirementsDue?: string[];
-  duplicateStripeAccountsForEmail?: number;
-  usingAccountId?: string;
-  onboardingUrl?: string;
-  /** Instant cash out destination on file (debit card with instant payout methods). */
-  hasDebitCardForInstant?: boolean;
-  hasBankAccount?: boolean;
-};
 
 export async function ensureTechProfile(vanNumber?: string, specialties?: string[]) {
   const payload: Record<string, unknown> = {
@@ -276,201 +216,11 @@ export async function updateMyTechSpecialties(specialties: string[]) {
   await ensureTechProfile(undefined, specialties);
 }
 
-export async function fetchLocalMechanicStripeId(): Promise<string | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data, error } = await supabase
-    .from('mechanic_details')
-    .select('stripe_account_id')
-    .eq('profile_id', user.id)
-    .maybeSingle();
-  if (error) return null;
-  const id = data?.stripe_account_id;
-  return typeof id === 'string' && id.startsWith('acct_') ? id : null;
-}
-
-export async function clearMyStripeConnectAccountId(): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
-  const { error } = await supabase
-    .from('mechanic_details')
-    .update({ stripe_account_id: null })
-    .eq('profile_id', user.id);
-  if (error) {
-    throw new Error(error.message || 'Could not clear saved Stripe account');
-  }
-  clearCachedTechConnectStatus();
-}
-
-/**
- * After test→live Stripe cutover, DB may still hold a test-mode acct_ that Live cannot open.
- * Clears the saved id so the next Connect call creates a fresh Live Express account.
- */
-export async function resetStaleStripeConnectLink(): Promise<void> {
-  await ensureTechProfile();
-  await clearMyStripeConnectAccountId();
-  try {
-    await invokeEdgeFunction<TechConnectStatus>('create-stripe-account-link', {
-      action: 'reset',
-    });
-  } catch {
-    /* edge reset is best-effort; local clear is enough to unblock onboarding */
-  }
-  clearCachedTechConnectStatus();
-}
-
-export async function fetchTechConnectStatus(): Promise<TechConnectStatus | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const cached = readCachedTechConnectStatus();
-
-  try {
-    const remote = await invokeEdgeFunction<TechConnectStatus>('create-stripe-account-link', {
-      action: 'sync',
-    });
-    // Trust the edge sync result — do not re-attach a local/cached acct_ that Live already rejected.
-    if (remote?.accountId?.startsWith('acct_')) {
-      writeCachedTechConnectStatus(remote);
-      return remote;
-    }
-    clearCachedTechConnectStatus();
-    return {
-      ...remote,
-      accountId: null,
-    };
-  } catch {
-    const localId = await fetchLocalMechanicStripeId();
-    if (cached?.accountId) return cached;
-    if (localId) {
-      return {
-        accountId: localId,
-        detailsSubmitted: false,
-        chargesEnabled: false,
-        payoutsEnabled: false,
-        readyForPayouts: false,
-      };
-    }
-    return null;
-  }
-}
-
-export async function openStripePayoutSetup(): Promise<TechConnectStatus & { onboardingUrl: string }> {
-  await ensureTechProfile();
-  const urls = techStripeConnectUrls();
-
-  // Heal test→live leftovers: clear a saved acct_ the Live platform does not know.
-  const localId = await fetchLocalMechanicStripeId();
-  if (localId) {
-    try {
-      const sync = await invokeEdgeFunction<TechConnectStatus>('create-stripe-account-link', {
-        action: 'sync',
-      });
-      if (!sync?.accountId?.startsWith('acct_')) {
-        await clearMyStripeConnectAccountId();
-      }
-    } catch {
-      // Sync often 500s on a test-mode acct_ with Live keys — clear so create can run.
-      await clearMyStripeConnectAccountId();
-    }
-  }
-
-  let data: (TechConnectStatus & { onboardingUrl: string }) | null = null;
-  try {
-    data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
-      'create-stripe-account-link',
-      urls
-    );
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (/no such account|resource_missing|similar object exists in test mode|not a valid/i.test(msg)) {
-      await clearMyStripeConnectAccountId();
-      data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
-        'create-stripe-account-link',
-        { ...urls, forceRecreate: true }
-      );
-    } else {
-      throw e;
-    }
-  }
-
-  if (!data?.onboardingUrl) {
-    await clearMyStripeConnectAccountId();
-    data = await invokeEdgeFunction<TechConnectStatus & { onboardingUrl: string }>(
-      'create-stripe-account-link',
-      { ...urls, forceRecreate: true }
-    );
-  }
-  if (!data?.onboardingUrl) {
-    throw new Error(
-      'Stripe did not return an onboarding link. Tap “Reset Stripe link” then Connect again, or confirm STRIPE_SECRET_KEY on Supabase is the Live key.'
-    );
-  }
-  writeCachedTechConnectStatus(data);
-  return data;
-}
-
-export async function attachTechDebitCard(token: string) {
-  return invokeEdgeFunction<{
-    ok: boolean;
-    message: string;
-    hasDebitCardForInstant?: boolean;
-    brand?: string;
-    last4?: string;
-  }>('attach-tech-debit-card', { token });
-}
-
 /**
  * Express Dashboard login (bank / debit). Requires a Live Express account.
  * If none exists yet (common after test→Live cutover), starts onboarding instead
  * and returns `onboardingUrl` so the UI can open that.
  */
-export async function openExpressDashboard(): Promise<
-  { loginUrl: string } & TechConnectStatus & { onboardingUrl?: string; openedOnboarding?: boolean }
-> {
-  await ensureTechProfile();
-
-  try {
-    const data = await invokeEdgeFunction<
-      TechConnectStatus & { loginUrl?: string; expressDashboardUrl?: string; error?: string }
-    >('create-stripe-account-link', { action: 'express_login' });
-    const loginUrl = data.loginUrl || data.expressDashboardUrl;
-    if (loginUrl?.startsWith('http')) {
-      return { ...data, loginUrl };
-    }
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    // Fall through to onboarding for "not linked yet" / dead test acct_
-    if (
-      !/connect stripe|finish connect|no such account|resource_missing|test mode|express first/i.test(
-        msg
-      )
-    ) {
-      throw e;
-    }
-    await clearMyStripeConnectAccountId().catch(() => undefined);
-  }
-
-  const onboard = await openStripePayoutSetup();
-  if (!onboard.onboardingUrl?.startsWith('http')) {
-    throw new Error(
-      'No Live Stripe Express account yet. Tap Connect Stripe Express to finish onboarding first.'
-    );
-  }
-  return {
-    ...onboard,
-    loginUrl: onboard.onboardingUrl,
-    onboardingUrl: onboard.onboardingUrl,
-    openedOnboarding: true,
-  };
-}
-
 export type TechW9Status = {
   completed: boolean;
   completedAt: string | null;
@@ -521,170 +271,8 @@ export async function fetchContractorAgreementStatus(): Promise<{
   };
 }
 
-async function getTechPaymentFilter(userProfileId: string) {
-  const { data: mechDetails } = await supabase
-    .from('mechanic_details')
-    .select('stripe_account_id')
-    .eq('profile_id', userProfileId)
-    .maybeSingle();
-  const stripeAccountId = (mechDetails?.stripe_account_id as string) || null;
-
-  const { data: bookings } = await supabase
-    .from('bookings')
-    .select('reference_code, payment_intent_id')
-    .eq('mechanic_id', userProfileId);
-
-  const refCodes = (bookings ?? []).map((b) => b.reference_code).filter(Boolean) as string[];
-  const paymentIntentIds = (bookings ?? []).map((b) => b.payment_intent_id).filter(Boolean) as string[];
-
-  return { stripeAccountId, refCodes, paymentIntentIds };
-}
-
 /** Calendar-year tech share paid (for 1099-NEC $600 tracking), filtered strictly to this technician. */
-export async function fetchTechYearToDateCompensation(year = new Date().getFullYear()): Promise<{
-  year: number;
-  totalCents: number;
-  totalDollars: number;
-  thresholdDollars: number;
-  meetsNecThreshold: boolean;
-}> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { year, totalCents: 0, totalDollars: 0, thresholdDollars: 600, meetsNecThreshold: false };
-  }
 
-  const { stripeAccountId, refCodes, paymentIntentIds } = await getTechPaymentFilter(user.id);
-  if (!stripeAccountId && refCodes.length === 0 && paymentIntentIds.length === 0) {
-    return { year, totalCents: 0, totalDollars: 0, thresholdDollars: 600, meetsNecThreshold: false };
-  }
-
-  const start = `${year}-01-01T00:00:00.000Z`;
-  const end = `${year + 1}-01-01T00:00:00.000Z`;
-  let query = supabase
-    .from('payments')
-    .select('tech_transfer_cents, status, created_at, tech_stripe_account_id, booking_reference, payment_intent_id')
-    .gte('created_at', start)
-    .lt('created_at', end);
-
-  const conditions: string[] = [];
-  if (stripeAccountId) {
-    conditions.push(`tech_stripe_account_id.eq.${stripeAccountId}`);
-  }
-  if (refCodes.length > 0) {
-    conditions.push(`booking_reference.in.(${refCodes.map((r) => `"${r}"`).join(',')})`);
-  }
-  if (paymentIntentIds.length > 0) {
-    conditions.push(`payment_intent_id.in.(${paymentIntentIds.map((p) => `"${p}"`).join(',')})`);
-  }
-  if (conditions.length > 0) {
-    query = query.or(conditions.join(','));
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  const totalCents = (data ?? []).reduce((sum, row) => {
-    const status = String(row.status || '');
-    if (status !== 'succeeded' && status !== 'partially_refunded') return sum;
-    return sum + (Number(row.tech_transfer_cents) || 0);
-  }, 0);
-  const thresholdDollars = 600;
-  return {
-    year,
-    totalCents,
-    totalDollars: totalCents / 100,
-    thresholdDollars,
-    meetsNecThreshold: totalCents >= thresholdDollars * 100,
-  };
-}
-
-export type TechPayoutRow = {
-  id: string;
-  bookingReference: string | null;
-  techTransferCents: number | null;
-  payoutStatus: string;
-  paymentStatus: string;
-  payoutError: string | null;
-  createdAt: string;
-};
-
-export async function fetchTechPayoutHistory(): Promise<TechPayoutRow[]> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { stripeAccountId, refCodes, paymentIntentIds } = await getTechPaymentFilter(user.id);
-  if (!stripeAccountId && refCodes.length === 0 && paymentIntentIds.length === 0) {
-    return [];
-  }
-
-  let query = supabase
-    .from('payments')
-    .select('id, booking_reference, tech_transfer_cents, tech_stripe_account_id, payment_intent_id, payout_status, status, payout_error, created_at')
-    .order('created_at', { ascending: false })
-    .limit(25);
-
-  const conditions: string[] = [];
-  if (stripeAccountId) {
-    conditions.push(`tech_stripe_account_id.eq.${stripeAccountId}`);
-  }
-  if (refCodes.length > 0) {
-    conditions.push(`booking_reference.in.(${refCodes.map((r) => `"${r}"`).join(',')})`);
-  }
-  if (paymentIntentIds.length > 0) {
-    conditions.push(`payment_intent_id.in.(${paymentIntentIds.map((p) => `"${p}"`).join(',')})`);
-  }
-  if (conditions.length > 0) {
-    query = query.or(conditions.join(','));
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    bookingReference: row.booking_reference,
-    techTransferCents: row.tech_transfer_cents,
-    payoutStatus: row.payout_status ?? 'none',
-    paymentStatus: row.status ?? 'pending',
-    payoutError: row.payout_error ?? null,
-    createdAt: row.created_at,
-  }));
-}
-
-export async function triggerInstantCashOut(method: 'instant' | 'standard') {
-  return invokeEdgeFunction<{ message: string; method?: string; amountDollars?: number }>(
-    'trigger-instant-payout',
-    { method }
-  );
-}
-
-export type TechPayoutPreview = {
-  stripeOnboarded: boolean;
-  stripeAccountId?: string | null;
-  instantAvailableCents: number;
-  availableCents: number;
-  pendingCents?: number;
-  connectTotalCents?: number;
-  cashOutEligibleCents: number;
-  cashOutEligibleDollars: number;
-  availableDollars?: number;
-  instantEligibleDollars?: number;
-  connectTotalDollars?: number;
-  pendingDollars?: number;
-  canCashOut: boolean;
-  canStandardCashOut?: boolean;
-  canInstantCashOut?: boolean;
-  hint?: string;
-  hasDebitCardForInstant?: boolean;
-  payoutsEnabled?: boolean;
-  payoutBlockReason?: string | null;
-};
-
-export async function fetchTechPayoutPreview(): Promise<TechPayoutPreview> {
-  return invokeEdgeFunction<TechPayoutPreview>('trigger-instant-payout', { action: 'preview' });
-}
 
 export type SendPaymentLinkResult = {
   ok: boolean;
@@ -693,18 +281,3 @@ export type SendPaymentLinkResult = {
   smsSent: boolean;
   smsError: string | null;
 };
-
-/**
- * Finalize the job total and text the customer a link to pay it themselves
- * (card or financing). Alternative to charging the card on file — BNPL requires
- * the customer to be present, so it can only appear on a customer-driven checkout.
- */
-export async function sendBookingPaymentLink(params: {
-  bookingReference: string;
-  lineItems: { title: string; laborDollars: number; partsDollars: number }[];
-  includeDiagnosticFee?: boolean;
-  salesTaxDollars?: number;
-  partsPurchasedBy?: 'tech' | 'company';
-}): Promise<SendPaymentLinkResult> {
-  return invokeEdgeFunction<SendPaymentLinkResult>('create-booking-payment-link', params);
-}

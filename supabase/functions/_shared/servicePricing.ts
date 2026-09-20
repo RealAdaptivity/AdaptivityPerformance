@@ -1,6 +1,6 @@
-/** Server-side quote hold rules (keep in sync with src/services/holdPricing.ts). Auto-synced. */
+/** Server-side service pricing (keep in sync with src/services/servicePricing.ts). Auto-synced. */
 
-export const DIAGNOSTIC_HOLD_DOLLARS = 100;
+export const DIAGNOSTIC_FEE_DOLLARS = 100;
 
 type ServiceKind = string;
 
@@ -281,7 +281,7 @@ function resolveServices(selected: string[]): CatalogService[] {
       out.push({
         id: `custom_${raw.slice(0, 24)}`,
         title: raw,
-        price: DIAGNOSTIC_HOLD_DOLLARS,
+        price: DIAGNOSTIC_FEE_DOLLARS,
         kind: 'other',
         directBook: false,
       });
@@ -290,20 +290,20 @@ function resolveServices(selected: string[]): CatalogService[] {
   return out;
 }
 
-export type ServerHoldQuote = {
-  holdDollars: number;
+export type ServerServiceQuote = {
+  quotedDollars: number;
   mode: 'diagnostic' | 'direct';
   serviceTitles: string[];
 };
 
-export function computeHoldFromServices(services: unknown): ServerHoldQuote {
+export function computeQuoteFromServices(services: unknown): ServerServiceQuote {
   const labels = Array.isArray(services)
     ? services.map((s) => String(s)).filter((s) => s.trim())
     : [];
   const resolved = resolveServices(labels);
   if (resolved.length === 0) {
     return {
-      holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
+      quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
       mode: 'diagnostic',
       serviceTitles: ['Mobile Diagnostic Visit'],
     };
@@ -312,14 +312,14 @@ export function computeHoldFromServices(services: unknown): ServerHoldQuote {
   const allDirect = resolved.every((s) => DIRECT_BOOK_KINDS.includes(s.kind) && s.directBook);
   if (allDirect) {
     return {
-      holdDollars: resolved.reduce((sum, s) => sum + s.price, 0),
+      quotedDollars: resolved.reduce((sum, s) => sum + s.price, 0),
       mode: 'direct',
       serviceTitles: resolved.map((s) => s.title),
     };
   }
 
   return {
-    holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
+    quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
     mode: 'diagnostic',
     serviceTitles: resolved.map((s) => s.title),
   };

@@ -1,5 +1,5 @@
 import {
-  DIAGNOSTIC_HOLD_DOLLARS,
+  DIAGNOSTIC_FEE_DOLLARS,
   SERVICE_CATALOG,
   getCatalogById,
   matchCatalogFromLabel,
@@ -7,27 +7,27 @@ import {
 } from './serviceCatalog';
 
 export type HoldQuote = {
-  holdDollars: number;
+  quotedDollars: number;
   mode: 'diagnostic' | 'direct';
   explanation: string;
   services: CatalogService[];
-  /** Catalog subtotal before hold rule (legacy; always diagnostic hold now). */
+  /** Catalog subtotal before the quote rule (legacy; always the diagnostic now). */
   catalogSubtotal: number;
 };
 
 /**
- * All bookings use a $100 diagnostic card hold.
+ * All bookings quote a $100 diagnostic, collected in person.
  * The assigned tech sets labor + parts on site and charges through Adaptivity (70/30).
  */
-export function computeHoldQuote(selectedIdsOrTitles: string[]): HoldQuote {
+export function computeServiceQuote(selectedIdsOrTitles: string[]): HoldQuote {
   const services = resolveServices(selectedIdsOrTitles);
   return {
-    holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
+    quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
     mode: 'diagnostic',
     explanation:
-      `$${DIAGNOSTIC_HOLD_DOLLARS} diagnostic hold. Your tech inspects on site, sets labor + parts pricing, and charges through Adaptivity when you agree — tech keeps 70%, platform 30%.`,
+      `$${DIAGNOSTIC_FEE_DOLLARS} diagnostic, paid in person. Your tech inspects on site and sets labor + parts pricing before any repair work.`,
     services,
-    catalogSubtotal: DIAGNOSTIC_HOLD_DOLLARS,
+    catalogSubtotal: DIAGNOSTIC_FEE_DOLLARS,
   };
 }
 
@@ -48,7 +48,7 @@ function resolveServices(selected: string[]): CatalogService[] {
         id: `custom_${raw.slice(0, 24)}`,
         title: raw,
         description: '',
-        price: DIAGNOSTIC_HOLD_DOLLARS,
+        price: DIAGNOSTIC_FEE_DOLLARS,
         duration: '',
         icon: '📋',
         kind: 'other',
@@ -63,4 +63,4 @@ export function defaultDiagnosticSelection(): string[] {
   return ['diagnostic'];
 }
 
-export { DIAGNOSTIC_HOLD_DOLLARS, SERVICE_CATALOG };
+export { DIAGNOSTIC_FEE_DOLLARS, SERVICE_CATALOG };

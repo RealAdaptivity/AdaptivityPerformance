@@ -173,7 +173,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           </h2>
           <p className="text-sm text-slate-300 max-w-lg mx-auto">
             {city.city} is {city.distanceMiles} miles from the Justin hub — roughly {city.driveMinutes} minutes.
-            Book the $100 diagnostic hold and it comes straight off the repair.
+            Book the $100 diagnostic visit and it comes straight off the repair.
           </p>
           <button
             type="button"
@@ -190,7 +190,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
                 trackEvent(CONVERSION_EVENTS.referralShared, { source: 'city_page', city: city.slug });
                 void shareAdaptivity({
                   title: `Mobile mechanic ${city.city} TX`,
-                  text: `Adaptivity Performance — mobile mechanic in ${city.city}, TX. $100 diagnostic hold, and they come to your driveway.`,
+                  text: `Adaptivity Performance — mobile mechanic in ${city.city}, TX. $100 diagnostic, and they come to your driveway.`,
                   url: `https://adaptivityperformance.com${cityPathOf(city.slug)}`,
                 }).then((r) => setShareState(r === 'shared' ? 'shared' : r === 'copied' ? 'copied' : 'idle'));
               }}

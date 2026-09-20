@@ -14,7 +14,7 @@ import { ContractorAgreementSignModal } from './ContractorAgreementSignModal';
  * version.
  *
  * Before this, the only way to reach the signer was Settings → scroll past
- * Stripe, W-9 and payouts → "Sign agreement digitally". The portal opens on
+ * W-9 and payouts → "Sign agreement digitally". The portal opens on
  * Jobs and said nothing, so a new contractor's first signal that the agreement
  * exists was a job claim failing. This renders above every tab until the
  * current version is signed, and cannot be dismissed — claiming work is gated

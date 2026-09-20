@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { BookingProvider, useBookingContext, type Booking } from './context/BookingContext';
+import { BookingProvider, useBookingContext } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
 import { StickyMobileActionBar } from './components/StickyMobileActionBar';
 import { Footer } from './components/Footer';
@@ -14,7 +14,7 @@ const AdminApp = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m
 const PortalApp = lazy(() => import('./portal/PortalApp').then((m) => ({ default: m.PortalApp })));
 
 // Modals and the chat widget are code-split: none of them is needed to paint a
-// landing page, and together they pulled Stripe and the whole booking flow into
+// landing page, and together they pulled the whole booking flow into
 // the first request. Each mounts only while open, so the chunk is fetched on the
 // click that needs it — with the booking chunk warmed on idle so the primary CTA
 // still opens instantly.
@@ -25,13 +25,11 @@ const InspectionReportModal = lazy(() => import('./components/InspectionReportMo
 const TechRecruitmentModal = lazy(() => import('./components/TechRecruitmentModal').then((m) => ({ default: m.TechRecruitmentModal })));
 const PartnerApplyModal = lazy(() => import('./components/PartnerApplyModal').then((m) => ({ default: m.PartnerApplyModal })));
 const MembershipModal = lazy(() => import('./components/MembershipModal').then((m) => ({ default: m.MembershipModal })));
-const PaymentCheckoutModal = lazy(() => import('./components/PaymentCheckoutModal').then((m) => ({ default: m.PaymentCheckoutModal })));
 const WarrantyModal = lazy(() => import('./components/WarrantyModal').then((m) => ({ default: m.WarrantyModal })));
 const ReferralModal = lazy(() => import('./components/ReferralModal').then((m) => ({ default: m.ReferralModal })));
 const AIMechanicChatbot = lazy(() => import('./components/AIMechanicChatbot').then((m) => ({ default: m.AIMechanicChatbot })));
 const MarketingPage = lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m.MarketingPage })));
 const ReferralLandingPage = lazy(() => import('./pages/ReferralLandingPage').then((m) => ({ default: m.ReferralLandingPage })));
-const PayLinkPage = lazy(() => import('./pages/PayLinkPage').then((m) => ({ default: m.PayLinkPage })));
 import { SERVICE_CATALOG } from './services/serviceCatalog';
 import { HomePage } from './pages/HomePage';
 import { navigateSite, useSitePage, useSitePathname } from './site/siteRoute';
@@ -44,7 +42,7 @@ import {
   PAGE_SEO,
 } from './site/seo';
 import { CityLandingPage } from './pages/CityLandingPage';
-import { payReferenceFromPath, referralCodeFromPath } from './site/routePaths';
+import { referralCodeFromPath } from './site/routePaths';
 import { serviceCityFromPath, serviceCityFaqs, serviceCityMeta } from './site/localSeo';
 import { applyJsonLd, cityJsonLd, serviceCityJsonLd } from './site/structuredData';
 import { ServiceCityPage } from './pages/ServiceCityPage';
@@ -96,8 +94,6 @@ function MainAppContent() {
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
   const [isWarrantyOpen, setIsWarrantyOpen] = useState(false);
   const [isReferralOpen, setIsReferralOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [checkoutBooking, setCheckoutBooking] = useState<Booking | null>(null);
   const [selectedMembershipPlan, setSelectedMembershipPlan] = useState<'basic' | 'vip' | 'fleet'>('vip');
   const [activeServiceMode, setActiveServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [estimateDataForBooking, setEstimateDataForBooking] = useState<any>(null);
@@ -238,7 +234,7 @@ function MainAppContent() {
 
   const handleBookingSubmittedInModal = (result: {
     bookingReference: string;
-    holdAmountDollars: number;
+    quotedAmountDollars: number;
     name: string;
     phone: string;
     vehicle: string;
@@ -273,15 +269,6 @@ function MainAppContent() {
     activeServiceMode,
   };
 
-  // Public customer pay link (card or BNPL) — full-screen, no marketing chrome.
-  const payReference = payReferenceFromPath(pathname);
-  if (payReference) {
-    return (
-      <Suspense fallback={null}>
-        <PayLinkPage reference={payReference} />
-      </Suspense>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#0b0c10] text-slate-100 flex flex-col font-sans selection:bg-orange-500 selection:text-white">
@@ -369,10 +356,6 @@ function MainAppContent() {
         <RepairTrackerDemo
           isOpen={isTrackerOpen}
           onClose={() => setIsTrackerOpen(false)}
-          onOpenCheckout={(booking) => {
-            setCheckoutBooking(booking);
-            setIsCheckoutOpen(true);
-          }}
         />
         )}
 
@@ -415,29 +398,6 @@ function MainAppContent() {
         />
         )}
 
-        {isCheckoutOpen && (
-        <PaymentCheckoutModal
-          isOpen={isCheckoutOpen}
-          onClose={() => {
-            setIsCheckoutOpen(false);
-            setCheckoutBooking(null);
-          }}
-          bookingDetails={
-            checkoutBooking
-              ? {
-                  id: checkoutBooking.id,
-                  customerName: checkoutBooking.customerName,
-                  serviceAddress: checkoutBooking.customerAddress,
-                  vehicle: checkoutBooking.vehicle,
-                  services: checkoutBooking.services,
-                  totalAmount: checkoutBooking.totalEstimate,
-                  techName: checkoutBooking.claimedBy?.name,
-                  techStripeAccountId: checkoutBooking.claimedBy?.stripeAccountId ?? null,
-                }
-              : undefined
-          }
-        />
-        )}
       </Suspense>
 
       {deferredWidgetsReady && (

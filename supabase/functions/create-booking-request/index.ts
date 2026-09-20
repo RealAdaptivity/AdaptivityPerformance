@@ -1,22 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse, stripeRequest } from '../_shared/stripe.ts';
-import { splitJobTotalCents } from '../_shared/revenueSplit.ts';
+import { handleCors, jsonResponse } from '../_shared/http.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
-import { computeHoldFromServices } from '../_shared/holdPricing.ts';
+import { computeQuoteFromServices } from '../_shared/servicePricing.ts';
 
+/** Replaces create-booking-with-hold. No card is taken online any more: the
+ *  booking is a request for a visit, and the customer pays the technician in
+ *  person on Square. Nothing here authorizes, captures or stores card data. */
 Deno.serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
   try {
-    if (!Deno.env.get('STRIPE_SECRET_KEY')?.trim()) {
-      return jsonResponse(
-        { error: 'STRIPE_SECRET_KEY is not configured on Supabase Edge Functions.' },
-        503
-      );
-    }
-
     const authHeader = req.headers.get('Authorization');
     let userId: string | null = null;
 
@@ -54,23 +49,18 @@ Deno.serve(async (req) => {
     if (!customerName?.trim() || !customerAddress?.trim() || !Array.isArray(services) || services.length === 0) {
       return jsonResponse({ error: 'Missing required booking fields' }, 400);
     }
-
-    // Server computes hold: $100 diagnostic unless only direct-book services
-    // (brakes / oil / transmission oil / differential).
-    const quote = computeHoldFromServices(services);
-    const hold = quote.holdDollars;
-    const normalizedServices = quote.serviceTitles;
-    if (!Number.isFinite(hold) || hold <= 0) {
-      return jsonResponse({ error: 'Invalid diagnostic hold amount' }, 400);
-    }
-
-    const email = customerEmail?.trim() || undefined;
-    if (!userId && !email) {
-      return jsonResponse({ error: 'Email is required to save your card on file.' }, 400);
-    }
     if (!customerPhone?.trim()) {
       return jsonResponse({ error: 'Phone number is required.' }, 400);
     }
+
+    /* The quote is what the customer is told the visit costs, not an amount we
+       collect. It still comes from the one catalog so the site, the dispatch
+       console and this row cannot disagree. */
+    const quote = computeQuoteFromServices(services);
+    const quotedDollars = quote.quotedDollars;
+    const normalizedServices = quote.serviceTitles;
+
+    const email = customerEmail?.trim() || undefined;
 
     const locType = locationType === 'shop' ? 'shop' : 'mobile';
     const resolvedZip = resolveServiceZip(zipCode, customerAddress);
@@ -83,10 +73,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const holdCents = Math.round(hold * 100);
-    if (holdCents < 50) {
-      return jsonResponse({ error: 'Hold amount must be at least $0.50' }, 400);
-    }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -115,8 +101,7 @@ Deno.serve(async (req) => {
 
     let referralCodeUsed: string | null = null;
     let referralCodeId: string | null = null;
-    const referralRaw =
-      typeof referralCode === 'string' ? referralCode.trim().toUpperCase() : '';
+    const referralRaw = typeof referralCode === 'string' ? referralCode.trim().toUpperCase() : '';
     if (referralRaw) {
       const { data: codeRow } = await supabase
         .from('referral_codes')
@@ -135,21 +120,20 @@ Deno.serve(async (req) => {
         ? preferredMechanicIdRaw.trim()
         : null;
 
-    const holdExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
         customer_id: userId,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        customer_email: email ?? null,
         customer_address: customerAddress.trim(),
         zip_code: (resolvedZip ?? zipCode?.trim()) || null,
         vehicle_description: vehicleDescription?.trim() || 'Customer vehicle',
         vin: vin?.trim() || null,
         services: normalizedServices,
-        total_estimate: hold,
-        location_type: locationType === 'shop' ? 'shop' : 'mobile',
+        total_estimate: quotedDollars,
+        location_type: locType,
         partner_location_id: resolvedPartnerId,
         preferred_date:
           typeof preferredDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(preferredDate.trim())
@@ -165,97 +149,18 @@ Deno.serve(async (req) => {
             : null,
         referral_code_used: referralCodeUsed,
         preferred_mechanic_id: preferredMechanicId,
-        hold_expires_at: holdExpiresAt,
         reference_code: '',
-        payment_status: 'awaiting_card',
-        hold_amount_cents: holdCents,
+        /* Nothing is authorized, so hold_amount_cents stays null: a null here
+           means "no card was ever held", which is now true of every booking. */
+        payment_status: 'pay_in_person',
         quote_status: quote.mode === 'diagnostic' ? 'awaiting_diagnostic' : 'none',
       })
       .select('id, reference_code')
       .single();
 
     if (bookingError || !booking) {
-      console.error('[create-booking-with-hold] booking insert:', bookingError?.message, bookingError?.code);
+      console.error('[create-booking-request] booking insert:', bookingError?.message, bookingError?.code);
       return jsonResponse({ error: bookingError?.message || 'Could not create booking' }, 500);
-    }
-
-    const receiptEmail = email;
-
-    // Find or create Stripe Customer by email to support Link and saved cards
-    let stripeCustomerId: string | undefined;
-    if (receiptEmail) {
-      try {
-        const existing = await stripeRequest(`/customers?email=${encodeURIComponent(receiptEmail)}&limit=1`, 'GET');
-        if (existing.data && existing.data.length > 0) {
-          stripeCustomerId = existing.data[0].id;
-        } else {
-          const newCust = await stripeRequest('/customers', 'POST', {
-            email: receiptEmail,
-            name: customerName.trim(),
-            phone: customerPhone.trim(),
-          });
-          stripeCustomerId = newCust.id;
-        }
-      } catch (custErr) {
-        console.warn('[create-booking-with-hold] customer find/create warning:', custErr);
-      }
-    }
-
-    const piParams: Record<string, unknown> = {
-      amount: holdCents,
-      currency: 'usd',
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        type: 'booking_charge',
-        booking_reference: booking.reference_code,
-        booking_id: String(booking.id),
-        platform: 'adaptivity_performance',
-      },
-    };
-    if (stripeCustomerId) {
-      piParams.customer = stripeCustomerId;
-    }
-    if (receiptEmail) {
-      piParams.receipt_email = receiptEmail;
-    }
-
-    let paymentIntent;
-    try {
-      paymentIntent = await stripeRequest('/payment_intents', 'POST', piParams);
-    } catch (stripeErr) {
-      await supabase.from('bookings').delete().eq('id', booking.id);
-      throw stripeErr;
-    }
-
-    await supabase
-      .from('bookings')
-      .update({
-        payment_intent_id: paymentIntent.id,
-        payment_status: 'awaiting_card',
-      })
-      .eq('id', booking.id);
-
-    const { platformFeeCents, techTransferCents } = splitJobTotalCents(holdCents);
-
-    const { error: paymentRowError } = await supabase.from('payments').upsert(
-      {
-        booking_reference: booking.reference_code,
-        booking_id: booking.id,
-        payment_intent_id: paymentIntent.id,
-        customer_email: receiptEmail ?? null,
-        amount_cents: holdCents,
-        tip_cents: 0,
-        platform_fee_cents: platformFeeCents,
-        tech_transfer_cents: techTransferCents,
-        tech_stripe_account_id: null,
-        status: 'pending',
-        payout_status: 'none',
-      },
-      { onConflict: 'payment_intent_id' }
-    );
-
-    if (paymentRowError) {
-      console.error('[create-booking-with-hold] payments upsert:', paymentRowError.message);
     }
 
     if (referralCodeId && userId) {
@@ -267,17 +172,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fire-and-forget: notify Teams channel of new booking
+    // Fire-and-forget: notify the Teams channel of the new request.
     const teamsWebhookUrl = Deno.env.get('TEAMS_WEBHOOK_URL');
     if (teamsWebhookUrl) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       fetch(`${supabaseUrl}/functions/v1/notify-teams-new-booking`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${serviceKey}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${serviceKey}` },
         body: JSON.stringify({ bookingId: booking.id }),
       }).catch((e) => console.error('[Teams notify] failed:', e));
     }
@@ -285,17 +187,14 @@ Deno.serve(async (req) => {
     return jsonResponse({
       bookingReference: booking.reference_code,
       bookingId: booking.id,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      holdAmountDollars: hold,
-      holdMode: quote.mode,
-      holdExpiresAt,
+      quotedAmountDollars: quotedDollars,
+      quoteMode: quote.mode,
       message:
-        `Confirm your card for the $${hold} diagnostic hold. Your tech sets labor + parts on site and charges through Adaptivity when you agree.`,
+        `Request received. Nothing is charged online — your technician takes payment in person by card, tap or chip when the work is done.`,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Booking authorization failed';
-    console.error('[create-booking-with-hold]', message);
+    const message = error instanceof Error ? error.message : 'Booking request failed';
+    console.error('[create-booking-request]', message);
     return jsonResponse({ error: message }, 500);
   }
 });

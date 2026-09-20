@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from 'jsr:@supabase/supabase-js@2';
-import { jsonResponse } from './stripe.ts';
+import { jsonResponse } from './http.ts';
 
 export async function requireAdminUser(req: Request): Promise<
   | { ok: true; userId: string; supabaseUser: SupabaseClient }

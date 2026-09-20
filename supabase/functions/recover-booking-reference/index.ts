@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { handleCors, jsonResponse } from '../_shared/stripe.ts';
+import { handleCors, jsonResponse } from '../_shared/http.ts';
 const GENERIC_MESSAGE = 'No matching booking was found. Check the email and phone used at checkout.';
 
 function digitsOnly(value: unknown) {

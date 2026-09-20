@@ -45,7 +45,7 @@ export const PartnerNetworkSection: React.FC<PartnerNetworkSectionProps> = ({
             },
             {
               title: 'We handle the front door',
-              body: 'Quotes, card holds, tracking, and payouts stay on Adaptivity’s platform.',
+              body: 'Quotes, scheduling, tracking, and technician settlement stay on Adaptivity’s platform.',
             },
             {
               title: 'Keep your brand',

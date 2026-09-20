@@ -85,7 +85,7 @@ export const WantToTeachPage: React.FC<Props> = ({ onOpenRecruitment }) => {
               {
                 icon: <DollarSign className="w-5 h-5" />,
                 title: 'Get paid to teach',
-                body: 'Instructor pay is separate from job labor. You earn for teaching hours / sessions — same Stripe Express payouts you already use for repairs.',
+                body: 'Instructor pay is separate from job labor. You earn for teaching hours / sessions, paid the same way as your repair work.',
                 accent: 'text-violet-300 bg-violet-500/15 border-violet-500/30',
               },
             ].map((card) => (

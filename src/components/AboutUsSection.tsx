@@ -57,7 +57,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             <h3 className="font-heading text-xl font-extrabold text-white">How we serve customers</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
               Book mobile service directly to your driveway or workplace. You get transparent
-              tech-set pricing on-site, $100 card holds instead of surprise dealership markups, live repair tracking, and
+              tech-set pricing on-site, a flat $100 diagnostic instead of surprise dealership markups, live repair tracking, and
               certified master techs across repairs, brakes, batteries, diagnostics, and maintenance.
             </p>
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
@@ -105,7 +105,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             <h3 className="font-heading text-xl font-extrabold text-white">How we make techs more profitable</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
               Mobile mechanics, audio, tint, wrap, body, detailing, and performance techs keep{' '}
-              <strong className="text-white">70% of labor billed</strong> (30% platform) — with Stripe
+              <strong className="text-white">70% of labor billed</strong> (30% platform) — paid
               Express payouts, Instant or Standard cash-out, and a dispatch board that matches jobs to your
               trade.
             </p>
@@ -179,8 +179,8 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
                 </li>
               </ul>
               <p className="text-[11px] text-slate-500 leading-relaxed">
-                Subject to lender eligibility. Enable Affirm, Afterpay, Zip, Sunbit & Klarna in Stripe →
-                Payment methods (or your platform PMC). Diagnostic holds stay on a card; financing is at
+                Ask your technician about payment options on site →
+                Payment methods (or your platform PMC). Payment is taken in person on a card reader; financing is at
                 final escrow checkout.
               </p>
             </div>

@@ -7,10 +7,7 @@ const requireText = (source, text, label) => {
 
 const app = read('src/App.tsx');
 const portalRoute = read('src/portal/portalRoute.ts');
-const cleanup = read('supabase/functions/cleanup-expired-holds/index.ts');
 const migration = read('supabase/migrations/20260802212916_payment_operations_hardening.sql');
-const webhook = read('supabase/functions/stripe-webhook/index.ts');
-const webhookSync = read('supabase/functions/configure-stripe-webhook-events/index.ts');
 const terms = read('src/pages/TermsPrivacyPage.tsx');
 
 requireText(app, 'usePortalRoute() || isNativeShell()', 'Native portal authentication');
@@ -60,38 +57,25 @@ if (app.includes('StandaloneTechApp') || existsSync(new URL('../src/components/S
   throw new Error('Demo technician shell is still reachable');
 }
 requireText(portalRoute, "window.location.search.includes('view=tech')", 'Tech route authentication');
-requireText(cleanup, "Deno.env.get('CLEANUP_CRON_SECRET')", 'Cleanup authentication');
-requireText(cleanup, 'cancelBookingHoldForRow', 'Expired hold release');
-requireText(migration, "'*/15 * * * *'", 'Cleanup schedule');
-for (const event of ['payment_intent.canceled', 'charge.refunded', 'charge.dispute.created', 'charge.dispute.updated', 'charge.dispute.closed']) {
-  requireText(webhook, event, 'Stripe reconciliation');
-  requireText(webhookSync, event, 'Stripe event subscription');
-}
-requireText(terms, '${DIAGNOSTIC_HOLD_DOLLARS} diagnostic hold', 'Cancellation terms');
+requireText(terms, '${DIAGNOSTIC_FEE_DOLLARS} diagnostic', 'Cancellation terms');
 if (terms.includes('$50 late dispatch fee')) throw new Error('Conflicting $50 cancellation fee remains');
 const dispatch = read('src/services/techDispatch.ts');
 const settings = read('src/portal/tech/TechSettingsTab.tsx');
-const w9Migration = read('supabase/migrations/20260802214338_harden_w9_and_job_claims.sql');
-const stripeConnect = read('supabase/functions/create-stripe-account-link/index.ts');
-const taxSync = read('supabase/functions/sync-tech-tax-status/index.ts');
+const w9Migration = read('supabase/migrations/20260920012922_booking_email_and_manual_w9.sql');
 requireText(dispatch, "supabase.rpc('claim_booking_for_current_tech'", 'Atomic job claim');
 if (dispatch.includes("supabase.rpc('mark_tech_w9_complete'") || settings.includes('markTechW9Complete')) throw new Error('W-9 self-certification remains');
 requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 claim gate');
-requireText(w9Migration, 'and mechanic_id = (select auth.uid())', 'Claim RLS');
-requireText(stripeConnect, 'account.individual?.id_number_provided', 'Stripe individual tax verification');
-requireText(stripeConnect, 'account.company?.tax_id_provided', 'Stripe company tax verification');
-requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
-// The diagnostic hold is money. serviceCatalog.ts is the source of truth, but the
+// The diagnostic fee is money. serviceCatalog.ts is the source of truth, but the
 // edge functions cannot import from src/, so sync-service-catalog.mjs copies it
-// into a holdPricing.ts beside each function. Those copies are generated files
+// into a servicePricing.ts beside each function. Those copies are generated files
 // that are committed, so they can be stale in a way nothing else notices: the
 // nested capture-booking-payment copy really did still say 85 after the source
 // moved to 100, and that is the copy the function capturing cards imports.
 {
   const { readdirSync } = await import('node:fs');
   const holdOf = (path, src) => {
-    const m = src.match(/export const DIAGNOSTIC_HOLD_DOLLARS\s*=\s*(\d+)\s*;/);
-    if (!m) throw new Error(`Diagnostic hold: DIAGNOSTIC_HOLD_DOLLARS not declared in ${path}`);
+    const m = src.match(/export const DIAGNOSTIC_FEE_DOLLARS\s*=\s*(\d+)\s*;/);
+    if (!m) throw new Error(`Diagnostic hold: DIAGNOSTIC_FEE_DOLLARS not declared in ${path}`);
     return Number(m[1]);
   };
 
@@ -99,10 +83,10 @@ requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
   const hold = holdOf(sourcePath, read(sourcePath));
 
   const fnDir = new URL('../supabase/functions/', import.meta.url);
-  const copies = ['supabase/functions/_shared/holdPricing.ts'];
+  const copies = ['supabase/functions/_shared/servicePricing.ts'];
   for (const entry of readdirSync(fnDir, { withFileTypes: true })) {
     if (!entry.isDirectory() || entry.name === '_shared') continue;
-    const rel = `supabase/functions/${entry.name}/_shared/holdPricing.ts`;
+    const rel = `supabase/functions/${entry.name}/_shared/servicePricing.ts`;
     if (existsSync(new URL(`../${rel}`, import.meta.url))) copies.push(rel);
   }
   for (const rel of copies) {
@@ -142,7 +126,7 @@ requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
       if (Number(figure) === 0) continue;
       throw new Error(
         `Diagnostic hold: ${rel} hardcodes "${match}" — these consoles charge real cards, ` +
-          "so render holdDollars (the booking's own hold) instead of a literal"
+          "so render quotedDollars (the booking's own hold) instead of a literal"
       );
     }
   }
@@ -154,7 +138,7 @@ requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
     for (const [match, cents] of read(rel).matchAll(fallback)) {
       throw new Error(
         `Diagnostic hold: ${rel} falls back to a literal in "${match}" (${cents} cents) — ` +
-          'use DIAGNOSTIC_HOLD_DOLLARS * 100 so it tracks the hold'
+          'use DIAGNOSTIC_FEE_DOLLARS * 100 so it tracks the hold'
       );
     }
   }
@@ -182,19 +166,51 @@ requireText(taxSync, 'verifiedTaxId(account)', 'Daily Stripe tax verification');
   }
   for (const file of scanned) {
     const rel = file.pathname.slice(root.length);
-    if (rel.endsWith('holdPricing.ts')) continue; // generated; checked exactly above
+    if (rel.endsWith('servicePricing.ts')) continue; // generated; checked exactly above
     const src = read(rel);
     for (const pattern of patterns) {
       for (const [match, figure] of src.matchAll(pattern)) {
         if (Number(figure) !== hold) {
           throw new Error(
             `Diagnostic hold: ${rel} quotes "${match.trim()}" but the hold is $${hold} — ` +
-              'interpolate DIAGNOSTIC_HOLD_DOLLARS instead of writing the figure'
+              'interpolate DIAGNOSTIC_FEE_DOLLARS instead of writing the figure'
           );
         }
       }
     }
   }
+}
+
+// Payment is taken in person on Square. Nothing in the site or the edge
+// functions may talk to a card processor again without this failing first.
+{
+  const { readdirSync } = await import('node:fs');
+  const walk = (dir) => {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const next = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) out.push(...walk(next));
+      else if (/\.(ts|tsx)$/.test(entry.name)) out.push(next);
+    }
+    return out;
+  };
+  const root = new URL('../', import.meta.url).pathname;
+  const banned = /api\.stripe\.com|STRIPE_SECRET_KEY|@stripe\/|stripeRequest\(/;
+  const offenders = [];
+  for (const dir of ['src/', 'supabase/functions/']) {
+    for (const file of walk(new URL(dir, new URL(root, 'file:')))) {
+      const rel = file.pathname.slice(root.length);
+      if (banned.test(read(rel))) offenders.push(rel);
+    }
+  }
+  if (offenders.length) {
+    throw new Error(
+      `Card processing is done in person now — these files call a payment processor: ${offenders.join(', ')}`
+    );
+  }
+  const pkg = JSON.parse(read('package.json'));
+  const stripeDeps = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((d) => d.startsWith('@stripe/'));
+  if (stripeDeps.length) throw new Error(`Stripe packages are back in package.json: ${stripeDeps.join(', ')}`);
 }
 
 console.log('Production operations verification passed.');

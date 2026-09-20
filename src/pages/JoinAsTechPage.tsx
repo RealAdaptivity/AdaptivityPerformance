@@ -42,7 +42,7 @@ const STEPS = [
   {
     n: '03',
     title: 'Set up payouts',
-    body: 'Once approved, create your tech login and connect Stripe Express so labor + tips go straight to you.',
+    body: 'Once approved, create your tech login and you are ready to claim jobs. Customers pay you in person at the vehicle.',
   },
   {
     n: '04',
@@ -85,9 +85,8 @@ const REQUIREMENTS = [
       'Adaptivity is not liable for accidents or damage you cause on a job — you are',
       'You are responsible for your own injury / medical insurance (Texas 1099 — no Adaptivity workers’ comp claim)',
       'Insurance for tools / liability is strongly recommended (not required to join)',
-      'Customers are told before the diagnostic hold that the working tech is responsible for damage they cause',
-      'Stripe Express payout account (we walk you through Connect after approval)',
-      'IRS Form W-9 / tax ID (SSN or EIN) via Stripe before your first claimed job',
+      'Customers are told before booking that the working tech is responsible for damage they cause',
+            'IRS Form W-9 / tax ID (SSN or EIN) given to dispatch before your first claimed job',
       'Form 1099-NEC: if you earn $600+ in a calendar year, Adaptivity files with the IRS and sends you a copy by Jan 31',
       'Professional communication with customers — you’re the face of Adaptivity on site',
       'No side cash / Zelle for Adaptivity jobs — all payments stay in-app',
@@ -103,7 +102,7 @@ const APPLY_NEEDS = [
   'ASE certs (if any)',
   'Pay preference: 70/30 revenue share (flat hourly coming soon)',
   'Work style: Multi-job or Standalone (changeable later in Settings)',
-  'W-9 tax ID (completed in Stripe Express before first job)',
+  'W-9 tax ID (given to dispatch before first job)',
 ];
 
 const TRADES = [
@@ -138,7 +137,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
           </h1>
           <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
             Adaptivity is a mobile + shop network working a {LOCAL_HUB.radiusMiles}-mile radius out of Justin, TX. Independent techs claim jobs by trade,
-            keep 70% of labor billed (30% to Adaptivity), and get paid through Stripe — Instant or Standard.
+            keep 70% of labor billed (30% to Adaptivity), collected from the customer in person at the vehicle.
             Start as a normal tech; as you complete jobs and grow your own shop or business, you can advance
             into a partnered host with us. Already own a shop or garage? You can partner as a host sooner.
           </p>
@@ -323,9 +322,9 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2">
               <MapPin className="w-5 h-5 text-amber-400" />
-              <h3 className="font-bold text-white">Instant or Standard cash-out</h3>
+              <h3 className="font-bold text-white">Paid at the vehicle</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Stripe Express: Standard bank (~2 days) or Instant to debit (~30 min, small fee).
+                The customer pays by card, tap or chip on site when the job is done. No payout account to set up.
               </p>
             </div>
           </div>
@@ -369,7 +368,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
                   You don’t have to be a solo mobile tech. Local businesses — independent shops, people with
                   garage space, or lift-equipped spaces — can join as <strong className="text-white">partner
                   host locations</strong>. We send booked customers for drop-off and heavier work; you provide
-                  the space (and optionally your own techs). Booking, card holds, tracking, and payments stay
+                  the space (and optionally your own techs). Booking, scheduling, tracking, and settlement stay
                   on Adaptivity.
                 </p>
                 <ul className="space-y-2 text-sm text-slate-300">
