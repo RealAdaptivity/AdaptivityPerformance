@@ -36,7 +36,6 @@ export type BookingRow = {
       van_number: string | null;
       role_title: string | null;
       rating: number | null;
-      stripe_account_id?: string | null;
     } | null;
   } | null;
 };
@@ -52,7 +51,6 @@ export function rowToBooking(row: BookingRow): Booking {
       vanNumber: row.mechanic.mechanic_details?.van_number || 'Mobile Unit',
       phone: row.mechanic.phone || '',
       rating: row.mechanic.mechanic_details?.rating ?? 4.9,
-      stripeAccountId: row.mechanic.mechanic_details?.stripe_account_id ?? null,
     };
   } else if (row.mechanic_id) {
     claimedBy = {
@@ -62,7 +60,6 @@ export function rowToBooking(row: BookingRow): Booking {
       vanNumber: 'Mobile Unit',
       phone: '',
       rating: 5.0,
-      stripeAccountId: null,
     };
   }
 

@@ -5,7 +5,7 @@ import {
   googleMapsSearchUrl,
   openStreetMapEmbedUrl,
   openStreetMapMarkerUrl,
-} from '../config/stripeDashboard';
+} from '../config/mapLinks';
 import { ExternalLink, MapPin } from 'lucide-react';
 
 type DispatchMapProps = {

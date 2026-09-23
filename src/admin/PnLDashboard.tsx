@@ -13,7 +13,7 @@ import {
   fetchFraudFlags,
   type FraudFlag,
 } from '../services/adminOpsExtras';
-import { fetchDispatchTechs, fetchAdminNecYtdByStripeAccount } from '../services/adminApi';
+import { fetchDispatchTechs } from '../services/adminApi';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -81,11 +81,8 @@ export const PnLDashboard: React.FC = () => {
   const handle1099Export = async () => {
     setExportMsg(null);
     try {
-      const [techs, ytd] = await Promise.all([
-        fetchDispatchTechs(),
-        fetchAdminNecYtdByStripeAccount(),
-      ]);
-      export1099Csv(techs, ytd);
+      const techs = await fetchDispatchTechs();
+      export1099Csv(techs, new Map());
       setExportMsg('1099 CSV downloaded');
     } catch (e) {
       setExportMsg(e instanceof Error ? e.message : 'Export failed');

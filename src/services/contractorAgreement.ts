@@ -8,7 +8,7 @@ import { ensureTechProfile } from './techDispatch';
  * current if it was made against this exact version: `signed` goes false and the
  * database claim gate refuses the job, so every contractor re-signs.
  */
-export const CONTRACTOR_AGREEMENT_VERSION = '2026-09-v2';
+export const CONTRACTOR_AGREEMENT_VERSION = '2026-09-v3';
 
 export type ContractorAgreementStatus = {
   /** True only for a signature made against CONTRACTOR_AGREEMENT_VERSION. */

@@ -43,31 +43,9 @@ export const PortalApp: React.FC = () => {
   const [profile, setProfile] = useState<PortalProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [adminView, setAdminView] = useState<PortalRole | null>(() => getPortalViewMode());
-  const [stripeNotice, setStripeNotice] = useState<string | null>(null);
   const [techInitialTab, setTechInitialTab] = useState('jobs');
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(() => readTechInviteFlag());
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const setup = params.get('stripeSetup');
-    if (setup === 'complete') {
-      setStripeNotice('Stripe Express setup saved. Your payout status is updating below.');
-      setTechInitialTab('settings');
-    } else if (setup === 'refresh') {
-      setStripeNotice('Stripe link expired — open Connect Stripe again from Settings.');
-      setTechInitialTab('settings');
-    }
-    if (params.get('techInvite') === '1') {
-      setNeedsPasswordSetup(true);
-    }
-    if (setup) {
-      params.delete('stripeSetup');
-      const qs = params.toString();
-      const path = window.location.pathname;
-      window.history.replaceState({}, '', qs ? `${path}?${qs}` : path);
-    }
-  }, []);
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
@@ -142,7 +120,6 @@ export const PortalApp: React.FC = () => {
     setPortalViewMode('tech');
     setAdminView('tech');
     setTechInitialTab('settings');
-    setStripeNotice('Password saved. Connect Stripe Express next to get paid.');
   };
 
   if (loading) {
@@ -180,7 +157,6 @@ export const PortalApp: React.FC = () => {
           adminViewAs="tech"
           onSwitchAdminView={() => pickAdminView('customer')}
           initialTab={techInitialTab}
-          stripeSetupNotice={stripeNotice}
         />
       );
     }
@@ -200,7 +176,6 @@ export const PortalApp: React.FC = () => {
         profile={profile}
         onSignOut={handleSignOut}
         initialTab={techInitialTab}
-        stripeSetupNotice={stripeNotice}
       />
     );
   }

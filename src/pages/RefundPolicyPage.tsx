@@ -30,7 +30,7 @@ export const RefundPolicyPage: React.FC = () => {
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
             Adaptivity Performance LLC • Effective Date: January 1, 2026 • Clear, transparent terms
-            for mobile diagnostic holds, completed repair warranties, parts returns, and payment link refunds.
+            for the mobile diagnostic, completed repair warranties, parts returns, and in-person payment refunds.
           </p>
         </div>
 
@@ -67,24 +67,24 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* SECTION 1: Diagnostic Authorization Holds ($100) */}
+        {/* SECTION 1: The $100 diagnostic, paid in person */}
         <section className="bg-[#0e1017] p-6 sm:p-8 rounded-3xl border border-white/10 space-y-6">
           <div className="flex items-center space-x-3 text-orange-400 border-b border-white/10 pb-4">
             <CreditCard className="w-6 h-6 text-orange-500" />
             <h2 className="font-heading text-xl font-extrabold text-white">
-              1. Diagnostic Authorization Holds ($100.00)
+              1. The $100.00 Diagnostic Visit
             </h2>
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            When booking mobile repair or on-site diagnosis, a temporary pre-authorization hold of <strong>$100.00</strong> is placed on your credit or debit card. 
-            This is <em>not an immediate charge</em> — it ensures technician scheduling and reserves your dedicated dispatch slot.
+            Booking a mobile repair or on-site diagnosis costs nothing and takes no card. The <strong>$100.00</strong> diagnostic
+            is paid to your technician in person when they arrive, and is <em>credited in full</em> toward the repair if you approve the work.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
               <div className="font-bold text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" /> Full Refund / Hold Release
+                <CheckCircle2 className="w-4 h-4" /> No Charge At All
               </div>
               <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
                 <li><strong>Advance Cancellation:</strong> Cancel 2 or more hours prior to your scheduled arrival window.</li>
@@ -172,7 +172,7 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            If you finalized your repair payment through a digital payment link using an installment or BNPL provider (such as <strong>Affirm, Klarna, Afterpay, Zip, or Sunbit</strong>), any approved refund is transmitted through Stripe directly to your financing provider.
+            Payment is taken in person by your technician, so an approved refund is returned to the same card, tap or chip you paid with, through the in-person card reader.
           </p>
 
           <p className="text-xs text-slate-400 leading-relaxed">

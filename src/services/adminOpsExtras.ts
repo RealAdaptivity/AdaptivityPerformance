@@ -60,17 +60,15 @@ function downloadCsv(filename: string, rows: string[][]) {
 export function export1099Csv(techs: DispatchTech[], ytdByAcct: Map<string, number>) {
   const year = new Date().getFullYear();
   const rows: string[][] = [
-    ['tax_year', 'tech_name', 'email', 'phone', 'stripe_account_id', 'ytd_tech_share_dollars'],
+    ['tax_year', 'tech_name', 'email', 'phone', 'ytd_tech_share_dollars'],
   ];
   for (const t of techs) {
-    const acct = t.stripeAccountId || '';
-    const cents = acct ? ytdByAcct.get(acct) || 0 : 0;
+    const cents = ytdByAcct.get(t.id) || 0;
     rows.push([
       String(year),
       t.name,
       t.email || '',
       t.phone || '',
-      acct,
       (cents / 100).toFixed(2),
     ]);
   }
@@ -171,7 +169,7 @@ export async function fetchFraudFlags(): Promise<FraudFlag[]> {
       key: 'refunds:volume',
       label: 'Elevated refund volume',
       severity: 'med',
-      detail: `${refunds!.length} refunded/partial rows in 90d — review chargebacks in Stripe`,
+      detail: `${refunds!.length} refunded/partial rows in 90d — review with your card reader provider`,
     });
   }
 

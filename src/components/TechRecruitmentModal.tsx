@@ -40,7 +40,6 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isOnboardingStripe = false;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [acceptedLiability, setAcceptedLiability] = useState(false);
 
@@ -163,8 +162,8 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
               <p className="text-sm text-slate-300 max-w-md mx-auto">
                 Thanks, <strong>{name}</strong>. Your application is in our admin inbox. We’ll contact you at{' '}
                 <strong>{phone}</strong> within 24 hours. After approval, create your Tech account at{' '}
-                <strong className="text-white">/portal</strong> with <strong>{email}</strong>, then finish Stripe
-                Express + W-9 in Settings.
+                <strong className="text-white">/portal</strong> with <strong>{email}</strong>, sign the contractor
+                agreement in Settings, and give dispatch your W-9.
               </p>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
                 Preferred work style:{' '}
@@ -607,10 +606,10 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
 
                     <button
                       type="submit"
-                      disabled={isOnboardingStripe || isSubmitting || !acceptedLiability}
+                      disabled={isSubmitting || !acceptedLiability}
                       className="px-7 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-lg shadow-emerald-500/25 flex items-center space-x-2 disabled:opacity-60"
                     >
-                      {isSubmitting || isOnboardingStripe ? (
+                      {isSubmitting ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
                           <span>Submitting…</span>

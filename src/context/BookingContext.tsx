@@ -16,7 +16,6 @@ export interface TechProfile {
   vanNumber: string;
   phone: string;
   rating: number;
-  stripeAccountId?: string | null;
 }
 
 export interface Booking {

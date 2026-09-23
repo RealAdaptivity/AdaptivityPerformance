@@ -161,7 +161,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
         <div className="flex items-center space-x-2">
           <span>© 2026 Adaptivity Performance LLC. Servicing Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around.</span>
           <span className="bg-slate-900 border border-white/10 text-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
-            🔒 Powered by Stripe Connect
+            🔒 Card payments taken in person
           </span>
         </div>
         <div className="flex items-center space-x-4">

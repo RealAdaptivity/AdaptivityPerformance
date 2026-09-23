@@ -39,7 +39,7 @@ export const PrivacyPolicyPage: React.FC = () => {
                 <li>Full name, phone number, and email address when booking</li>
                 <li>Vehicle VIN, year, make, model, and mileage</li>
                 <li>Service address (home / workplace driveway)</li>
-                <li>Payment card details (processed by Stripe — we never store raw card data)</li>
+                <li>Payment is taken in person on a card reader — card details never reach our website or servers</li>
                 <li>Referral codes and membership plan selections</li>
                 <li>Notes or messages submitted through booking forms</li>
               </ul>
@@ -66,7 +66,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           <div className="space-y-2 text-xs text-slate-300">
             {[
               ['Schedule and dispatch mobile mechanic appointments', 'Core service delivery'],
-              ['Process payment card authorizations and final charges via Stripe', 'Payment processing'],
+              ['Record that payment was collected in person for the job', 'Service records'],
               ['Report completed repair orders to CARFAX & Experian AutoCheck to update your vehicle history', 'VIN history sync'],
               ['Send appointment confirmations, repair status updates, and receipts via SMS and email', 'Communications'],
               ['Verify identity, detect fraud, and prevent unauthorized transactions', 'Security'],
@@ -94,7 +94,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           <p className="text-xs text-slate-400">We do <strong className="text-white">NOT</strong> sell your personal information. We only share data with trusted service partners necessary to deliver our services:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
             {[
-              ['Stripe, Inc.', 'Payment card processing and authorization holds'],
+              ['Block, Inc. (Square)', 'In-person card payment processing at the vehicle'],
               ['CARFAX / Experian AutoCheck', 'Vehicle service history reporting by VIN'],
               ['Supabase', 'Encrypted cloud database for booking records'],
               ['Affirm / Klarna / Afterpay', '0% APR financing options at checkout'],
@@ -208,7 +208,7 @@ export const PrivacyPolicyPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             {[
               ['TLS/HTTPS Encryption', 'All data in transit is encrypted using TLS 1.3'],
-              ['Stripe PCI-DSS Compliance', 'Card data never touches our servers — processed by Stripe Level 1 PCI'],
+              ['In-person card processing', 'Card data never touches our website or servers — handled entirely by the card reader'],
               ['Supabase Row-Level Security', 'Database access restricted by customer identity, not just API keys'],
             ].map(([feature, desc]) => (
               <div key={feature} className="bg-[#0b0c10] p-3 rounded-xl border border-white/5 space-y-1">

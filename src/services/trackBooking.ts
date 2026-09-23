@@ -68,8 +68,11 @@ function mapRow(row: Record<string, unknown>): TrackedBooking {
   };
 }
 
-export async function fetchBookingByReference(reference: string): Promise<TrackedBooking | null> {
-  const { data, error } = await supabase.rpc('get_booking_by_reference', { ref: reference.trim() });
+export async function fetchBookingByReference(reference: string, phoneLast4?: string): Promise<TrackedBooking | null> {
+  const { data, error } = await supabase.rpc('get_booking_by_reference', {
+    ref: reference.trim(),
+    phone_last4: phoneLast4?.trim() || null,
+  });
   if (error || !data?.[0]) return null;
   return mapRow(data[0] as Record<string, unknown>);
 }
@@ -99,21 +102,15 @@ export function subscribeBookingReference(reference: string, onChange: () => voi
 
 /** Customer cancel when UNASSIGNED / EN_ROUTE and payment not captured. */
 export async function cancelCustomerBooking(referenceCode: string) {
-  return invokeEdgeFunction('cancel-booking-hold', {
-    bookingReference: referenceCode.trim(),
-    releaseJob: true,
-  });
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'CANCELED', updated_at: new Date().toISOString() })
+    .ilike('reference_code', referenceCode.trim());
+  if (error) throw error;
+  return { ok: true };
 }
 
-/** Post-capture tip ($1–$500). */
-export async function addBookingTip(referenceCode: string, tipAmountDollars: number) {
-  return invokeEdgeFunction<{ ok?: boolean; tipAmountDollars?: number }>('add-booking-tip', {
-    bookingReference: referenceCode.trim(),
-    tipAmountDollars,
-  });
-}
-
-/** Reschedule preferred slot — keeps card hold. Releases tech if EN_ROUTE. */
+/** Reschedule preferred slot. Releases tech if EN_ROUTE. */
 export async function rescheduleCustomerBooking(opts: {
   referenceCode: string;
   preferredDate: string;

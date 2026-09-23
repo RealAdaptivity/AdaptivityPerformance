@@ -92,11 +92,11 @@ export const CONTRACTOR_AGREEMENT_SECTIONS: AgreementSection[] = [
       },
       {
         kind: 'p',
-        text: 'Customers pay Adaptivity. Adaptivity transfers your share to your Stripe Connect Express account after the job is captured. You must complete Stripe Express onboarding, including identity verification and a payout method, before claiming a first job.',
+        text: 'Payment is collected from the customer in person at the vehicle when the work is complete. Adaptivity settles your share with you directly; there is no online payout account to set up.',
       },
       {
         kind: 'p',
-        text: 'Standard payouts arrive in roughly two business days at no cost to you. Instant payout to a debit card is available at your option, and you bear Stripe’s Instant Payout fee.',
+        text: 'Adaptivity settles your share on the agreed pay cycle. There is no instant cash-out and no payout processing fee charged to you.',
       },
       {
         kind: 'p',
@@ -207,7 +207,7 @@ export const CONTRACTOR_AGREEMENT_SECTIONS: AgreementSection[] = [
       },
       {
         kind: 'p',
-        text: 'You must provide a valid taxpayer identification number — SSN or EIN — through Stripe Express before claiming a first job. This satisfies the Form W-9 purpose, and job claims are blocked until it is on file.',
+        text: 'You must give Adaptivity a completed Form W-9 with a valid taxpayer identification number — SSN or EIN — before claiming a first job. Dispatch records it on receipt, and job claims are blocked until it is on file.',
       },
       {
         kind: 'p',

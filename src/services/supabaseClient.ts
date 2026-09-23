@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * 
  * Tables in Supabase:
  * 1. `bookings`: id, customer_name, customer_phone, customer_address, vehicle, services, total_estimate, status, tech_id, distance_miles, eta_minutes
- * 2. `mechanics`: id, name, phone, van_number, stripe_account_id, rating, tools_verified, revenue_share_pct
+ * 2. `mechanics`: id, name, phone, van_number, rating, tools_verified, revenue_share_pct
  * 3. `customer_vehicles`: id, user_id, make, model, year, vin, health_score, license_plate
  * 4. `inspection_reports`: id, booking_id, vehicle_id, inspector_name, findings_json, customer_signature_url
  */
@@ -34,23 +34,4 @@ export function subscribeToLiveJobDispatch(bookingId: string, onUpdate: (updated
       }
     )
     .subscribe();
-}
-
-/**
- * Invoke Supabase Edge Function for Stripe Connect checkout (legacy alias)
- */
-export async function invokeStripePaymentEdgeFunction(payload: {
-  amount: number;
-  techStripeAccountId: string;
-  customerEmail: string;
-  bookingReference?: string;
-}) {
-  const { createCheckoutPaymentIntent } = await import('./stripePaymentsApi');
-  return createCheckoutPaymentIntent({
-    baseAmountDollars: payload.amount,
-    tipAmountDollars: 0,
-    customerEmail: payload.customerEmail,
-    techStripeAccountId: payload.techStripeAccountId,
-    bookingReference: payload.bookingReference,
-  });
 }

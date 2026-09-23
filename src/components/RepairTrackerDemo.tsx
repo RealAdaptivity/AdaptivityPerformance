@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useBookingContext, type Booking } from '../context/BookingContext';
+import { useBookingContext } from '../context/BookingContext';
 import { fetchBookingByReference } from '../services/bookingsApi';
 import { recoverBookingReferences } from '../services/trackBooking';
 import { Truck, Phone, ShieldCheck, UserCheck, X, Search } from 'lucide-react';
@@ -7,10 +7,9 @@ import { Truck, Phone, ShieldCheck, UserCheck, X, Search } from 'lucide-react';
 interface RepairTrackerDemoProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenCheckout?: (booking: Booking) => void;
 }
 
-export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, onClose, onOpenCheckout }) => {
+export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, onClose }) => {
   const { getBookingById } = useBookingContext();
   const [jobSearchInput, setJobSearchInput] = useState('');
   const [searchedBookingId, setSearchedBookingId] = useState('');
@@ -246,17 +245,6 @@ export const RepairTrackerDemo: React.FC<RepairTrackerDemoProps> = ({ isOpen, on
             <span className="flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Official In-Platform Checkout Protects 12-Month / 12k Warranty
             </span>
-            {onOpenCheckout && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onOpenCheckout(currentBooking);
-                }}
-                className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-xs transition-colors flex-shrink-0"
-              >
-                Pay via Escrow →
-              </button>
-            )}
           </div>
           </>}
 

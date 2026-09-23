@@ -2,12 +2,11 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshCw, Phone, MessageSquare, Navigation, AlertCircle } from 'lucide-react';
 import { supabase } from '../../services/supabaseClient';
 import {
-  cancelJobWithHold,
-  captureBookingPayment,
+  releaseJob,
+  recordInPersonPayment,
   claimBookingRow,
   fetchDispatchBookings,
   fetchMyTechSpecialties,
-  sendBookingPaymentLink,
   subscribeDispatchBookings,
   updateBookingRow,
   type DispatchBooking,
@@ -17,7 +16,14 @@ import { uploadJobPhoto } from '../../services/jobPhotos';
 import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
 import { todayISODate } from '../../services/scheduleWindows';
 import { JobChatPanel } from '../../components/JobChatPanel';
-import { DIAGNOSTIC_HOLD_DOLLARS } from '../../services/serviceCatalog';
+import { DIAGNOSTIC_FEE_DOLLARS } from '../../services/serviceCatalog';
+import {
+  clockIn,
+  clockOut,
+  fetchMyShiftStatus,
+  shiftElapsedLabel,
+  type ShiftStatus,
+} from '../../services/techShifts';
 
 type LineDraft = { title: string; laborDollars: string; partsDollars: string };
 type JobsFilter = 'today' | 'available' | 'active' | 'completed';
@@ -47,6 +53,36 @@ export const TechJobsTab: React.FC = () => {
   ]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const [shift, setShift] = useState<ShiftStatus>({ onShift: false, since: null });
+  const [shiftBusy, setShiftBusy] = useState(false);
+
+  const loadShift = useCallback(async () => {
+    try {
+      setShift(await fetchMyShiftStatus());
+    } catch {
+      /* the claim gate is the real enforcement; a failed read just leaves the banner as-is */
+    }
+  }, []);
+
+  const handleClock = async () => {
+    setShiftBusy(true);
+    setMessage(null);
+    try {
+      if (shift.onShift) {
+        await clockOut();
+        setMessage('Clocked out. You will not see new jobs until you clock back in.');
+      } else {
+        await clockIn();
+        setMessage('Clocked in — you can claim jobs now.');
+      }
+      await loadShift();
+    } catch (e: unknown) {
+      setMessage(e instanceof Error ? e.message : 'Could not update your shift');
+    } finally {
+      setShiftBusy(false);
+    }
+  };
+
   const loadJobs = useCallback(async () => {
     try {
       setIsRefreshing(true);
@@ -64,11 +100,12 @@ export const TechJobsTab: React.FC = () => {
     void supabase.auth.getSession().then(({ data }) => setMechanicId(data.session?.user?.id ?? null));
     void fetchMyTechSpecialties().then(setMySpecialties);
     loadJobs();
+    void loadShift();
     const ch = subscribeDispatchBookings(() => loadJobs());
     return () => {
       void ch.unsubscribe();
     };
-  }, [loadJobs]);
+  }, [loadJobs, loadShift]);
 
   useEffect(() => {
     if (!activeJob) return;
@@ -199,8 +236,8 @@ export const TechJobsTab: React.FC = () => {
   const partsSubtotal = lines.reduce((s, l) => s + (Number(l.partsDollars) || 0), 0);
   const mileageTotal = Number(mileageFee) || 0;
   const repairsSubtotal = laborSubtotal + partsSubtotal + mileageTotal;
-  const holdDollars = (activeJob?.holdAmountCents ?? DIAGNOSTIC_HOLD_DOLLARS * 100) / 100;
-  const appliedDiagnosticDollars = includeDiagnosticFee ? holdDollars : 0;
+  const quotedDollars = (activeJob?.holdAmountCents ?? DIAGNOSTIC_FEE_DOLLARS * 100) / 100;
+  const appliedDiagnosticDollars = includeDiagnosticFee ? quotedDollars : 0;
   const subtotalBeforeTax = appliedDiagnosticDollars + repairsSubtotal;
 
   const taxableBase = taxMode === 'parts' ? partsSubtotal : taxMode === 'total' ? subtotalBeforeTax : 0;
@@ -294,7 +331,7 @@ export const TechJobsTab: React.FC = () => {
       .filter((l) => l.title && (l.laborDollars > 0 || l.partsDollars > 0));
 
     if (!lineItems.length && !includeDiagnosticFee) {
-      setMessage(`⚠️ Please enter a labor or parts dollar amount (or enable the $${holdDollars.toFixed(0)} Diagnostic Fee) to charge.`);
+      setMessage(`⚠️ Please enter a labor or parts dollar amount (or enable the $${quotedDollars.toFixed(0)} Diagnostic Fee) to charge.`);
       return;
     }
 
@@ -323,26 +360,14 @@ export const TechJobsTab: React.FC = () => {
         lineItems,
         includeDiagnosticFee,
       });
-      const result = await captureBookingPayment(activeJob.referenceCode, {
-        mode: 'charge',
+      const result = await recordInPersonPayment(activeJob.referenceCode, {
         lineItems,
-        techNotes,
-        customerAgreedOnSite: true,
         includeDiagnosticFee,
         salesTaxDollars,
-        partsPurchasedBy,
       });
       setJobPhase('complete');
-      if (result.transferWarning) {
-        setMessage(
-          `Charged $${result.capturedAmountDollars?.toFixed(2)}, but Connect transfer failed: ${result.transferWarning}`
-        );
-      } else {
-        setMessage(
-          `Charged $${result.capturedAmountDollars?.toFixed(2)} — your 70% share $${result.techPayoutDollars?.toFixed(2)} to Connect`
-        );
-      }
-      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? chargeTotal, 'charge', {
+      setMessage(`$${result.collectedDollars.toFixed(2)} recorded as collected in person — job closed`);
+      await sendReceiptSms(activeJob, result.collectedDollars, 'charge', {
         lines: lineItems,
         diagnosticDollars: appliedDiagnosticDollars,
         salesTaxDollars,
@@ -355,104 +380,51 @@ export const TechJobsTab: React.FC = () => {
     }
   };
 
-  const handleSendPaymentLink = async () => {
-    if (!activeJob) return;
-
-    const lineItems = lines
-      .map((l) => {
-        const labor = Number(l.laborDollars) || 0;
-        const parts = Number(l.partsDollars) || 0;
-        let title = l.title.trim();
-        if (!title && (labor > 0 || parts > 0)) {
-          title = labor > 0 && parts > 0 ? 'Mechanical Labor & Parts' : labor > 0 ? 'Mechanical Labor' : 'Replacement Parts';
-        }
-        return { title, laborDollars: labor, partsDollars: parts };
-      })
-      .filter((l) => l.title && (l.laborDollars > 0 || l.partsDollars > 0));
-
-    if (!lineItems.length && !includeDiagnosticFee) {
-      setMessage(`⚠️ Enter a labor or parts amount (or enable the $${holdDollars.toFixed(0)} Diagnostic Fee) before sending a link.`);
-      return;
-    }
-    if (mileageTotal > 0) {
-      lineItems.push({ title: 'Mileage / Travel Fee', laborDollars: mileageTotal, partsDollars: 0 });
-    }
-    if (salesTaxDollars > 0) {
-      lineItems.push({
-        title: `Texas Sales Tax (8.25%${taxMode === 'parts' ? ' on parts' : ''})`,
-        laborDollars: 0,
-        partsDollars: salesTaxDollars,
-      });
-    }
-
-    setBusy(true);
-    setMessage(null);
-    try {
-      const result = await sendBookingPaymentLink({
-        bookingReference: activeJob.referenceCode,
-        lineItems,
-        includeDiagnosticFee,
-        salesTaxDollars,
-        partsPurchasedBy,
-      });
-      setMessage(
-        result.smsSent
-          ? `✅ Payment link texted to the customer — $${result.totalDollars.toFixed(2)} (card or financing).`
-          : `Payment link ready: ${result.url}${result.smsError ? ` — SMS not sent: ${result.smsError}` : ''}`
-      );
-    } catch (e: unknown) {
-      setMessage(e instanceof Error ? e.message : 'Could not create payment link');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleDiagnosticOnly = async () => {
     if (!activeJob) return;
-    if (!confirm(`Charge the $${holdDollars.toFixed(2)} diagnostic only and close the job?`)) return;
+    if (!confirm(`Record $${quotedDollars.toFixed(2)} diagnostic collected in person and close the job?`)) return;
     setBusy(true);
     setMessage(null);
     try {
-      const result = await captureBookingPayment(activeJob.referenceCode, {
-        mode: 'diagnostic_only',
+      const result = await recordInPersonPayment(activeJob.referenceCode, {
+        totalCollectedDollars: quotedDollars,
       });
       setJobPhase('complete');
       setMessage(
-        `Diagnostic $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
+        `Diagnostic $${result.collectedDollars.toFixed(2)} recorded as collected in person`
       );
-      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? 100, 'diagnostic_only');
+      await sendReceiptSms(activeJob, result.collectedDollars, 'diagnostic_only');
       finishJob();
     } catch (e: unknown) {
-      setMessage(e instanceof Error ? e.message : 'Diagnostic charge failed');
+      setMessage(e instanceof Error ? e.message : 'Could not record the diagnostic');
       setBusy(false);
     }
   };
 
   const handleNoShow = async () => {
     if (!activeJob) return;
-    if (!confirm(`Customer no-show? Capture the $${holdDollars.toFixed(2)} diagnostic hold and close the job.`)) return;
+    if (!confirm('Customer no-show? Close the job with nothing collected.')) return;
     setBusy(true);
     setMessage(null);
     try {
-      const result = await captureBookingPayment(activeJob.referenceCode, {
-        mode: 'no_show',
-      });
+      await recordInPersonPayment(activeJob.referenceCode, { totalCollectedDollars: 0 });
       setJobPhase('complete');
       setMessage(
-        `No-show $${result.capturedAmountDollars?.toFixed(2)} charged — 70% share $${result.techPayoutDollars?.toFixed(2)}`
+        'No-show recorded — job closed, nothing collected'
       );
-      await sendReceiptSms(activeJob, result.capturedAmountDollars ?? 100, 'no_show');
+      
       finishJob();
     } catch (e: unknown) {
-      setMessage(e instanceof Error ? e.message : 'No-show charge failed');
+      setMessage(e instanceof Error ? e.message : 'Could not close the job');
       setBusy(false);
     }
   };
 
   const handleCancel = async () => {
-    if (!activeJob || !confirm('Cancel job and release customer card hold?')) return;
+    if (!activeJob || !confirm('Cancel this job and release it back to the pool?')) return;
     try {
-      await cancelJobWithHold(activeJob.referenceCode);
+      await releaseJob(activeJob.referenceCode);
       setActiveJob(null);
       setFilter('available');
       await loadJobs();
@@ -501,7 +473,7 @@ export const TechJobsTab: React.FC = () => {
             {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
           </div>
           <span className="text-[10px] text-amber-400 font-bold shrink-0">
-            ${((job.holdAmountCents ?? DIAGNOSTIC_HOLD_DOLLARS * 100) / 100).toFixed(0)} hold
+            ${((job.holdAmountCents ?? DIAGNOSTIC_FEE_DOLLARS * 100) / 100).toFixed(0)} hold
           </span>
         </div>
         <div className="flex gap-2">
@@ -617,6 +589,37 @@ export const TechJobsTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      <div
+        className={`rounded-xl border px-3.5 py-3 flex items-center justify-between gap-3 ${
+          shift.onShift
+            ? 'border-emerald-500/30 bg-emerald-500/10'
+            : 'border-amber-500/30 bg-amber-500/10'
+        }`}
+      >
+        <div className="min-w-0">
+          <p className={`text-xs font-bold ${shift.onShift ? 'text-emerald-300' : 'text-amber-300'}`}>
+            {shift.onShift ? 'On shift' : 'Off shift'}
+          </p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            {shift.onShift
+              ? `Clocked in ${shiftElapsedLabel(shift.since)} ago. Clock out when you finish for the day.`
+              : 'Clock in to see and claim jobs.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={shiftBusy}
+          onClick={() => void handleClock()}
+          className={`shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold disabled:opacity-60 transition-colors ${
+            shift.onShift
+              ? 'border border-white/15 text-slate-200 hover:bg-white/5'
+              : 'bg-emerald-500 text-white hover:bg-emerald-400'
+          }`}
+        >
+          {shiftBusy ? 'Saving…' : shift.onShift ? 'Clock out' : 'Clock in'}
+        </button>
+      </div>
+
       {message && (
         <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
           {message}
@@ -671,10 +674,20 @@ export const TechJobsTab: React.FC = () => {
 
       {filter === 'available' && (
         <div className="space-y-2">
-          {available.length === 0 && (
-            <p className="text-xs text-slate-500">No open jobs matching your specialties.</p>
+          {!shift.onShift ? (
+            /* The claim itself is refused server-side while clocked out; hiding the
+               board here just avoids offering a button that cannot work. */
+            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2.5">
+              Clock in to see open jobs. Jobs cannot be claimed while you are off shift.
+            </p>
+          ) : (
+            <>
+              {available.length === 0 && (
+                <p className="text-xs text-slate-500">No open jobs matching your specialties.</p>
+              )}
+              {available.map((job) => renderAvailableCard(job))}
+            </>
           )}
-          {available.map((job) => renderAvailableCard(job))}
         </div>
       )}
 
@@ -697,7 +710,7 @@ export const TechJobsTab: React.FC = () => {
                 )}
               </div>
               <span className="text-[10px] text-amber-400 font-bold px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg shrink-0">
-                ${holdDollars.toFixed(2)} hold on file
+                ${quotedDollars.toFixed(2)} due on site
               </span>
             </div>
 
@@ -706,7 +719,7 @@ export const TechJobsTab: React.FC = () => {
               <p className="text-xs text-slate-300 font-medium">{activeJob.address}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">{activeJob.services.join(' · ')}</p>
               <p className="text-[10px] text-amber-400/90 mt-1">
-                ${holdDollars.toFixed(2)} diagnostic hold on file — you set labor + parts after diagnosis.
+                ${quotedDollars.toFixed(2)} diagnostic due on site — you set labor + parts after diagnosis.
               </p>
             </div>
           </div>
@@ -800,14 +813,14 @@ export const TechJobsTab: React.FC = () => {
                 </span>
               </div>
 
-              {/* 1. Diagnostic Hold (waive, or charge the hold on file) */}
+              {/* 1. Diagnostic fee (waive it, or collect it with the job) */}
               <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-300">
-                    🔍 Mobile Diagnostic Hold (${holdDollars.toFixed(2)} on file)
+                    🔍 Mobile Diagnostic (${quotedDollars.toFixed(2)} on file)
                   </span>
                   <span className="font-mono font-bold text-white">
-                    {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
+                    {includeDiagnosticFee ? `$${quotedDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-0.5">
@@ -831,13 +844,13 @@ export const TechJobsTab: React.FC = () => {
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
                   >
-                    + Charge ${holdDollars.toFixed(0)} Diag Fee
+                    + Charge ${quotedDollars.toFixed(0)} Diag Fee
                   </button>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-tight">
                   {!includeDiagnosticFee
-                    ? `Free diagnostic with repair — the $${holdDollars.toFixed(2)} card hold is released/applied toward repairs with no extra diagnostic fee.`
-                    : `The $${holdDollars.toFixed(2)} diagnostic visit fee is charged on top of labor & parts.`}
+                    ? `Free diagnostic with repair — the $${quotedDollars.toFixed(2)} diagnostic is credited toward the repair, so you collect no separate diagnostic fee.`
+                    : `The $${quotedDollars.toFixed(2)} diagnostic visit fee is charged on top of labor & parts.`}
                 </p>
               </div>
 
@@ -1028,7 +1041,7 @@ export const TechJobsTab: React.FC = () => {
                 <div className="flex justify-between gap-2 text-[11px] text-slate-300">
                   <span>Diagnostic Fee:</span>
                   <span className="font-mono text-white shrink-0">
-                    {includeDiagnosticFee ? `$${holdDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
+                    {includeDiagnosticFee ? `$${quotedDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
                   </span>
                 </div>
                 {laborSubtotal > 0 && (
@@ -1101,20 +1114,9 @@ export const TechJobsTab: React.FC = () => {
                 onClick={() => void handleCharge()}
                 className="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 rounded-xl text-xs font-black uppercase text-white tracking-wider shadow-lg disabled:opacity-60 transition-all"
               >
-                {busy ? 'Charging Card…' : `Charge Customer $${chargeTotal.toFixed(2)}`}
+                {busy ? 'Recording…' : `Collected $${chargeTotal.toFixed(2)} — close job`}
               </button>
 
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void handleSendPaymentLink()}
-                className="w-full py-3 bg-white/10 hover:bg-white/15 border border-white/15 rounded-xl text-xs font-bold text-slate-100 disabled:opacity-60 transition-colors"
-              >
-                Send payment link instead (card or financing)
-              </button>
-              <p className="text-[10px] text-slate-500 -mt-1">
-                Texts the customer a secure link to pay themselves — the only way Affirm/Klarna/Afterpay/Zip/Sunbit can be offered.
-              </p>
 
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -1123,7 +1125,7 @@ export const TechJobsTab: React.FC = () => {
                   onClick={() => void handleDiagnosticOnly()}
                   className="py-2.5 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-bold text-slate-200 disabled:opacity-60 transition-colors"
                 >
-                  Diag only (${holdDollars.toFixed(0)})
+                  Diag only (${quotedDollars.toFixed(0)})
                 </button>
                 <button
                   type="button"
@@ -1131,7 +1133,7 @@ export const TechJobsTab: React.FC = () => {
                   onClick={() => void handleNoShow()}
                   className="py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60 transition-colors"
                 >
-                  No-show (${holdDollars.toFixed(0)} hold)
+                  No-show (${quotedDollars.toFixed(0)} hold)
                 </button>
               </div>
             </div>

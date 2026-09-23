@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
 import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
-import { createBookingWithCardHold } from '../services/stripePaymentsApi';
-import { StripeBookingHoldSection } from './StripeBookingHoldSection';
-import { computeHoldQuote } from '../services/holdPricing';
+import { createBookingRequest } from '../services/bookingRequestApi';
+import { computeServiceQuote } from '../services/servicePricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
 import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
@@ -39,7 +38,7 @@ interface BookingModalProps {
   };
   onBookingSubmitted?: (result: {
     bookingReference: string;
-    holdAmountDollars: number;
+    quotedAmountDollars: number;
     name: string;
     phone: string;
     vehicle: string;
@@ -68,8 +67,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [notes, setNotes] = useState('');
   const [referralInput, setReferralInput] = useState('');
   const [bookingRef, setBookingRef] = useState('');
-  const [holdAmount, setHoldAmount] = useState(0);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCreatingHold, setIsCreatingHold] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
@@ -85,15 +82,15 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     [partners, partnerLocationId]
   );
 
-  const holdQuote = useMemo(() => {
+  const quotedQuote = useMemo(() => {
     const fromField = serviceRequested
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
     const fromInitial = initialEstimateData?.services || [];
-    return computeHoldQuote(fromField.length ? fromField : fromInitial.length ? fromInitial : ['diagnostic']);
+    return computeServiceQuote(fromField.length ? fromField : fromInitial.length ? fromInitial : ['diagnostic']);
   }, [serviceRequested, initialEstimateData?.services]);
-  const holdPreview = holdQuote.holdDollars;
+  const quotedPreview = quotedQuote.quotedDollars;
 
   useEffect(() => {
     if (initialEstimateData) {
@@ -121,7 +118,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       setStep(1);
-      setClientSecret(null);
       setSubmitError(null);
       setBookingRef('');
       setAccountPassword('');
@@ -160,7 +156,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
   };
 
-  const handleContinueToCardHold = async (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
 
@@ -175,8 +171,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
 
     setIsCreatingHold(true);
-    const amount = holdPreview;
-    setHoldAmount(amount);
 
     try {
       const servicesList = serviceRequested
@@ -184,7 +178,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         .map(s => s.trim())
         .filter(Boolean);
 
-      const hold = await createBookingWithCardHold({
+      const booking = await createBookingRequest({
         customerName: fullName.trim(),
         customerPhone: phone.trim(),
         customerEmail: email.trim(),
@@ -196,7 +190,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         vehicleDescription: vehicle.trim(),
         vin: vinNumber.trim() || undefined,
         services: servicesList.length ? servicesList : [serviceRequested.trim()],
-        holdAmountDollars: amount,
         locationType: serviceMode,
         partnerLocationId:
           serviceMode === 'shop' ? selectedPartner?.id || partnerLocationId || undefined : undefined,
@@ -207,25 +200,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         ...applyReferralCodeOnBooking(referralInput),
       });
 
-      setBookingRef(hold.bookingReference);
-      setClientSecret(hold.clientSecret);
+      setBookingRef(booking.bookingReference);
+      onBookingSubmitted?.({
+        bookingReference: booking.bookingReference,
+        quotedAmountDollars: booking.quotedAmountDollars,
+        name: fullName,
+        phone,
+        vehicle,
+      });
       setStep(3);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Could not start card hold');
+      setSubmitError(err instanceof Error ? err.message : 'Could not submit your booking request');
     } finally {
       setIsCreatingHold(false);
     }
-  };
-
-  const handleCardAuthorized = () => {
-    onBookingSubmitted?.({
-      bookingReference: bookingRef,
-      holdAmountDollars: holdAmount,
-      name: fullName,
-      phone,
-      vehicle,
-    });
-    setStep(4);
   };
 
   const handleCreateAccount = async (e: React.FormEvent) => {
@@ -285,7 +273,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             <div>
               <h3 className="font-heading text-base font-bold text-white">Schedule Service • Adaptivity Performance</h3>
               <p className="text-xs text-slate-400">
-                Step {step} of 4 • Card hold, charge on completion
+                Step {step} of 3 • Pay in person when the job is done
               </p>
             </div>
           </div>
@@ -299,7 +287,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           {[
             { num: 1, label: 'Vehicle Info' },
             { num: 2, label: 'Driveway Location' },
-            { num: 3, label: 'Card Hold ($100)' },
+            { num: 3, label: 'Confirmed' },
           ].map((s) => (
             <div
               key={s.num}
@@ -385,17 +373,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
               </div>
 
-              {/* Reassuring Card Hold Explainer */}
+              {/* Nothing is taken online — payment happens at the vehicle. */}
               <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 space-y-1.5 text-xs text-slate-400">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    Zero Charged Today ($100 Hold Only)
+                    No card needed to book
                   </span>
-                  <span className="font-mono text-orange-400 font-bold">${holdPreview.toFixed(2)} Hold</span>
+                  <span className="font-mono text-orange-400 font-bold">${quotedPreview.toFixed(2)} on site</span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-slate-400">
-                  Holds your technician's time slot and is <strong>100% credited</strong> toward your final repair and parts cost on-site.
+                  Nothing is charged online. Your technician takes payment in person when the work is done, and the
+                  diagnostic is <strong>credited in full</strong> toward the repair.
                 </p>
               </div>
 
@@ -409,7 +398,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           )}
 
           {step === 2 && (
-            <form onSubmit={handleContinueToCardHold} className="space-y-4">
+            <form onSubmit={handleSubmitRequest} className="space-y-4">
               {serviceMode === 'mobile' ? (
                 <>
                   <div>
@@ -556,15 +545,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-500/30 p-3 rounded-xl flex items-start space-x-2 text-[11px] text-slate-300">
                 <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-amber-400 font-bold block">Card hold — charge when complete</strong>
+                  <strong className="text-amber-400 font-bold block">Pay in person when the job is done</strong>
                   <span>
-                    Next step saves your card and places a <strong className="text-white">${holdPreview.toFixed(2)}</strong>{' '}
-                    authorization hold
-                    {holdQuote.mode === 'diagnostic'
-                      ? ' for the diagnostic visit — your tech sets repair pricing on site'
-                      : ' until the job is completed'}
-                    . You are charged when the job is finished; your
-                    technician receives 70% through official platform checkout.
+                    No card is taken to book. You pay <strong className="text-white">${quotedPreview.toFixed(2)}</strong>
+                    {quotedQuote.mode === 'diagnostic'
+                      ? ' for the diagnostic visit — your tech sets repair pricing on site before any further work'
+                      : ' when the job is completed'}
+                    , paid directly to your technician by card, tap or chip at the vehicle.
                   </span>
                 </div>
               </div>
@@ -599,29 +586,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             </form>
           )}
 
-          {step === 3 && clientSecret && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-400">
-                Appointment <span className="font-mono text-orange-400 font-bold">#{bookingRef}</span>
-              </p>
-              <StripeBookingHoldSection
-                clientSecret={clientSecret}
-                holdAmountDollars={holdAmount}
-                customerName={fullName}
-                customerEmail={email}
-                onAuthorized={handleCardAuthorized}
-              />
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full py-2 text-xs text-slate-400 hover:text-white"
-              >
-                ← Back to contact details
-              </button>
-            </div>
-          )}
-
-          {step === 4 && (
+          {step === 3 && (
             <div className="text-center space-y-5 py-4">
               <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-2xl font-bold">
                 ✓
@@ -630,11 +595,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 <span className="text-xs bg-orange-500/10 text-orange-400 font-mono font-bold px-3 py-1 rounded-full border border-orange-500/30">
                   Confirmation #{bookingRef}
                 </span>
-                <h3 className="font-heading text-2xl font-bold text-white mt-2">Appointment booked — card on file</h3>
+                <h3 className="font-heading text-2xl font-bold text-white mt-2">Booking request received</h3>
                 <p className="text-xs text-slate-300 max-w-sm mx-auto mt-1">
-                  A <strong className="text-white">${holdAmount.toFixed(2)}</strong> hold is active for your
-                  visit. We&apos;ll charge your card when the job is complete. Dispatch will reach you at{' '}
-                  <strong className="text-white">{phone}</strong> to confirm technician assignment.
+                  <strong className="text-white">Nothing has been charged.</strong> Your technician takes
+                  payment in person when the work is done — card, tap or chip. Dispatch will reach you at{' '}
+                  <strong className="text-white">{phone}</strong> to confirm your technician and arrival window.
                 </p>
               </div>
 
@@ -658,8 +623,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <span className="font-bold text-orange-400">{preferredDate} ({preferredTime})</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Hold amount:</span>
-                  <span className="font-bold text-emerald-400">${holdAmount.toFixed(2)}</span>
+                  <span className="text-slate-400">Due in person:</span>
+                  <span className="font-bold text-emerald-400">${quotedPreview.toFixed(2)}</span>
                 </div>
               </div>
 

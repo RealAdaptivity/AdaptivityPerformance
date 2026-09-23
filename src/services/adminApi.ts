@@ -35,7 +35,7 @@ const ADMIN_BOOKING_SELECT = `
     id,
     full_name,
     phone,
-    mechanic_details!mechanic_details_profile_id_fkey ( van_number, role_title, rating, stripe_account_id )
+    mechanic_details!mechanic_details_profile_id_fkey ( van_number, role_title, rating )
   )
 `;
 
@@ -45,10 +45,11 @@ export type DispatchTech = {
   phone: string | null;
   email: string | null;
   vanNumber: string | null;
-  stripeAccountId: string | null;
   toolsVerified: boolean;
   specialties: string[];
   lastSignInAt: string | null;
+  /** Open shift start, or null when the tech is clocked out. */
+  onShiftSince: string | null;
 };
 
 export type AdminPaymentRow = {
@@ -59,8 +60,6 @@ export type AdminPaymentRow = {
   status: string;
   payoutStatus: string;
   payoutError: string | null;
-  stripeTransferId: string | null;
-  techStripeAccountId: string | null;
   createdAt: string;
   isTest?: boolean;
 };
@@ -79,7 +78,6 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
   const { data: detailRows, error: detailsError } = await supabase.from('mechanic_details').select(`
       profile_id,
       van_number,
-      stripe_account_id,
       tools_verified,
       specialties,
       terminated_at,
@@ -96,7 +94,7 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       full_name,
       phone,
       email,
-      mechanic_details!mechanic_details_profile_id_fkey ( van_number, stripe_account_id, tools_verified, specialties )
+      mechanic_details!mechanic_details_profile_id_fkey ( van_number, tools_verified, specialties )
     `
     )
     .eq('role', 'tech');
@@ -122,10 +120,10 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       phone: profile.phone as string | null,
       email: profile.email as string | null,
       vanNumber: (row.van_number as string) ?? null,
-      stripeAccountId: (row.stripe_account_id as string) ?? null,
       toolsVerified: Boolean(row.tools_verified),
       specialties: specialties.length ? specialties : ['mechanical'],
       lastSignInAt: null,
+      onShiftSince: null,
     });
   }
 
@@ -144,10 +142,10 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
       phone: row.phone as string | null,
       email: row.email as string | null,
       vanNumber: (details?.van_number as string) ?? null,
-      stripeAccountId: (details?.stripe_account_id as string) ?? null,
       toolsVerified: Boolean(details?.tools_verified),
       specialties: specialties.length ? specialties : ['mechanical'],
       lastSignInAt: null,
+      onShiftSince: null,
     });
   }
 
@@ -167,6 +165,17 @@ export async function fetchDispatchTechs(): Promise<DispatchTech[]> {
     // Non-fatal: last login data unavailable
   }
 
+  // Who is clocked in right now. Admins can read every shift row; a tech never
+  // reaches this function.
+  const { data: openShifts } = await supabase
+    .from('tech_shifts')
+    .select('profile_id, clocked_in_at')
+    .is('clocked_out_at', null);
+  for (const shift of openShifts ?? []) {
+    const tech = byId.get(shift.profile_id as string);
+    if (tech) tech.onShiftSince = shift.clocked_in_at as string;
+  }
+
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -181,7 +190,7 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
   const { data, error } = await supabase
     .from('payments')
     .select(
-      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, stripe_transfer_id, tech_stripe_account_id, tech_transfer_cents, created_at, is_test'
+      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, tech_transfer_cents, created_at, is_test'
     )
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -196,38 +205,12 @@ export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]>
     status: row.status as string,
     payoutStatus: row.payout_status as string,
     payoutError: (row.payout_error as string | null) ?? null,
-    stripeTransferId: (row.stripe_transfer_id as string | null) ?? null,
-    techStripeAccountId: row.tech_stripe_account_id as string | null,
     createdAt: row.created_at as string,
     isTest: Boolean(row.is_test),
   }));
 }
 
 /** YTD tech_transfer totals by Connect account for 1099-NEC $600 tracking. */
-export async function fetchAdminNecYtdByStripeAccount(
-  year = new Date().getFullYear()
-): Promise<Map<string, number>> {
-  const start = `${year}-01-01T00:00:00.000Z`;
-  const end = `${year + 1}-01-01T00:00:00.000Z`;
-  const { data, error } = await supabase
-    .from('payments')
-    .select('tech_stripe_account_id, tech_transfer_cents, status, created_at')
-    .eq('is_test', false)
-    .gte('created_at', start)
-    .lt('created_at', end)
-    .not('tech_stripe_account_id', 'is', null)
-    .limit(5000);
-  if (error) throw new Error(error.message);
-  const map = new Map<string, number>();
-  for (const row of data || []) {
-    const status = String(row.status || '');
-    if (status !== 'succeeded' && status !== 'partially_refunded') continue;
-    const acct = row.tech_stripe_account_id as string;
-    if (!acct?.startsWith('acct_')) continue;
-    map.set(acct, (map.get(acct) || 0) + (Number(row.tech_transfer_cents) || 0));
-  }
-  return map;
-}
 
 export async function adminPatchBooking(
   referenceCode: string,
@@ -276,54 +259,18 @@ export async function adminCancelBookingHold(
   releaseJob = true,
   cancelReason?: string
 ) {
-  const result = await invokeEdgeFunction<{
-    ok: boolean;
-    bookingReference: string;
-    stripeStatus: string | null;
-    released: boolean;
-  }>('admin-cancel-booking-hold', { bookingReference, releaseJob });
+  const { error } = await supabase
+    .from('bookings')
+    .update({
+      status: releaseJob ? 'UNASSIGNED' : 'CANCELED',
+      mechanic_id: releaseJob ? null : undefined,
+      updated_at: new Date().toISOString(),
+    })
+    .ilike('reference_code', bookingReference.trim());
+  if (error) throw error;
+  const result = { ok: true, bookingReference, released: releaseJob };
   if (cancelReason) {
     await adminSetBookingReason(bookingReference, { cancelReason });
   }
   return result;
-}
-
-export async function adminAdjustCapture(
-  bookingReference: string,
-  captureAmountDollars: number,
-  markCompleted = false,
-  noShowReason?: string
-) {
-  const result = await invokeEdgeFunction('admin-adjust-capture', {
-    bookingReference,
-    captureAmountDollars,
-    markCompleted,
-  });
-  if (noShowReason) {
-    await adminSetBookingReason(bookingReference, { noShowReason });
-  }
-  return result;
-}
-
-export async function adminRefundBooking(
-  bookingReference: string,
-  refundAmountDollars?: number,
-  forceAfterPayout = false
-) {
-  return invokeEdgeFunction('admin-refund-booking', {
-    bookingReference,
-    refundAmountDollars,
-    forceAfterPayout,
-  });
-}
-
-export async function adminRetryTransfer(bookingReference: string) {
-  return invokeEdgeFunction<{
-    ok: boolean;
-    alreadyTransferred?: boolean;
-    transferId?: string | null;
-    techPayoutDollars?: number;
-    connectAccountId?: string | null;
-    error?: string;
-  }>('admin-retry-transfer', { bookingReference });
 }

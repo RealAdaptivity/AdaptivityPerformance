@@ -1,5 +1,5 @@
 /**
- * Syncs compact holdPricing + customer serviceCatalog from performance catalog.
+ * Syncs compact servicePricing + customer serviceCatalog from performance catalog.
  * Run: node scripts/sync-service-catalog.mjs
  */
 import fs from 'fs';
@@ -20,15 +20,15 @@ if (start < 0 || end < 0) throw new Error('Could not locate catalog block');
    source constant and prepend its own hardcoded 100, so the generated server
    file could silently disagree with src/services/serviceCatalog.ts — and did:
    the source said 85 while this said 100. */
-const holdMatch = src.match(/export const DIAGNOSTIC_HOLD_DOLLARS\s*=\s*(\d+)\s*;/);
-if (!holdMatch) throw new Error('Could not read DIAGNOSTIC_HOLD_DOLLARS from serviceCatalog.ts');
+const holdMatch = src.match(/export const DIAGNOSTIC_FEE_DOLLARS\s*=\s*(\d+)\s*;/);
+if (!holdMatch) throw new Error('Could not read DIAGNOSTIC_FEE_DOLLARS from serviceCatalog.ts');
 const SOURCE_HOLD_DOLLARS = Number(holdMatch[1]);
 
 const consultFn = `
-const DIAGNOSTIC_HOLD_DOLLARS = ${SOURCE_HOLD_DOLLARS};
+const DIAGNOSTIC_FEE_DOLLARS = ${SOURCE_HOLD_DOLLARS};
 function consult(id, title, description, icon, kind, duration = '45–60 mins consult', typicalMinDollars, typicalMaxDollars) {
   return {
-    id, title, description, price: DIAGNOSTIC_HOLD_DOLLARS, duration, icon, kind, directBook: false,
+    id, title, description, price: DIAGNOSTIC_FEE_DOLLARS, duration, icon, kind, directBook: false,
     ...(typicalMinDollars != null && typicalMaxDollars != null
       ? { typicalMinDollars, typicalMaxDollars }
       : {}),
@@ -50,14 +50,14 @@ const block = consultFn + src
      this to function signatures. */
   .replace(/\)\s*:\s*[A-Za-z_][\w<>'|[\]. ]*\s*\{/g, ') {')
   .replace(/function consult\([\s\S]*?\n\}/, '')
-  .replace(/const DIAGNOSTIC_HOLD_DOLLARS[\s\S]*?;/, '')
+  .replace(/const DIAGNOSTIC_FEE_DOLLARS[\s\S]*?;/, '')
   .replace(/function formatCatalogPriceRange[\s\S]*?\n\}/, '');
 
 const tmp = path.join(root, 'scripts', '.tmp-catalog.mjs');
-fs.writeFileSync(tmp, block + '\nexport { DIAGNOSTIC_HOLD_DOLLARS, DIRECT_BOOK_KINDS, SERVICE_CATALOG };\n');
+fs.writeFileSync(tmp, block + '\nexport { DIAGNOSTIC_FEE_DOLLARS, DIRECT_BOOK_KINDS, SERVICE_CATALOG };\n');
 
 const mod = await import(pathToFileURL(tmp).href + '?t=' + Date.now());
-const { DIAGNOSTIC_HOLD_DOLLARS, DIRECT_BOOK_KINDS, SERVICE_CATALOG } = mod;
+const { DIAGNOSTIC_FEE_DOLLARS, DIRECT_BOOK_KINDS, SERVICE_CATALOG } = mod;
 
 const kindToCategory = {
   diagnostic: 'inspection',
@@ -93,7 +93,7 @@ const kindToCategory = {
   other: 'inspection',
 };
 
-// Edge holdPricing compact catalog
+// Edge servicePricing compact catalog
 const compact = SERVICE_CATALOG.map((s) => ({
   id: s.id,
   title: s.title,
@@ -104,20 +104,20 @@ const compact = SERVICE_CATALOG.map((s) => ({
 
 /* Functions that bundle their own nested _shared copy import THAT one, not the
    top-level file. Writing only the top-level copy left
-   capture-booking-payment/_shared/holdPricing.ts stale — it still said 85 after
+   capture-booking-payment/_shared/servicePricing.ts stale — it still said 85 after
    the source moved to 100, so the function that captures money would have used
    the old hold. Every copy gets written. */
 const edgePaths = [
-  path.join(root, 'supabase', 'functions', '_shared', 'holdPricing.ts'),
+  path.join(root, 'supabase', 'functions', '_shared', 'servicePricing.ts'),
   ...fs
     .readdirSync(path.join(root, 'supabase', 'functions'), { withFileTypes: true })
     .filter((d) => d.isDirectory() && d.name !== '_shared')
-    .map((d) => path.join(root, 'supabase', 'functions', d.name, '_shared', 'holdPricing.ts'))
+    .map((d) => path.join(root, 'supabase', 'functions', d.name, '_shared', 'servicePricing.ts'))
     .filter((p) => fs.existsSync(p)),
 ];
-const edge = `/** Server-side quote hold rules (keep in sync with src/services/holdPricing.ts). Auto-synced. */
+const edge = `/** Server-side service pricing (keep in sync with src/services/servicePricing.ts). Auto-synced. */
 
-export const DIAGNOSTIC_HOLD_DOLLARS = ${DIAGNOSTIC_HOLD_DOLLARS};
+export const DIAGNOSTIC_FEE_DOLLARS = ${DIAGNOSTIC_FEE_DOLLARS};
 
 type ServiceKind = string;
 
@@ -187,7 +187,7 @@ function resolveServices(selected: string[]): CatalogService[] {
       out.push({
         id: \`custom_\${raw.slice(0, 24)}\`,
         title: raw,
-        price: DIAGNOSTIC_HOLD_DOLLARS,
+        price: DIAGNOSTIC_FEE_DOLLARS,
         kind: 'other',
         directBook: false,
       });
@@ -196,20 +196,20 @@ function resolveServices(selected: string[]): CatalogService[] {
   return out;
 }
 
-export type ServerHoldQuote = {
-  holdDollars: number;
+export type ServerServiceQuote = {
+  quotedDollars: number;
   mode: 'diagnostic' | 'direct';
   serviceTitles: string[];
 };
 
-export function computeHoldFromServices(services: unknown): ServerHoldQuote {
+export function computeQuoteFromServices(services: unknown): ServerServiceQuote {
   const labels = Array.isArray(services)
     ? services.map((s) => String(s)).filter((s) => s.trim())
     : [];
   const resolved = resolveServices(labels);
   if (resolved.length === 0) {
     return {
-      holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
+      quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
       mode: 'diagnostic',
       serviceTitles: ['Mobile Diagnostic Visit'],
     };
@@ -218,21 +218,21 @@ export function computeHoldFromServices(services: unknown): ServerHoldQuote {
   const allDirect = resolved.every((s) => DIRECT_BOOK_KINDS.includes(s.kind) && s.directBook);
   if (allDirect) {
     return {
-      holdDollars: resolved.reduce((sum, s) => sum + s.price, 0),
+      quotedDollars: resolved.reduce((sum, s) => sum + s.price, 0),
       mode: 'direct',
       serviceTitles: resolved.map((s) => s.title),
     };
   }
 
   return {
-    holdDollars: DIAGNOSTIC_HOLD_DOLLARS,
+    quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
     mode: 'diagnostic',
     serviceTitles: resolved.map((s) => s.title),
   };
 }
 `;
 for (const p of edgePaths) fs.writeFileSync(p, edge);
-console.log(`wrote ${edgePaths.length} holdPricing copies`);
+console.log(`wrote ${edgePaths.length} servicePricing copies`);
 
 // Customer app catalog
 const customerCatalog = SERVICE_CATALOG.map((s) => ({
@@ -285,7 +285,7 @@ export function formatCatalogPriceRange(s: Pick<CatalogService, 'typicalMinDolla
 
 export const DIRECT_BOOK_KINDS: ServiceKind[] = ${JSON.stringify(DIRECT_BOOK_KINDS, null, 2)};
 
-export const DIAGNOSTIC_HOLD_DOLLARS = ${DIAGNOSTIC_HOLD_DOLLARS};
+export const DIAGNOSTIC_FEE_DOLLARS = ${DIAGNOSTIC_FEE_DOLLARS};
 
 export const SERVICE_CATALOG: CatalogService[] = ${JSON.stringify(customerCatalog, null, 2)};
 
@@ -310,4 +310,4 @@ if (fs.existsSync(path.dirname(customerPath))) {
 fs.unlinkSync(tmp);
 console.log(`hold = $${SOURCE_HOLD_DOLLARS}; edge + catalog regenerated`);
 
-console.log(`Synced ${SERVICE_CATALOG.length} services → edge holdPricing + customer catalog`);
+console.log(`Synced ${SERVICE_CATALOG.length} services → edge servicePricing + customer catalog`);

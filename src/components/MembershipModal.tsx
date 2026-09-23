@@ -72,7 +72,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
         `Vehicle: ${vehicleInfo.trim()}`,
         `Estimated visits/year: ${annualVisits}`,
         '',
-        'Please follow up to complete Stripe payment and activate member perks.',
+        'Please follow up to arrange payment and activate member perks.',
       ].join('\n')
     );
     try {
@@ -125,7 +125,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
               <p className="text-sm text-slate-300 max-w-md mx-auto">
                 Thanks <strong>{memberName}</strong>. We received your interest in the{' '}
                 <strong>{selectedPlan.toUpperCase()}</strong> plan for <strong>{vehicleInfo}</strong>.
-                Complete the email draft (or call us) and we will send a Stripe payment link to activate
+                Complete the email draft (or call us) and we will arrange payment to activate
                 member perks on <strong>{memberPhone}</strong>. Online self-checkout is coming next.
               </p>
               <div className="pt-4">

@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
-import { createBookingWithCardHold } from '../../services/stripePaymentsApi';
-import { StripeBookingHoldSection } from '../../components/StripeBookingHoldSection';
+import { createBookingRequest } from '../../services/bookingRequestApi';
 import { SERVICE_CATALOG } from '../../services/serviceCatalog';
-import { computeHoldQuote } from '../../services/holdPricing';
+import { computeServiceQuote } from '../../services/servicePricing';
 import { loadGarageVehicles, vehicleLabel } from './garageStorage';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../../content/contractorLiability';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../../services/scheduleWindows';
@@ -50,15 +49,13 @@ export const CustomerBookTab: React.FC<Props> = ({
   const [referralInput, setReferralInput] = useState('');
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
-  const [step, setStep] = useState<'form' | 'card' | 'done'>('form');
+  const [step, setStep] = useState<'form' | 'done'>('form');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [bookingRef, setBookingRef] = useState('');
-  const [holdAmount, setHoldAmount] = useState(0);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId) || vehicles[0];
-  const quote = useMemo(() => computeHoldQuote(selected), [selected]);
+  const quote = useMemo(() => computeServiceQuote(selected), [selected]);
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -71,7 +68,7 @@ export const CustomerBookTab: React.FC<Props> = ({
     });
   };
 
-  const startHold = async () => {
+  const submitRequest = async () => {
     setError(null);
     if (!selected.length) {
       setError('Select at least one service.');
@@ -90,7 +87,7 @@ export const CustomerBookTab: React.FC<Props> = ({
     setLoading(true);
     try {
       const serviceTitles = quote.services.map((s) => s.title);
-      const hold = await createBookingWithCardHold({
+      const booking = await createBookingRequest({
         customerName: profile.fullName || profile.email.split('@')[0],
         customerPhone: phone.trim(),
         customerEmail: profile.email,
@@ -99,7 +96,6 @@ export const CustomerBookTab: React.FC<Props> = ({
         vehicleDescription: vehicle ? vehicleLabel(vehicle) : 'Customer vehicle',
         vin: vehicle?.vin,
         services: serviceTitles,
-        holdAmountDollars: quote.holdDollars,
         locationType: 'mobile',
         preferredDate,
         preferredTimeWindow: preferredTime,
@@ -107,10 +103,8 @@ export const CustomerBookTab: React.FC<Props> = ({
         ...applyReferralCodeOnBooking(referralInput),
         preferredMechanicId: prefill?.preferredMechanicId || undefined,
       });
-      setHoldAmount(hold.holdAmountDollars ?? quote.holdDollars);
-      setBookingRef(hold.bookingReference);
-      setClientSecret(hold.clientSecret);
-      setStep('card');
+      setBookingRef(booking.bookingReference);
+      setStep('done');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Could not start booking');
     } finally {
@@ -121,31 +115,11 @@ export const CustomerBookTab: React.FC<Props> = ({
   if (step === 'done') {
     return (
       <div className="bg-[#12141c] border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3">
-        <p className="text-emerald-400 font-bold">Card saved — hold authorized</p>
+        <p className="text-emerald-400 font-bold">Request received — nothing charged</p>
+        <p className="text-xs text-slate-400">Your technician takes payment in person when the work is done.</p>
         <p className="font-mono text-orange-400 text-lg">{bookingRef}</p>
         <button type="button" onClick={onGoTrack} className="w-full py-3 bg-orange-500 rounded-xl text-xs font-bold text-white">
           Track this job →
-        </button>
-      </div>
-    );
-  }
-
-  if (step === 'card' && clientSecret) {
-    return (
-      <div className="space-y-4">
-        <p className="text-xs text-slate-400">
-          Reference <span className="font-mono text-orange-400">{bookingRef}</span> · hold $
-          {holdAmount.toFixed(2)}
-        </p>
-        <StripeBookingHoldSection
-          clientSecret={clientSecret}
-          holdAmountDollars={holdAmount}
-          customerName={profile.fullName || 'Customer'}
-          customerEmail={profile.email}
-          onAuthorized={() => setStep('done')}
-        />
-        <button type="button" onClick={() => setStep('form')} className="text-xs text-slate-500">
-          ← Back to details
         </button>
       </div>
     );
@@ -156,8 +130,8 @@ export const CustomerBookTab: React.FC<Props> = ({
       <div className="rounded-xl border border-orange-500/30 bg-orange-500/5 px-3 py-2.5 space-y-2">
         <p className="text-[11px] text-orange-200/95 leading-relaxed">
           <strong>How quoting works:</strong> most visits start with a{' '}
-          <strong>$100 diagnostic hold</strong>. Your tech inspects on site, agrees labor + parts pricing
-          with you, then charges through Adaptivity (tech 70% · platform 30%).
+          <strong>$100 diagnostic, paid in person</strong>. Your tech inspects on site, agrees labor + parts pricing
+          with you, then takes payment in person when the work is done.
         </p>
         <p className="text-[11px] text-slate-400 leading-relaxed">{CUSTOMER_TECH_LIABILITY_NOTICE}</p>
       </div>
@@ -207,7 +181,7 @@ export const CustomerBookTab: React.FC<Props> = ({
                   {s.description}
                 </span>
               </span>
-              <span className="text-xs font-bold text-amber-400/90 shrink-0">$100 hold</span>
+              <span className="text-xs font-bold text-amber-400/90 shrink-0">$100 on site</span>
             </label>
           ))}
         </div>
@@ -275,7 +249,7 @@ export const CustomerBookTab: React.FC<Props> = ({
       />
       <div className="rounded-xl bg-[#0b0c10] border border-white/10 p-3 space-y-1">
         <p className="text-sm text-white font-bold">
-          Card hold: ${quote.holdDollars.toFixed(2)}{' '}
+          Due in person: ${quote.quotedDollars.toFixed(2)}{' '}
           <span className="text-[11px] font-semibold text-slate-400">
             ({quote.mode === 'direct' ? 'direct service' : 'diagnostic'})
           </span>
@@ -286,10 +260,10 @@ export const CustomerBookTab: React.FC<Props> = ({
       <button
         type="button"
         disabled={loading}
-        onClick={() => void startHold()}
+        onClick={() => void submitRequest()}
         className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 rounded-xl text-xs font-bold text-white disabled:opacity-60"
       >
-        {loading ? 'Preparing secure hold…' : `Continue to card hold ($${quote.holdDollars}) →`}
+        {loading ? 'Sending request…' : `Request this visit ($${quote.quotedDollars} on site) →`}
       </button>
     </div>
   );

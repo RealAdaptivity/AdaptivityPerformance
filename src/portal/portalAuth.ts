@@ -80,7 +80,7 @@ export async function signOutPortal() {
   return supabase.auth.signOut();
 }
 
-/** Creates mechanic_details + tech role for the signed-in user (dispatch / Stripe). */
+/** Creates mechanic_details + tech role for the signed-in user (dispatch). */
 export async function ensureTechProfile(vanNumber?: string, specialties?: string[]) {
   const payload: Record<string, unknown> = {
     p_van_number: vanNumber?.trim() || 'Mobile Unit',

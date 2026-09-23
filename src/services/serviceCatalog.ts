@@ -41,18 +41,18 @@ export type CatalogService = {
   duration: string;
   icon: string;
   kind: ServiceKind;
-  /** Always false — all bookings use $100 diagnostic hold; tech sets price on site. */
+  /** Always false — all bookings quote the $100 diagnostic; tech sets price on site. */
   directBook: boolean;
   /** Illustrative labor+parts ballpark (not a final bill). */
   typicalMinDollars?: number;
   typicalMaxDollars?: number;
 };
 
-/** Legacy list (empty): all services use diagnostic hold + tech-set pricing. */
+/** Legacy list (empty): all services use the diagnostic + tech-set pricing. */
 export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 
-// Standard diagnostic authorization hold.
-export const DIAGNOSTIC_HOLD_DOLLARS = 100;
+// Standard diagnostic fee, collected in person.
+export const DIAGNOSTIC_FEE_DOLLARS = 100;
 
 function consult(
   id: string,
@@ -67,8 +67,8 @@ function consult(
   return {
     id,
     title,
-    description: description.replace('$100', `$${DIAGNOSTIC_HOLD_DOLLARS}`),
-    price: DIAGNOSTIC_HOLD_DOLLARS,
+    description: description.replace('$100', `$${DIAGNOSTIC_FEE_DOLLARS}`),
+    price: DIAGNOSTIC_FEE_DOLLARS,
     duration,
     icon,
     kind,
@@ -88,21 +88,21 @@ export const SERVICE_CATALOG: CatalogService[] = [
     id: 'diagnostic',
     title: 'Mobile Diagnostic Visit',
     description:
-      `$${DIAGNOSTIC_HOLD_DOLLARS} diagnostic hold. Tech inspects on site and sets labor + parts pricing before any repair charge.`,
-    price: DIAGNOSTIC_HOLD_DOLLARS,
+      `$${DIAGNOSTIC_FEE_DOLLARS} diagnostic, paid in person. Tech inspects on site and sets labor + parts pricing before any repair work.`,
+    price: DIAGNOSTIC_FEE_DOLLARS,
     duration: '45–60 mins',
     icon: '🔍',
     kind: 'diagnostic',
     directBook: false,
-    typicalMinDollars: DIAGNOSTIC_HOLD_DOLLARS,
-    typicalMaxDollars: DIAGNOSTIC_HOLD_DOLLARS,
+    typicalMinDollars: DIAGNOSTIC_FEE_DOLLARS,
+    typicalMaxDollars: DIAGNOSTIC_FEE_DOLLARS,
   },
   {
     id: 'oil_change',
     title: 'Full Synthetic Mobile Oil Change',
     description:
       'Euro synthetic oil + OEM filter + multi-point check. Final price set by your tech on site.',
-    price: DIAGNOSTIC_HOLD_DOLLARS,
+    price: DIAGNOSTIC_FEE_DOLLARS,
     duration: '45 mins+',
     icon: '🛢️',
     kind: 'oil_change',
@@ -115,7 +115,7 @@ export const SERVICE_CATALOG: CatalogService[] = [
     title: 'Brake Service (Pads / Rotors)',
     description:
       'Pads, rotors, sensors as needed. Tech diagnoses wear on site and sets labor + parts pricing.',
-    price: DIAGNOSTIC_HOLD_DOLLARS,
+    price: DIAGNOSTIC_FEE_DOLLARS,
     duration: '1–3 hrs',
     icon: '🛑',
     kind: 'brakes',
@@ -127,7 +127,7 @@ export const SERVICE_CATALOG: CatalogService[] = [
     id: 'transmission_oil',
     title: 'Transmission Fluid Service',
     description: 'Fluid service — final price set by your tech on site after confirming fluid type.',
-    price: DIAGNOSTIC_HOLD_DOLLARS,
+    price: DIAGNOSTIC_FEE_DOLLARS,
     duration: '1–2 hrs',
     icon: '⚙️',
     kind: 'transmission_oil',
@@ -139,7 +139,7 @@ export const SERVICE_CATALOG: CatalogService[] = [
     id: 'differential',
     title: 'Differential Fluid Service',
     description: 'Diff fluid service — final price set by tech on site.',
-    price: DIAGNOSTIC_HOLD_DOLLARS,
+    price: DIAGNOSTIC_FEE_DOLLARS,
     duration: '1–2 hrs',
     icon: '🔧',
     kind: 'differential',
