@@ -280,4 +280,35 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The edge function decides whether a booking is accepted, and its coverage
+// list used to be a 3-digit prefix match on 750/751/752/760/761/762 while the
+// site built an explicit allow-list from localSeoData.json. That is ~600 ZIPs
+// against the 48 actually served, and 751/752 are Dallas — which the site's own
+// serviceArea.ts calls out as twice as far as this business will dispatch. The
+// two are generated from one source now; this keeps them that way.
+{
+  const seo = JSON.parse(read('src/site/localSeoData.json'));
+  const expected = new Set();
+  for (const city of seo.cities || []) {
+    for (const z of city.zips || []) expected.add(String(z));
+    if (city.zip) expected.add(String(city.zip));
+  }
+  if (seo.hub?.zip) expected.add(String(seo.hub.zip));
+
+  const edgeArea = read('supabase/functions/_shared/serviceArea.ts');
+  if (/COVERED_ZIP_PREFIXES/.test(edgeArea)) {
+    throw new Error(
+      'Edge serviceArea is prefix-matching ZIPs again — that accepts all of Dallas. Run: node scripts/sync-service-catalog.mjs'
+    );
+  }
+  const found = new Set([...edgeArea.matchAll(/"(\d{5})"/g)].map((m) => m[1]));
+  const missing = [...expected].filter((z) => !found.has(z)).sort();
+  const extra = [...found].filter((z) => !expected.has(z)).sort();
+  if (missing.length || extra.length) {
+    throw new Error(
+      `Edge service-area ZIPs have drifted from localSeoData.json (missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}). Run: node scripts/sync-service-catalog.mjs`
+    );
+  }
+}
+
 console.log('Production operations verification passed.');

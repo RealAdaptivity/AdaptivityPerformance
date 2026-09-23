@@ -36,6 +36,9 @@ jobs:
       - name: Verify production operations
         run: npm run verify:production-ops
 
+      - name: Test
+        run: npm test
+
       - name: Build Vite Website
         run: npm run build
         env:
