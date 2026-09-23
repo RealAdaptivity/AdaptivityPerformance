@@ -1,4 +1,4 @@
-/** CORS + JSON helpers. Previously these lived in _shared/http.ts, which is
+/** CORS + JSON helpers. Previously these lived in _shared/stripe.ts, which is
  *  gone along with the rest of the card-processing code. Payment is taken in
  *  person on Square, so nothing here talks to a processor. */
 
