@@ -17,7 +17,18 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/logo-64.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="preload" as="image" href="/images/hero-full-bg.jpg" fetchpriority="high" />
+    <!-- Preload must agree with what <picture> in Hero.tsx will actually pick,
+         or the browser fetches the hero twice. type + imagesrcset mirror the
+         <source>: WebP-capable browsers preload the right variant for their
+         viewport, and anything else ignores this line and takes the JPEG. -->
+    <link
+      rel="preload"
+      as="image"
+      type="image/webp"
+      imagesrcset="/images/hero-full-bg-688.webp 688w, /images/hero-full-bg-1024.webp 1024w, /images/hero-full-bg.webp 1376w"
+      imagesizes="100vw"
+      fetchpriority="high"
+    />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" sizes="180x180" href="/logo-256.png" />
