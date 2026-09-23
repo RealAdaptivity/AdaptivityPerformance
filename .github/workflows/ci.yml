@@ -41,6 +41,12 @@ jobs:
       - name: Verify production operations
         run: npm run verify:production-ops
 
+      # This is the gate that runs on pull requests, so the tests belong here
+      # above all: in deploy.yml alone they would only run on push to main,
+      # which is after the merge and too late to block anything.
+      - name: Test
+        run: npm test
+
       # Runs generate-sitemap, verify-local-seo, tsc -b, vite build and
       # emit-static-routes. The last one fails if any sitemap URL would have no
       # static file and therefore be served as an HTTP 404 by GitHub Pages.
