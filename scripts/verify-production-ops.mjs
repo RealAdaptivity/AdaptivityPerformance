@@ -230,4 +230,54 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The no-processor guard above walks src/ and supabase/functions/ only. That is
+// where the shipped code lives, so a pile of Stripe *tooling* sat untouched in
+// scripts/ long after the integration was gone: deploy scripts, Connect
+// reporting utilities, and a package-edge-functions.mjs that had been throwing
+// on import since _shared/stripe.ts was deleted. A stale .env.example still
+// told a reader to go get an sk_live_ key. Widen the net to the files that
+// configure a deploy, and keep this file and the retired-function notes out of
+// it — they are allowed to name what they ban.
+{
+  const { readdirSync, statSync } = await import('node:fs');
+  const root = new URL('../', import.meta.url).pathname;
+  const allow = new Set([
+    'scripts/verify-production-ops.mjs',
+    'supabase/functions/_retired/README.md',
+    'supabase/functions/_retired/tombstone.ts',
+  ]);
+  // Bare "stripe" is a false positive: brand-assets renders an orange stripe on
+  // the business card. Match the things only a real integration carries.
+  const banned = /api\.stripe\.com|STRIPE_SECRET_KEY|STRIPE_PUBLISHABLE_KEY|STRIPE_WEBHOOK_SECRET|STRIPE_CONNECT|sk_live_|sk_test_|stripe-connect|deploy-stripe/;
+  const offenders = [];
+  const walk = (rel) => {
+    let entries;
+    try {
+      entries = readdirSync(root + rel);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      const childRel = rel + name;
+      if (statSync(root + childRel).isDirectory()) {
+        walk(childRel + '/');
+        continue;
+      }
+      if (allow.has(childRel)) continue;
+      if (banned.test(read(childRel))) offenders.push(childRel);
+    }
+  };
+  walk('scripts/');
+  for (const file of ['.env.example', 'supabase/config.toml', '.github/workflows/deploy.yml']) {
+    if (existsSync(new URL(`../${file}`, import.meta.url)) && !allow.has(file)) {
+      if (banned.test(read(file))) offenders.push(file);
+    }
+  }
+  if (offenders.length) {
+    throw new Error(
+      `Payment-processor tooling is back outside src/ — the website takes no cards: ${offenders.join(', ')}`
+    );
+  }
+}
+
 console.log('Production operations verification passed.');

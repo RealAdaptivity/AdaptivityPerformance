@@ -4,7 +4,7 @@ This Edge Function sends a Microsoft Teams channel notification whenever a new c
 
 ## How It Works
 
-1. The `notify-teams-new-booking` Supabase Edge Function is called from the `create-booking-with-hold` flow (or via a Supabase Database Webhook).
+1. The `notify-teams-new-booking` Supabase Edge Function is called from the `create-booking-request` flow (or via a Supabase Database Webhook).
 2. It posts a rich Adaptive Card message to your Teams channel via an **Incoming Webhook URL**.
 
 ## Setup
@@ -26,8 +26,8 @@ npx supabase functions deploy notify-teams-new-booking
 ```
 
 ### 4. Trigger Options
-**Option A — Call from create-booking-with-hold** (automatic on every booking)  
-Add to `supabase/functions/create-booking-with-hold/index.ts` after a booking is created:
+**Option A — Call from create-booking-request** (automatic on every booking)  
+Add to `supabase/functions/create-booking-request/index.ts` after a booking is created:
 ```ts
 // Fire-and-forget Teams notification
 fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-teams-new-booking`, {
