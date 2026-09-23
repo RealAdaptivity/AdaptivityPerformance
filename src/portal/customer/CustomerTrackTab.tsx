@@ -33,6 +33,7 @@ function dollars(cents: number | null | undefined) {
 
 export const CustomerTrackTab: React.FC = () => {
   const [reference, setReference] = useState('');
+  const [phoneLast4, setPhoneLast4] = useState('');
   const [trackedRef, setTrackedRef] = useState<string | null>(null);
   const [booking, setBooking] = useState<TrackedBooking | null>(null);
   const [photos, setPhotos] = useState<JobPhoto[]>([]);
@@ -53,9 +54,9 @@ export const CustomerTrackTab: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const row = await fetchBookingByReference(ref);
+      const row = await fetchBookingByReference(ref, phoneLast4);
       if (!row) {
-        setError('No booking found for that reference.');
+        setError('No booking matches that reference and phone number.');
         setBooking(null);
         setPhotos([]);
       } else {
@@ -66,7 +67,7 @@ export const CustomerTrackTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [phoneLast4]);
 
   useEffect(() => {
     if (!trackedRef) return;
@@ -152,13 +153,21 @@ export const CustomerTrackTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <p className="text-xs text-slate-400">
-        Enter your job reference from booking confirmation (e.g. AP-8492). Your tech sets the repair price on
-        site after diagnosing — Adaptivity holds $100 at booking.
+        Enter the job reference from your booking confirmation, plus the last 4 digits of the phone number you
+        booked with. Your tech sets the repair price on site after diagnosing, and takes payment in person.
       </p>
       <input
         value={reference}
         onChange={(e) => setReference(e.target.value.toUpperCase())}
-        placeholder="AP-1234"
+        placeholder="AP-XXXXXXXX"
+        className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 font-mono text-white"
+      />
+      <input
+        value={phoneLast4}
+        onChange={(e) => setPhoneLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        inputMode="numeric"
+        maxLength={4}
+        placeholder="Last 4 of your phone"
         className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 font-mono text-white"
       />
       <button

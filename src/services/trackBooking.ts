@@ -68,8 +68,11 @@ function mapRow(row: Record<string, unknown>): TrackedBooking {
   };
 }
 
-export async function fetchBookingByReference(reference: string): Promise<TrackedBooking | null> {
-  const { data, error } = await supabase.rpc('get_booking_by_reference', { ref: reference.trim() });
+export async function fetchBookingByReference(reference: string, phoneLast4?: string): Promise<TrackedBooking | null> {
+  const { data, error } = await supabase.rpc('get_booking_by_reference', {
+    ref: reference.trim(),
+    phone_last4: phoneLast4?.trim() || null,
+  });
   if (error || !data?.[0]) return null;
   return mapRow(data[0] as Record<string, unknown>);
 }

@@ -213,4 +213,21 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   if (stripeDeps.length) throw new Error(`Stripe packages are back in package.json: ${stripeDeps.join(', ')}`);
 }
 
+// Booking reference codes are the only thing standing between an anonymous
+// caller and a customer's name, phone and home address, because
+// get_booking_by_reference is reachable signed-out. They were 'AP-' plus four
+// digits — 9,000 codes, sweepable in seconds, and every booking was retrieved
+// that way before this was fixed. The generator must keep both the wide
+// alphabet and the collision retry.
+{
+  const refMigration = read('supabase/migrations/20260920190802_harden_booking_reference_lookup.sql');
+  requireText(refMigration, "v_alphabet constant text := '0123456789ABCDEFGHJKMNPQRSTVWXYZ'", 'Booking reference alphabet');
+  requireText(refMigration, 'for i in 1..8 loop', 'Booking reference length');
+  requireText(refMigration, 'exit when not exists', 'Booking reference collision retry');
+  requireText(refMigration, 'phone_last4', 'Booking lookup second factor');
+  if (/lpad\(\(floor\(random\(\) \* 9000\)/.test(refMigration)) {
+    throw new Error('The 4-digit booking reference generator is back — that keyspace is 9,000 codes and was enumerable');
+  }
+}
+
 console.log('Production operations verification passed.');
