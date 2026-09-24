@@ -576,10 +576,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   {isCreatingHold ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Preparing secure hold…
+                      Sending your request…
                     </>
                   ) : (
-                    <>Continue to card on file →</>
+                    <>Request this visit →</>
                   )}
                 </button>
               </div>

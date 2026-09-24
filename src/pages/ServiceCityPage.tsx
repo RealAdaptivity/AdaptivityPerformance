@@ -205,7 +205,7 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
           </h2>
           <p className="text-sm text-slate-300 max-w-lg mx-auto">
             Book the $100 diagnostic visit and we&rsquo;ll be in your driveway in about {city.driveMinutes} minutes
-            of drive time. The hold comes straight off the repair.
+            of drive time. The diagnostic comes straight off the repair.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button

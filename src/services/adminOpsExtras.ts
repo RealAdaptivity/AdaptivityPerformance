@@ -179,22 +179,6 @@ export async function fetchFraudFlags(): Promise<FraudFlag[]> {
   });
 }
 
-export async function fetchExpiringHolds(withinHours = 48) {
-  const now = new Date();
-  const until = new Date(now.getTime() + withinHours * 60 * 60 * 1000).toISOString();
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('reference_code, customer_name, customer_phone, hold_expires_at, status, payment_status')
-    .not('hold_expires_at', 'is', null)
-    .lte('hold_expires_at', until)
-    .neq('status', 'COMPLETED')
-    .neq('status', 'CANCELED')
-    .order('hold_expires_at', { ascending: true })
-    .limit(50);
-  if (error) throw new Error(error.message);
-  return data || [];
-}
-
 export async function fetchDueReviewAsks() {
   const now = new Date().toISOString();
   const { data, error } = await supabase

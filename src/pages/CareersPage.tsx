@@ -101,7 +101,7 @@ export const CareersPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartnerA
               </div>
               <h3 className="font-heading text-xl font-extrabold text-white">Partner shop / garage host</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Own a bay, shop, or garage space? Host booked customers — we handle booking, holds, and
+                Own a bay, shop, or garage space? Host booked customers — we handle booking, scheduling, and
                 dispatch. Techs can also grow into partner status over time.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
@@ -174,7 +174,7 @@ export const CareersPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartnerA
                 Dispatch admin
               </h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Run the board: match jobs to techs, watch SLAs, unblock holds/quotes, and keep mobile units
+                Run the board: match jobs to techs, watch SLAs, unblock jobs/quotes, and keep mobile units
                 and partner shops flowing across Justin, Fort Worth, and greater DFW.
               </p>
               <ul className="text-xs text-slate-300 space-y-1.5 pt-1">

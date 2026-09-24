@@ -29,7 +29,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            Justin, TX mobile auto repair and garage performance specialist, serving every driveway within {LOCAL_HUB.radiusMiles} miles of the hub. Quality OE parts, transparent $100 holds, tech-set on-site pricing, and 12-month nationwide warranty on all work.
+            Justin, TX mobile auto repair and garage performance specialist, serving every driveway within {LOCAL_HUB.radiusMiles} miles of the hub. Quality OE parts, a flat $100 diagnostic, tech-set on-site pricing, and 12-month nationwide warranty on all work.
           </p>
 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">

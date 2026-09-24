@@ -63,7 +63,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[
                 `Mobile dispatch within ${LOCAL_HUB.radiusMiles} miles of Justin`,
-                'Transparent $100 holds — tech sets repair price after diagnosis',
+                'Flat $100 diagnostic — tech sets repair price after diagnosis',
                 'Garage history, receipts, and repair tracking in one place',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
@@ -87,7 +87,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
             <ul className="space-y-2 text-xs text-slate-300 pt-1">
               {[
                 'Listed as an approved drop-off / host location',
-                'We handle booking, holds, and customer updates',
+                'We handle booking, scheduling, and customer updates',
                 'You keep running your shop — we send demand your way',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">

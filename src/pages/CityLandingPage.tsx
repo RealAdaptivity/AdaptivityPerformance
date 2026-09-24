@@ -89,7 +89,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
               className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Calendar className="w-4 h-4" />
-              Book {city.city} service — $100 hold
+              Book {city.city} service — $100 diagnostic
             </button>
             <a
               href={SITE_PHONE_TEL}
@@ -111,7 +111,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           {[
             [ShieldCheck, '12 mo / 12k warranty', 'Parts and labor, in writing'],
             [Truck, 'Driveway dispatch', `We come to ${city.city} — no drop-off`],
-            [CheckCircle2, 'Priced before we start', 'The $100 hold comes off the repair'],
+            [CheckCircle2, 'Priced before we start', 'The $100 diagnostic comes off the repair'],
           ].map(([Icon, title, sub]) => {
             const I = Icon as typeof ShieldCheck;
             return (

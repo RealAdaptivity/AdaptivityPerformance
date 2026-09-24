@@ -31,7 +31,7 @@ export const PartnerNetworkSection: React.FC<PartnerNetworkSectionProps> = ({
             We bring customers to local shops & garages
           </h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Own a shop, bay, or private garage? Partner with Adaptivity — we handle booking, payment holds,
+            Own a shop, bay, or private garage? Partner with Adaptivity — we handle booking, scheduling,
             and dispatch. You host the work (or we send a mobile tech to your space) and grow volume without
             extra marketing spend.
           </p>

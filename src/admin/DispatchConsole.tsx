@@ -164,7 +164,7 @@ export const DispatchConsole: React.FC = () => {
       await adminCancelBookingHold(referenceCode, true, cancelReason);
       await load();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Cancel hold failed');
+      setActionError(e instanceof Error ? e.message : 'Cancel failed');
     } finally {
       setSaving(false);
     }
@@ -567,11 +567,6 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             {age >= SLA_UNCLAIMED_ALERT_MINUTES ? ` · SLA alert (>${SLA_UNCLAIMED_ALERT_MINUTES}m)` : ''}
           </p>
         )}
-        {booking.holdExpiresAt && booking.status !== 'COMPLETED' && booking.status !== 'CANCELED' && (
-          <p className="text-[11px] text-slate-500 mt-1">
-            Hold expires {new Date(booking.holdExpiresAt).toLocaleString()}
-          </p>
-        )}
       </div>
 
       {booking.status === 'UNASSIGNED' && (
@@ -657,10 +652,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           ))}
         </ul>
         <p className="text-sm font-bold text-orange-400 mt-2">
-          Hold {formatMoney(booking.holdAmountCents)}
+          Quoted ${booking.totalEstimate.toFixed(2)}
           {booking.capturedAmountCents
-            ? ` · Charged ${formatMoney(booking.capturedAmountCents)}`
-            : ` · Board est. $${booking.totalEstimate.toFixed(2)}`}
+            ? ` · Collected ${formatMoney(booking.capturedAmountCents)}`
+            : ' · Pay in person'}
         </p>
       </div>
 
@@ -746,7 +741,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
                     : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                 }`}
               >
-                ✓ Waive Fee / Release Hold
+                ✓ Waive Diagnostic Fee
               </button>
               <button
                 type="button"
