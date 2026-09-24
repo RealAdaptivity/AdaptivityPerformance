@@ -311,3 +311,73 @@ fs.unlinkSync(tmp);
 console.log(`hold = $${SOURCE_HOLD_DOLLARS}; edge + catalog regenerated`);
 
 console.log(`Synced ${SERVICE_CATALOG.length} services → edge servicePricing + customer catalog`);
+
+/* Service-area coverage, same story as the pricing above.
+   src/services/serviceArea.ts builds an explicit ZIP allow-list from
+   localSeoData.json, precisely because (as its own header says) a 3-digit
+   prefix match "would silently pull in Dallas, which is twice as far as we are
+   willing to dispatch". The edge copy did exactly that prefix match, on
+   750/751/752/760/761/762 — roughly 600 ZIPs, against the 48 actually served,
+   with 751 and 752 being Dallas and appearing nowhere in the coverage data.
+   The edge function is the authority on whether a booking is accepted, so it
+   was accepting mobile work the business does not drive to. Generate it from
+   the same source instead. */
+{
+  const seo = JSON.parse(
+    fs.readFileSync(path.join(root, 'src', 'site', 'localSeoData.json'), 'utf8')
+  );
+  const zips = new Set();
+  for (const city of seo.cities || []) {
+    for (const z of city.zips || []) zips.add(String(z));
+    if (city.zip) zips.add(String(city.zip));
+  }
+  if (seo.hub?.zip) zips.add(String(seo.hub.zip));
+  const sorted = [...zips].sort();
+  if (sorted.length === 0) throw new Error('No service ZIPs found in localSeoData.json');
+
+  const areaPath = path.join(root, 'supabase', 'functions', '_shared', 'serviceArea.ts');
+  const area = `/** Mobile dispatch coverage. Auto-synced from src/site/localSeoData.json by
+ *  scripts/sync-service-catalog.mjs — do not edit by hand.
+ *
+ *  An explicit allow-list, not a 3-digit prefix match: prefixes 751/752 are
+ *  Dallas, twice as far as this business dispatches, and a prefix match
+ *  accepted every one of them.
+ */
+
+export const COVERED_ZIPS: readonly string[] = ${JSON.stringify(sorted, null, 2)};
+
+const COVERED = new Set<string>(COVERED_ZIPS);
+
+export function normalizeZip(input: string | null | undefined): string | null {
+  if (!input?.trim()) return null;
+  const m = input.trim().match(/\\b(\\d{5})\\b/);
+  return m ? m[1] : null;
+}
+
+export function isCoveredZip(zipCode: string | null | undefined): boolean {
+  const zip = normalizeZip(zipCode);
+  return !!zip && COVERED.has(zip);
+}
+
+export function assertServiceArea(zipCode: string | null | undefined, locationType: string) {
+  if (locationType === 'shop') return;
+  const zip = normalizeZip(zipCode);
+  if (!zip) {
+    throw new Error('A valid 5-digit service zip code is required for mobile dispatch.');
+  }
+  if (!isCoveredZip(zip)) {
+    throw new Error(
+      \`Mobile service is not available in zip \${zip}. We serve the Justin / north Fort Worth area within 25 miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.\`
+    );
+  }
+}
+
+/** Prefer dedicated zip field; fall back to parsing address line. */
+export function resolveServiceZip(zipCode: string | null | undefined, address: string | null | undefined) {
+  return normalizeZip(zipCode) || normalizeZip(address) || null;
+}
+`;
+  fs.writeFileSync(areaPath, area);
+  console.log(`Synced ${sorted.length} service ZIPs → edge serviceArea`);
+}
+

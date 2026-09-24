@@ -3,6 +3,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/http.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
 import { computeQuoteFromServices } from '../_shared/servicePricing.ts';
+import { buildBookingConfirmationSms } from '../_shared/bookingConfirmation.ts';
+import { sendTwilioSms } from '../_shared/twilioSms.ts';
 
 /** Replaces create-booking-with-hold. No card is taken online any more: the
  *  booking is a request for a visit, and the customer pays the technician in
@@ -184,11 +186,59 @@ Deno.serve(async (req) => {
       }).catch((e) => console.error('[Teams notify] failed:', e));
     }
 
+    /* Confirm to the customer. Before this, booking on the website sent them
+       nothing — the reference code existed only on the screen they just left.
+
+       Awaited rather than fired and forgotten, because the isolate can be torn
+       down as soon as the response is written and a dropped confirmation is
+       invisible to everyone. Bounded so a slow Twilio cannot hold up the
+       booking, and never allowed to throw: a customer who is booked but
+       untexted is a far better outcome than a lost booking. sendTwilioSms
+       no-ops when the TWILIO_* secrets are unset, which is the state today, so
+       this stays silent until those are added. */
+    let confirmation: { sent: boolean; skipped?: string; error?: string } = {
+      sent: false,
+      skipped: 'not attempted',
+    };
+    try {
+      confirmation = await Promise.race([
+        sendTwilioSms(
+          customerPhone.trim(),
+          buildBookingConfirmationSms({
+            referenceCode: booking.reference_code,
+            services: normalizedServices,
+            quotedDollars,
+            quoteMode: quote.mode,
+            vehicleDescription: vehicleDescription?.trim() || null,
+            preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
+            preferredTimeWindow:
+              typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,
+            siteUrl: Deno.env.get('ADAPTIVITY_SITE_URL')?.trim() || 'https://adaptivityperformance.com',
+          })
+        ),
+        new Promise<{ sent: boolean; error: string }>((resolve) =>
+          setTimeout(() => resolve({ sent: false, error: 'Twilio timed out' }), 5000)
+        ),
+      ]);
+    } catch (smsErr) {
+      confirmation = {
+        sent: false,
+        error: smsErr instanceof Error ? smsErr.message : 'Confirmation SMS failed',
+      };
+    }
+    if (!confirmation.sent) {
+      console.warn(
+        '[create-booking-request] confirmation not sent:',
+        confirmation.skipped || confirmation.error
+      );
+    }
+
     return jsonResponse({
       bookingReference: booking.reference_code,
       bookingId: booking.id,
       quotedAmountDollars: quotedDollars,
       quoteMode: quote.mode,
+      confirmationSent: confirmation.sent,
       message:
         `Request received. Nothing is charged online — your technician takes payment in person by card, tap or chip when the work is done.`,
     });

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/generate-sitemap.mjs && node scripts/verify-local-seo.mjs && tsc -b && vite build && node scripts/emit-static-routes.mjs",
+    "test": "node --test tests/*.test.ts",
     "lint": "oxlint",
     "verify:production-ops": "node scripts/verify-production-ops.mjs",
     "preview": "vite preview",

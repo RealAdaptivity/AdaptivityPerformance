@@ -23,16 +23,31 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
           <div className="absolute inset-0 z-0">
             {/* The LCP element on every marketing page. Intrinsic size prevents
                 the reflow as it loads; fetchpriority pairs with the preload in
-                index.html so the browser does not discover it late. */}
-            <img
-              src="/images/hero-full-bg.jpg"
-              alt="Adaptivity Performance certified technician diagnosing vehicle in residential driveway"
-              width={1376}
-              height={768}
-              fetchPriority="high"
-              decoding="async"
-              className="w-full h-full object-cover object-right md:object-[75%_center]"
-            />
+                index.html so the browser does not discover it late.
+
+                It was a single 860 KB JPEG served at full width to everyone,
+                phones included. WebP at the same visual quality is a fifth of
+                that. The narrower variants exist because a phone cannot show
+                1376 px of detail: verified in Chromium, a 390 px viewport at
+                dpr2 takes the 1024w (117 KB) and a desktop takes the full
+                1376w (190 KB). The JPEG stays as the fallback for anything
+                that cannot decode WebP. */}
+            <picture>
+              <source
+                type="image/webp"
+                srcSet="/images/hero-full-bg-688.webp 688w, /images/hero-full-bg-1024.webp 1024w, /images/hero-full-bg.webp 1376w"
+                sizes="100vw"
+              />
+              <img
+                src="/images/hero-full-bg.jpg"
+                alt="Adaptivity Performance certified technician diagnosing vehicle in residential driveway"
+                width={1376}
+                height={768}
+                fetchPriority="high"
+                decoding="async"
+                className="w-full h-full object-cover object-right md:object-[75%_center]"
+              />
+            </picture>
             {/* Smooth Linear Gradient Fade Overlay: Dark Obsidian on Left fading to Image on Right */}
             <div className="absolute inset-0 bg-gradient-to-r from-[#07080b] via-[#07080b]/95 via-45% sm:via-50% to-[#07080b]/30"></div>
             {/* Top and Bottom Vignette Fades */}

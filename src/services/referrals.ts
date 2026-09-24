@@ -15,7 +15,7 @@ export async function getCreditBalance(): Promise<number> {
   return typeof data === 'number' ? data : 0;
 }
 
-/** Field helper for booking insert / create-booking-with-hold payload. */
+/** Field helper for booking insert / create-booking-request payload. */
 export function applyReferralCodeOnBooking(code?: string | null): {
   referralCode?: string;
 } {

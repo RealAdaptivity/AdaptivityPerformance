@@ -10,4 +10,5 @@ enabled = true
 major_version = 15
 
 [functions]
-# Per-function JWT: stripe-webhook deployed with --no-verify-jwt
+# Per-function JWT: create-booking-request is deployed with --no-verify-jwt so
+# guests can book without an account. Everything else verifies a JWT.

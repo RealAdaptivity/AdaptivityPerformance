@@ -230,4 +230,85 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The no-processor guard above walks src/ and supabase/functions/ only. That is
+// where the shipped code lives, so a pile of Stripe *tooling* sat untouched in
+// scripts/ long after the integration was gone: deploy scripts, Connect
+// reporting utilities, and a package-edge-functions.mjs that had been throwing
+// on import since _shared/stripe.ts was deleted. A stale .env.example still
+// told a reader to go get an sk_live_ key. Widen the net to the files that
+// configure a deploy, and keep this file and the retired-function notes out of
+// it — they are allowed to name what they ban.
+{
+  const { readdirSync, statSync } = await import('node:fs');
+  const root = new URL('../', import.meta.url).pathname;
+  const allow = new Set([
+    'scripts/verify-production-ops.mjs',
+    'supabase/functions/_retired/README.md',
+    'supabase/functions/_retired/tombstone.ts',
+  ]);
+  // Bare "stripe" is a false positive: brand-assets renders an orange stripe on
+  // the business card. Match the things only a real integration carries.
+  const banned = /api\.stripe\.com|STRIPE_SECRET_KEY|STRIPE_PUBLISHABLE_KEY|STRIPE_WEBHOOK_SECRET|STRIPE_CONNECT|sk_live_|sk_test_|stripe-connect|deploy-stripe/;
+  const offenders = [];
+  const walk = (rel) => {
+    let entries;
+    try {
+      entries = readdirSync(root + rel);
+    } catch {
+      return;
+    }
+    for (const name of entries) {
+      const childRel = rel + name;
+      if (statSync(root + childRel).isDirectory()) {
+        walk(childRel + '/');
+        continue;
+      }
+      if (allow.has(childRel)) continue;
+      if (banned.test(read(childRel))) offenders.push(childRel);
+    }
+  };
+  walk('scripts/');
+  for (const file of ['.env.example', 'supabase/config.toml', '.github/workflows/deploy.yml']) {
+    if (existsSync(new URL(`../${file}`, import.meta.url)) && !allow.has(file)) {
+      if (banned.test(read(file))) offenders.push(file);
+    }
+  }
+  if (offenders.length) {
+    throw new Error(
+      `Payment-processor tooling is back outside src/ — the website takes no cards: ${offenders.join(', ')}`
+    );
+  }
+}
+
+// The edge function decides whether a booking is accepted, and its coverage
+// list used to be a 3-digit prefix match on 750/751/752/760/761/762 while the
+// site built an explicit allow-list from localSeoData.json. That is ~600 ZIPs
+// against the 48 actually served, and 751/752 are Dallas — which the site's own
+// serviceArea.ts calls out as twice as far as this business will dispatch. The
+// two are generated from one source now; this keeps them that way.
+{
+  const seo = JSON.parse(read('src/site/localSeoData.json'));
+  const expected = new Set();
+  for (const city of seo.cities || []) {
+    for (const z of city.zips || []) expected.add(String(z));
+    if (city.zip) expected.add(String(city.zip));
+  }
+  if (seo.hub?.zip) expected.add(String(seo.hub.zip));
+
+  const edgeArea = read('supabase/functions/_shared/serviceArea.ts');
+  if (/COVERED_ZIP_PREFIXES/.test(edgeArea)) {
+    throw new Error(
+      'Edge serviceArea is prefix-matching ZIPs again — that accepts all of Dallas. Run: node scripts/sync-service-catalog.mjs'
+    );
+  }
+  const found = new Set([...edgeArea.matchAll(/"(\d{5})"/g)].map((m) => m[1]));
+  const missing = [...expected].filter((z) => !found.has(z)).sort();
+  const extra = [...found].filter((z) => !expected.has(z)).sort();
+  if (missing.length || extra.length) {
+    throw new Error(
+      `Edge service-area ZIPs have drifted from localSeoData.json (missing: ${missing.join(', ') || 'none'}; extra: ${extra.join(', ') || 'none'}). Run: node scripts/sync-service-catalog.mjs`
+    );
+  }
+}
+
 console.log('Production operations verification passed.');
