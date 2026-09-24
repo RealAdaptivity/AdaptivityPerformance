@@ -40,9 +40,9 @@ export const RefundPolicyPage: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
               <Clock className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-white text-base">Free Cancellation (2+ hrs)</h3>
+            <h3 className="font-bold text-white text-base">Free Cancellation, Any Time</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Cancel or reschedule at least 2 hours before your appointment window for a 100% full release of your $100 hold with zero penalty.
+              Nothing is charged when you book, so there is nothing to refund. Cancel or reschedule whenever you need to, at no charge.
             </p>
           </div>
 
@@ -62,7 +62,7 @@ export const RefundPolicyPage: React.FC = () => {
             </div>
             <h3 className="font-bold text-white text-base">Fast 5–10 Day Processing</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Approved refunds are credited directly to your original payment method (Card, BNPL, Apple Pay) within 5–10 business days.
+              Approved refunds are issued through Square back to the card you paid your technician with, typically within 5–10 business days.
             </p>
           </div>
         </div>
@@ -87,19 +87,19 @@ export const RefundPolicyPage: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4" /> No Charge At All
               </div>
               <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                <li><strong>Advance Cancellation:</strong> Cancel 2 or more hours prior to your scheduled arrival window.</li>
-                <li><strong>Advance Rescheduling:</strong> Reschedule 2+ hours in advance at zero charge.</li>
+                <li><strong>Cancellation:</strong> Cancel at any time before your arrival window, at no charge.</li>
+                <li><strong>Rescheduling:</strong> Move your appointment whenever you need to, at no charge.</li>
                 <li><strong>Technician Unavailability:</strong> If weather, emergency, or dispatch delays prevent us from serving you.</li>
               </ul>
             </div>
 
-            <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-500/30 space-y-2">
-              <div className="font-bold text-amber-400 flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4" /> Late Cancellation / No-Show Fee
+            <div className="p-4 rounded-xl bg-sky-950/20 border border-sky-500/30 space-y-2">
+              <div className="font-bold text-sky-400 flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4" /> If We Miss Each Other
               </div>
               <ul className="space-y-1.5 text-slate-300 list-disc list-inside">
-                <li><strong>Late Cancellation:</strong> Cancellations made within 2 hours of the arrival window forfeit the $100 hold to cover tech dispatch and fuel costs.</li>
-                <li><strong>No-Show on Site:</strong> If the vehicle or customer is unreachable for 15+ minutes after technician arrival.</li>
+                <li><strong>No cancellation fee:</strong> We take no card when you book, so a late cancellation costs you nothing.</li>
+                <li><strong>No-Show on Site:</strong> If the vehicle or customer is unreachable for 15+ minutes after your technician arrives, we will ask you to rebook. There is no charge.</li>
               </ul>
             </div>
           </div>

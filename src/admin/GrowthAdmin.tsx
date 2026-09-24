@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle2,
-  Clock,
   Copy,
   ExternalLink,
   MapPin,
@@ -14,7 +13,6 @@ import { CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY } from '../site/se
 import {
   exportPartnerReportCsv,
   fetchDueReviewAsks,
-  fetchExpiringHolds,
   fetchFraudFlags,
   fetchGbpDrafts,
   markReviewAskSent,
@@ -44,29 +42,19 @@ export const GrowthAdmin: React.FC = () => {
       review_ask_due_at: string | null;
     }>
   >([]);
-  const [holds, setHolds] = useState<
-    Array<{
-      reference_code: string;
-      customer_name: string;
-      customer_phone: string | null;
-      hold_expires_at: string | null;
-    }>
-  >([]);
   const [fraud, setFraud] = useState<FraudFlag[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setMsg(null);
     try {
-      const [d, r, h, f] = await Promise.all([
+      const [d, r, f] = await Promise.all([
         fetchGbpDrafts(),
         fetchDueReviewAsks(),
-        fetchExpiringHolds(72),
         fetchFraudFlags(),
       ]);
       setDrafts(d as typeof drafts);
       setReviewAsks(r as typeof reviewAsks);
-      setHolds(h as typeof holds);
       setFraud(f);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed to load growth data');
@@ -105,7 +93,7 @@ export const GrowthAdmin: React.FC = () => {
     <div className="space-y-6">
       <p className="text-sm text-slate-400 leading-relaxed">
         Growth ops — GBP drafts from completed jobs, review SMS asks (device composer until Twilio),
-        hold-expiry reminders, and light fraud flags.
+        and light fraud flags.
       </p>
       {msg && (
         <p className="text-xs text-orange-200 bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2">
@@ -186,28 +174,6 @@ export const GrowthAdmin: React.FC = () => {
                 >
                   Open SMS
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-3">
-        <p className="text-sm font-bold text-white flex items-center gap-2">
-          <Clock className="w-4 h-4 text-amber-400" />
-          Holds expiring (72h)
-        </p>
-        {holds.length === 0 ? (
-          <p className="text-xs text-slate-500">No holds near expiry.</p>
-        ) : (
-          <ul className="space-y-1.5">
-            {holds.map((h) => (
-              <li key={h.reference_code} className="text-xs text-slate-300 flex justify-between gap-2">
-                <span className="font-mono text-slate-400">{h.reference_code}</span>
-                <span className="truncate">{h.customer_name}</span>
-                <span className="text-amber-300 shrink-0">
-                  {h.hold_expires_at ? new Date(h.hold_expires_at).toLocaleString() : '—'}
-                </span>
               </li>
             ))}
           </ul>

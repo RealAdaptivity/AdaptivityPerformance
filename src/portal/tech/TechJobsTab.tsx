@@ -473,7 +473,7 @@ export const TechJobsTab: React.FC = () => {
             {match.hint && <p className="text-[10px] text-emerald-400/90 mt-1">{match.hint}</p>}
           </div>
           <span className="text-[10px] text-amber-400 font-bold shrink-0">
-            ${((job.holdAmountCents ?? DIAGNOSTIC_FEE_DOLLARS * 100) / 100).toFixed(0)} hold
+            ${((job.holdAmountCents ?? DIAGNOSTIC_FEE_DOLLARS * 100) / 100).toFixed(0)} due on site
           </span>
         </div>
         <div className="flex gap-2">
@@ -833,7 +833,7 @@ export const TechJobsTab: React.FC = () => {
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
                   >
-                    ✓ Waive Fee / Release Hold
+                    ✓ Waive Diagnostic Fee
                   </button>
                   <button
                     type="button"
@@ -1133,7 +1133,7 @@ export const TechJobsTab: React.FC = () => {
                   onClick={() => void handleNoShow()}
                   className="py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-xl text-xs font-bold text-amber-200 disabled:opacity-60 transition-colors"
                 >
-                  No-show (${quotedDollars.toFixed(0)} hold)
+                  No-show (no charge)
                 </button>
               </div>
             </div>
@@ -1149,7 +1149,7 @@ export const TechJobsTab: React.FC = () => {
               onClick={() => void handleCancel()}
               className="w-full py-2 text-xs text-rose-300 border border-rose-500/40 rounded-xl"
             >
-              Cancel job & release hold
+              Cancel job
             </button>
           )}
         </div>

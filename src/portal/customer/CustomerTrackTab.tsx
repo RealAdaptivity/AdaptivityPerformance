@@ -239,8 +239,8 @@ export const CustomerTrackTab: React.FC = () => {
           {(booking.quoteStatus === 'awaiting_diagnostic' || booking.status === 'ON_SITE') &&
             booking.paymentStatus !== 'captured' && (
               <p className="text-xs text-sky-300 leading-relaxed">
-                Your tech is diagnosing on site and will agree labor + parts pricing with you before charging
-                your card on file (hold first, then any remainder).
+                Your tech is diagnosing on site and will agree labor + parts pricing with you before any
+                work starts. You pay the tech in person when the job is done — nothing is charged online.
               </p>
             )}
 
@@ -377,7 +377,7 @@ export const CustomerTrackTab: React.FC = () => {
               onClick={() => void handleCancel()}
               className="w-full py-2.5 text-xs font-bold text-rose-300 border border-rose-500/40 rounded-xl disabled:opacity-50"
             >
-              Cancel booking & release hold
+              Cancel booking
             </button>
           )}
 

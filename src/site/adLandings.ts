@@ -60,7 +60,7 @@ export const AD_LANDINGS: AdLanding[] = [
       'Written findings and a priced repair plan, same visit',
       'We come to you — the car never leaves your driveway',
     ],
-    proof: ['Live data, not a code read', 'Written findings', 'Hold credited'],
+    proof: ['Live data, not a code read', 'Written findings', 'Diagnostic credited'],
     ctaLabel: 'Diagnose my check engine light',
   },
   {

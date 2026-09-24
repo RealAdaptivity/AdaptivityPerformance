@@ -63,7 +63,7 @@ export const CustomerBookTab: React.FC<Props> = ({
         const next = prev.filter((x) => x !== id);
         return next.length ? next : ['diagnostic'];
       }
-      // Mixing diagnostic with direct-book: keep selection; hold becomes diagnostic ($100)
+      // Mixing diagnostic with direct-book: keep selection; the quote becomes the diagnostic ($100)
       return [...prev, id];
     });
   };

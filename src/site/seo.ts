@@ -126,7 +126,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   partners: {
     title: 'Partner Shops & Garages | Adaptivity Performance',
-    description: 'Host Adaptivity jobs at your shop or garage inside our Justin radius. We book, hold cards, and dispatch.',
+    description: 'Host Adaptivity jobs at your shop or garage inside our Justin radius. We book, schedule, and dispatch.',
     path: '/partners',
   },
   join: {

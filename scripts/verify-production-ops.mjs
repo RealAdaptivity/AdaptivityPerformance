@@ -311,4 +311,52 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The no-processor guards above look for processor *code*. They said nothing
+// about processor *copy*, so long after the holds were gone the site still told
+// customers it placed one: "transparent $100 holds" in the footer of every
+// page, "$100 hold" as the heading on every city landing page, "We book, hold
+// cards, and dispatch" in an indexed meta description, and "Continue to card on
+// file" on the booking form's own submit button. Nothing takes a card any more,
+// so none of that is true.
+//
+// Tokenised rather than matched on quotes: the first version of this check only
+// looked inside string literals, which caught 'Cancel hold failed' and sailed
+// straight past the footer, where the copy is bare JSX text. A line is prose
+// about a hold when it carries a bare `hold`/`holds` token; holdAmountCents,
+// hold_expires_at, HoldQuote and canCancelHold are identifiers naming real
+// database columns and handlers, and stay.
+{
+  const { readdirSync, statSync } = await import('node:fs');
+  const root = new URL('../', import.meta.url).pathname;
+  const allow = new Set([
+    'scripts/verify-production-ops.mjs',
+    'src/content/contractorAgreementText.ts',
+  ]);
+  // Holding a licence, holding slots and holding someone harmless are all
+  // ordinary English and have nothing to do with cards.
+  const ordinaryEnglish =
+    /hold harmless|withhold|hold a valid|hold any licen|what you hold|hold same-day|hold the chat|on hold/i;
+  const offenders = [];
+  const walk = (rel) => {
+    for (const name of readdirSync(root + rel)) {
+      const childRel = rel + name;
+      if (statSync(root + childRel).isDirectory()) { walk(childRel + '/'); continue; }
+      if (!/\.tsx?$/.test(name) || allow.has(childRel)) continue;
+      for (const [i, line] of read(childRel).split('\n').entries()) {
+        if (!/hold/i.test(line) || ordinaryEnglish.test(line)) continue;
+        const bareHold = (line.match(/[A-Za-z_][A-Za-z0-9_]*/g) || []).some((t) =>
+          /^holds?$/i.test(t)
+        );
+        if (bareHold) offenders.push(`${childRel}:${i + 1}`);
+      }
+    }
+  };
+  walk('src/');
+  if (offenders.length) {
+    throw new Error(
+      `Copy still promises a card hold, but nothing takes a card: ${offenders.join(', ')}`
+    );
+  }
+}
+
 console.log('Production operations verification passed.');

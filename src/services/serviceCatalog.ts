@@ -1,4 +1,4 @@
-/** Bookable services + quote hold rules (mirrored in customer app + edge holdPricing). */
+/** Bookable services + quote rules (mirrored in customer app + edge servicePricing). */
 
 export type ServiceKind =
   | 'diagnostic'

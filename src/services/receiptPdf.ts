@@ -36,8 +36,8 @@ function money(n: number) {
 
 function paymentLabel(status: string) {
   const s = status.trim().toLowerCase();
-  if (s === 'captured' || s === 'completed') return 'Paid';
-  if (s === 'authorized' || s === 'held') return 'Authorized hold';
+  if (s === 'captured' || s === 'completed' || s === 'paid_in_person') return 'Paid in person';
+  if (s === 'pay_in_person') return 'Due in person';
   if (s === 'refunded') return 'Refunded';
   if (s === 'canceled' || s === 'cancelled') return 'Canceled';
   return status || '—';
