@@ -11,6 +11,7 @@ export const COVERED_ZIPS: readonly string[] = [
   "75028",
   "75056",
   "75057",
+  "75065",
   "75067",
   "75068",
   "75077",
@@ -24,7 +25,9 @@ export const COVERED_ZIPS: readonly string[] = [
   "76051",
   "76052",
   "76071",
+  "76073",
   "76078",
+  "76082",
   "76092",
   "76102",
   "76104",
@@ -48,13 +51,19 @@ export const COVERED_ZIPS: readonly string[] = [
   "76226",
   "76227",
   "76234",
+  "76238",
+  "76239",
   "76244",
+  "76246",
   "76247",
   "76248",
   "76249",
+  "76258",
   "76259",
   "76262",
-  "76266"
+  "76266",
+  "76272",
+  "76426"
 ];
 
 const COVERED = new Set<string>(COVERED_ZIPS);
@@ -78,7 +87,7 @@ export function assertServiceArea(zipCode: string | null | undefined, locationTy
   }
   if (!isCoveredZip(zip)) {
     throw new Error(
-      `Mobile service is not available in zip ${zip}. We serve the Justin / north Fort Worth area within 25 miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.`
+      `Mobile service is not available in zip ${zip}. We serve the Justin / north Fort Worth area within 30 miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.`
     );
   }
 }

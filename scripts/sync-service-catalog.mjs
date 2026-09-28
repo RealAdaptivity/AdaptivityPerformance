@@ -335,6 +335,12 @@ console.log(`Synced ${SERVICE_CATALOG.length} services → edge servicePricing +
   const sorted = [...zips].sort();
   if (sorted.length === 0) throw new Error('No service ZIPs found in localSeoData.json');
 
+  /* The refusal message quotes the radius at the customer. It used to say a
+     hardcoded 25 while the catalog said 30, so anyone refused was told a
+     number the rest of the site contradicted. */
+  const radiusMiles = seo.hub?.radiusMiles;
+  if (!radiusMiles) throw new Error('localSeoData.json hub has no radiusMiles');
+
   const areaPath = path.join(root, 'supabase', 'functions', '_shared', 'serviceArea.ts');
   const area = `/** Mobile dispatch coverage. Auto-synced from src/site/localSeoData.json by
  *  scripts/sync-service-catalog.mjs — do not edit by hand.
@@ -367,7 +373,7 @@ export function assertServiceArea(zipCode: string | null | undefined, locationTy
   }
   if (!isCoveredZip(zip)) {
     throw new Error(
-      \`Mobile service is not available in zip \${zip}. We serve the Justin / north Fort Worth area within 25 miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.\`
+      \`Mobile service is not available in zip \${zip}. We serve the Justin / north Fort Worth area within ${radiusMiles} miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.\`
     );
   }
 }
