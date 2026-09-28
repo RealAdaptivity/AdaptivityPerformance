@@ -16,7 +16,6 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
   const [email, setEmail] = useState('');
   const [vehicle, setVehicle] = useState('');
   const [issue, setIssue] = useState('');
-  const [preferredContact, setPreferredContact] = useState<'phone' | 'text' | 'email'>('text');
   const [formState, setFormState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -34,7 +33,9 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
           email: email.trim(),
           vehicle: vehicle.trim(),
           issue_description: issue.trim(),
-          preferred_contact: preferredContact,
+          /* Text is the only reply channel offered, so this is fixed rather
+             than picked. Still sent so the column keeps its meaning. */
+          preferred_contact: 'text',
           created_at: new Date().toISOString(),
         });
 
@@ -237,25 +238,12 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                     />
                   </div>
 
-                  {/* Preferred contact method */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-2">How should we reach you?</label>
-                    <div className="flex gap-2">
-                      {(['text', 'phone', 'email'] as const).map(method => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setPreferredContact(method)}
-                          className={`flex-1 py-2 rounded-xl text-xs font-bold border capitalize transition-all ${
-                            preferredContact === method
-                              ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                              : 'border-white/10 bg-[#0b0c10] text-slate-400 hover:border-white/20'
-                          }`}
-                        >
-                          {method === 'text' ? '💬 Text' : method === 'phone' ? '📞 Call' : '✉️ Email'}
-                        </button>
-                      ))}
-                    </div>
+                  {/* Reply channel. Call and email were dropped at the owner's
+                      request, and a single remaining option is a statement, not a
+                      choice, so the picker is gone with them. */}
+                  <div className="flex items-center gap-2 text-xs text-slate-400 bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                    <span>We&apos;ll text you back at the number above.</span>
                   </div>
 
                   {formState === 'error' && (
