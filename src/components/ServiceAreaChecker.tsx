@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { MapPin, Search, CheckCircle2, AlertCircle, Clock, Truck, Navigation } from 'lucide-react';
 import {
   COVERED_ZIPS,
-  FREE_MILES_THRESHOLD,
-  PER_MILE_RATE,
   SERVICE_HUB,
   SERVICE_RADIUS_MILES,
   lookupServiceZip,
@@ -26,12 +24,9 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
     setHasSearched(true);
   };
 
-  const calculateTravelFee = (dist: number) => {
-    if (dist <= FREE_MILES_THRESHOLD) return '$0 (FREE Local Dispatch)';
-    const extra = dist - FREE_MILES_THRESHOLD;
-    const fee = extra * PER_MILE_RATE;
-    return `$${fee.toFixed(2)} (${extra} mi past ${FREE_MILES_THRESHOLD}mi @ $${PER_MILE_RATE.toFixed(2)}/mi)`;
-  };
+  /* Travel is free across the whole radius now, so every in-area ZIP gets the
+     same answer. The old per-mile branch is gone rather than left unreachable. */
+  const travelFeeLabel = '$0 — free dispatch';
 
   return (
     <section id="area" className="py-20 bg-[#0e1017] border-t border-white/5 relative">
@@ -46,33 +41,22 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
           </h2>
           <p className="text-slate-400 text-sm sm:text-base">
             We dispatch from one hub in Justin and we stay inside a {SERVICE_RADIUS_MILES}-mile ring, because a van
-            stuck in cross-metro traffic is a van not fixing your car. First {FREE_MILES_THRESHOLD} miles are free —
-            then ${PER_MILE_RATE.toFixed(2)}/mi out to the {SERVICE_RADIUS_MILES}-mile edge.
+            stuck in cross-metro traffic is a van not fixing your car. Travel is free to every driveway
+            inside that ring — no mileage charge, anywhere we serve.
           </p>
         </div>
 
         <div className="max-w-4xl mx-auto bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="mb-8">
             <div className="p-4 rounded-2xl bg-[#0b0c10] border border-emerald-500/30 flex items-center justify-between">
               <div>
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
-                  0 – {FREE_MILES_THRESHOLD} MILES
+                  0 – {SERVICE_RADIUS_MILES} MILES
                 </span>
-                <div className="font-bold text-base text-white mt-1">Justin hub free radius</div>
-                <div className="text-xs text-slate-400">Justin, Ponder, Northlake, Argyle, Roanoke, Denton, Haslet, Keller</div>
+                <div className="font-bold text-base text-white mt-1">Free dispatch, whole radius</div>
+                <div className="text-xs text-slate-400">Justin, Northlake, Argyle, Roanoke, Denton, Haslet, Keller, Fort Worth, Grapevine, Southlake, Lewisville, Decatur, Azle and everywhere between</div>
               </div>
               <span className="text-xl font-extrabold text-emerald-400 font-heading">$0 FREE</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-[#0b0c10] border border-orange-500/30 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-orange-500/20 text-orange-400">
-                  {FREE_MILES_THRESHOLD} – {SERVICE_RADIUS_MILES} MILES
-                </span>
-                <div className="font-bold text-base text-white mt-1">Outer ring</div>
-                <div className="text-xs text-slate-400">Fort Worth, Euless, N. Arlington, Grapevine, Southlake, Lewisville, Decatur, Azle</div>
-              </div>
-              <span className="text-xl font-extrabold text-orange-400 font-heading">${PER_MILE_RATE.toFixed(2)} / mi</span>
             </div>
           </div>
 
@@ -130,13 +114,11 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
                     <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
                       <CheckCircle2 className="w-5 h-5" />
                       <span>
-                        {searchResult.status === 'Local Radius'
-                          ? 'In the free dispatch radius'
-                          : `Inside the ${SERVICE_RADIUS_MILES}-mile radius`}
+                        {`Inside the ${SERVICE_RADIUS_MILES}-mile free dispatch radius`}
                       </span>
                     </div>
                     <span className="text-xs bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full border border-orange-500/30 font-bold">
-                      {calculateTravelFee(searchResult.distanceMiles)}
+                      {travelFeeLabel}
                     </span>
                   </div>
 
