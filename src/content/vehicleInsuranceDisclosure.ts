@@ -10,12 +10,16 @@
  * materially — a disclosure signed against an older version stops counting as
  * current and the gate asks for a fresh one.
  *
- * ⚠️  The wording below is the owner's, supplied verbatim, and it says
- * "Employee" and "employment" throughout. The signed contractor agreement in
- * this same portal says the opposite — "You are an independent contractor, not
- * an employee". Both documents are put in front of the same people. That
- * conflict is flagged to the owner rather than silently edited here, because
- * which way it resolves is a legal question, not a copy one.
+ * ⚠️  This document says "Employee" and "employment" throughout, while the
+ * contractor agreement the same people sign says the opposite — "You are an
+ * independent contractor, not an employee". The conflict was raised with the
+ * owner, who confirmed the wording stays as "Employee". Recorded here so the
+ * next person to read these two documents together knows it is a decision
+ * rather than an oversight, and does not "fix" it.
+ *
+ * Section 3's mileage reimbursement was flagged in the same breath and also
+ * stands. Both are the owner's call, and both are worth a look from whoever
+ * handles the company's contracts if the classification is ever questioned.
  */
 
 export type DisclosureBlock =
