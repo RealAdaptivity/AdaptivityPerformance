@@ -359,4 +359,23 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// ScrollReveal hides its children at opacity 0 until an IntersectionObserver
+// says they are in view. With a non-zero threshold the callback only fires once
+// that fraction of the element is inside the root, so a block taller than
+// root / threshold can never qualify: at 0.14, on an 844px phone whose root
+// rootMargin trims to ~793px, anything over ~5,660px stayed invisible for good.
+// /privacy, /terms and /join were blank pages in production because of it.
+// Any threshold above 0 reintroduces a height beyond which a page silently
+// disappears, so the number is pinned here.
+{
+  const reveal = read('src/components/ScrollReveal.tsx');
+  const m = reveal.match(/threshold:\s*([0-9.]+)/);
+  if (!m) throw new Error('ScrollReveal: no IntersectionObserver threshold found');
+  if (Number(m[1]) !== 0) {
+    throw new Error(
+      `ScrollReveal threshold is ${m[1]}; it must be 0, or blocks taller than ~${Math.round(793 / Number(m[1]))}px never become visible`
+    );
+  }
+}
+
 console.log('Production operations verification passed.');
