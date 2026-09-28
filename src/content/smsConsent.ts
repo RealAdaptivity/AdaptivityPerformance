@@ -35,7 +35,7 @@ export const SMS_FROM_NUMBER = '(940) 304-0620';
 export const SMS_OPT_IN_METHOD = 'our website contact form at adaptivityperformance.com';
 
 /** Support contact for the messaging program: HELP, opt-out and questions. */
-export const SMS_SUPPORT_EMAIL = 'service@adaptivityperformance.com';
+export const SMS_SUPPORT_EMAIL = 'owner@adaptivityperformance.com';
 export const SMS_WEBSITE = 'adaptivityperformance.com';
 
 export const SMS_MESSAGE_TYPES =
