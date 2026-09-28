@@ -734,6 +734,114 @@
       "driveMinutes": 36,
       "servicePages": false,
       "blurb": "Aubrey, Cross Roads and Providence Village sit in the north-east corner of our coverage, comfortably inside the ring."
+    },
+    {
+      "slug": "lake-dallas",
+      "city": "Lake Dallas",
+      "zips": [
+        "75065"
+      ],
+      "neighborhoods": "Lake Dallas, Shady Shores, the I-35E frontage",
+      "distanceMiles": 17,
+      "driveMinutes": 32,
+      "servicePages": false,
+      "blurb": "Lake Dallas sits on the east side of the lake, a straight run down I-35E. Same-week slots, and travel is free."
+    },
+    {
+      "slug": "pilot-point",
+      "city": "Pilot Point",
+      "zips": [
+        "76258"
+      ],
+      "neighborhoods": "Downtown square, US-377 corridor, the Ray Roberts side",
+      "distanceMiles": 17,
+      "driveMinutes": 33,
+      "servicePages": false,
+      "blurb": "Pilot Point is a clean run up US-377 from the hub. Horse country, long driveways, and plenty of room to work on site."
+    },
+    {
+      "slug": "bridgeport",
+      "city": "Bridgeport",
+      "zips": [
+        "76426"
+      ],
+      "neighborhoods": "Downtown Bridgeport, US-380 corridor, the Lake Bridgeport side",
+      "distanceMiles": 24,
+      "driveMinutes": 41,
+      "servicePages": false,
+      "blurb": "Bridgeport is our western reach, straight out US-380. Worth planning a day ahead rather than same-day, but travel out is free."
+    },
+    {
+      "slug": "greenwood",
+      "city": "Greenwood",
+      "zips": [
+        "76246"
+      ],
+      "neighborhoods": "Greenwood and the surrounding Wise County farm roads",
+      "distanceMiles": 24,
+      "driveMinutes": 41,
+      "servicePages": false,
+      "blurb": "Greenwood is rural Wise County, where the nearest shop is a tow away. We come to the property instead, and travel is free."
+    },
+    {
+      "slug": "paradise",
+      "city": "Paradise",
+      "zips": [
+        "76073"
+      ],
+      "neighborhoods": "Paradise and the farm roads toward Boyd and Bridgeport",
+      "distanceMiles": 25,
+      "driveMinutes": 42,
+      "servicePages": false,
+      "blurb": "Paradise sits between Boyd and Bridgeport on our western side. Book a day ahead and we bring the shop to the driveway."
+    },
+    {
+      "slug": "era",
+      "city": "Era",
+      "zips": [
+        "76238"
+      ],
+      "neighborhoods": "Era and the surrounding Cooke County farm roads",
+      "distanceMiles": 28,
+      "driveMinutes": 45,
+      "servicePages": false,
+      "blurb": "Era is out at our northern edge in Cooke County. A long run for us, no run at all for you, and no charge for the drive."
+    },
+    {
+      "slug": "forestburg",
+      "city": "Forestburg",
+      "zips": [
+        "76239"
+      ],
+      "neighborhoods": "Forestburg and the surrounding Montague County roads",
+      "distanceMiles": 29,
+      "driveMinutes": 46,
+      "servicePages": false,
+      "blurb": "Forestburg is about as far north-west as we go. Plan ahead and we will get a van out to you rather than you hauling in."
+    },
+    {
+      "slug": "valley-view",
+      "city": "Valley View",
+      "zips": [
+        "76272"
+      ],
+      "neighborhoods": "Valley View and the I-35 frontage",
+      "distanceMiles": 30,
+      "driveMinutes": 47,
+      "servicePages": false,
+      "blurb": "Valley View is our furthest point north, straight up I-35. Schedule ahead rather than same-day, and travel is still free."
+    },
+    {
+      "slug": "springtown",
+      "city": "Springtown",
+      "zips": [
+        "76082"
+      ],
+      "neighborhoods": "Springtown and the SH-199 corridor",
+      "distanceMiles": 30,
+      "driveMinutes": 47,
+      "servicePages": false,
+      "blurb": "Springtown is our south-western limit, out past Azle on SH-199. Book ahead and the van comes to you."
     }
   ]
 }
