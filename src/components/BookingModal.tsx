@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
-import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus, Camera, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus, Camera, Trash2, AlertTriangle, Phone } from 'lucide-react';
 import { createBookingRequest } from '../services/bookingRequestApi';
 import { computeServiceQuote } from '../services/servicePricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
-import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
+import { GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, shareAdaptivity } from '../site/seo';
 import { applyReferralCodeOnBooking } from '../services/referrals';
 import {
   EMPTY_VEHICLE,
@@ -820,6 +820,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <strong className="text-white">{phone}</strong> to confirm your technician and arrival window.
                 </p>
               </div>
+
+              {/* A booking request is not a confirmed slot, and dispatch may be
+                  out on a job. Give the customer a way to reach a person now
+                  rather than only waiting to be called back. tel: so it dials
+                  straight from the phone they booked on. */}
+              <a
+                href={SITE_PHONE_TEL}
+                className="flex items-center justify-center gap-2 max-w-md mx-auto px-4 py-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/40 text-orange-300 hover:bg-orange-500/20 active:scale-[0.99] transition-all"
+              >
+                <Phone className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-bold">
+                  Need it sooner, or have a question? Call {SITE_PHONE_DISPLAY}
+                </span>
+              </a>
 
               <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/10 text-left text-xs space-y-2 max-w-md mx-auto">
                 <div className="flex justify-between">
