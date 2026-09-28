@@ -378,4 +378,30 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The SMS opt-in wording is reviewed by a carrier before the 10DLC campaign is
+// approved, and the number in it must be the one texts actually come from.
+// smsConsent.ts owns that number rather than importing it, so nothing would
+// otherwise notice if the advertised phone changed and the consent text kept
+// quoting the old one — a mismatch a reviewer treats as a failed registration.
+{
+  const consent = read('src/content/smsConsent.ts');
+  const seo = read('src/site/seo.ts');
+  const inConsent = consent.match(/SMS_FROM_NUMBER = '([^']+)'/)?.[1];
+  const inSeo = seo.match(/SITE_PHONE_DISPLAY = '([^']+)'/)?.[1];
+  if (!inConsent) throw new Error('smsConsent: SMS_FROM_NUMBER not found');
+  if (!inSeo) throw new Error('seo: SITE_PHONE_DISPLAY not found');
+  if (inConsent !== inSeo) {
+    throw new Error(
+      `SMS consent says texts come from ${inConsent} but the site advertises ${inSeo}. ` +
+        'Make them agree, or if the campaign really does send from a different number, update this check deliberately.'
+    );
+  }
+
+  // A pre-selected opt-in is not consent, and carriers reject it outright.
+  const contact = read('src/components/ContactSection.tsx');
+  if (!/useState<'yes' \| 'no' \| null>\(null\)/.test(contact)) {
+    throw new Error('Contact form SMS consent must start unselected (null), or the opt-in is pre-ticked');
+  }
+}
+
 console.log('Production operations verification passed.');

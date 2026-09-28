@@ -1,6 +1,7 @@
 import React from 'react';
-import { ShieldCheck, Eye, Database, Mail, Share2, Lock, Clock, UserX, Phone } from 'lucide-react';
+import { ShieldCheck, Eye, Database, Mail, Share2, Lock, Clock, UserX, Phone, MessageSquare } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { SMS_BRAND, SMS_FROM_NUMBER, SMS_MESSAGE_TYPES } from '../content/smsConsent';
 
 export const PrivacyPolicyPage: React.FC = () => {
   const effectiveDate = 'July 31, 2026';
@@ -72,7 +73,7 @@ export const PrivacyPolicyPage: React.FC = () => {
               ['Verify identity, detect fraud, and prevent unauthorized transactions', 'Security'],
               ['Improve our website, services, and technician dispatch quality', 'Service improvement'],
               ['Comply with Texas Property Code, TCEQ regulations, and applicable law', 'Legal compliance'],
-              ['Send service reminders and promotional offers (only if you opt in)', 'Marketing — opt-in only'],
+              ['Send service reminders and promotional offers by email (only if you opt in) — never by text', 'Marketing — email, opt-in only'],
             ].map(([use, category]) => (
               <div key={use} className="flex items-start space-x-3 bg-[#0b0c10] p-3 rounded-xl border border-white/5">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
@@ -85,11 +86,46 @@ export const PrivacyPolicyPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 3. Sharing of Information */}
+        {/* 3. Text messaging. Carriers review this alongside the opt-in on the
+            contact form, and the message types in both have to agree. */}
+        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
+          <div className="flex items-center space-x-3 text-orange-400 border-b border-white/5 pb-4">
+            <MessageSquare className="w-6 h-6" />
+            <h2 className="font-heading text-xl font-bold text-white">3. Text Messages (SMS)</h2>
+          </div>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            If you opt in, {SMS_BRAND} sends text messages from{' '}
+            <strong className="text-white">{SMS_FROM_NUMBER}</strong>. These messages are{' '}
+            <strong className="text-white">informational only</strong> and may include {SMS_MESSAGE_TYPES}.
+            We do not send marketing or promotional text messages.
+          </p>
+          <div className="space-y-2 text-xs text-slate-300">
+            {[
+              ['Consent is not a condition of purchase', 'You can book and be served without ever opting in.'],
+              ['Message frequency varies', 'Messages are sent in response to your enquiry or your booking, not on a schedule.'],
+              ['Message and data rates may apply', 'Charged by your mobile carrier, not by us.'],
+              ['Reply STOP to unsubscribe', 'You can opt out at any time, from any message. Reply HELP for assistance.'],
+              ['We do not share your mobile opt-in information', 'Your opt-in and mobile number are never sold, rented or shared with third parties for their own marketing.'],
+            ].map(([term, detail]) => (
+              <div key={term} className="flex items-start space-x-3 bg-[#0b0c10] p-3 rounded-xl border border-white/5">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-white">{term}</span>
+                  <p className="text-slate-400 mt-0.5">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-slate-500">
+            For help with text messages, reply HELP to any message or call {SMS_FROM_NUMBER}.
+          </p>
+        </section>
+
+        {/* 4. Sharing of Information */}
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
             <Share2 className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">3. How We Share Your Information</h2>
+            <h2 className="font-heading text-xl font-bold text-white">4. How We Share Your Information</h2>
           </div>
           <p className="text-xs text-slate-400">We do <strong className="text-white">NOT</strong> sell your personal information. We only share data with trusted service partners necessary to deliver our services:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -114,7 +150,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-purple-400 border-b border-white/5 pb-4">
             <Lock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">4. Cookies & Tracking Technologies</h2>
+            <h2 className="font-heading text-xl font-bold text-white">5. Cookies & Tracking Technologies</h2>
           </div>
           <div className="text-xs text-slate-300 space-y-3">
             <p>We use the following types of cookies:</p>
@@ -138,7 +174,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-slate-400 border-b border-white/5 pb-4">
             <Clock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">5. Data Retention</h2>
+            <h2 className="font-heading text-xl font-bold text-white">6. Data Retention</h2>
           </div>
           <div className="text-xs text-slate-300 space-y-2">
             <p>We retain your personal data for as long as necessary to provide our services and comply with legal obligations:</p>
@@ -164,7 +200,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-5">
           <div className="flex items-center space-x-3 text-rose-400 border-b border-white/5 pb-4">
             <UserX className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">6. Your Privacy Rights (CCPA / Texas)</h2>
+            <h2 className="font-heading text-xl font-bold text-white">7. Your Privacy Rights (CCPA / Texas)</h2>
           </div>
           <p className="text-xs text-slate-400">Under the California Consumer Privacy Act (CCPA) and Texas Privacy Protection Act, you have the right to:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -189,7 +225,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
           <div className="flex items-center space-x-3 text-emerald-400 border-b border-white/5 pb-4">
             <ShieldCheck className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">7. Children's Privacy</h2>
+            <h2 className="font-heading text-xl font-bold text-white">8. Children's Privacy</h2>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
             Our services are not directed at children under 13 years of age. We do not knowingly collect personal information from children under 13. If we become aware that a child under 13 has provided us with personal data, we will delete it immediately. If you believe a child has submitted data to us, contact us immediately.
@@ -200,7 +236,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
           <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
             <Lock className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">8. Security of Your Information</h2>
+            <h2 className="font-heading text-xl font-bold text-white">9. Security of Your Information</h2>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
             We implement industry-standard security measures to protect your personal information, including:
@@ -223,7 +259,7 @@ export const PrivacyPolicyPage: React.FC = () => {
         <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-4">
           <div className="flex items-center space-x-3 text-amber-400 border-b border-white/5 pb-4">
             <Mail className="w-6 h-6" />
-            <h2 className="font-heading text-xl font-bold text-white">9. Changes to This Privacy Policy</h2>
+            <h2 className="font-heading text-xl font-bold text-white">10. Changes to This Privacy Policy</h2>
           </div>
           <p className="text-xs text-slate-300 leading-relaxed">
             We may update this Privacy Policy from time to time to reflect changes in law, technology, or our business practices. When we make material changes, we will update the Effective Date at the top of this page and notify existing customers by email when feasible. Your continued use of our services after the effective date constitutes acceptance of the updated policy.
