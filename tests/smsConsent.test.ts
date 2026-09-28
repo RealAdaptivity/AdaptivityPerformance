@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SMS_BRAND,
+  SMS_OPT_IN_METHOD,
+  SMS_SUPPORT_EMAIL,
+  SMS_WEBSITE,
   SMS_CONSENT_DETAIL,
   SMS_CONSENT_NO,
   SMS_CONSENT_QUESTION,
@@ -73,4 +76,25 @@ test('the record is self-contained evidence of what was agreed', () => {
   for (const clause of [SMS_BRAND, SMS_FROM_NUMBER, 'STOP', 'HELP', 'not a condition of purchase']) {
     assert.ok(rec.includes(clause), `stored consent is missing: ${clause}`);
   }
+});
+
+test('opt-out offers both keywords the policy names', () => {
+  // The privacy policy's messaging terms say STOP or CANCEL. If the opt-in
+  // offered only one of them the two documents would disagree, which is the
+  // mismatch a reviewer looks for.
+  assert.match(SMS_CONSENT_DETAIL, /\bSTOP\b/);
+  assert.match(SMS_CONSENT_DETAIL, /\bCANCEL\b/);
+});
+
+test('support contact is reachable by both phone and email', () => {
+  assert.ok(SMS_CONSENT_DETAIL.includes(SMS_SUPPORT_EMAIL), 'HELP must name an email');
+  assert.ok(SMS_CONSENT_DETAIL.includes(SMS_FROM_NUMBER), 'HELP must name a phone number');
+  assert.match(SMS_SUPPORT_EMAIL, /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i);
+});
+
+test('the opt-in method is named and is the truth', () => {
+  // The policy template requires the opt-in method to be stated. Ours is the
+  // website contact form; nothing else captures this consent.
+  assert.match(SMS_OPT_IN_METHOD, /contact form/i);
+  assert.ok(SMS_OPT_IN_METHOD.includes(SMS_WEBSITE));
 });

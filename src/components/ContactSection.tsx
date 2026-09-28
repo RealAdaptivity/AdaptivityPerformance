@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
-import { Send, Phone, Mail, MapPin, CheckCircle2, Loader2, MessageSquare, Car, Wrench, Clock } from 'lucide-react';
+import { Send, Phone, Mail, MapPin, CheckCircle2, Loader2, MessageSquare, Car, Wrench, Clock, ShieldCheck } from 'lucide-react';
 import {
+  SMS_BRAND,
   SMS_CONSENT_DETAIL,
   SMS_CONSENT_NO,
   SMS_CONSENT_QUESTION,
@@ -138,6 +139,20 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hours</div>
                 <div className="font-bold text-white text-sm">Every day · {BUSINESS_HOURS.label}</div>
                 <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around</div>
+              </div>
+            </div>
+
+            {/* The registered entity behind the site, named here because the
+                SMS opt-in below and the privacy policy both cite it and a
+                carrier checks that they agree. */}
+            <div className="flex items-start gap-4 bg-[#12141c] p-5 rounded-2xl border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-slate-500/15 border border-white/15 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-5 h-5 text-slate-300" />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Company</div>
+                <div className="font-bold text-white text-sm">{SMS_BRAND}</div>
+                <div className="text-xs text-slate-500">410 FM 156, Justin, TX 76247</div>
               </div>
             </div>
 

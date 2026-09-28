@@ -30,6 +30,14 @@ export const SMS_FROM_NUMBER = '(940) 304-0620';
 /** Informational only. If this ever grows to include offers or promotions, the
  *  Grasshopper campaign has to be re-registered as Marketing and the privacy
  *  policy updated to match, or the opt-in and the campaign disagree. */
+/** Where the opt-in is captured. The carrier's policy template requires the
+ *  opt-in method to be named, and it must be the truth. */
+export const SMS_OPT_IN_METHOD = 'our website contact form at adaptivityperformance.com';
+
+/** Support contact for the messaging program: HELP, opt-out and questions. */
+export const SMS_SUPPORT_EMAIL = 'service@adaptivityperformance.com';
+export const SMS_WEBSITE = 'adaptivityperformance.com';
+
 export const SMS_MESSAGE_TYPES =
   'appointment reminders, booking confirmations, repair status updates and receipts';
 
@@ -39,7 +47,7 @@ export const SMS_CONSENT_QUESTION =
 export const SMS_CONSENT_DETAIL =
   `Message frequency varies and may include ${SMS_MESSAGE_TYPES}. ` +
   'Consent is not a condition of purchase. Message and data rates may apply. ' +
-  `Reply STOP at any time to end or unsubscribe. For assistance, reply HELP or contact support at ${SMS_FROM_NUMBER}. ` +
+  `Reply STOP or CANCEL at any time to end or unsubscribe. For assistance, reply HELP or contact support at ${SMS_FROM_NUMBER} or ${SMS_SUPPORT_EMAIL}. ` +
   'We do not share your mobile opt-in information with anyone.';
 
 export const SMS_CONSENT_YES = `Yes, I agree to receive text messages from ${SMS_BRAND}, sent from ${SMS_FROM_NUMBER}.`;
