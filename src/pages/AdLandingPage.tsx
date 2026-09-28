@@ -5,6 +5,7 @@ import { LOCAL_HUB } from '../site/localSeo';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { campaignParams, type AdLanding } from '../site/adLandings';
+import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
 
 type Props = {
   landing: AdLanding;
@@ -137,7 +138,7 @@ export const AdLandingPage: React.FC<Props> = ({ landing, onOpenBooking }) => {
         </section>
 
         <footer className="text-center text-[11px] text-slate-600 space-y-1 pb-8">
-          <p>Adaptivity Performance LLC · {LOCAL_HUB.city}, {LOCAL_HUB.state} {LOCAL_HUB.zip}</p>
+          <p>{LEGAL_ENTITY_NAME} · {LOCAL_HUB.city}, {LOCAL_HUB.state} {LOCAL_HUB.zip}</p>
           <p>
             <a href="/terms" className="hover:text-slate-400">Terms</a> ·{' '}
             <a href="/privacy" className="hover:text-slate-400">Privacy</a> ·{' '}

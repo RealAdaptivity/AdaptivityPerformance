@@ -3,6 +3,7 @@ import { LOCAL_HUB } from '../site/localSeo';
 import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
+import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
 import { BUSINESS_HOURS, CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, SOCIAL_PROFILES, cityPath } from '../site/seo';
 
 interface FooterProps {
@@ -165,7 +166,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
       <div className="container mx-auto px-4 mt-12 pt-6 border-t border-white/5 text-center text-slate-500 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <span>© 2026 Adaptivity Performance LLC. Servicing Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around.</span>
+          <span>© 2026 {LEGAL_ENTITY_NAME}. Servicing Justin, Northlake, Argyle, Denton &amp; {LOCAL_HUB.radiusMiles} miles around.</span>
           <span className="bg-slate-900 border border-white/10 text-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
             🔒 Card payments taken in person
           </span>

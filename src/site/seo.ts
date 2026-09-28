@@ -166,7 +166,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   terms: {
     title: 'Terms of Service | Adaptivity Performance',
-    description: 'Master service agreement and legal disclosures for Adaptivity Performance LLC.',
+    description: 'Master service agreement and legal disclosures for RealAdaptivity LLC DBA AdaptivityPerformance.',
     path: '/terms',
   },
   privacy: {

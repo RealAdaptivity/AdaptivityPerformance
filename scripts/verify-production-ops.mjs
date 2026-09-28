@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const requireText = (source, text, label) => {
@@ -401,6 +401,53 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   const contact = read('src/components/ContactSection.tsx');
   if (!/useState<'yes' \| 'no' \| null>\(null\)/.test(contact)) {
     throw new Error('Contact form SMS consent must start unselected (null), or the opt-in is pre-ticked');
+  }
+}
+
+// The registered entity is RealAdaptivity LLC, trading as AdaptivityPerformance.
+// "Adaptivity Performance LLC" names a company that does not exist, and it had
+// been printed in the footer copyright and on the refund policy beside the
+// sentence "Registered in the State of Texas" — a claim about a legal person
+// who is not registered, on the same site as a privacy policy naming the real
+// one. Public copy must read the shared constant so the two cannot disagree.
+//
+// The contractor agreement is deliberately exempt. Three technicians have
+// already signed text naming that entity, and the signing flow gates on a
+// version: editing the words either silently detaches those signatures from
+// what was agreed, or forces everyone to re-sign. That is a decision for the
+// owner and a lawyer, not for a find-and-replace.
+{
+  const DEAD_ENTITY = 'Adaptivity Performance LLC';
+  const signedDocuments = new Set([
+    'src/services/contractorAgreementPdf.ts',
+    'src/content/contractorAgreementText.ts',
+    'src/content/contractorLiability.ts',
+    'src/portal/tech/ContractorAgreementSignModal.tsx',
+  ]);
+
+  const offenders = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(new URL(`../${dir}/`, import.meta.url), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(rel);
+      else if (/\.(ts|tsx|html|json|md)$/.test(entry.name) && !signedDocuments.has(rel)) {
+        if (read(rel).includes(DEAD_ENTITY)) offenders.push(rel);
+      }
+    }
+  };
+  walk('src');
+
+  if (offenders.length) {
+    throw new Error(
+      `${offenders.join(', ')} name "${DEAD_ENTITY}", which is not a real company. ` +
+        'Import LEGAL_ENTITY_NAME from src/content/businessIdentity.ts instead.'
+    );
+  }
+
+  // And the constant itself must still be the entity the owner confirmed.
+  const identity = read('src/content/businessIdentity.ts');
+  if (!/LEGAL_ENTITY_NAME = 'RealAdaptivity LLC DBA AdaptivityPerformance'/.test(identity)) {
+    throw new Error('businessIdentity: LEGAL_ENTITY_NAME is no longer the registered entity');
   }
 }
 

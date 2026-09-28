@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { DIAGNOSTIC_FEE_DOLLARS } from '../services/serviceCatalog';
+import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
 
 export const TermsPrivacyPage: React.FC = () => {
   return (
@@ -18,7 +19,7 @@ export const TermsPrivacyPage: React.FC = () => {
             Terms of Service & Complete Non-Liability Disclosures
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Complete master agreement governing mobile vehicle dispatch, core parts, EV high-voltage systems, towing, mechanics' liens, and Denton County jurisdiction.
+            {LEGAL_ENTITY_NAME} • Complete master agreement governing mobile vehicle dispatch, core parts, EV high-voltage systems, towing, mechanics' liens, and Denton County jurisdiction.
           </p>
         </div>
 

@@ -1,3 +1,5 @@
+import { LEGAL_ENTITY_NAME } from './businessIdentity.ts';
+
 /**
  * SMS opt-in wording for the 10DLC / Grasshopper campaign.
  *
@@ -17,8 +19,10 @@
  * The opt-in itself must be an explicit choice with nothing pre-selected.
  */
 
-/** Brand as registered on the campaign, not the marketing name. */
-export const SMS_BRAND = 'RealAdaptivity LLC DBA AdaptivityPerformance';
+/** Brand as registered on the campaign: the legal entity, not the trading
+ *  name. Shared with the rest of the site so a rename cannot leave the
+ *  campaign registration quoting a stale one. */
+export const SMS_BRAND = LEGAL_ENTITY_NAME;
 
 /** The number texts are sent from, as registered on the campaign.
  *  Written out rather than imported from site/seo: this is a registration
