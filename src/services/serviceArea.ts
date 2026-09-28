@@ -18,7 +18,12 @@ export const SERVICE_HUB = {
 /** Hard outer limit for mobile dispatch, in miles from the Justin hub. */
 export const SERVICE_RADIUS_MILES = LOCAL_HUB.radiusMiles;
 export const FREE_MILES_THRESHOLD = LOCAL_HUB.freeRadiusMiles;
-export const PER_MILE_RATE = 2;
+/* Travel is absorbed inside the dispatch radius: freeRadiusMiles now equals
+   radiusMiles, so travelFeeForMiles is zero everywhere we serve. Kept as a
+   named constant rather than deleted because the fee bands, the coverage
+   table and the ZIP checker all read it, and a future change of policy is a
+   one-line edit here. */
+export const PER_MILE_RATE = 0;
 
 export type ServiceZipInfo = {
   city: string;

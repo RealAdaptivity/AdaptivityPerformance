@@ -175,6 +175,36 @@ for (const url of biz.sameAs || []) {
   if (!/^https:\/\//.test(url)) fail(`sameAs entry is not an https URL: ${url}`);
 }
 
+/* City blurbs are prose, so nobody notices when the dispatch radius moves under
+   them. Before this check they carried three different numbers at once: Lewisville
+   and Decatur said a 20-mile radius, Grapevine and Corinth said 20, White
+   Settlement and Aubrey said 25, and the hub actually said something else again.
+   A blurb may state its own distance from the hub ("13 miles up FM 156") — that is
+   a fact about the city. It may not state the radius, which belongs to the hub. */
+{
+  const radiusClaim = /\d+\s*-?\s*mile\s+(radius|ring|band)/i;
+  const offenders = LOCAL_CITIES.filter((c) => radiusClaim.test(c.blurb || '')).map((c) => c.city);
+  if (offenders.length) {
+    fail(
+      `blurb hardcodes the dispatch radius instead of leaving it to the hub: ${offenders.join(', ')}`
+    );
+  }
+}
+
+/* Travel is free across the whole radius (freeRadiusMiles === radiusMiles), so no
+   blurb may promise a per-mile charge. */
+{
+  if (LOCAL_HUB.freeRadiusMiles >= LOCAL_HUB.radiusMiles) {
+    const feeClaim = /per-mile|travel (?:line|billed|charge)(?!\s*(?:on the quote|either way))/i;
+    const offenders = LOCAL_CITIES.filter(
+      (c) => feeClaim.test(c.blurb || '') && !/no travel|travel is free/i.test(c.blurb || '')
+    ).map((c) => c.city);
+    if (offenders.length) {
+      fail(`travel is free everywhere, but these blurbs still quote a fee: ${offenders.join(', ')}`);
+    }
+  }
+}
+
 if (failures.length) {
   console.error(`✗ local SEO check failed (${failures.length})`);
   for (const f of failures) console.error(`  - ${f}`);

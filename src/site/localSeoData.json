@@ -5,8 +5,8 @@
     "zip": "76247",
     "lat": 33.0848,
     "lng": -97.2961,
-    "radiusMiles": 25,
-    "freeRadiusMiles": 15
+    "radiusMiles": 30,
+    "freeRadiusMiles": 30
   },
   "services": [
     {
@@ -430,7 +430,7 @@
       "distanceMiles": 16,
       "driveMinutes": 30,
       "servicePages": true,
-      "blurb": "Grapevine sits at the southeast edge of our 20-mile radius. We run it daily - driveway work, plus airport-area workplace visits where the car sits all day anyway."
+      "blurb": "Grapevine sits at the southeast edge of our radius. We run it daily - driveway work, plus airport-area workplace visits where the car sits all day anyway."
     },
     {
       "slug": "denton",
@@ -485,7 +485,7 @@
       "distanceMiles": 18,
       "driveMinutes": 32,
       "servicePages": false,
-      "blurb": "Lewisville sits near the outer edge of our 20-mile radius. Still fully covered - expect a modest per-mile travel line on the quote."
+      "blurb": "Lewisville sits toward the outer edge of our radius. Fully covered - and travel is free, so the quote is the work, nothing added for the drive."
     },
     {
       "slug": "ponder",
@@ -521,7 +521,7 @@
       "distanceMiles": 19,
       "driveMinutes": 30,
       "servicePages": false,
-      "blurb": "Sanger is the northern edge of our service radius. Covered, with a per-mile travel line beyond the free band."
+      "blurb": "Sanger is the northern edge of our service radius. Fully covered, with no travel charge either way."
     },
     {
       "slug": "rhome",
@@ -569,7 +569,7 @@
       "distanceMiles": 19,
       "driveMinutes": 30,
       "servicePages": false,
-      "blurb": "Decatur sits at the western edge of the 20-mile radius. Covered, with per-mile travel beyond the free band."
+      "blurb": "Decatur sits at our western edge. Fully covered, and travel is free - you pay for the work, not the drive out."
     },
     {
       "slug": "azle",
@@ -619,7 +619,7 @@
       "distanceMiles": 17,
       "driveMinutes": 30,
       "servicePages": false,
-      "blurb": "North Richland Hills is near our southeastern edge and fully covered - expect a small per-mile travel line past the free radius."
+      "blurb": "North Richland Hills is near our southeastern edge and fully covered, with no travel charge on the quote."
     },
     {
       "slug": "colleyville",
@@ -643,7 +643,7 @@
       "distanceMiles": 16,
       "driveMinutes": 28,
       "servicePages": false,
-      "blurb": "Corinth, Lake Dallas, and Shady Shores all sit inside the 20-mile radius from the Justin hub."
+      "blurb": "Corinth, Lake Dallas, and Shady Shores all sit inside our radius from the Justin hub."
     },
     {
       "slug": "fort-worth",
@@ -659,7 +659,7 @@
       "distanceMiles": 23,
       "driveMinutes": 38,
       "servicePages": true,
-      "blurb": "Fort Worth proper sits at the outer edge of our radius — 23 miles down from Justin. We run downtown, the Cultural District and the near west side, and the travel line is on the quote before you approve anything."
+      "blurb": "Fort Worth proper sits at the outer edge of our radius - 23 miles down from Justin. We run downtown, the Cultural District and the near west side, and travel is free, so nothing is added for the distance."
     },
     {
       "slug": "euless",
@@ -685,7 +685,7 @@
       "distanceMiles": 22,
       "driveMinutes": 36,
       "servicePages": true,
-      "blurb": "We cover north Arlington — the Entertainment District, Lincoln Square and the Randol Mill corridor. Central and south Arlington fall outside the radius, so we stay north of Division."
+      "blurb": "We cover north Arlington \u2014 the Entertainment District, Lincoln Square and the Randol Mill corridor. Central and south Arlington fall outside the radius, so we stay north of Division."
     },
     {
       "slug": "white-settlement",
@@ -697,7 +697,7 @@
       "distanceMiles": 24,
       "driveMinutes": 40,
       "servicePages": false,
-      "blurb": "White Settlement and the west Fort Worth edge are inside the 25-mile ring, with a per-mile travel line past the free radius."
+      "blurb": "White Settlement and the west Fort Worth edge are well inside our ring, with no travel charge on top of the work."
     },
     {
       "slug": "little-elm",
@@ -709,7 +709,7 @@
       "distanceMiles": 21,
       "driveMinutes": 35,
       "servicePages": false,
-      "blurb": "Little Elm sits 21 miles east of the hub across the top of Lewisville Lake. Fully covered, travel billed past the free radius."
+      "blurb": "Little Elm sits 21 miles east of the hub across the top of Lewisville Lake. Fully covered, and travel is free."
     },
     {
       "slug": "the-colony",
@@ -721,7 +721,7 @@
       "distanceMiles": 24,
       "driveMinutes": 38,
       "servicePages": false,
-      "blurb": "The Colony is at our eastern edge. Covered for driveway work, with the travel line shown up front."
+      "blurb": "The Colony is at our eastern edge. Covered for driveway work, with no travel line on the quote."
     },
     {
       "slug": "aubrey",
@@ -733,7 +733,7 @@
       "distanceMiles": 23,
       "driveMinutes": 36,
       "servicePages": false,
-      "blurb": "Aubrey, Cross Roads and Providence Village are inside the 25-mile ring — the north-east corner of our coverage."
+      "blurb": "Aubrey, Cross Roads and Providence Village sit in the north-east corner of our coverage, comfortably inside the ring."
     }
   ]
 }
