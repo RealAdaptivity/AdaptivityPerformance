@@ -87,7 +87,7 @@ export function assertServiceArea(zipCode: string | null | undefined, locationTy
   }
   if (!isCoveredZip(zip)) {
     throw new Error(
-      `Mobile service is not available in zip ${zip}. We serve the Justin / north Fort Worth area within 25 miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.`
+      `Mobile service is not available in zip ${zip}. We serve the Justin / north Fort Worth area within 30 miles of our hub. Call (940) 304-0620 for extended-area quotes or book shop service in Justin.`
     );
   }
 }

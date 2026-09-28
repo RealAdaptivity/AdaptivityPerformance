@@ -509,4 +509,22 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The edge function quotes the radius back at a customer it refuses. That
+// sentence said 25 miles while the catalog said 30, so a refused customer was
+// told a number the rest of the site contradicted. It is generated from the
+// catalog now, and this fails the build if the two ever disagree again.
+{
+  const catalog = JSON.parse(read('src/site/localSeoData.json'));
+  const radius = catalog.hub?.radiusMiles;
+  if (!radius) throw new Error('localSeoData hub has no radiusMiles');
+  const area = read('supabase/functions/_shared/serviceArea.ts');
+  const m = area.match(/within (\d+) miles of our hub/);
+  if (!m) throw new Error('edge serviceArea no longer states the radius when refusing a booking');
+  if (Number(m[1]) !== radius) {
+    throw new Error(
+      `edge refusal message says ${m[1]} miles but the catalog radius is ${radius} — re-run sync-service-catalog.mjs`
+    );
+  }
+}
+
 console.log('Production operations verification passed.');
