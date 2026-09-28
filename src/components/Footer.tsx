@@ -11,8 +11,14 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) => {
+  /* The footer's bottom padding clears the fixed mobile action bar. The footer
+     sits after </main>, so main's padding never lifted it: the bar is 72px and
+     the footer's own pb-12 was 48px, leaving the last line — the Privacy and
+     Terms links — under the bar and untappable on every page. env() adds the
+     iOS home-indicator inset, which Chromium reports as 0 and a real iPhone
+     does not. md: drops it again; the bar is mobile-only. */
   return (
-    <footer className="bg-[#08090d] text-slate-400 text-xs border-t border-white/10 pt-16 pb-12 relative overflow-hidden">
+    <footer className="bg-[#08090d] text-slate-400 text-xs border-t border-white/10 pt-16 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-12 relative overflow-hidden">
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
         
         {/* Brand */}

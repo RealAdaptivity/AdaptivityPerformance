@@ -11,7 +11,7 @@ export const StickyMobileActionBar: React.FC<StickyMobileActionBarProps> = ({ on
   return (
     <aside
       aria-label="Quick action bar"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0c0d12]/95 backdrop-blur-xl border-t border-white/15 px-3 py-2.5 shadow-[0_-8px_30px_rgba(0,0,0,0.8)] animate-fade-in"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0c0d12]/95 backdrop-blur-xl border-t border-white/15 px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(0,0,0,0.8)] animate-fade-in"
     >
       <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
         {/* Call Button */}
