@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const requireText = (source, text, label) => {
@@ -356,6 +356,98 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
     throw new Error(
       `Copy still promises a card hold, but nothing takes a card: ${offenders.join(', ')}`
     );
+  }
+}
+
+// ScrollReveal hides its children at opacity 0 until an IntersectionObserver
+// says they are in view. With a non-zero threshold the callback only fires once
+// that fraction of the element is inside the root, so a block taller than
+// root / threshold can never qualify: at 0.14, on an 844px phone whose root
+// rootMargin trims to ~793px, anything over ~5,660px stayed invisible for good.
+// /privacy, /terms and /join were blank pages in production because of it.
+// Any threshold above 0 reintroduces a height beyond which a page silently
+// disappears, so the number is pinned here.
+{
+  const reveal = read('src/components/ScrollReveal.tsx');
+  const m = reveal.match(/threshold:\s*([0-9.]+)/);
+  if (!m) throw new Error('ScrollReveal: no IntersectionObserver threshold found');
+  if (Number(m[1]) !== 0) {
+    throw new Error(
+      `ScrollReveal threshold is ${m[1]}; it must be 0, or blocks taller than ~${Math.round(793 / Number(m[1]))}px never become visible`
+    );
+  }
+}
+
+// The SMS opt-in wording is reviewed by a carrier before the 10DLC campaign is
+// approved, and the number in it must be the one texts actually come from.
+// smsConsent.ts owns that number rather than importing it, so nothing would
+// otherwise notice if the advertised phone changed and the consent text kept
+// quoting the old one — a mismatch a reviewer treats as a failed registration.
+{
+  const consent = read('src/content/smsConsent.ts');
+  const seo = read('src/site/seo.ts');
+  const inConsent = consent.match(/SMS_FROM_NUMBER = '([^']+)'/)?.[1];
+  const inSeo = seo.match(/SITE_PHONE_DISPLAY = '([^']+)'/)?.[1];
+  if (!inConsent) throw new Error('smsConsent: SMS_FROM_NUMBER not found');
+  if (!inSeo) throw new Error('seo: SITE_PHONE_DISPLAY not found');
+  if (inConsent !== inSeo) {
+    throw new Error(
+      `SMS consent says texts come from ${inConsent} but the site advertises ${inSeo}. ` +
+        'Make them agree, or if the campaign really does send from a different number, update this check deliberately.'
+    );
+  }
+
+  // A pre-selected opt-in is not consent, and carriers reject it outright.
+  const contact = read('src/components/ContactSection.tsx');
+  if (!/useState<'yes' \| 'no' \| null>\(null\)/.test(contact)) {
+    throw new Error('Contact form SMS consent must start unselected (null), or the opt-in is pre-ticked');
+  }
+}
+
+// The registered entity is RealAdaptivity LLC, trading as AdaptivityPerformance.
+// "Adaptivity Performance LLC" names a company that does not exist, and it had
+// been printed in the footer copyright and on the refund policy beside the
+// sentence "Registered in the State of Texas" — a claim about a legal person
+// who is not registered, on the same site as a privacy policy naming the real
+// one. Public copy must read the shared constant so the two cannot disagree.
+//
+// The contractor agreement is deliberately exempt. Three technicians have
+// already signed text naming that entity, and the signing flow gates on a
+// version: editing the words either silently detaches those signatures from
+// what was agreed, or forces everyone to re-sign. That is a decision for the
+// owner and a lawyer, not for a find-and-replace.
+{
+  const DEAD_ENTITY = 'Adaptivity Performance LLC';
+  const signedDocuments = new Set([
+    'src/services/contractorAgreementPdf.ts',
+    'src/content/contractorAgreementText.ts',
+    'src/content/contractorLiability.ts',
+    'src/portal/tech/ContractorAgreementSignModal.tsx',
+  ]);
+
+  const offenders = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(new URL(`../${dir}/`, import.meta.url), { withFileTypes: true })) {
+      const rel = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(rel);
+      else if (/\.(ts|tsx|html|json|md)$/.test(entry.name) && !signedDocuments.has(rel)) {
+        if (read(rel).includes(DEAD_ENTITY)) offenders.push(rel);
+      }
+    }
+  };
+  walk('src');
+
+  if (offenders.length) {
+    throw new Error(
+      `${offenders.join(', ')} name "${DEAD_ENTITY}", which is not a real company. ` +
+        'Import LEGAL_ENTITY_NAME from src/content/businessIdentity.ts instead.'
+    );
+  }
+
+  // And the constant itself must still be the entity the owner confirmed.
+  const identity = read('src/content/businessIdentity.ts');
+  if (!/LEGAL_ENTITY_NAME = 'RealAdaptivity LLC DBA AdaptivityPerformance'/.test(identity)) {
+    throw new Error('businessIdentity: LEGAL_ENTITY_NAME is no longer the registered entity');
   }
 }
 

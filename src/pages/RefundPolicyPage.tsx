@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { BUSINESS_HOURS, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { SiteLink } from '../site/SiteLink';
+import { LEGAL_ENTITY_ADDRESS, LEGAL_ENTITY_NAME } from '../content/businessIdentity';
 
 export const RefundPolicyPage: React.FC = () => {
   return (
@@ -29,7 +30,7 @@ export const RefundPolicyPage: React.FC = () => {
             Refund & Cancellation Policy
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            Adaptivity Performance LLC • Effective Date: January 1, 2026 • Clear, transparent terms
+            {LEGAL_ENTITY_NAME} • Effective Date: January 1, 2026 • Clear, transparent terms
             for the mobile diagnostic, completed repair warranties, parts returns, and in-person payment refunds.
           </p>
         </div>
@@ -226,7 +227,7 @@ export const RefundPolicyPage: React.FC = () => {
           </div>
 
           <div className="text-[11px] text-slate-500 pt-2 border-t border-white/5">
-            <strong>Corporate Address:</strong> Adaptivity Performance LLC, 410 FM 156, Justin, TX 76247. Registered in the State of Texas.
+            <strong>Corporate Address:</strong> {LEGAL_ENTITY_NAME}, {LEGAL_ENTITY_ADDRESS}. Registered in the State of Texas.
           </div>
         </section>
 

@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
-import { Send, Phone, Mail, MapPin, CheckCircle2, Loader2, MessageSquare, Car, Wrench, Clock } from 'lucide-react';
+import { Send, Phone, Mail, MapPin, CheckCircle2, Loader2, MessageSquare, Car, Wrench, Clock, ShieldCheck } from 'lucide-react';
+import {
+  SMS_BRAND,
+  SMS_CONSENT_DETAIL,
+  SMS_CONSENT_NO,
+  SMS_CONSENT_QUESTION,
+  SMS_CONSENT_YES,
+  smsConsentRecord,
+} from '../content/smsConsent';
 import { supabase } from '../services/supabaseClient';
 import { BUSINESS_HOURS, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 
@@ -16,12 +24,19 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
   const [email, setEmail] = useState('');
   const [vehicle, setVehicle] = useState('');
   const [issue, setIssue] = useState('');
-  const [preferredContact, setPreferredContact] = useState<'phone' | 'text' | 'email'>('text');
+  /* null, never 'yes'. A pre-selected opt-in is not consent, and carriers
+     reject campaigns whose form arrives with the box already ticked. */
+  const [smsConsent, setSmsConsent] = useState<'yes' | 'no' | null>(null);
   const [formState, setFormState] = useState<FormState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (smsConsent === null) {
+      setFormState('error');
+      setErrorMsg('Please choose whether you agree to receive text messages.');
+      return;
+    }
     setFormState('submitting');
     setErrorMsg('');
 
@@ -34,7 +49,13 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
           email: email.trim(),
           vehicle: vehicle.trim(),
           issue_description: issue.trim(),
-          preferred_contact: preferredContact,
+          /* Text is the only reply channel offered, so this is fixed rather
+             than picked. Still sent so the column keeps its meaning. */
+          preferred_contact: 'text',
+          /* The opt-in, and the exact wording it was given under. */
+          sms_consent: smsConsent === 'yes',
+          sms_consent_text: smsConsentRecord(smsConsent === 'yes'),
+          sms_consent_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
         });
 
@@ -118,6 +139,20 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Hours</div>
                 <div className="font-bold text-white text-sm">Every day · {BUSINESS_HOURS.label}</div>
                 <div className="text-xs text-slate-500">Mobile dispatch across Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around</div>
+              </div>
+            </div>
+
+            {/* The registered entity behind the site, named here because the
+                SMS opt-in below and the privacy policy both cite it and a
+                carrier checks that they agree. */}
+            <div className="flex items-start gap-4 bg-[#12141c] p-5 rounded-2xl border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-slate-500/15 border border-white/15 flex items-center justify-center flex-shrink-0">
+                <ShieldCheck className="w-5 h-5 text-slate-300" />
+              </div>
+              <div>
+                <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Company</div>
+                <div className="font-bold text-white text-sm">{SMS_BRAND}</div>
+                <div className="text-xs text-slate-500">410 FM 156, Justin, TX 76247</div>
               </div>
             </div>
 
@@ -237,26 +272,60 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                     />
                   </div>
 
-                  {/* Preferred contact method */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-2">How should we reach you?</label>
-                    <div className="flex gap-2">
-                      {(['text', 'phone', 'email'] as const).map(method => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => setPreferredContact(method)}
-                          className={`flex-1 py-2 rounded-xl text-xs font-bold border capitalize transition-all ${
-                            preferredContact === method
-                              ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                              : 'border-white/10 bg-[#0b0c10] text-slate-400 hover:border-white/20'
-                          }`}
-                        >
-                          {method === 'text' ? '💬 Text' : method === 'phone' ? '📞 Call' : '✉️ Email'}
-                        </button>
-                      ))}
-                    </div>
+                  {/* Reply channel. Call and email were dropped at the owner's
+                      request, and a single remaining option is a statement, not a
+                      choice, so the picker is gone with them. */}
+                  <div className="flex items-center gap-2 text-xs text-slate-400 bg-[#0b0c10] border border-white/10 rounded-xl px-3 py-2.5">
+                    <MessageSquare className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                    <span>We&apos;ll text you back at the number above.</span>
                   </div>
+
+                  {/* SMS opt-in for the 10DLC / Grasshopper campaign. The wording
+                      lives in content/smsConsent.ts and is asserted in tests,
+                      because a carrier reviews this exact text. Neither option is
+                      pre-selected and the form will not submit until one is
+                      chosen — a pre-ticked box is not consent. */}
+                  <fieldset className="bg-[#0b0c10] p-4 rounded-2xl border border-white/10 space-y-3">
+                    <legend className="sr-only">Text message consent</legend>
+                    <p className="text-xs font-bold text-slate-200 leading-relaxed">
+                      {SMS_CONSENT_QUESTION}
+                    </p>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      {SMS_CONSENT_DETAIL}
+                    </p>
+
+                    <div className="space-y-2 pt-1 border-t border-white/5">
+                      <label className="flex items-start gap-2.5 cursor-pointer text-slate-200 hover:text-white">
+                        <input
+                          type="checkbox"
+                          name="sms-consent"
+                          checked={smsConsent === 'yes'}
+                          onChange={() => setSmsConsent(smsConsent === 'yes' ? null : 'yes')}
+                          className="mt-0.5 accent-orange-500 w-4 h-4 cursor-pointer shrink-0"
+                        />
+                        <span className="text-[11.5px] font-medium">{SMS_CONSENT_YES}</span>
+                      </label>
+
+                      <label className="flex items-start gap-2.5 cursor-pointer text-slate-400 hover:text-slate-200">
+                        <input
+                          type="checkbox"
+                          name="sms-consent"
+                          checked={smsConsent === 'no'}
+                          onChange={() => setSmsConsent(smsConsent === 'no' ? null : 'no')}
+                          className="mt-0.5 accent-orange-500 w-4 h-4 cursor-pointer shrink-0"
+                        />
+                        <span className="text-[11.5px]">{SMS_CONSENT_NO}</span>
+                      </label>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 pt-1">
+                      See our{' '}
+                      <a href="/privacy" className="text-orange-400 underline hover:text-orange-300">
+                        Privacy Policy
+                      </a>{' '}
+                      for details on how we handle your information.
+                    </p>
+                  </fieldset>
 
                   {formState === 'error' && (
                     <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-2">

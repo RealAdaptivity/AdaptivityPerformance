@@ -3,6 +3,7 @@ import { LOCAL_HUB } from '../site/localSeo';
 import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
+import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
 import { BUSINESS_HOURS, CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, SOCIAL_PROFILES, cityPath } from '../site/seo';
 
 interface FooterProps {
@@ -11,8 +12,14 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) => {
+  /* The footer's bottom padding clears the fixed mobile action bar. The footer
+     sits after </main>, so main's padding never lifted it: the bar is 72px and
+     the footer's own pb-12 was 48px, leaving the last line — the Privacy and
+     Terms links — under the bar and untappable on every page. env() adds the
+     iOS home-indicator inset, which Chromium reports as 0 and a real iPhone
+     does not. md: drops it again; the bar is mobile-only. */
   return (
-    <footer className="bg-[#08090d] text-slate-400 text-xs border-t border-white/10 pt-16 pb-12 relative overflow-hidden">
+    <footer className="bg-[#08090d] text-slate-400 text-xs border-t border-white/10 pt-16 pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-12 relative overflow-hidden">
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-10">
         
         {/* Brand */}
@@ -159,7 +166,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
       <div className="container mx-auto px-4 mt-12 pt-6 border-t border-white/5 text-center text-slate-500 text-[11px] flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-2">
-          <span>© 2026 Adaptivity Performance LLC. Servicing Justin, Northlake, Argyle, Denton & {LOCAL_HUB.radiusMiles} miles around.</span>
+          <span>© 2026 {LEGAL_ENTITY_NAME}. Servicing Justin, Northlake, Argyle, Denton &amp; {LOCAL_HUB.radiusMiles} miles around.</span>
           <span className="bg-slate-900 border border-white/10 text-slate-300 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1">
             🔒 Card payments taken in person
           </span>
