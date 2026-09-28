@@ -36,6 +36,13 @@ Deno.serve(async (req) => {
       customerAddress,
       zipCode,
       vehicleDescription,
+      vehicleYear,
+      vehicleMake,
+      vehicleModel,
+      vehicleTrim,
+      vehicleEngine,
+      issueDescription,
+      mediaPaths,
       vin,
       services,
       customerEmail,
@@ -122,6 +129,40 @@ Deno.serve(async (req) => {
         ? preferredMechanicIdRaw.trim()
         : null;
 
+    /* The browser sends both the parts and the string it composed from them.
+       Recomposing here means a caller cannot put one vehicle in the parts and
+       a different one in the description the tech actually reads. */
+    const str = (v: unknown, max: number): string | null => {
+      const t = typeof v === 'string' ? v.trim() : '';
+      return t ? t.slice(0, max) : null;
+    };
+    const composedVehicle =
+      [
+        str(vehicleYear, 4),
+        str(vehicleMake, 40),
+        str(vehicleModel, 60),
+        str(vehicleTrim, 60),
+      ]
+        .filter(Boolean)
+        .join(' ') +
+      (str(vehicleEngine, 60) ? ` \u00b7 ${str(vehicleEngine, 60)}` : '');
+
+    /* vehicle_description is NOT NULL. Fall back to whatever the client sent,
+       then to a placeholder, rather than failing a booking over a label. */
+    const vehicleDescriptionFinal =
+      composedVehicle.trim() || str(vehicleDescription, 200) || 'Customer vehicle';
+
+    /* Paths, never URLs, and only inside the folder shape this app writes:
+       the column feeds a signed-URL lookup in the tech portal, so a caller
+       must not be able to point it at another bucket or walk out of it. */
+    const safeMediaPaths: string[] = Array.isArray(mediaPaths)
+      ? mediaPaths
+          .filter((p): p is string => typeof p === 'string')
+          .map((p) => p.trim())
+          .filter((p) => p && !p.includes('..') && !p.startsWith('/') && /^[\w./-]{1,200}$/.test(p))
+          .slice(0, 8)
+      : [];
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -131,8 +172,15 @@ Deno.serve(async (req) => {
         customer_email: email ?? null,
         customer_address: customerAddress.trim(),
         zip_code: (resolvedZip ?? zipCode?.trim()) || null,
-        vehicle_description: vehicleDescription?.trim() || 'Customer vehicle',
-        vin: vin?.trim() || null,
+        vehicle_description: vehicleDescriptionFinal,
+        vehicle_year: str(vehicleYear, 4),
+        vehicle_make: str(vehicleMake, 40),
+        vehicle_model: str(vehicleModel, 60),
+        vehicle_trim: str(vehicleTrim, 60),
+        vehicle_engine: str(vehicleEngine, 60),
+        issue_description: str(issueDescription, 2000),
+        media_paths: safeMediaPaths,
+        vin: str(vin, 17)?.toUpperCase() ?? null,
         services: normalizedServices,
         total_estimate: quotedDollars,
         location_type: locType,
@@ -209,7 +257,7 @@ Deno.serve(async (req) => {
             services: normalizedServices,
             quotedDollars,
             quoteMode: quote.mode,
-            vehicleDescription: vehicleDescription?.trim() || null,
+            vehicleDescription: vehicleDescriptionFinal,
             preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
             preferredTimeWindow:
               typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,
