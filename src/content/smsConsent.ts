@@ -45,13 +45,47 @@ export const SMS_WEBSITE = 'adaptivityperformance.com';
 export const SMS_MESSAGE_TYPES =
   'appointment reminders, booking confirmations, repair status updates and receipts';
 
+/* The four disclosures a carrier requires wherever the SMS program is
+   described. Exported individually so the privacy policy, the terms of
+   service and the opt-in on the contact form quote the same sentences — a
+   reviewer comparing two pages must not find two different answers. */
+
+/** What the program sends. Must describe only what we actually send. */
+export const SMS_MESSAGE_TYPES_NOTICE =
+  `You will receive informational text messages: ${SMS_MESSAGE_TYPES}, and replies that answer your questions and provide support. We do not send marketing or promotional text messages.`;
+
+/** How often. */
+export const SMS_FREQUENCY_NOTICE = 'Message frequency varies.';
+
+/** Who pays. */
+export const SMS_RATES_NOTICE = 'Message and data rates may apply.';
+
+/** How to stop. CANCEL is kept alongside STOP because the privacy policy's
+ *  opt-out clause already offers both; dropping it would make the two
+ *  documents disagree about which keyword works. */
+export const SMS_OPT_OUT_INSTRUCTION =
+  `Reply STOP (or CANCEL) to ${SMS_FROM_NUMBER} to opt out at any time.`;
+
+/** How to get help. */
+export const SMS_HELP_INSTRUCTION =
+  `Reply HELP to ${SMS_FROM_NUMBER} or contact ${SMS_SUPPORT_EMAIL} for assistance.`;
+
+/** The full set, in the order a reviewer reads them. */
+export const SMS_REQUIRED_DISCLOSURES = [
+  SMS_MESSAGE_TYPES_NOTICE,
+  SMS_FREQUENCY_NOTICE,
+  SMS_RATES_NOTICE,
+  SMS_OPT_OUT_INSTRUCTION,
+  SMS_HELP_INSTRUCTION,
+] as const;
+
 export const SMS_CONSENT_QUESTION =
   `Do you agree to receive informational text messages from ${SMS_BRAND}, sent from ${SMS_FROM_NUMBER}?`;
 
 export const SMS_CONSENT_DETAIL =
-  `Message frequency varies and may include ${SMS_MESSAGE_TYPES}. ` +
-  'Consent is not a condition of purchase. Message and data rates may apply. ' +
-  `Reply STOP or CANCEL at any time to end or unsubscribe. For assistance, reply HELP or contact support at ${SMS_FROM_NUMBER} or ${SMS_SUPPORT_EMAIL}. ` +
+  `${SMS_FREQUENCY_NOTICE} Messages may include ${SMS_MESSAGE_TYPES}. ` +
+  `Consent is not a condition of purchase. ${SMS_RATES_NOTICE} ` +
+  `${SMS_OPT_OUT_INSTRUCTION} ${SMS_HELP_INSTRUCTION} ` +
   'We do not share your mobile opt-in information with anyone.';
 
 export const SMS_CONSENT_YES = `Yes, I agree to receive text messages from ${SMS_BRAND}, sent from ${SMS_FROM_NUMBER}.`;

@@ -451,4 +451,62 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// A carrier reviewing the 10DLC campaign may open the privacy policy or the
+// terms of service. The disclosures were on the privacy policy only, and the
+// review came back saying they were missing — so both pages must carry all
+// five, and both must read them from smsConsent.ts rather than restating them,
+// because two pages quoting the program differently is the mismatch a reviewer
+// is looking for.
+{
+  const required = [
+    'SMS_MESSAGE_TYPES_NOTICE',
+    'SMS_FREQUENCY_NOTICE',
+    'SMS_RATES_NOTICE',
+    'SMS_OPT_OUT_INSTRUCTION',
+    'SMS_HELP_INSTRUCTION',
+  ];
+  const consent = read('src/content/smsConsent.ts');
+  for (const name of required) {
+    if (!new RegExp(`export const ${name}\\b`).test(consent)) {
+      throw new Error(`smsConsent.ts no longer exports ${name}; the SMS disclosures have no single source`);
+    }
+  }
+
+  // The opt-out and help instructions must name the number a customer texts.
+  for (const name of ['SMS_OPT_OUT_INSTRUCTION', 'SMS_HELP_INSTRUCTION']) {
+    const body = consent.match(new RegExp(`export const ${name} =([^;]+);`))?.[1] ?? '';
+    if (!body.includes('SMS_FROM_NUMBER')) {
+      throw new Error(`${name} must name SMS_FROM_NUMBER: "reply STOP" without a number is not an instruction`);
+    }
+  }
+
+  for (const page of ['src/pages/PrivacyPolicyPage.tsx', 'src/pages/TermsPrivacyPage.tsx']) {
+    // Strip import statements first. Deleting the whole section leaves the
+    // imports behind, so a plain includes() check passes on exactly the
+    // breakage this guard exists to catch — it did, until this line.
+    const src = read(page).replace(/^import\s[\s\S]*?from\s+'[^']+';$/gm, '');
+    const missing = required.filter((name) => !src.includes(name));
+    // The privacy policy predates these constants and spells the same clauses
+    // out inline, so it is held to the plain-text requirement instead.
+    if (page.endsWith('PrivacyPolicyPage.tsx')) {
+      const clauses = [
+        [/message frequency varies/i, 'message frequency varies'],
+        [/message and data rates may apply/i, 'message and data rates may apply'],
+        [/\bSTOP\b/, 'STOP to opt out'],
+        [/\bHELP\b/, 'HELP for assistance'],
+      ];
+      for (const [re, what] of clauses) {
+        if (!re.test(src)) throw new Error(`${page} is missing the SMS disclosure: ${what}`);
+      }
+      continue;
+    }
+    if (missing.length) {
+      throw new Error(
+        `${page} does not render ${missing.join(', ')}. ` +
+          'The SMS disclosures must appear on the terms of service, not only the privacy policy.'
+      );
+    }
+  }
+}
+
 console.log('Production operations verification passed.');

@@ -9,8 +9,14 @@ import {
   SMS_CONSENT_NO,
   SMS_CONSENT_QUESTION,
   SMS_CONSENT_YES,
+  SMS_FREQUENCY_NOTICE,
   SMS_FROM_NUMBER,
+  SMS_HELP_INSTRUCTION,
   SMS_MESSAGE_TYPES,
+  SMS_MESSAGE_TYPES_NOTICE,
+  SMS_OPT_OUT_INSTRUCTION,
+  SMS_RATES_NOTICE,
+  SMS_REQUIRED_DISCLOSURES,
   smsConsentRecord,
 } from '../src/content/smsConsent.ts';
 
@@ -97,4 +103,52 @@ test('the opt-in method is named and is the truth', () => {
   // website contact form; nothing else captures this consent.
   assert.match(SMS_OPT_IN_METHOD, /contact form/i);
   assert.ok(SMS_OPT_IN_METHOD.includes(SMS_WEBSITE));
+});
+
+/* The carrier review came back saying the required disclosures were missing.
+   They were present on the privacy policy but nowhere on the terms of service.
+   These pin the exact wording that was asked for. */
+
+test('the opt-out instruction names the keyword and the number', () => {
+  assert.match(SMS_OPT_OUT_INSTRUCTION, /\bSTOP\b/);
+  assert.ok(
+    SMS_OPT_OUT_INSTRUCTION.includes(SMS_FROM_NUMBER),
+    '"Reply STOP" without a number is not an instruction a customer can follow'
+  );
+  // CANCEL stays because the privacy policy's opt-out clause offers both.
+  assert.match(SMS_OPT_OUT_INSTRUCTION, /\bCANCEL\b/);
+});
+
+test('the help instruction names the keyword, the number and the email', () => {
+  assert.match(SMS_HELP_INSTRUCTION, /\bHELP\b/);
+  assert.ok(SMS_HELP_INSTRUCTION.includes(SMS_FROM_NUMBER));
+  assert.ok(SMS_HELP_INSTRUCTION.includes(SMS_SUPPORT_EMAIL));
+});
+
+test('frequency and rates are stated in the words the carrier asked for', () => {
+  assert.match(SMS_FREQUENCY_NOTICE, /message frequency varies/i);
+  assert.match(SMS_RATES_NOTICE, /message and data rates may apply/i);
+});
+
+test('the message-type notice describes only what we actually send', () => {
+  assert.ok(SMS_MESSAGE_TYPES_NOTICE.includes(SMS_MESSAGE_TYPES));
+  // The campaign is informational; promising promotions here would contradict
+  // both the registration and the privacy policy.
+  assert.match(SMS_MESSAGE_TYPES_NOTICE, /do not send marketing or promotional/i);
+});
+
+test('every required disclosure is collected in one exported set', () => {
+  assert.equal(SMS_REQUIRED_DISCLOSURES.length, 5);
+  for (const clause of SMS_REQUIRED_DISCLOSURES) {
+    assert.ok(typeof clause === 'string' && clause.length > 0);
+  }
+});
+
+test('the opt-in on the form quotes the same instructions as the policies', () => {
+  // A reviewer comparing the form against the terms must not find two
+  // different answers about how to stop or get help.
+  assert.ok(SMS_CONSENT_DETAIL.includes(SMS_OPT_OUT_INSTRUCTION));
+  assert.ok(SMS_CONSENT_DETAIL.includes(SMS_HELP_INSTRUCTION));
+  assert.ok(SMS_CONSENT_DETAIL.includes(SMS_FREQUENCY_NOTICE));
+  assert.ok(SMS_CONSENT_DETAIL.includes(SMS_RATES_NOTICE));
 });
