@@ -4,6 +4,7 @@ import type { PortalProfile } from '../portalAuth';
 import { TechJobsTab } from './TechJobsTab';
 import { TechSettingsTab } from './TechSettingsTab';
 import { ContractorAgreementGate } from './ContractorAgreementGate';
+import { VehicleInsuranceDisclosureGate } from './VehicleInsuranceDisclosureGate';
 
 const TABS = [
   { id: 'jobs', label: 'Jobs', icon: '📋' },
@@ -46,6 +47,10 @@ export const TechPortal: React.FC<TechPortalProps> = ({
         disabled={adminViewAs === 'tech'}
         onSigned={() => setAgreementSignedAt(Date.now())}
       />
+      {/* Second required document: personal vehicle insurance. Separate gate
+          because it expires on its own schedule — when the disclosed policy
+          runs out — rather than only when the text changes. */}
+      <VehicleInsuranceDisclosureGate disabled={adminViewAs === 'tech'} />
       {tab === 'jobs' && <TechJobsTab />}
       <div className={tab === 'settings' ? '' : 'hidden'} aria-hidden={tab !== 'settings'}>
         <TechSettingsTab
