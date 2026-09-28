@@ -527,4 +527,37 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The browser composes the vehicle description and the edge function
+// recomposes it, so a caller cannot put one vehicle in the structured fields
+// and a different one in the string the technician actually reads. Two
+// implementations of one rule drift, so the pieces that must match are pinned.
+{
+  const client = read('src/services/vehicleDetails.ts');
+  const edge = read('supabase/functions/create-booking-request/index.ts');
+
+  // Same field order, head first, engine last.
+  const clientOrder = client.match(/\[v\.year, v\.make, v\.model, v\.trim\]/);
+  if (!clientOrder) throw new Error('vehicleDetails: composeVehicleDescription no longer joins year, make, model, trim in that order');
+  const edgeOrder = /str\(vehicleYear[\s\S]{0,120}str\(vehicleMake[\s\S]{0,120}str\(vehicleModel[\s\S]{0,120}str\(vehicleTrim/.test(edge);
+  if (!edgeOrder) throw new Error('create-booking-request: vehicle parts are no longer composed in year, make, model, trim order');
+
+  // Same separator before the engine. The client writes it literally, the
+  // edge function as an escape, so both spellings are accepted.
+  if (!/ (\u00b7|·) \$\{engine\}`/.test(client)) {
+    throw new Error('vehicleDetails: engine separator changed; the edge function still writes " \u00b7 "');
+  }
+  if (!/\\u00b7|·/.test(edge)) {
+    throw new Error('create-booking-request: engine separator changed; the client still writes " · "');
+  }
+
+  // Media is optional, and the column is an array with a default, so the edge
+  // function must never reject a booking for having no attachments.
+  if (!/Array\.isArray\(mediaPaths\)/.test(edge)) {
+    throw new Error('create-booking-request: mediaPaths is no longer treated as an optional array');
+  }
+  if (!/\.\.'\)|includes\('\.\.'\)/.test(edge)) {
+    throw new Error('create-booking-request: media paths are no longer checked for directory traversal');
+  }
+}
+
 console.log('Production operations verification passed.');

@@ -1,12 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
-import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus } from 'lucide-react';
+import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus, Camera, Trash2, AlertTriangle } from 'lucide-react';
 import { createBookingRequest } from '../services/bookingRequestApi';
 import { computeServiceQuote } from '../services/servicePricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../services/scheduleWindows';
 import { GOOGLE_REVIEW_URL, shareAdaptivity } from '../site/seo';
 import { applyReferralCodeOnBooking } from '../services/referrals';
+import {
+  EMPTY_VEHICLE,
+  composeVehicleDescription,
+  normalizeVin,
+  validateVehicle,
+  type VehicleDetails,
+} from '../services/vehicleDetails';
+import {
+  MAX_MEDIA_FILES,
+  MEDIA_ACCEPT_ATTR,
+  describeMediaRejection,
+  newMediaFolder,
+  uploadBookingMedia,
+} from '../services/bookingMediaApi';
 import { signUpPortal } from '../portal/portalAuth';
 import { portalPath } from '../portal/portalRoute';
 import {
@@ -53,9 +67,22 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 }) => {
   const [step, setStep] = useState(1);
   const [serviceMode, setServiceMode] = useState<'mobile' | 'shop'>('mobile');
-  const [vehicle, setVehicle] = useState('2020 Ford F-150');
-  const [vinNumber, setVinNumber] = useState('');
+  /* Was a single text box pre-filled with '2020 Ford F-150'. Marked required,
+     but a pre-filled field is already satisfied, so anyone who skipped it
+     booked a truck they did not own and a tech arrived with the wrong parts.
+     Starts empty and is captured part by part now. */
+  const [vehicleDetails, setVehicleDetails] = useState<VehicleDetails>(EMPTY_VEHICLE);
+  const [vehicleErrors, setVehicleErrors] = useState<Partial<Record<keyof VehicleDetails, string>>>({});
+  const [issueDescription, setIssueDescription] = useState('');
+  const [issueError, setIssueError] = useState<string | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [mediaNotice, setMediaNotice] = useState<string | null>(null);
   const [serviceRequested, setServiceRequested] = useState('Mobile Diagnostic Visit');
+  const vehicle = composeVehicleDescription(vehicleDetails);
+  const setVehicleField = (field: keyof VehicleDetails, value: string) => {
+    setVehicleDetails((v) => ({ ...v, [field]: value }));
+    setVehicleErrors((e) => ({ ...e, [field]: undefined }));
+  };
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [streetAddress, setStreetAddress] = useState('');
@@ -94,8 +121,18 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   useEffect(() => {
     if (initialEstimateData) {
-      if (initialEstimateData.vehicle) setVehicle(initialEstimateData.vehicle);
-      if (initialEstimateData.vin) setVinNumber(initialEstimateData.vin);
+      if (initialEstimateData.vehicle) {
+        /* The estimate flow passes one string like '2021 Ford F-150'. Keep
+           what maps cleanly and leave the rest for the customer. */
+        const [maybeYear, maybeMake, ...rest] = initialEstimateData.vehicle.trim().split(/\s+/);
+        setVehicleDetails((v) => ({
+          ...v,
+          year: /^\d{4}$/.test(maybeYear ?? '') ? maybeYear : v.year,
+          make: /^\d{4}$/.test(maybeYear ?? '') ? (maybeMake ?? v.make) : (maybeYear ?? v.make),
+          model: (/^\d{4}$/.test(maybeYear ?? '') ? rest.join(' ') : [maybeMake, ...rest].join(' ')) || v.model,
+        }));
+      }
+      if (initialEstimateData.vin) setVehicleField('vin', initialEstimateData.vin);
       if (initialEstimateData.locationType) setServiceMode(initialEstimateData.locationType);
       if (initialEstimateData.serviceAddress) {
         setStreetAddress(initialEstimateData.serviceAddress);
@@ -178,6 +215,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         .map(s => s.trim())
         .filter(Boolean);
 
+      /* Attachments upload first so their paths can go on the booking row.
+         A failed upload never fails the booking: the customer is told which
+         file did not make it and the visit still gets scheduled. */
+      let uploadedPaths: string[] = [];
+      if (mediaFiles.length) {
+        const outcome = await uploadBookingMedia(mediaFiles, newMediaFolder());
+        uploadedPaths = outcome.paths;
+        if (outcome.failures.length) {
+          setMediaNotice(
+            `Could not attach ${outcome.failures.map((f) => `${f.name} (${f.reason})`).join(', ')}. Your booking was still sent.`
+          );
+        }
+      }
+
       const booking = await createBookingRequest({
         customerName: fullName.trim(),
         customerPhone: phone.trim(),
@@ -188,7 +239,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             ? selectedPartner?.zipCode || zipCode.trim() || '76247'
             : zipCode.trim() || '76247',
         vehicleDescription: vehicle.trim(),
-        vin: vinNumber.trim() || undefined,
+        vehicleYear: vehicleDetails.year.trim(),
+        vehicleMake: vehicleDetails.make.trim(),
+        vehicleModel: vehicleDetails.model.trim(),
+        vehicleTrim: vehicleDetails.trim.trim() || undefined,
+        vehicleEngine: vehicleDetails.engine.trim() || undefined,
+        issueDescription: issueDescription.trim(),
+        mediaPaths: uploadedPaths.length ? uploadedPaths : undefined,
+        vin: normalizeVin(vehicleDetails.vin) || undefined,
         services: servicesList.length ? servicesList : [serviceRequested.trim()],
         locationType: serviceMode,
         partnerLocationId:
@@ -317,7 +375,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
         <div className="p-6 overflow-y-auto flex-1">
           {step === 1 && (
-            <form onSubmit={() => setStep(2)} className="space-y-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                /* Native `required` cannot check a VIN's shape or a plausible
+                   model year, and reporting one error at a time would make the
+                   customer resubmit to find the next. */
+                const found = validateVehicle(vehicleDetails);
+                const byField: Partial<Record<keyof VehicleDetails, string>> = {};
+                for (const err of found) byField[err.field] = err.message;
+                setVehicleErrors(byField);
+                const missingIssue = !issueDescription.trim();
+                setIssueError(missingIssue ? 'Tell us what the vehicle is doing' : null);
+                if (found.length || missingIssue) return;
+                setStep(2);
+              }}
+              className="space-y-4"
+            >
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1.5">Service Mode</label>
                 <div className="p-3.5 rounded-2xl border border-orange-500/40 bg-orange-500/10 flex items-center justify-between text-xs font-bold text-white">
@@ -329,21 +403,165 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     </div>
                   </div>
                   <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                    $0 Travel (15 mi)
+                    $0 Travel ({LOCAL_HUB.freeRadiusMiles} mi)
                   </span>
                 </div>
               </div>
 
+              {/* Vehicle, part by part. The tech orders parts off this, so a
+                  trim and an engine are the difference between one visit and
+                  two. */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-slate-300">Your Vehicle</label>
+
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div>
+                    <input
+                      type="text" inputMode="numeric" required maxLength={4}
+                      value={vehicleDetails.year}
+                      onChange={e => setVehicleField('year', e.target.value.replace(/\D/g, ''))}
+                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.year ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                      placeholder="Year"
+                      aria-label="Model year"
+                    />
+                    {vehicleErrors.year && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.year}</p>}
+                  </div>
+                  <div>
+                    <input
+                      type="text" required
+                      value={vehicleDetails.make}
+                      onChange={e => setVehicleField('make', e.target.value)}
+                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.make ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                      placeholder="Make"
+                      aria-label="Make"
+                    />
+                    {vehicleErrors.make && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.make}</p>}
+                  </div>
+                  <div>
+                    <input
+                      type="text" required
+                      value={vehicleDetails.model}
+                      onChange={e => setVehicleField('model', e.target.value)}
+                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.model ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                      placeholder="Model"
+                      aria-label="Model"
+                    />
+                    {vehicleErrors.model && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.model}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <input
+                      type="text" required
+                      value={vehicleDetails.trim}
+                      onChange={e => setVehicleField('trim', e.target.value)}
+                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.trim ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                      placeholder="Trim (e.g. Lariat)"
+                      aria-label="Trim"
+                    />
+                    {vehicleErrors.trim && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.trim}</p>}
+                  </div>
+                  <div>
+                    <input
+                      type="text" required
+                      value={vehicleDetails.engine}
+                      onChange={e => setVehicleField('engine', e.target.value)}
+                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.engine ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                      placeholder="Engine (e.g. 3.5L V6)"
+                      aria-label="Engine"
+                    />
+                    {vehicleErrors.engine && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.engine}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <input
+                    type="text" required maxLength={17}
+                    value={vehicleDetails.vin}
+                    onChange={e => setVehicleField('vin', e.target.value.toUpperCase())}
+                    className={`w-full bg-[#0b0c10] border rounded-xl px-3.5 py-3 text-sm text-white font-mono tracking-wider focus:outline-none ${vehicleErrors.vin ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                    placeholder="VIN (17 characters)"
+                    aria-label="VIN"
+                  />
+                  {vehicleErrors.vin
+                    ? <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.vin}</p>
+                    : <p className="text-[10px] text-slate-500 mt-1">Driver-side door jamb, or the base of the windshield. Lets your tech bring the right parts the first time.</p>}
+                </div>
+              </div>
+
+              {/* What is actually wrong. Previously there was nowhere to say
+                  this before step 2's parking-notes box. */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Your Vehicle</label>
-                <input
-                  type="text"
+                <label className="block text-xs font-bold text-slate-300 mb-1">What is it doing?</label>
+                <textarea
+                  rows={3}
                   required
-                  value={vehicle}
-                  onChange={e => setVehicle(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-3 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="e.g. 2021 Ford F-150 / 2019 Chevy Tahoe / 2020 Honda Civic"
+                  value={issueDescription}
+                  onChange={e => { setIssueDescription(e.target.value); setIssueError(null); }}
+                  className={`w-full bg-[#0b0c10] border rounded-xl px-3.5 py-3 text-sm text-white focus:outline-none ${issueError ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
+                  placeholder="e.g. Grinding from the front right when braking, started about a week ago and is worse when cold."
                 />
+                {issueError && <p className="text-[10px] text-red-400 mt-1">{issueError}</p>}
+              </div>
+
+              {/* Optional on purpose: a car that will not start is a bad moment
+                  to ask someone to film it. */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Photos or video <span className="font-normal text-slate-500">— optional</span>
+                </label>
+                <label className="flex items-center gap-2.5 w-full cursor-pointer bg-[#0b0c10] border border-dashed border-white/20 hover:border-orange-500/50 rounded-xl px-3.5 py-3 text-xs text-slate-400 transition-colors">
+                  <Camera className="w-4 h-4 text-orange-400 shrink-0" />
+                  <span>Add up to {MAX_MEDIA_FILES} photos or short videos (50 MB each)</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept={MEDIA_ACCEPT_ATTR}
+                    className="hidden"
+                    onChange={(e) => {
+                      const picked = Array.from(e.target.files ?? []);
+                      const rejected = picked
+                        .map((f) => ({ f, why: describeMediaRejection(f) }))
+                        .filter((r) => r.why);
+                      const ok = picked.filter((f) => !describeMediaRejection(f));
+                      setMediaFiles((prev) => [...prev, ...ok].slice(0, MAX_MEDIA_FILES));
+                      setMediaNotice(
+                        rejected.length
+                          ? `Skipped ${rejected.map((r) => `${r.f.name} (${r.why})`).join(', ')}.`
+                          : null
+                      );
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+
+                {mediaFiles.length > 0 && (
+                  <ul className="mt-2 space-y-1.5">
+                    {mediaFiles.map((f, i) => (
+                      <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2">
+                        <span className="text-[11px] text-slate-300 truncate">{f.name}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[10px] text-slate-500">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${f.name}`}
+                            onClick={() => setMediaFiles((prev) => prev.filter((_, j) => j !== i))}
+                            className="text-slate-500 hover:text-red-400 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {mediaNotice && (
+                  <p className="mt-2 flex items-start gap-1.5 text-[10px] text-amber-400">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" /> {mediaNotice}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -612,10 +830,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <span className="text-slate-400">Vehicle:</span>
                   <span className="font-bold text-white">{vehicle}</span>
                 </div>
-                {vinNumber && (
+                {vehicleDetails.vin.trim() && (
                   <div className="flex justify-between">
                     <span className="text-slate-400">VIN Number:</span>
-                    <span className="font-bold font-mono text-orange-400">{vinNumber}</span>
+                    <span className="font-bold font-mono text-orange-400">{normalizeVin(vehicleDetails.vin)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">

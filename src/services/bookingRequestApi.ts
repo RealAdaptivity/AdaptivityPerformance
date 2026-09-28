@@ -17,7 +17,21 @@ export async function createBookingRequest(params: {
   customerEmail?: string;
   customerAddress: string;
   zipCode: string;
+  /** Composed from the parts below by the form, and recomposed server-side.
+   *  bookings.vehicle_description is NOT NULL and the tech portal, receipts
+   *  and the confirmation text all read it. */
   vehicleDescription: string;
+  vehicleYear?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleTrim?: string;
+  vehicleEngine?: string;
+  /** What the customer says is wrong. Separate from customerNotes, which is
+   *  parking and access detail. */
+  issueDescription?: string;
+  /** Paths inside the private booking-media bucket. Optional: uploading is
+   *  never a condition of booking. */
+  mediaPaths?: string[];
   vin?: string;
   services: string[];
   locationType: 'mobile' | 'shop';
