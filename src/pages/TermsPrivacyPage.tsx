@@ -1,8 +1,19 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck, MessageSquare } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { DIAGNOSTIC_FEE_DOLLARS } from '../services/serviceCatalog';
 import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
+import {
+  SMS_BRAND,
+  SMS_FREQUENCY_NOTICE,
+  SMS_FROM_NUMBER,
+  SMS_HELP_INSTRUCTION,
+  SMS_MESSAGE_TYPES_NOTICE,
+  SMS_OPT_IN_METHOD,
+  SMS_OPT_OUT_INSTRUCTION,
+  SMS_RATES_NOTICE,
+  SMS_SUPPORT_EMAIL,
+} from '../content/smsConsent';
 
 export const TermsPrivacyPage: React.FC = () => {
   return (
@@ -390,6 +401,60 @@ export const TermsPrivacyPage: React.FC = () => {
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* 7. SMS program terms.
+            These clauses also appear in the privacy policy. A carrier reviewing
+            the 10DLC campaign may open either page, so both must carry them and
+            neither may drift — every sentence below comes from
+            src/content/smsConsent.ts, and verify-production-ops.mjs fails the
+            build if this section stops rendering them. */}
+        <section className="bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-xl space-y-6">
+          <div className="flex items-center space-x-3 text-sky-400 border-b border-white/5 pb-4">
+            <MessageSquare className="w-6 h-6" />
+            <h2 className="font-heading text-xl font-bold text-white">7. Text Message (SMS) Program Terms</h2>
+          </div>
+
+          <div className="space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p>
+              {SMS_BRAND} operates an informational text messaging program. Consent is collected through {SMS_OPT_IN_METHOD}, and is never a condition of purchase. Messages are sent from <strong className="text-white">{SMS_FROM_NUMBER}</strong>.
+            </p>
+
+            <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-3">
+              <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-sky-400">
+                <MessageSquare className="w-4 h-4" /> Message Types &amp; Frequency
+              </div>
+              <p className="text-slate-300">{SMS_MESSAGE_TYPES_NOTICE}</p>
+              <p className="text-slate-300">{SMS_FREQUENCY_NOTICE} {SMS_RATES_NOTICE}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-orange-400">
+                  <ShieldOff className="w-4 h-4" /> How to Opt Out
+                </div>
+                <p className="text-slate-300 leading-relaxed">{SMS_OPT_OUT_INSTRUCTION}</p>
+                <p className="text-slate-400 leading-relaxed">
+                  You will receive a final message confirming you have been unsubscribed, and your number is removed within 24 hours. To rejoin, simply opt in again.
+                </p>
+              </div>
+
+              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
+                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-emerald-400">
+                  <ShieldCheck className="w-4 h-4" /> How to Get Help
+                </div>
+                <p className="text-slate-300 leading-relaxed">{SMS_HELP_INSTRUCTION}</p>
+                <p className="text-slate-400 leading-relaxed">
+                  Carriers are not liable for delayed or undelivered messages. Your mobile opt-in and consent are never shared with third parties or affiliates for any purpose.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-slate-400 text-xs">
+              Full details of how this data is collected, used, retained and protected are set out in our{' '}
+              <a href="/privacy" className="text-orange-400 font-semibold hover:underline">Privacy Policy</a>. Questions about the messaging program: <a href={`mailto:${SMS_SUPPORT_EMAIL}`} className="text-orange-400 font-semibold hover:underline">{SMS_SUPPORT_EMAIL}</a>.
+            </p>
           </div>
         </section>
 
