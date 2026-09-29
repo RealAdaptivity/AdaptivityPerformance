@@ -1,138 +1,212 @@
-import { Truck, ArrowRight, Calendar, Phone, ShieldCheck, Wrench } from 'lucide-react';
-import { LOCAL_HUB } from '../site/localSeo';
-import { StoreBadgeLinks } from './StoreBadgeLinks';
+import React, { useState } from 'react';
+import { ArrowRight, CheckCircle2, MapPin, Phone, ShieldCheck, Wrench } from 'lucide-react';
+import { LOCAL_CITIES, LOCAL_HUB } from '../site/localSeo';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { lookupServiceZip, travelFeeForMiles } from '../services/serviceArea';
+import { DIAGNOSTIC_FEE_DOLLARS } from '../services/serviceCatalog';
+import {
+  checkHeroCoverage,
+  heroPrefill,
+  type BookingPrefill,
+  type HeroCoverage,
+} from '../site/homeContent';
 
 interface HeroProps {
-  onOpenBooking: () => void;
-  onSelectServiceMode?: (mode: 'mobile' | 'shop') => void;
+  onBook: (prefill: BookingPrefill, source: string) => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
+/**
+ * The top of the homepage. The right half is the first step of booking rather
+ * than a button that leads to it: the one thing this page is for is getting a
+ * driver from "my truck is making a noise" to a booked visit.
+ *
+ * There is deliberately no photo here any more. The old hero's background image
+ * was the page's LCP element; the headline is now, and it paints without waiting
+ * on a download. index.html no longer preloads the image for the same reason.
+ */
+export const Hero: React.FC<HeroProps> = ({ onBook }) => {
+  const [zip, setZip] = useState('');
+  const [vehicle, setVehicle] = useState('');
+  const [issue, setIssue] = useState('');
+  /* null until they press the button; changing the ZIP clears it, so an answer
+     on screen always belongs to the ZIP in the box. */
+  const [result, setResult] = useState<HeroCoverage | null>(null);
+
+  const radius = LOCAL_HUB.radiusMiles;
+  const townCount = LOCAL_CITIES.length;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (result?.kind === 'covered') {
+      onBook(heroPrefill({ zip: result.zip, vehicle, issue }), 'home_hero');
+      return;
+    }
+    setResult(checkHeroCoverage(zip, (z) => lookupServiceZip(z)));
+  };
+
+  const zipError =
+    result?.kind === 'empty'
+      ? 'Enter your ZIP code and we’ll check it.'
+      : result?.kind === 'invalid'
+        ? `That doesn’t look like a ZIP — five digits, like ${LOCAL_HUB.zip}.`
+        : null;
+
   return (
-    <section className="relative pt-4 pb-14 overflow-hidden bg-[#07080b]">
-      {/* Top ambient warm orange backlighting */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-[340px] bg-gradient-to-b from-orange-500/18 via-amber-600/10 to-transparent blur-[140px] pointer-events-none -z-10"></div>
-
-      <div className="container mx-auto px-4 sm:px-6 relative z-10 max-w-7xl">
-        
-        {/* Full-Bleed Main Hero Container with Smooth Fade Stretching Background */}
-        <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-[#07080b] shadow-[0_20px_70px_rgba(0,0,0,0.9)] min-h-[580px] sm:min-h-[640px] flex flex-col justify-between">
-          
-          {/* Full-Bleed Real Mechanic Background Image */}
-          <div className="absolute inset-0 z-0">
-            {/* The LCP element on every marketing page. Intrinsic size prevents
-                the reflow as it loads; fetchpriority pairs with the preload in
-                index.html so the browser does not discover it late.
-
-                It was a single 860 KB JPEG served at full width to everyone,
-                phones included. WebP at the same visual quality is a fifth of
-                that. The narrower variants exist because a phone cannot show
-                1376 px of detail: verified in Chromium, a 390 px viewport at
-                dpr2 takes the 1024w (117 KB) and a desktop takes the full
-                1376w (190 KB). The JPEG stays as the fallback for anything
-                that cannot decode WebP. */}
-            <picture>
-              <source
-                type="image/webp"
-                srcSet="/images/hero-full-bg-688.webp 688w, /images/hero-full-bg-1024.webp 1024w, /images/hero-full-bg.webp 1376w"
-                sizes="100vw"
-              />
-              <img
-                src="/images/hero-full-bg.jpg"
-                alt="Adaptivity Performance certified technician diagnosing vehicle in residential driveway"
-                width={1376}
-                height={768}
-                fetchPriority="high"
-                decoding="async"
-                className="w-full h-full object-cover object-right md:object-[75%_center]"
-              />
-            </picture>
-            {/* Smooth Linear Gradient Fade Overlay: Dark Obsidian on Left fading to Image on Right */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#07080b] via-[#07080b]/95 via-45% sm:via-50% to-[#07080b]/30"></div>
-            {/* Top and Bottom Vignette Fades */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#07080b] via-transparent to-[#07080b]/60"></div>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#07080b]/70 via-transparent to-transparent"></div>
+    <section className="bg-[#0b0c10] border-b border-white/[0.06]">
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-10 pb-14 lg:pt-16 lg:pb-20">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_442px] lg:gap-x-14 lg:gap-y-8">
+          <div className="lg:col-start-1 lg:row-start-1 self-end">
+            <span className="inline-block text-[11px] sm:text-xs font-bold uppercase tracking-[0.14em] text-brand border border-brand/40 bg-brand/[0.08] rounded-full px-3.5 py-1.5">
+              Mobile auto repair · {LOCAL_HUB.city}, {LOCAL_HUB.state}
+            </span>
+            <h1 className="mt-5 sm:mt-6 font-heading font-bold text-white text-[40px] leading-[1.04] tracking-[-0.035em] sm:text-6xl lg:text-[66px]">
+              We bring the shop
+              <br className="hidden sm:block" /> to your driveway.
+            </h1>
+            <p className="mt-4 sm:mt-5 max-w-xl text-[15px] sm:text-lg leading-relaxed text-slate-300">
+              ASE-certified techs and the full toolset, anywhere within {radius} miles of{' '}
+              {LOCAL_HUB.city}. Diagnostics, brakes, fluids and maintenance — fixed where the
+              vehicle already sits, with <strong className="font-semibold text-white">no towing</strong>.
+            </p>
           </div>
 
-          {/* Foreground Hero Content (Positioned over Left Gradient Fade) */}
-          <div className="relative z-10 p-6 sm:p-10 lg:p-14 max-w-2xl lg:max-w-3xl space-y-6 text-left">
-            
-            {/* Category Tag */}
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-black tracking-widest text-orange-400 uppercase bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-full">
-                ADAPTIVITY PERFORMANCE
-              </span>
-              <span className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
-                ⭐ <strong>5.0 Google Rating</strong> from Justin-area drivers
-              </span>
-            </div>
+          <div id="book" className="lg:col-start-2 lg:row-start-1 lg:row-span-2 scroll-mt-24">
+            <form
+              onSubmit={handleSubmit}
+              noValidate
+              className="rounded-[22px] border border-white/[0.11] bg-[#12141c] p-5 sm:p-7"
+            >
+              <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-white">
+                Check your address, get a time
+              </h2>
+              <p className="mt-1.5 text-sm text-slate-400">Takes about a minute. No account needed.</p>
 
-            {/* Headline */}
-            <div className="space-y-3">
-              <h1 className="font-heading text-4xl sm:text-5xl xl:text-6xl font-black tracking-tight text-white leading-[1.08] uppercase">
-                Your Reliable <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500">
-                  Mobile Auto Repair
-                </span> <br />
-                Partner
-              </h1>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl font-medium drop-shadow-sm">
-                Expert certified technicians bringing the full auto repair mechanic shop directly to your driveway, anywhere within {LOCAL_HUB.radiusMiles} miles of Justin. 
-                On-site diagnostics, precision brake repairs, battery swaps, starters, and maintenance with <strong className="text-white">zero towing needed</strong>.
-              </p>
-            </div>
+              <div className="mt-5 space-y-4">
+                <div>
+                  <label htmlFor="hero-zip" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-2">
+                    Your ZIP code
+                  </label>
+                  <input
+                    id="hero-zip"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    maxLength={10}
+                    placeholder={LOCAL_HUB.zip}
+                    value={zip}
+                    onChange={(e) => {
+                      setZip(e.target.value);
+                      setResult(null);
+                    }}
+                    aria-invalid={zipError ? true : undefined}
+                    aria-describedby={zipError ? 'hero-zip-error' : undefined}
+                    className={`w-full min-h-[52px] rounded-xl bg-[#0b0c10] px-4 text-base font-medium text-white placeholder:text-slate-500 border focus:outline-none focus:ring-2 focus:ring-brand/60 ${
+                      zipError ? 'border-amber-400/70' : 'border-white/[0.14]'
+                    }`}
+                  />
+                  {zipError && (
+                    <p id="hero-zip-error" className="mt-2 text-xs font-medium text-amber-300">
+                      {zipError}
+                    </p>
+                  )}
+                </div>
 
-            {/* CTAs Row with Prominent Call for Quote */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-              <a
-                href={SITE_PHONE_TEL}
-                className="w-full sm:w-auto flex-1 flex items-center justify-center space-x-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm sm:text-base uppercase tracking-wider px-8 py-4 rounded-2xl shadow-2xl shadow-orange-500/30 transition-all transform hover:-translate-y-0.5 active:scale-95"
-              >
-                <Phone className="w-5 h-5 animate-pulse" />
-                <span>Call for Quote: {SITE_PHONE_DISPLAY}</span>
-              </a>
+                <div>
+                  <label htmlFor="hero-vehicle" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-2">
+                    Year, make &amp; model
+                  </label>
+                  <input
+                    id="hero-vehicle"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="2018 Ram 1500 Big Horn"
+                    value={vehicle}
+                    onChange={(e) => setVehicle(e.target.value)}
+                    className="w-full min-h-[52px] rounded-xl bg-[#0b0c10] px-4 text-base font-medium text-white placeholder:text-slate-500 border border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-brand/60"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="hero-issue" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-2">
+                    What’s it doing?
+                  </label>
+                  <input
+                    id="hero-issue"
+                    type="text"
+                    autoComplete="off"
+                    placeholder="Grinding when I brake"
+                    value={issue}
+                    onChange={(e) => setIssue(e.target.value)}
+                    className="w-full min-h-[52px] rounded-xl bg-[#0b0c10] px-4 text-base font-medium text-white placeholder:text-slate-500 border border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-brand/60"
+                  />
+                </div>
+              </div>
+
+              <div aria-live="polite" className="empty:hidden mt-4">
+                {result?.kind === 'covered' && (
+                  <div className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3">
+                    <p className="flex items-center gap-2 text-sm font-bold text-emerald-200">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+                      Yes — we cover {result.city}.
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-emerald-100/80">
+                      {result.distanceMiles === 0
+                        ? 'That’s our home town'
+                        : `${result.distanceMiles} mi from our shop in ${LOCAL_HUB.city}`}
+                      {travelFeeForMiles(result.distanceMiles) === 0
+                        ? ' — travel is included.'
+                        : ` — travel is $${travelFeeForMiles(result.distanceMiles)}.`}
+                    </p>
+                  </div>
+                )}
+                {result?.kind === 'outside' && (
+                  <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3">
+                    <p className="text-sm font-bold text-amber-200">We don’t reach {result.zip} yet.</p>
+                    <p className="mt-1 text-xs leading-relaxed text-amber-100/80">
+                      We dispatch within {radius} miles of {LOCAL_HUB.city}. If you’re just past the
+                      edge, call us — we may still be able to help.
+                    </p>
+                    <a
+                      href={SITE_PHONE_TEL}
+                      className="mt-2 inline-flex min-h-[44px] items-center gap-2 text-sm font-bold text-amber-200 hover:text-white"
+                    >
+                      <Phone className="w-4 h-4" aria-hidden="true" /> Call {SITE_PHONE_DISPLAY}
+                    </a>
+                  </div>
+                )}
+              </div>
 
               <button
-                type="button"
-                onClick={onOpenBooking}
-                className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-[#07080b]/90 hover:bg-slate-800/90 text-slate-200 font-bold text-xs sm:text-sm px-6 py-4 rounded-2xl border border-white/15 hover:border-orange-500/40 backdrop-blur-md transition-colors"
+                type="submit"
+                className="mt-5 w-full min-h-[56px] rounded-2xl bg-brand text-[#0b0c10] text-base font-extrabold inline-flex items-center justify-center gap-2 hover:brightness-110 active:brightness-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12141c]"
               >
-                <Calendar className="w-4 h-4 text-orange-400" />
-                <span>Schedule Online</span>
-                <ArrowRight className="w-4 h-4" />
+                {result?.kind === 'covered' ? 'Pick a time' : 'See if we cover you'}
+                <ArrowRight className="w-5 h-5" aria-hidden="true" />
               </button>
-            </div>
 
-
-
-            {/* Trust Guarantee Badges */}
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-1 font-medium">
-              <span className="flex items-center gap-1.5 bg-[#07080b]/80 px-3 py-1 rounded-xl border border-white/10 backdrop-blur-sm">
-                <ShieldCheck className="w-4 h-4 text-orange-400" />
-                <span>12-Mo / 12,000-Mi Warranty</span>
-              </span>
-              <span className="flex items-center gap-1.5 bg-[#07080b]/80 px-3 py-1 rounded-xl border border-white/10 backdrop-blur-sm">
-                <Truck className="w-4 h-4 text-emerald-400" />
-                <span>Zero Towing Required</span>
-              </span>
-              <span className="flex items-center gap-1.5 bg-[#07080b]/80 px-3 py-1 rounded-xl border border-white/10 backdrop-blur-sm">
-                <Wrench className="w-4 h-4 text-orange-400" />
-                <span>ASE Certified Techs</span>
-              </span>
-            </div>
-
+              <p className="mt-4 text-center text-[13px] leading-relaxed text-slate-400">
+                <strong className="font-bold text-brand-soft">${DIAGNOSTIC_FEE_DOLLARS}</strong> brings a tech
+                out and tells you exactly what’s wrong. The repair price is agreed with you before any
+                work starts.
+              </p>
+            </form>
           </div>
-        </div>
 
-        {/* Customer App Download Badges */}
-        <div className="pt-8 flex flex-col items-center gap-2 text-center">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-            Download the Adaptivity customer app
-          </p>
-          <StoreBadgeLinks className="justify-center" />
+          <ul className="lg:col-start-1 lg:row-start-2 self-start flex flex-wrap gap-2.5" aria-label="Why Adaptivity">
+            <li className="inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200">
+              <ShieldCheck className="w-4 h-4 text-brand-soft" aria-hidden="true" />
+              12-month / 12,000-mile warranty
+            </li>
+            <li className="inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200">
+              <Wrench className="w-4 h-4 text-brand-soft" aria-hidden="true" />
+              ASE-certified technicians
+            </li>
+            <li className="inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200">
+              <MapPin className="w-4 h-4 text-brand-soft" aria-hidden="true" />
+              {townCount} towns, {radius}-mile radius
+            </li>
+          </ul>
         </div>
-
       </div>
     </section>
   );
