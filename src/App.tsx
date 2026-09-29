@@ -49,6 +49,7 @@ import { ServiceCityPage } from './pages/ServiceCityPage';
 import { AdLandingPage } from './pages/AdLandingPage';
 import { adLandingFromPath, adLandingMeta } from './site/adLandings';
 import { CONVERSION_EVENTS, trackEvent } from './site/analytics';
+import type { BookingPrefill } from './site/homeContent';
 
 function MainAppContent() {
   const { refreshBookings } = useBookingContext();
@@ -95,7 +96,10 @@ function MainAppContent() {
   const [isWarrantyOpen, setIsWarrantyOpen] = useState(false);
   const [isReferralOpen, setIsReferralOpen] = useState(false);
   const [selectedMembershipPlan, setSelectedMembershipPlan] = useState<'basic' | 'vip' | 'fleet'>('vip');
-  const [activeServiceMode, setActiveServiceMode] = useState<'mobile' | 'shop'>('mobile');
+  /* Nothing sets this: the homepage hero took a mobile/shop callback but never
+     called it, so it has always been 'mobile'. Kept as state for the pages that
+     read it. */
+  const [activeServiceMode] = useState<'mobile' | 'shop'>('mobile');
   const [estimateDataForBooking, setEstimateDataForBooking] = useState<any>(null);
 
   // Legacy #hash links on `/` → real pages
@@ -177,6 +181,19 @@ function MainAppContent() {
       locationType: 'mobile',
       ...(referralCode ? { referralCode } : {}),
     });
+    setIsBookingOpen(true);
+  };
+
+  /* Opens the form already holding what the customer told the homepage. Only
+     the source goes to analytics — never the ZIP, the vehicle or their own
+     description of the problem. */
+  const openBookingWithPrefill = (prefill: BookingPrefill, source: string) => {
+    trackEvent(CONVERSION_EVENTS.bookingOpened, {
+      source,
+      page,
+      ...(pathname !== '/' ? { path: pathname } : {}),
+    });
+    setEstimateDataForBooking({ locationType: 'mobile', ...prefill });
     setIsBookingOpen(true);
   };
 
@@ -291,12 +308,7 @@ function MainAppContent() {
         {page === 'adLanding' && adLanding ? (
           <AdLandingPage landing={adLanding} onOpenBooking={openBooking} />
         ) : page === 'home' ? (
-          <HomePage
-            onOpenBooking={openBooking}
-            onSelectServiceMode={setActiveServiceMode}
-            onOpenRecruitment={() => setIsRecruitmentOpen(true)}
-            onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
-          />
+          <HomePage onBook={openBookingWithPrefill} />
         ) : page === 'city' && cityLanding ? (
           <CityLandingPage city={cityLanding} onOpenBooking={openBooking} />
         ) : page === 'serviceCity' && serviceCity ? (

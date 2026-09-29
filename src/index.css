@@ -1,6 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap');
 @import "tailwindcss";
 
+/* The brand orange, sampled from the logo (it is a single colour, #fd6a02).
+   The rest of the site still uses Tailwind's orange-500 (#f97316), which is
+   pinker; the homepage uses this one and the other pages can move over as
+   they are redesigned. */
+@theme {
+  --color-brand: #fd6a02;
+  --color-brand-soft: #ff9a4d;
+}
+
 :root {
   font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   color-scheme: dark;

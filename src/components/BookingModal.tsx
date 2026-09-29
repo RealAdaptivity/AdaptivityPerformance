@@ -49,6 +49,10 @@ interface BookingModalProps {
     partnerLocationId?: string;
     referralCode?: string;
     preferredMechanicId?: string;
+    /** From the homepage coverage check — already confirmed as covered. */
+    zipCode?: string;
+    /** The customer's own words from the homepage, so they don't type it twice. */
+    issueDescription?: string;
   };
   onBookingSubmitted?: (result: {
     bookingReference: string;
@@ -133,6 +137,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         }));
       }
       if (initialEstimateData.vin) setVehicleField('vin', initialEstimateData.vin);
+      if (initialEstimateData.zipCode) setZipCode(initialEstimateData.zipCode);
+      if (initialEstimateData.issueDescription) setIssueDescription(initialEstimateData.issueDescription);
       if (initialEstimateData.locationType) setServiceMode(initialEstimateData.locationType);
       if (initialEstimateData.serviceAddress) {
         setStreetAddress(initialEstimateData.serviceAddress);

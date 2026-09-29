@@ -589,4 +589,92 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The dispatch board draws one column per job status. A status with no column
+// is a job on nobody's screen: groupBookingsForBoard hands it back as
+// `unplaced` and the console says so, but the board still won't show it. So
+// the two lists have to stay in step — add a status, add a column.
+{
+  const board = read('src/services/dispatchBoard.ts');
+  const console_ = read('src/admin/DispatchConsole.tsx');
+
+  const statusOptions = console_.match(/const STATUS_OPTIONS: JobStatus\[\] = \[([^\]]*)\]/);
+  if (!statusOptions) throw new Error('DispatchConsole: STATUS_OPTIONS not found');
+  const statuses = [...statusOptions[1].matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]).sort();
+
+  const columnStatuses = [...board.matchAll(/status: '([A-Z_]+)'/g)].map((m) => m[1]).sort();
+
+  if (statuses.length === 0 || columnStatuses.length === 0) {
+    throw new Error('dispatchBoard: could not read the status lists to compare');
+  }
+
+  const missing = statuses.filter((s) => !columnStatuses.includes(s));
+  if (missing.length > 0) {
+    throw new Error(
+      `dispatchBoard has no column for ${missing.join(', ')}; jobs with that status would ` +
+        'not appear on the board at all'
+    );
+  }
+
+  const stray = columnStatuses.filter((s) => !statuses.includes(s));
+  if (stray.length > 0) {
+    throw new Error(
+      `dispatchBoard has a column for ${stray.join(', ')}, which is not a real job status`
+    );
+  }
+
+  // Work still to be done is never hidden behind a "+N more". Only the columns
+  // that sort newest-first (the finished ones) may be capped.
+  if (!/const capped = column\.newestFirst \? all\.slice\(0, limit\) : all;/.test(board)) {
+    throw new Error(
+      'dispatchBoard caps columns some other way now; an UNASSIGNED job hidden behind a ' +
+        '"+N more" is a job nobody dispatches'
+    );
+  }
+}
+
+// The homepage quotes the call-out price, the radius, the number of towns and
+// the phone number. Every one of them has a source of truth elsewhere — the
+// catalog, the coverage data, seo.ts — and a copy typed into the page is how
+// the site once said 25 miles while dispatch accepted 30. Comments are stripped
+// first so an explanation of the rule cannot trip it.
+{
+  const files = ['src/components/Hero.tsx', 'src/components/HomeSections.tsx', 'src/pages/HomePage.tsx'];
+  const literals = [
+    [/\$\s?\d{2,}/, 'a dollar amount (use DIAGNOSTIC_FEE_DOLLARS)'],
+    [/\b\d{2}[- ]miles?\b/i, 'a radius in miles (use LOCAL_HUB.radiusMiles)'],
+    [/\b\d{2,} towns?\b/i, 'a town count (use LOCAL_CITIES.length)'],
+    [/\(\d{3}\)\s?\d{3}-\d{4}/, 'a phone number (use SITE_PHONE_DISPLAY)'],
+  ];
+  for (const file of files) {
+    const code = read(file)
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    for (const [pattern, what] of literals) {
+      const hit = code.match(pattern);
+      if (hit) {
+        throw new Error(`${file} hardcodes ${what}: "${hit[0]}". It will drift from the real value.`);
+      }
+    }
+  }
+}
+
+// The homepage features a few services by id, and featuredServices skips an
+// id it cannot find — so a typo, or a service switched off, would quietly drop
+// a card. Make that loud instead.
+{
+  const sections = read('src/components/HomeSections.tsx');
+  const catalog = read('src/services/serviceCatalog.ts');
+  const ids = sections.match(/FEATURED_SERVICE_IDS = \[([^\]]*)\]/);
+  if (!ids) throw new Error('HomeSections: FEATURED_SERVICE_IDS not found');
+  const unavailable = (catalog.match(/UNAVAILABLE_SERVICE_KINDS[^=]*=\s*\[([^\]]*)\]/) || [])[1] || '';
+  for (const [, id] of ids[1].matchAll(/'([a-z_]+)'/g)) {
+    if (!new RegExp(`(id:\\s*|\\n\\s*)'${id}',`).test(catalog)) {
+      throw new Error(`Homepage features service '${id}', which is not in the catalog`);
+    }
+    if (unavailable.includes(`'${id}'`)) {
+      throw new Error(`Homepage features service '${id}', which is marked unavailable`);
+    }
+  }
+}
+
 console.log('Production operations verification passed.');
