@@ -589,4 +589,47 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The dispatch board draws one column per job status. A status with no column
+// is a job on nobody's screen: groupBookingsForBoard hands it back as
+// `unplaced` and the console says so, but the board still won't show it. So
+// the two lists have to stay in step — add a status, add a column.
+{
+  const board = read('src/services/dispatchBoard.ts');
+  const console_ = read('src/admin/DispatchConsole.tsx');
+
+  const statusOptions = console_.match(/const STATUS_OPTIONS: JobStatus\[\] = \[([^\]]*)\]/);
+  if (!statusOptions) throw new Error('DispatchConsole: STATUS_OPTIONS not found');
+  const statuses = [...statusOptions[1].matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]).sort();
+
+  const columnStatuses = [...board.matchAll(/status: '([A-Z_]+)'/g)].map((m) => m[1]).sort();
+
+  if (statuses.length === 0 || columnStatuses.length === 0) {
+    throw new Error('dispatchBoard: could not read the status lists to compare');
+  }
+
+  const missing = statuses.filter((s) => !columnStatuses.includes(s));
+  if (missing.length > 0) {
+    throw new Error(
+      `dispatchBoard has no column for ${missing.join(', ')}; jobs with that status would ` +
+        'not appear on the board at all'
+    );
+  }
+
+  const stray = columnStatuses.filter((s) => !statuses.includes(s));
+  if (stray.length > 0) {
+    throw new Error(
+      `dispatchBoard has a column for ${stray.join(', ')}, which is not a real job status`
+    );
+  }
+
+  // Work still to be done is never hidden behind a "+N more". Only the columns
+  // that sort newest-first (the finished ones) may be capped.
+  if (!/const capped = column\.newestFirst \? all\.slice\(0, limit\) : all;/.test(board)) {
+    throw new Error(
+      'dispatchBoard caps columns some other way now; an UNASSIGNED job hidden behind a ' +
+        '"+N more" is a job nobody dispatches'
+    );
+  }
+}
+
 console.log('Production operations verification passed.');

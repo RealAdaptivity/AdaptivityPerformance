@@ -40,26 +40,21 @@ import {
   SLA_UNCLAIMED_ALERT_MINUTES,
   unclaimedAgeMinutes,
 } from '../services/adminOpsExtras';
+import {
+  groupBookingsForBoard,
+  resolveActiveColumn,
+  techBoardStates,
+  LIVE_COLUMN_IDS,
+  type BoardColumnId,
+  type BoardGroup,
+  type TechBoardState,
+} from '../services/dispatchBoard';
+import { SERVICE_RADIUS_MILES, lookupServiceZip } from '../services/serviceArea';
+import { formatPreferredSchedule } from '../services/scheduleWindows';
 
 type TabId = 'dispatch' | 'map' | 'techs';
-type StatusFilter = 'ALL' | JobStatus;
 
 const STATUS_OPTIONS: JobStatus[] = ['UNASSIGNED', 'EN_ROUTE', 'ON_SITE', 'COMPLETED', 'CANCELED'];
-
-function statusBadge(status: JobStatus) {
-  const styles: Record<JobStatus, string> = {
-    UNASSIGNED: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    EN_ROUTE: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
-    ON_SITE: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
-    COMPLETED: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-    CANCELED: 'bg-red-500/15 text-red-300 border-red-500/30',
-  };
-  return (
-    <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded border ${styles[status]}`}>
-      {status.replace('_', ' ')}
-    </span>
-  );
-}
 
 function formatMoney(cents: number | null | undefined) {
   if (cents == null) return '—';
@@ -82,7 +77,10 @@ export const DispatchConsole: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [techs, setTechs] = useState<DispatchTech[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  /* Which column the phone shows. The desktop board shows them all at once,
+     so this only drives the narrow layout. */
+  const [activeColumn, setActiveColumn] = useState<BoardColumnId>('needs_tech');
+  const [showCanceled, setShowCanceled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -114,10 +112,30 @@ export const DispatchConsole: React.FC = () => {
     };
   }, [load]);
 
-  const filtered = useMemo(() => {
-    if (statusFilter === 'ALL') return bookings;
-    return bookings.filter((b) => b.status === statusFilter);
-  }, [bookings, statusFilter]);
+  const { groups, unplaced } = useMemo(
+    () =>
+      groupBookingsForBoard(bookings, {
+        columns: showCanceled ? [...LIVE_COLUMN_IDS, 'canceled'] : LIVE_COLUMN_IDS,
+      }),
+    [bookings, showCanceled]
+  );
+
+  const techStates = useMemo(() => techBoardStates(techs, bookings), [techs, bookings]);
+
+  const canceledCount = useMemo(
+    () => bookings.filter((b) => b.status === 'CANCELED').length,
+    [bookings]
+  );
+
+  /* A job whose status has no column at all. Cancelled jobs are hidden on
+     purpose and do not count here; anything else means a job is on nobody's
+     screen, which is worth saying out loud. */
+  const unknownStatusCount = unplaced.filter((b) => b.status !== 'CANCELED').length;
+
+  /* The chosen column can stop existing — switching canceled back off while it
+     is the one on screen would otherwise leave the phone with every column
+     hidden and nothing to look at. */
+  const activeColumnId = resolveActiveColumn(groups, activeColumn);
 
   const slaBreaches = useMemo(
     () =>
@@ -207,95 +225,91 @@ export const DispatchConsole: React.FC = () => {
       )}
 
       {tab === 'dispatch' && (
-        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-[480px]">
-          <section className="flex-1 min-w-0 flex flex-col bg-[#12141c] border border-white/10 rounded-2xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10 flex flex-wrap gap-2 items-center">
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Filter</span>
-              {(['ALL', ...STATUS_OPTIONS] as StatusFilter[]).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setStatusFilter(s)}
-                  className={`text-[10px] font-bold px-2.5 py-1 rounded-md border ${
-                    statusFilter === s
-                      ? 'border-orange-500/50 bg-orange-500/15 text-orange-200'
-                      : 'border-white/10 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {s === 'ALL' ? 'All' : s.replace('_', ' ')}
-                </button>
-              ))}
-              <span className="ml-auto text-[10px] text-slate-500">{filtered.length} jobs</span>
-              {slaBreaches > 0 && (
-                <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded px-1.5 py-0.5">
-                  {slaBreaches} SLA &gt;{SLA_UNCLAIMED_ALERT_MINUTES}m
-                </span>
-              )}
-            </div>
+        <div className="flex flex-col gap-4 flex-1 min-h-[480px]">
+          <TechStrip states={techStates} />
 
-            <div className="overflow-auto flex-1">
+          <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+            <section className="flex-1 min-w-0 flex flex-col gap-3">
+              {/* Narrow screens get one column at a time: four columns do not
+                  fit side by side on a phone, and a squeezed card is unreadable. */}
+              <div className="flex lg:hidden gap-2 overflow-x-auto pb-1">
+                {groups.map((g) => (
+                  <button
+                    key={g.column.id}
+                    type="button"
+                    onClick={() => setActiveColumn(g.column.id)}
+                    aria-pressed={activeColumnId === g.column.id}
+                    className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-bold border transition-colors ${
+                      activeColumnId === g.column.id
+                        ? 'bg-orange-500 text-white border-orange-500'
+                        : 'bg-[#12141c] text-slate-300 border-white/10'
+                    }`}
+                  >
+                    {g.column.shortLabel} · {g.total}
+                  </button>
+                ))}
+              </div>
+
               {loading && bookings.length === 0 ? (
                 <div className="flex justify-center py-16 text-slate-500">
                   <Loader2 className="w-6 h-6 animate-spin" />
                 </div>
-              ) : filtered.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-16">No bookings match this filter.</p>
               ) : (
-                <ul className="divide-y divide-white/5">
-                  {filtered.map((b) => {
-                    const age = unclaimedAgeMinutes(b);
-                    const slaHot = age != null && age >= SLA_UNCLAIMED_ALERT_MINUTES;
-                    return (
-                    <li key={b.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(b.id)}
-                        className={`w-full text-left px-4 py-3 hover:bg-white/[0.03] transition-colors ${
-                          selectedId === b.id ? 'bg-orange-500/10 border-l-2 border-orange-500' : ''
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-bold text-white">{b.id}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{b.customerName}</p>
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            {statusBadge(b.status)}
-                            {slaHot && (
-                              <span className="text-[9px] font-bold text-amber-300">{age}m unclaimed</span>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-1 truncate">{b.vehicle}</p>
-                        <p className="text-[11px] text-slate-400">
-                          <span className={b.claimedBy ? 'text-orange-400 font-semibold' : 'text-slate-500'}>
-                            {b.claimedBy ? `👨‍🔧 ${getAssignedTechName(b, techs)}` : 'Unassigned'}
-                          </span>{' '}
-                          · ${b.totalEstimate.toFixed(2)}
-                        </p>
-                      </button>
-                    </li>
-                    );
-                  })}
-                </ul>
+                <div className="flex-1 min-h-0 flex gap-3">
+                  {groups.map((g) => (
+                    <BoardColumnView
+                      key={g.column.id}
+                      group={g}
+                      techs={techs}
+                      selectedId={selectedId}
+                      onSelect={setSelectedId}
+                      hiddenOnNarrow={g.column.id !== activeColumnId}
+                    />
+                  ))}
+                </div>
               )}
-            </div>
-          </section>
 
-          <aside className="w-full lg:w-[420px] shrink-0 bg-[#12141c] border border-white/10 rounded-2xl p-4 overflow-y-auto max-h-[70vh] lg:max-h-none">
-            {!selected ? (
-              <p className="text-sm text-slate-500 text-center py-12">Select a job to manage dispatch.</p>
-            ) : (
-              <BookingDetail
-                booking={selected}
-                techs={techs}
-                saving={saving}
-                actionError={actionError}
-                onPatch={handlePatch}
-                onReleaseToPool={handleReleaseToPool}
-              />
-            )}
-          </aside>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-500">
+                <span>{bookings.length} jobs in total</span>
+                {slaBreaches > 0 && (
+                  <span className="font-bold text-amber-300">
+                    {slaBreaches} waiting over {SLA_UNCLAIMED_ALERT_MINUTES}m
+                  </span>
+                )}
+                {canceledCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCanceled((v) => !v)}
+                    aria-pressed={showCanceled}
+                    className="min-h-[44px] px-3 -my-2 font-semibold text-slate-400 hover:text-white underline underline-offset-2"
+                  >
+                    {showCanceled ? 'Hide' : 'Show'} canceled ({canceledCount})
+                  </button>
+                )}
+                {unknownStatusCount > 0 && (
+                  <span className="font-bold text-amber-300">
+                    {unknownStatusCount} job{unknownStatusCount === 1 ? '' : 's'} with an
+                    unrecognised status &mdash; not shown in any column
+                  </span>
+                )}
+              </div>
+            </section>
+
+            <aside className="w-full lg:w-[420px] shrink-0 bg-[#12141c] border border-white/10 rounded-2xl p-4 overflow-y-auto max-h-[70vh] lg:max-h-none">
+              {!selected ? (
+                <p className="text-sm text-slate-500 text-center py-12">Select a job to manage dispatch.</p>
+              ) : (
+                <BookingDetail
+                  booking={selected}
+                  techs={techs}
+                  saving={saving}
+                  actionError={actionError}
+                  onPatch={handlePatch}
+                  onReleaseToPool={handleReleaseToPool}
+                />
+              )}
+            </aside>
+          </div>
         </div>
       )}
 
@@ -366,6 +380,179 @@ export const DispatchConsole: React.FC = () => {
         </section>
       )}
     </div>
+  );
+};
+
+/* One colour per status, and the column header is the only place it is drawn —
+   the card no longer repeats it, because the column a card sits in already says
+   what its status is. Orange is reserved for "this is the job you selected",
+   which is why ON_SITE keeps violet rather than taking the brand colour. */
+const COLUMN_TONE: Record<BoardColumnId, { rule: string; text: string; chip: string }> = {
+  needs_tech: { rule: 'border-amber-500/60', text: 'text-amber-300', chip: 'bg-amber-400 text-[#0b0c10]' },
+  on_the_way: { rule: 'border-sky-500/60', text: 'text-sky-300', chip: 'bg-sky-400 text-[#0b0c10]' },
+  on_site: { rule: 'border-violet-500/60', text: 'text-violet-300', chip: 'bg-violet-400 text-[#0b0c10]' },
+  done: { rule: 'border-emerald-500/50', text: 'text-emerald-300', chip: 'bg-emerald-400 text-[#0b0c10]' },
+  canceled: { rule: 'border-white/15', text: 'text-slate-400', chip: 'bg-slate-500 text-white' },
+};
+
+const TECH_STATE_STYLE: Record<TechBoardState<Booking>['kind'], { dot: string; label: string }> = {
+  on_job: { dot: 'bg-sky-400', label: 'text-sky-300' },
+  free: { dot: 'bg-emerald-400', label: 'text-emerald-300' },
+  off_shift: { dot: 'bg-slate-600', label: 'text-slate-500' },
+};
+
+/** Who is free right now, across the top of the board. */
+const TechStrip: React.FC<{ states: TechBoardState<Booking>[] }> = ({ states }) => {
+  if (states.length === 0) return null;
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1">
+      {states.map((s) => {
+        const style = TECH_STATE_STYLE[s.kind];
+        const detail =
+          s.kind === 'on_job'
+            ? `${s.activeJob?.status === 'ON_SITE' ? 'On site' : 'On the way'} · ${s.activeJob?.id ?? ''}`
+            : s.kind === 'free'
+              ? 'Free — can take a job'
+              : 'Off shift — cannot claim';
+        return (
+          <div
+            key={s.tech.id}
+            className="shrink-0 flex items-center gap-2.5 bg-[#12141c] border border-white/10 rounded-xl px-3 py-2"
+          >
+            <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white truncate">{s.tech.name}</p>
+              <p className={`text-[10px] truncate ${style.label}`}>{detail}</p>
+            </div>
+            {s.openJobs > 1 && (
+              <span className="shrink-0 text-[10px] font-bold text-slate-400 bg-white/5 rounded px-1.5 py-0.5">
+                {s.openJobs} open
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+const BoardColumnView: React.FC<{
+  group: BoardGroup<Booking>;
+  techs: DispatchTech[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  hiddenOnNarrow: boolean;
+}> = ({ group, techs, selectedId, onSelect, hiddenOnNarrow }) => {
+  const tone = COLUMN_TONE[group.column.id];
+  return (
+    <div
+      className={`${hiddenOnNarrow ? 'hidden lg:flex' : 'flex'} flex-col gap-2 flex-1 basis-0 min-w-0`}
+    >
+      <div className={`flex items-center gap-2 pb-2 border-b-2 ${tone.rule}`}>
+        <h2
+          className={`font-heading text-[11px] font-bold uppercase tracking-wider truncate ${tone.text}`}
+        >
+          {group.column.label}
+        </h2>
+        <span className={`shrink-0 text-[10px] font-bold rounded-full px-2 py-0.5 ${tone.chip}`}>
+          {group.total}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2 overflow-y-auto flex-1 min-h-0">
+        {group.jobs.length === 0 ? (
+          <p className="text-[11px] text-slate-600 text-center py-8">Nothing here.</p>
+        ) : (
+          group.jobs.map((b) => (
+            <JobCard
+              key={b.id}
+              booking={b}
+              techs={techs}
+              selected={selectedId === b.id}
+              onSelect={onSelect}
+            />
+          ))
+        )}
+        {group.hidden > 0 && (
+          <p className="text-[10px] text-slate-500 text-center py-2">
+            +{group.hidden} older not shown
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const JobCard: React.FC<{
+  booking: Booking;
+  techs: DispatchTech[];
+  selected: boolean;
+  onSelect: (id: string) => void;
+}> = ({ booking, techs, selected, onSelect }) => {
+  const zip = lookupServiceZip(booking.zipCode);
+  const age = unclaimedAgeMinutes(booking);
+  const slaHot = age != null && age >= SLA_UNCLAIMED_ALERT_MINUTES;
+  const schedule = formatPreferredSchedule(booking.preferredDate, booking.preferredTimeWindow);
+  const primaryService = booking.services[0] || 'Service call';
+  const extraServices = Math.max(0, booking.services.length - 1);
+  /* Travel is free across the whole dispatch radius, so distance only matters
+     when a booking came in from beyond it — that one needs a decision before
+     anybody drives. */
+  const outsideRadius = booking.distanceMiles > SERVICE_RADIUS_MILES;
+  const addressUnusable = isIncompleteServiceAddress(booking.customerAddress);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(booking.id)}
+      aria-pressed={selected}
+      className={`w-full text-left rounded-xl border p-3 transition-colors ${
+        selected
+          ? 'border-orange-500 bg-orange-500/10'
+          : 'border-white/10 bg-[#12141c] hover:border-white/25'
+      }`}
+    >
+      <p className="text-[13px] font-bold text-white leading-snug">
+        {primaryService}
+        {extraServices > 0 && (
+          <span className="font-semibold text-slate-400"> +{extraServices}</span>
+        )}
+      </p>
+      {schedule && <p className="text-[10px] font-bold text-slate-300 mt-1">{schedule}</p>}
+      <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed break-words">
+        {booking.vehicle}
+      </p>
+      <p className="text-[11px] text-slate-500">
+        {zip?.city || booking.zipCode || 'Location unknown'} · {Math.round(booking.distanceMiles)} mi ·{' '}
+        ${booking.totalEstimate.toFixed(2)}
+      </p>
+
+      {(outsideRadius || addressUnusable || slaHot) && (
+        <span className="flex flex-wrap gap-1 mt-2">
+          {addressUnusable && (
+            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-full px-2 py-0.5">
+              Address needs fixing
+            </span>
+          )}
+          {outsideRadius && (
+            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-full px-2 py-0.5">
+              Outside the {SERVICE_RADIUS_MILES} mi radius
+            </span>
+          )}
+          {slaHot && (
+            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-full px-2 py-0.5">
+              {age}m unclaimed
+            </span>
+          )}
+        </span>
+      )}
+
+      {booking.claimedBy && (
+        <p className="text-[11px] font-semibold text-orange-400 mt-2 truncate">
+          {getAssignedTechName(booking, techs)}
+        </p>
+      )}
+      <p className="text-[10px] text-slate-600 mt-2 tracking-wide">{booking.id}</p>
+    </button>
   );
 };
 
