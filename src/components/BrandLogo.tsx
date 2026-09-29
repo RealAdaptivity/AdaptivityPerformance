@@ -17,7 +17,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 }) => {
   const base = (import.meta.env.BASE_URL || '/').replace(/\/?$/, '/');
   return (
-    <span className={`inline-flex items-center gap-3 min-w-0 ${className}`}>
+    <span className={`inline-flex items-center gap-3 min-w-0 max-w-full ${className}`}>
       <img
         src={`${base}logo-ui.png`}
         alt="Adaptivity Performance"
@@ -28,8 +28,15 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       />
       {withWordmark ? (
         <span className={`min-w-0 ${wordmarkClassName}`}>
-          <span className="font-heading font-extrabold text-lg sm:text-xl tracking-tight text-white flex items-center gap-1.5 truncate">
-            ADAPTIVITY <span className="text-orange-500">PERFORMANCE</span>
+          {/* Stacked on phones, one line from sm up. As a single line it needs
+              ~250px, which a phone header does not have once the Book button
+              and menu are beside it — it used to run underneath the button.
+              `truncate` is on each word because on the flex row it never
+              applied: flex items are not text, so nothing was ever clipped
+              or ellipsed, it just overflowed. */}
+          <span className="font-heading font-extrabold tracking-tight text-white flex flex-col leading-[1.05] text-[15px] min-[380px]:text-base sm:flex-row sm:items-center sm:gap-1.5 sm:text-xl sm:leading-tight">
+            <span className="truncate">ADAPTIVITY</span>
+            <span className="truncate text-orange-500">PERFORMANCE</span>
           </span>
           <span className="text-[10px] tracking-widest text-slate-400 uppercase font-semibold hidden sm:block">
             Mobile & Shop Automotive Specialist
