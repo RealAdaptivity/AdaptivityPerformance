@@ -137,11 +137,14 @@ export const DispatchConsole: React.FC = () => {
     setSaving(true);
     setActionError(null);
     try {
-      if (patch.status === 'CANCELED') {
-        await adminCancelBookingHold(referenceCode, true, patch.cancelReason || undefined);
-      } else {
-        await adminPatchBooking(referenceCode, patch);
-      }
+      /* CANCELED used to be rerouted through adminCancelBookingHold with
+         releaseJob=true, which writes status 'UNASSIGNED' — so picking Cancel
+         un-assigned the job and it reappeared on the board instead of being
+         cancelled. That detour existed to release a Stripe card authorization;
+         no card
+         is taken any more, and adminPatchBooking already writes the status and
+         the cancel reason in one update. */
+      await adminPatchBooking(referenceCode, patch);
       await load();
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Update failed');
@@ -150,7 +153,7 @@ export const DispatchConsole: React.FC = () => {
     }
   };
 
-  const handleCancelHold = async (referenceCode: string, cancelReason?: string) => {
+  const handleReleaseToPool = async (referenceCode: string, cancelReason?: string) => {
     if (
       !window.confirm(
         'Release this job back to the open pool?'
@@ -164,7 +167,7 @@ export const DispatchConsole: React.FC = () => {
       await adminCancelBookingHold(referenceCode, true, cancelReason);
       await load();
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Cancel failed');
+      setActionError(e instanceof Error ? e.message : 'Release failed');
     } finally {
       setSaving(false);
     }
@@ -289,7 +292,7 @@ export const DispatchConsole: React.FC = () => {
                 saving={saving}
                 actionError={actionError}
                 onPatch={handlePatch}
-                onCancelHold={handleCancelHold}
+                onReleaseToPool={handleReleaseToPool}
               />
             )}
           </aside>
@@ -372,7 +375,7 @@ type BookingDetailProps = {
   saving: boolean;
   actionError: string | null;
   onPatch: (ref: string, patch: Parameters<typeof adminPatchBooking>[1]) => Promise<void>;
-  onCancelHold: (ref: string, cancelReason?: string) => Promise<void>;
+  onReleaseToPool: (ref: string, cancelReason?: string) => Promise<void>;
 };
 
 const BookingDetail: React.FC<BookingDetailProps> = ({
@@ -381,7 +384,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   saving,
   actionError,
   onPatch,
-  onCancelHold,
+  onReleaseToPool,
 }) => {
   const mechanicId = booking.claimedBy?.id ?? '';
   const [cancelReason, setCancelReason] = useState<string>('customer_request');
@@ -529,11 +532,15 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     }
   };
 
-  const canCancelHold =
-    booking.paymentIntentId &&
-    booking.paymentStatus !== 'captured' &&
-    booking.paymentStatus !== 'canceled' &&
-    booking.paymentStatus !== 'refunded';
+  /* Was gated on booking.paymentIntentId — a Stripe payment intent. Stripe is
+     gone and nothing takes a card, so that field is null on every booking made
+     since, and this control never rendered for anyone. It is a dispatch action,
+     not a payment one: it hands an assigned job back to the open pool, which
+     only makes sense while a technician has it claimed and the job is live. */
+  const canReleaseToPool =
+    Boolean(booking.claimedBy) &&
+    booking.status !== 'COMPLETED' &&
+    booking.status !== 'CANCELED';
 
   const age = unclaimedAgeMinutes(booking);
 
@@ -668,10 +675,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </p>
       </div>
 
-      {canCancelHold && (
+      {canReleaseToPool && (
         <div className="space-y-2">
           <label className="block space-y-1">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Cancel reason</span>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Reason for releasing</span>
             <select
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
@@ -687,10 +694,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <button
             type="button"
             disabled={saving}
-            onClick={() => void onCancelHold(booking.id, cancelReason)}
+            onClick={() => void onReleaseToPool(booking.id, cancelReason)}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2 hover:bg-red-500/10 disabled:opacity-50"
           >
-            Cancel & release job
+            Release back to the open pool
           </button>
         </div>
       )}
@@ -1091,7 +1098,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </select>
       </label>
 
-      {booking.status !== 'CANCELED' && !canCancelHold && (
+      {booking.status !== 'CANCELED' && !canReleaseToPool && (
         <label className="block space-y-1">
           <span className="text-[10px] uppercase font-bold text-slate-500">
             Cancel reason (if canceling via status)
