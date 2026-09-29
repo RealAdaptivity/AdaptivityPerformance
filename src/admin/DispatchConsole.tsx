@@ -14,6 +14,7 @@ import {
   googleMapsSearchUrl,
 } from '../config/mapLinks';
 import { DispatchMap } from './DispatchMap';
+import { AddTechnicianForm } from './AddTechnicianForm';
 import type { Booking, JobStatus } from '../context/BookingContext';
 import { isIncompleteServiceAddress } from '../services/serviceAddress';
 import {
@@ -320,15 +321,15 @@ export const DispatchConsole: React.FC = () => {
 
       {tab === 'techs' && (
         <section className="space-y-4">
+          <AddTechnicianForm onAdded={() => void load()} />
           <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-100/90 leading-relaxed">
             <strong className="text-amber-300">1099-NEC:</strong> {FORM_1099_NEC_NOTICE}
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {techs.length === 0 ? (
             <p className="text-sm text-slate-500 col-span-full py-8 text-center">
-              No technician profiles yet. Have techs sign in once on{' '}
-              <strong className="text-slate-400">Portal → Tech Login</strong> (creates dispatch profile), or
-              sign up with the Tech tab and role <code className="text-orange-300">tech</code>.
+              No technicians yet. Use <strong className="text-slate-300">Add a technician</strong> above —
+              they appear here once they set a password and sign in to the tech portal.
             </p>
           ) : (
             techs.map((t) => {
