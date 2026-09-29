@@ -560,4 +560,33 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// Cancelling a job from the dispatch board wrote the wrong status, and the
+// release control could never appear. Both were leftovers from the era when a
+// card was authorized at booking, and both failed invisibly: the admin picked Cancel, the board
+// reloaded, and the job came back as UNASSIGNED with no error shown.
+{
+  const console_ = read('src/admin/DispatchConsole.tsx');
+
+  // 1. CANCELED must not be rerouted through adminCancelBookingHold, which
+  //    writes 'UNASSIGNED' when releaseJob is true.
+  if (/status === 'CANCELED'[\s\S]{0,200}adminCancelBookingHold\(/.test(console_)) {
+    throw new Error(
+      "DispatchConsole routes a CANCELED status through adminCancelBookingHold again; " +
+        "with releaseJob=true that writes UNASSIGNED, so cancelling silently un-assigns the job"
+    );
+  }
+
+  // 2. The release control must not be gated on a payment field. Nothing takes
+  //    a card, so payment_intent_id is null on every booking and the control
+  //    would never render.
+  const gate = console_.match(/const canReleaseToPool =([\s\S]{0,240}?);/);
+  if (!gate) throw new Error('DispatchConsole: canReleaseToPool gate not found');
+  if (/payment/i.test(gate[1])) {
+    throw new Error(
+      'canReleaseToPool is gated on a payment field again; payment_intent_id is null on ' +
+        'every booking since cards were removed, so the control would never render'
+    );
+  }
+}
+
 console.log('Production operations verification passed.');
