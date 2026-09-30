@@ -206,6 +206,8 @@ export type ServerServiceQuote = {
   quotedDollars: number;
   mode: 'diagnostic' | 'direct';
   serviceTitles: string[];
+  /** Catalog kind per service, which decides the specialty a tech needs to claim it. */
+  serviceKinds: string[];
 };
 
 export function computeQuoteFromServices(services: unknown): ServerServiceQuote {
@@ -218,6 +220,7 @@ export function computeQuoteFromServices(services: unknown): ServerServiceQuote 
       quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
       mode: 'diagnostic',
       serviceTitles: ['Mobile Diagnostic Visit'],
+      serviceKinds: ['diagnostic'],
     };
   }
 
@@ -227,6 +230,7 @@ export function computeQuoteFromServices(services: unknown): ServerServiceQuote 
       quotedDollars: resolved.reduce((sum, s) => sum + s.price, 0),
       mode: 'direct',
       serviceTitles: resolved.map((s) => s.title),
+      serviceKinds: resolved.map((s) => s.kind),
     };
   }
 
@@ -234,6 +238,7 @@ export function computeQuoteFromServices(services: unknown): ServerServiceQuote 
     quotedDollars: DIAGNOSTIC_FEE_DOLLARS,
     mode: 'diagnostic',
     serviceTitles: resolved.map((s) => s.title),
+    serviceKinds: resolved.map((s) => s.kind),
   };
 }
 `;
