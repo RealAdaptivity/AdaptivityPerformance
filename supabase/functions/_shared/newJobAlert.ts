@@ -46,17 +46,24 @@ export type AlertCandidate = {
   terminatedAt: string | null;
 };
 
-/** Active techs with a phone on file who hold every specialty the job needs.
- *  A tech with no specialties recorded counts as mechanical, as the portal does. */
-export function techsToAlert(candidates: AlertCandidate[], serviceKinds: string[]): AlertCandidate[] {
+/** Active techs who hold every specialty the job needs. A tech with no
+ *  specialties recorded counts as mechanical, as the portal does. */
+export function eligibleTechs(candidates: AlertCandidate[], serviceKinds: string[]): AlertCandidate[] {
   const needed = new Set((serviceKinds.length ? serviceKinds : ['diagnostic']).map(specialtyForKind));
-  const seenPhones = new Set<string>();
   return candidates.filter((t) => {
     if (t.terminatedAt) return false;
-    const digits = (t.phone ?? '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
-    if (digits.length !== 10 || seenPhones.has(digits)) return false;
     const has = new Set(t.specialties && t.specialties.length ? t.specialties : ['mechanical']);
     for (const s of needed) if (!has.has(s)) return false;
+    return true;
+  });
+}
+
+/** The eligible techs to text: those with a usable phone, each number once. */
+export function techsToAlert(candidates: AlertCandidate[], serviceKinds: string[]): AlertCandidate[] {
+  const seenPhones = new Set<string>();
+  return eligibleTechs(candidates, serviceKinds).filter((t) => {
+    const digits = (t.phone ?? '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '');
+    if (digits.length !== 10 || seenPhones.has(digits)) return false;
     seenPhones.add(digits);
     return true;
   });
@@ -79,6 +86,20 @@ function dayLabel(iso: string | null | undefined): string | null {
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   if (d.getMonth() !== Number(m[2]) - 1) return null;
   return `${DAYS[d.getDay()]} ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+/** The same alert as a push notification to the Adaptivity app: a short
+ *  title and the job in one line. Tapping it opens the app. */
+export function buildNewJobPush(input: {
+  service: string;
+  town: string | null;
+  shopDropOff: boolean;
+  preferredDate?: string | null;
+  preferredTimeWindow?: string | null;
+}): { title: string; body: string } {
+  const sms = buildNewJobAlertSms({ ...input, portalUrl: '' });
+  const line = sms.replace(/^Adaptivity: new job available — /, '').replace(/\. First to claim it gets it: $/, '');
+  return { title: 'New job available', body: `${line} — first to claim it gets it.` };
 }
 
 export function buildNewJobAlertSms(input: {

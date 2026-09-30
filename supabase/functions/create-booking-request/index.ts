@@ -5,7 +5,14 @@ import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts'
 import { TRAVEL_FEE_DOLLARS, computeQuoteFromServices } from '../_shared/servicePricing.ts';
 import { buildBookingConfirmationSms } from '../_shared/bookingConfirmation.ts';
 import { sendTwilioSms } from '../_shared/twilioSms.ts';
-import { buildNewJobAlertSms, techsToAlert, townFromAddress } from '../_shared/newJobAlert.ts';
+import {
+  buildNewJobAlertSms,
+  buildNewJobPush,
+  eligibleTechs,
+  techsToAlert,
+  townFromAddress,
+} from '../_shared/newJobAlert.ts';
+import { sendExpoPush } from '../_shared/expoPush.ts';
 
 /** Replaces create-booking-with-hold. No card is taken online any more: the
  *  booking is a request for a visit, and the customer pays the technician in
@@ -283,64 +290,85 @@ Deno.serve(async (req) => {
       );
     }
 
-    /* Tell the techs. Every active tech who can take this job gets a text so
-       someone claims it quickly. Same rules as the customer text: awaited so
-       the isolate is not torn down mid-send, bounded, and never able to fail
-       the booking. Skipped outright until the Twilio secrets are set. */
-    let techAlerts = { eligible: 0, sent: 0 };
-    if (Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_FROM_NUMBER')) {
-      try {
-        techAlerts = await Promise.race([
-          (async () => {
-            const { data: techProfiles } = await supabase
-              .from('profiles')
-              .select('id, phone')
-              .eq('role', 'tech');
-            const ids = (techProfiles ?? []).map((t) => t.id as string);
-            const { data: details } = ids.length
-              ? await supabase
-                  .from('mechanic_details')
-                  .select('profile_id, specialties, terminated_at')
-                  .in('profile_id', ids)
-              : { data: [] };
-            const byId = new Map((details ?? []).map((d) => [d.profile_id as string, d]));
-            const recipients = techsToAlert(
-              (techProfiles ?? []).map((t) => {
-                const d = byId.get(t.id as string);
-                return {
-                  id: t.id as string,
-                  phone: (t.phone as string | null) ?? null,
-                  specialties: (d?.specialties as string[] | null) ?? null,
-                  terminatedAt: (d?.terminated_at as string | null) ?? null,
-                };
-              }),
-              quote.serviceKinds
-            );
-            const siteUrl = (Deno.env.get('ADAPTIVITY_SITE_URL')?.trim() || 'https://adaptivityperformance.com').replace(/\/$/, '');
-            const body = buildNewJobAlertSms({
-              service: normalizedServices[0] ?? 'Service call',
-              town: townFromAddress(customerAddress),
-              shopDropOff: locType === 'shop',
-              preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
-              preferredTimeWindow: typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,
-              portalUrl: `${siteUrl}/portal`,
-            });
-            const results = await Promise.allSettled(recipients.map((t) => sendTwilioSms(t.phone!, body)));
+    /* Tell the techs. Every active tech who can take this job hears about it
+       so someone claims it quickly: a push to the Adaptivity app on their
+       phone (free, and on as long as they have signed in to the app), and a
+       text once the Twilio secrets are set. Same rules as the customer text:
+       awaited so the isolate is not torn down mid-send, bounded, and never
+       able to fail the booking. */
+    let techAlerts = { eligible: 0, pushed: 0, texted: 0 };
+    try {
+      techAlerts = await Promise.race([
+        (async () => {
+          const { data: techProfiles } = await supabase
+            .from('profiles')
+            .select('id, phone')
+            .eq('role', 'tech');
+          const ids = (techProfiles ?? []).map((t) => t.id as string);
+          const { data: details } = ids.length
+            ? await supabase
+                .from('mechanic_details')
+                .select('profile_id, specialties, terminated_at')
+                .in('profile_id', ids)
+            : { data: [] };
+          const byId = new Map((details ?? []).map((d) => [d.profile_id as string, d]));
+          const candidates = (techProfiles ?? []).map((t) => {
+            const d = byId.get(t.id as string);
             return {
-              eligible: recipients.length,
-              sent: results.filter((r) => r.status === 'fulfilled' && r.value.sent).length,
+              id: t.id as string,
+              phone: (t.phone as string | null) ?? null,
+              specialties: (d?.specialties as string[] | null) ?? null,
+              terminatedAt: (d?.terminated_at as string | null) ?? null,
             };
-          })(),
-          new Promise<{ eligible: number; sent: number }>((resolve) =>
-            setTimeout(() => resolve({ eligible: -1, sent: 0 }), 6000)
-          ),
-        ]);
-      } catch (alertErr) {
-        console.error('[create-booking-request] tech alerts:', alertErr instanceof Error ? alertErr.message : alertErr);
-      }
-      if (techAlerts.sent < techAlerts.eligible || techAlerts.eligible <= 0) {
-        console.warn('[create-booking-request] tech alerts', techAlerts);
-      }
+          });
+          const eligible = eligibleTechs(candidates, quote.serviceKinds);
+          const job = {
+            service: normalizedServices[0] ?? 'Service call',
+            town: townFromAddress(customerAddress),
+            shopDropOff: locType === 'shop',
+            preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
+            preferredTimeWindow: typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,
+          };
+
+          const pushJob = (async () => {
+            if (!eligible.length) return 0;
+            const { data: tokenRows } = await supabase
+              .from('device_push_tokens')
+              .select('expo_push_token')
+              .in('profile_id', eligible.map((t) => t.id));
+            const tokens = (tokenRows ?? []).map((r) => r.expo_push_token as string);
+            const push = await sendExpoPush(tokens, {
+              ...buildNewJobPush(job),
+              data: { type: 'new_job', bookingId: booking.id, bookingReference: booking.reference_code },
+            });
+            if (push.errors.length) console.warn('[create-booking-request] push errors', push.errors);
+            return push.sent;
+          })();
+
+          const textJob = (async () => {
+            if (!(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_FROM_NUMBER'))) {
+              return 0;
+            }
+            const siteUrl = (Deno.env.get('ADAPTIVITY_SITE_URL')?.trim() || 'https://adaptivityperformance.com').replace(/\/$/, '');
+            const body = buildNewJobAlertSms({ ...job, portalUrl: `${siteUrl}/portal` });
+            const results = await Promise.allSettled(
+              techsToAlert(candidates, quote.serviceKinds).map((t) => sendTwilioSms(t.phone!, body))
+            );
+            return results.filter((r) => r.status === 'fulfilled' && r.value.sent).length;
+          })();
+
+          const [pushed, texted] = await Promise.all([pushJob.catch(() => 0), textJob.catch(() => 0)]);
+          return { eligible: eligible.length, pushed, texted };
+        })(),
+        new Promise<{ eligible: number; pushed: number; texted: number }>((resolve) =>
+          setTimeout(() => resolve({ eligible: -1, pushed: 0, texted: 0 }), 6000)
+        ),
+      ]);
+    } catch (alertErr) {
+      console.error('[create-booking-request] tech alerts:', alertErr instanceof Error ? alertErr.message : alertErr);
+    }
+    if (techAlerts.eligible !== 0 && techAlerts.pushed + techAlerts.texted === 0) {
+      console.warn('[create-booking-request] no tech was notified', techAlerts);
     }
 
     return jsonResponse({

@@ -71,3 +71,26 @@ test('ASAP and shop drop-offs read naturally', () => {
   });
   assert.match(sms, /Battery \/ Charging System, shop drop-off, ASAP\./);
 });
+
+test('push goes to every eligible tech, phone or not', async () => {
+  const { eligibleTechs } = await import('../supabase/functions/_shared/newJobAlert.ts');
+  assert.deepEqual(eligibleTechs(techs, ['brakes']).map((t) => t.id), ['a', 'b', 'c', 'd', 'f']);
+  assert.deepEqual(eligibleTechs(techs, ['tires']).map((t) => t.id), ['b']);
+});
+
+test('the push notification is the text without the link', async () => {
+  const { buildNewJobPush } = await import('../supabase/functions/_shared/newJobAlert.ts');
+  assert.deepEqual(
+    buildNewJobPush({
+      service: 'Brake Service (Pads / Rotors)',
+      town: 'Northlake',
+      shopDropOff: false,
+      preferredDate: '2026-10-01',
+      preferredTimeWindow: 'Morning (8 AM - 12 PM)',
+    }),
+    {
+      title: 'New job available',
+      body: 'Brake Service (Pads / Rotors), Northlake, Thu Oct 1 Morning — first to claim it gets it.',
+    }
+  );
+});
