@@ -8,7 +8,7 @@ type BrandLogoProps = {
   wordmarkClassName?: string;
 };
 
-/** Orange/black Adaptivity mark — PNG for brand fidelity; SVG also in /public for favicon. */
+/** Orange/black Adaptivity mark. PNG only: there is no faithful SVG of the logo. */
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   className = '',
   size = 40,
