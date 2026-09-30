@@ -1,5 +1,6 @@
 /** Site SEO helpers — document title, meta, city landings. */
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf, type LocalCity } from './localSeo';
+import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -213,7 +214,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Are there travel fees for mobile service in Justin or Northlake?',
-    a: 'No! Mobile dispatch for any location within a 15-mile radius of our Justin hub (including Harvest, Canyon Falls, and Pecan Square) is 100% FREE ($0 travel fee). For locations past 15 miles (Argyle, Haslet, Denton, Keller), travel is billed at a transparent $2.00 per extra mile.',
+    a: `Every mobile visit has one flat $${TRAVEL_FEE_DOLLARS} travel fee — the same in Justin and Northlake (Harvest, Canyon Falls, Pecan Square) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. There is no per-mile charge. It is shown when you book and paid in person with the visit.`,
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',

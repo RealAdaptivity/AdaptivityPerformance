@@ -5,8 +5,7 @@
     "zip": "76247",
     "lat": 33.0848,
     "lng": -97.2961,
-    "radiusMiles": 30,
-    "freeRadiusMiles": 30
+    "radiusMiles": 30
   },
   "services": [
     {
@@ -317,7 +316,7 @@
       "distanceMiles": 0,
       "driveMinutes": 15,
       "servicePages": true,
-      "blurb": "Justin is home. Our shop hub and every service van start their day here, which makes Justin the fastest dispatch on the board - often same-day, always inside the free travel radius."
+      "blurb": "Justin is home. Our shop hub and every service van start their day here, which makes Justin the fastest dispatch on the board - often same-day, and the same flat travel fee as everywhere else we go."
     },
     {
       "slug": "northlake",
@@ -330,7 +329,7 @@
       "distanceMiles": 7,
       "driveMinutes": 20,
       "servicePages": true,
-      "blurb": "Seven miles from the Justin hub, Northlake is core territory. We run Canyon Falls, Harvest, and Pecan Square constantly - HOA driveways and all, with no travel fee inside the free radius."
+      "blurb": "Seven miles from the Justin hub, Northlake is core territory. We run Canyon Falls, Harvest, and Pecan Square constantly - HOA driveways and all, for the same flat travel fee as anywhere we serve."
     },
     {
       "slug": "argyle",
@@ -342,7 +341,7 @@
       "distanceMiles": 9,
       "driveMinutes": 20,
       "servicePages": true,
-      "blurb": "Argyle and Bartonville sit well inside our free travel radius. Acreage properties and long driveways are no problem - our vans carry their own power, air, and lighting."
+      "blurb": "Argyle and Bartonville sit well inside our radius. Acreage properties and long driveways are no problem - our vans carry their own power, air, and lighting."
     },
     {
       "slug": "roanoke",
@@ -378,7 +377,7 @@
       "distanceMiles": 14,
       "driveMinutes": 25,
       "servicePages": true,
-      "blurb": "Sendera Ranch is one of our busiest single neighborhoods. Haslet sits inside the free travel radius, and we are frequently out there twice in a day already."
+      "blurb": "Sendera Ranch is one of our busiest single neighborhoods. Haslet sits well inside our radius, and we are frequently out there twice in a day already."
     },
     {
       "slug": "keller",
@@ -472,7 +471,7 @@
       "distanceMiles": 14,
       "driveMinutes": 27,
       "servicePages": false,
-      "blurb": "Highland Village is inside the radius and inside the free travel band. Brakes, batteries, diagnostics, and oil service at the house."
+      "blurb": "Highland Village is well inside the radius, same flat travel fee as next door to the hub. Brakes, batteries, diagnostics, and oil service at the house."
     },
     {
       "slug": "lewisville",
@@ -485,7 +484,7 @@
       "distanceMiles": 18,
       "driveMinutes": 32,
       "servicePages": false,
-      "blurb": "Lewisville sits toward the outer edge of our radius. Fully covered - and travel is free, so the quote is the work, nothing added for the drive."
+      "blurb": "Lewisville sits toward the outer edge of our radius. Fully covered, and the travel fee is the same flat amount as next door to the hub - nothing extra for the distance."
     },
     {
       "slug": "ponder",
@@ -497,7 +496,7 @@
       "distanceMiles": 7,
       "driveMinutes": 18,
       "servicePages": false,
-      "blurb": "Ponder is seven miles from the hub and gets some of our fastest response times. Free travel radius, no minimum job size."
+      "blurb": "Ponder is seven miles from the hub and gets some of our fastest response times. No minimum job size."
     },
     {
       "slug": "krum",
@@ -521,7 +520,7 @@
       "distanceMiles": 19,
       "driveMinutes": 30,
       "servicePages": false,
-      "blurb": "Sanger is the northern edge of our service radius. Fully covered, with no travel charge either way."
+      "blurb": "Sanger is the northern edge of our service radius. Fully covered, for the same flat travel fee as anywhere we serve."
     },
     {
       "slug": "rhome",
@@ -533,7 +532,7 @@
       "distanceMiles": 9,
       "driveMinutes": 20,
       "servicePages": false,
-      "blurb": "Rhome is a nine-mile run west of the hub - free travel radius, same-day slots most weeks."
+      "blurb": "Rhome is a nine-mile run west of the hub - same-day slots most weeks."
     },
     {
       "slug": "boyd",
@@ -569,7 +568,7 @@
       "distanceMiles": 19,
       "driveMinutes": 30,
       "servicePages": false,
-      "blurb": "Decatur sits at our western edge. Fully covered, and travel is free - you pay for the work, not the drive out."
+      "blurb": "Decatur sits at our western edge. Fully covered, and the travel fee is flat - the drive out costs the same as it does in Justin."
     },
     {
       "slug": "azle",
@@ -594,7 +593,7 @@
       "distanceMiles": 14,
       "driveMinutes": 26,
       "servicePages": false,
-      "blurb": "Saginaw is a straight shot south of the hub and sits inside the free travel band for most addresses."
+      "blurb": "Saginaw is a straight shot south of the hub and is a quick run for the vans most days."
     },
     {
       "slug": "watauga",
@@ -619,7 +618,7 @@
       "distanceMiles": 17,
       "driveMinutes": 30,
       "servicePages": false,
-      "blurb": "North Richland Hills is near our southeastern edge and fully covered, with no travel charge on the quote."
+      "blurb": "North Richland Hills is near our southeastern edge and fully covered, with the same flat travel fee as the rest of the radius."
     },
     {
       "slug": "colleyville",
@@ -659,7 +658,7 @@
       "distanceMiles": 23,
       "driveMinutes": 38,
       "servicePages": true,
-      "blurb": "Fort Worth proper sits at the outer edge of our radius - 23 miles down from Justin. We run downtown, the Cultural District and the near west side, and travel is free, so nothing is added for the distance."
+      "blurb": "Fort Worth proper sits at the outer edge of our radius - 23 miles down from Justin. We run downtown, the Cultural District and the near west side, and the travel fee is flat, so nothing extra is added for the distance."
     },
     {
       "slug": "euless",
@@ -697,7 +696,7 @@
       "distanceMiles": 24,
       "driveMinutes": 40,
       "servicePages": false,
-      "blurb": "White Settlement and the west Fort Worth edge are well inside our ring, with no travel charge on top of the work."
+      "blurb": "White Settlement and the west Fort Worth edge are well inside our ring, for the same flat travel fee as anywhere we serve."
     },
     {
       "slug": "little-elm",
@@ -709,7 +708,7 @@
       "distanceMiles": 21,
       "driveMinutes": 35,
       "servicePages": false,
-      "blurb": "Little Elm sits 21 miles east of the hub across the top of Lewisville Lake. Fully covered, and travel is free."
+      "blurb": "Little Elm sits 21 miles east of the hub across the top of Lewisville Lake. Fully covered, same flat travel fee."
     },
     {
       "slug": "the-colony",
@@ -721,7 +720,7 @@
       "distanceMiles": 24,
       "driveMinutes": 38,
       "servicePages": false,
-      "blurb": "The Colony is at our eastern edge. Covered for driveway work, with no travel line on the quote."
+      "blurb": "The Colony is at our eastern edge. Covered for driveway work, with the same flat travel fee as the rest of the radius."
     },
     {
       "slug": "aubrey",
@@ -745,7 +744,7 @@
       "distanceMiles": 17,
       "driveMinutes": 32,
       "servicePages": false,
-      "blurb": "Lake Dallas sits on the east side of the lake, a straight run down I-35E. Same-week slots, and travel is free."
+      "blurb": "Lake Dallas sits on the east side of the lake, a straight run down I-35E. Same-week slots, same flat travel fee."
     },
     {
       "slug": "pilot-point",
@@ -769,7 +768,7 @@
       "distanceMiles": 24,
       "driveMinutes": 41,
       "servicePages": false,
-      "blurb": "Bridgeport is our western reach, straight out US-380. Worth planning a day ahead rather than same-day, but travel out is free."
+      "blurb": "Bridgeport is our western reach, straight out US-380. Worth planning a day ahead rather than same-day, but the travel fee is the same flat amount as close in."
     },
     {
       "slug": "greenwood",
@@ -781,7 +780,7 @@
       "distanceMiles": 24,
       "driveMinutes": 41,
       "servicePages": false,
-      "blurb": "Greenwood is rural Wise County, where the nearest shop is a tow away. We come to the property instead, and travel is free."
+      "blurb": "Greenwood is rural Wise County, where the nearest shop is a tow away. We come to the property instead, for the same flat travel fee as anywhere we serve."
     },
     {
       "slug": "paradise",
@@ -829,7 +828,7 @@
       "distanceMiles": 30,
       "driveMinutes": 47,
       "servicePages": false,
-      "blurb": "Valley View is our furthest point north, straight up I-35. Schedule ahead rather than same-day, and travel is still free."
+      "blurb": "Valley View is our furthest point north, straight up I-35. Schedule ahead rather than same-day, and the travel fee is still the same flat amount."
     },
     {
       "slug": "springtown",

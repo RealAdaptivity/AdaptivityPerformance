@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/http.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
-import { computeQuoteFromServices } from '../_shared/servicePricing.ts';
+import { TRAVEL_FEE_DOLLARS, computeQuoteFromServices } from '../_shared/servicePricing.ts';
 import { buildBookingConfirmationSms } from '../_shared/bookingConfirmation.ts';
 import { sendTwilioSms } from '../_shared/twilioSms.ts';
 
@@ -257,6 +257,7 @@ Deno.serve(async (req) => {
             services: normalizedServices,
             quotedDollars,
             quoteMode: quote.mode,
+            travelDollars: locationType === 'shop' ? 0 : TRAVEL_FEE_DOLLARS,
             vehicleDescription: vehicleDescriptionFinal,
             preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
             preferredTimeWindow:

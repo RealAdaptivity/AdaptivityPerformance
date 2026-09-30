@@ -6,6 +6,7 @@ import {
   SERVICE_RADIUS_MILES,
   lookupServiceZip,
   normalizeZip,
+  TRAVEL_FEE_DOLLARS,
 } from '../services/serviceArea';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 interface ServiceAreaCheckerProps {
@@ -24,9 +25,9 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
     setHasSearched(true);
   };
 
-  /* Travel is free across the whole radius now, so every in-area ZIP gets the
-     same answer. The old per-mile branch is gone rather than left unreachable. */
-  const travelFeeLabel = '$0 — free dispatch';
+  /* Travel is one flat fee everywhere inside the radius, so every in-area ZIP
+     gets the same answer. */
+  const travelFeeLabel = `$${TRAVEL_FEE_DOLLARS} flat travel`;
 
   return (
     <section id="area" className="py-20 bg-[#0e1017] border-t border-white/5 relative">
@@ -41,22 +42,22 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
           </h2>
           <p className="text-slate-400 text-sm sm:text-base">
             We dispatch from one hub in Justin and we stay inside a {SERVICE_RADIUS_MILES}-mile ring, because a van
-            stuck in cross-metro traffic is a van not fixing your car. Travel is free to every driveway
-            inside that ring — no mileage charge, anywhere we serve.
+            stuck in cross-metro traffic is a van not fixing your car. Travel is one flat ${TRAVEL_FEE_DOLLARS} to every
+            driveway inside that ring — no mileage charge, anywhere we serve.
           </p>
         </div>
 
         <div className="max-w-4xl mx-auto bg-[#12141c] p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl">
           <div className="mb-8">
-            <div className="p-4 rounded-2xl bg-[#0b0c10] border border-emerald-500/30 flex items-center justify-between">
+            <div className="p-4 rounded-2xl bg-[#0b0c10] border border-orange-500/30 flex items-center justify-between gap-4">
               <div>
-                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400">
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-orange-500/20 text-orange-300">
                   0 – {SERVICE_RADIUS_MILES} MILES
                 </span>
-                <div className="font-bold text-base text-white mt-1">Free dispatch, whole radius</div>
+                <div className="font-bold text-base text-white mt-1">One flat travel fee, whole radius</div>
                 <div className="text-xs text-slate-400">Justin, Northlake, Argyle, Roanoke, Denton, Haslet, Keller, Fort Worth, Grapevine, Southlake, Lewisville, Decatur, Azle and everywhere between</div>
               </div>
-              <span className="text-xl font-extrabold text-emerald-400 font-heading">$0 FREE</span>
+              <span className="text-xl font-extrabold text-orange-400 font-heading shrink-0">${TRAVEL_FEE_DOLLARS}</span>
             </div>
           </div>
 
@@ -114,7 +115,7 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
                     <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
                       <CheckCircle2 className="w-5 h-5" />
                       <span>
-                        {`Inside the ${SERVICE_RADIUS_MILES}-mile free dispatch radius`}
+                        {`Inside our ${SERVICE_RADIUS_MILES}-mile dispatch radius`}
                       </span>
                     </div>
                     <span className="text-xs bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full border border-orange-500/30 font-bold">

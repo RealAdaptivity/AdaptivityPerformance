@@ -2,6 +2,9 @@
 
 export const DIAGNOSTIC_FEE_DOLLARS = 100;
 
+/** Flat travel fee on a mobile visit. Paid in person; none on a shop drop-off. */
+export const TRAVEL_FEE_DOLLARS = 20;
+
 type ServiceKind = string;
 
 type CatalogService = {

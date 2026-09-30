@@ -6,6 +6,7 @@
  * the router can never drift apart.
  */
 import data from './localSeoData.json';
+import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 
 export type ServiceFaq = { q: string; a: string };
 
@@ -42,7 +43,6 @@ export type ServiceHub = {
   lat: number;
   lng: number;
   radiusMiles: number;
-  freeRadiusMiles: number;
 };
 
 export const LOCAL_HUB: ServiceHub = data.hub;
@@ -108,15 +108,10 @@ export function priceRangeLabel(service: LocalService): string {
     : `${fmt(service.priceFrom)} - ${fmt(service.priceTo)}`;
 }
 
-/** Travel band for a city, derived from the hub's free radius. */
-export function travelBand(city: LocalCity): 'free' | 'per-mile' {
-  return city.distanceMiles <= LOCAL_HUB.freeRadiusMiles ? 'free' : 'per-mile';
-}
-
+/** The travel line for a city page. Travel is one flat fee everywhere we
+ *  dispatch, so this only names the town; the figure comes from the catalog. */
 export function travelLabel(city: LocalCity): string {
-  return travelBand(city) === 'free'
-    ? `No travel fee — ${city.city} is inside our ${LOCAL_HUB.freeRadiusMiles}-mile free radius.`
-    : `${city.city} is ${city.distanceMiles} miles out, just past the ${LOCAL_HUB.freeRadiusMiles}-mile free radius, so a small per-mile travel line shows on the quote.`;
+  return `$${TRAVEL_FEE_DOLLARS} flat travel fee to ${city.city} — the same anywhere inside our ${LOCAL_HUB.radiusMiles}-mile radius, paid in person with the visit.`;
 }
 
 /** Nearest other cities, for internal linking between landing pages. */
@@ -144,17 +139,11 @@ export function serviceCityMeta(service: LocalService, city: LocalCity) {
  * landing pages ship the same FAQ block.
  */
 export function serviceCityFaqs(service: LocalService, city: LocalCity): ServiceFaq[] {
-  const band = travelBand(city);
   return [
     ...service.faqs,
     {
       q: `Do you charge extra to come out to ${city.city}?`,
-      a:
-        band === 'free'
-          ? `No. ${city.city} is ${city.distanceMiles} miles from our Justin hub, inside the ${LOCAL_HUB.freeRadiusMiles}-mile free travel radius, so there is no trip charge on a ${service.keyword} job.`
-          : `${city.city} is ${city.distanceMiles} miles out, just past our ${LOCAL_HUB.freeRadiusMiles}-mile free radius, so a $2/mile travel line appears on the quote — roughly $${(
-              (city.distanceMiles - LOCAL_HUB.freeRadiusMiles) * 2
-            ).toFixed(0)} each way. You see it before you approve anything.`,
+      a: `There is one flat $${TRAVEL_FEE_DOLLARS} travel fee on every mobile visit, and it is the same in ${city.city} (${city.distanceMiles} miles from our Justin hub) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. No per-mile charge. You pay it in person with the visit, and you see it before you book.`,
     },
     {
       q: `How fast can you get to ${city.city}?`,

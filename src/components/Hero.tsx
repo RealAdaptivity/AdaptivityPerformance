@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ArrowRight, CheckCircle2, MapPin, Phone, ShieldCheck, Wrench } from 'lucide-react';
 import { LOCAL_CITIES, LOCAL_HUB } from '../site/localSeo';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
-import { lookupServiceZip, travelFeeForMiles } from '../services/serviceArea';
-import { DIAGNOSTIC_FEE_DOLLARS } from '../services/serviceCatalog';
+import { lookupServiceZip } from '../services/serviceArea';
+import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import {
   checkHeroCoverage,
   heroPrefill,
@@ -153,9 +153,7 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
                       {result.distanceMiles === 0
                         ? 'That’s our home town'
                         : `${result.distanceMiles} mi from our shop in ${LOCAL_HUB.city}`}
-                      {travelFeeForMiles(result.distanceMiles) === 0
-                        ? ' — travel is included.'
-                        : ` — travel is $${travelFeeForMiles(result.distanceMiles)}.`}
+                      {` — flat $${TRAVEL_FEE_DOLLARS} travel, same as everywhere we go.`}
                     </p>
                   </div>
                 )}

@@ -489,8 +489,8 @@ const JobCard: React.FC<{
   const schedule = formatPreferredSchedule(booking.preferredDate, booking.preferredTimeWindow);
   const primaryService = booking.services[0] || 'Service call';
   const extraServices = Math.max(0, booking.services.length - 1);
-  /* Travel is free across the whole dispatch radius, so distance only matters
-     when a booking came in from beyond it — that one needs a decision before
+  /* Travel is one flat fee across the whole dispatch radius, so distance only
+     matters when a booking came in from beyond it — that one needs a decision before
      anybody drives. */
   const outsideRadius = booking.distanceMiles > SERVICE_RADIUS_MILES;
   const addressUnusable = isIncompleteServiceAddress(booking.customerAddress);

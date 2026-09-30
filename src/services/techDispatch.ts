@@ -20,6 +20,8 @@ export type DispatchBooking = {
   preferredTimeWindow: string | null;
   customerNotes: string | null;
   mechanicId: string | null;
+  /** 'shop' is a drop-off at a partner shop, where travel doesn't apply. */
+  locationType: 'mobile' | 'shop';
 };
 
 function mapRow(row: Record<string, unknown>): DispatchBooking {
@@ -43,6 +45,7 @@ function mapRow(row: Record<string, unknown>): DispatchBooking {
     preferredTimeWindow: (row.preferred_time_window as string | null) ?? null,
     customerNotes: (row.customer_notes as string | null) ?? null,
     mechanicId: (row.mechanic_id as string | null) ?? null,
+    locationType: row.location_type === 'shop' ? 'shop' : 'mobile',
   };
 }
 
