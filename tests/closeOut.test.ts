@@ -132,3 +132,12 @@ test('the close-out tax rate is the site-wide sales tax rate', async () => {
   const salesTax = await import('../src/services/salesTax.ts');
   assert.equal(SALES_TAX_BASIS_POINTS, salesTax.SALES_TAX_BASIS_POINTS);
 });
+
+test('the edge functions sum a close-out with the same code as the site', () => {
+  // record-square-payment checks a card charge against this total before it
+  // closes the job, so its copy must never drift from src/services/closeOut.ts.
+  assert.equal(
+    readFileSync('supabase/functions/_shared/closeOut.ts', 'utf8'),
+    readFileSync('src/services/closeOut.ts', 'utf8')
+  );
+});
