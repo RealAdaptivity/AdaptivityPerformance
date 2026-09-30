@@ -1,7 +1,7 @@
 /**
  * Texas sales tax for mobile repair work.
  *
- * The 8.25% DFW rate was hardcoded separately in DispatchConsole, TechJobsTab
+ * The 8.25% DFW rate was hardcoded separately in DispatchConsole, the tech close-out
  * and the Connect service. Three copies of a number that changes by
  * jurisdiction is the same drift that put two different service radii on the
  * site, so it is declared once here.

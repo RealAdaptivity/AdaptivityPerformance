@@ -96,3 +96,14 @@ export async function uploadBookingMedia(
 
   return { paths, failures };
 }
+
+/** Short-lived links to what a customer attached, for staff to view. The
+ *  bucket is private; its read policy lets techs and admins sign these. */
+export async function signedMediaUrls(paths: string[]): Promise<{ path: string; url: string; isVideo: boolean }[]> {
+  if (!paths.length) return [];
+  const { data, error } = await supabase.storage.from(BOOKING_MEDIA_BUCKET).createSignedUrls(paths, 60 * 30);
+  if (error || !data) return [];
+  return data.flatMap((d) =>
+    d.signedUrl && d.path ? [{ path: d.path, url: d.signedUrl, isVideo: /\.(mp4|mov|webm)$/i.test(d.path) }] : []
+  );
+}
