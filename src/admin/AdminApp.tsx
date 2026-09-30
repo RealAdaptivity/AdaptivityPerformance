@@ -29,6 +29,7 @@ import { PartsExpensesAdmin } from './PartsExpensesAdmin';
 import { PnLDashboard } from './PnLDashboard';
 import { GrowthAdmin } from './GrowthAdmin';
 import { TechApplicationsAdmin } from './TechApplicationsAdmin';
+import { AddTechnicianForm } from './AddTechnicianForm';
 import { AdminContractorAgreementsTab } from './AdminContractorAgreementsTab';
 import { QuotesAdmin } from './QuotesAdmin';
 
@@ -40,6 +41,7 @@ export const AdminApp: React.FC = () => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [needsBootstrap, setNeedsBootstrap] = useState<boolean | null>(null);
   const [adminTab, setAdminTab] = useState<AdminTab>('dispatch');
+  const [techApplicationsVersion, setTechApplicationsVersion] = useState(0);
 
   const refreshProfile = useCallback(async () => {
     const next = await fetchAdminProfile();
@@ -250,8 +252,18 @@ export const AdminApp: React.FC = () => {
         <DispatchConsole />
       ) : adminTab === 'techs' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">
-          <h1 className="text-lg font-extrabold text-white mb-4">Tech applications</h1>
-          <TechApplicationsAdmin />
+          <h1 className="text-lg font-extrabold text-white mb-1">Technicians</h1>
+          <p className="text-xs text-slate-400 mb-4">
+            Onboard a technician directly, or approve one who applied on the website. Either way they get a
+            password-setup email, then sign the contractor agreement and insurance disclosure in the app before
+            they can be dispatched.
+          </p>
+          <section className="mb-8">
+            <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Onboard a technician</h2>
+            <AddTechnicianForm onAdded={() => setTechApplicationsVersion((v) => v + 1)} />
+          </section>
+          <h2 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Applications</h2>
+          <TechApplicationsAdmin key={techApplicationsVersion} />
         </div>
       ) : adminTab === 'partners' ? (
         <div className="max-w-4xl mx-auto w-full px-4 py-6">
