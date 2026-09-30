@@ -1,15 +1,22 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/http.ts';
-import { getSquarePayment, squareConfig } from '../_shared/square.ts';
+import { getSquarePayment, paymentIdForSquareOrder, squareConfig } from '../_shared/square.ts';
 import { computeCloseOut, formatCents, type PartsBy, type TaxMode } from '../_shared/closeOut.ts';
 
 /**
- * record-square-payment — closes a job the customer paid by card with Tap to
- * Pay in the tech app.
+ * record-square-payment — closes a job the customer paid by card, either with
+ * Tap to Pay in the tech app or in the Square Point of Sale app from the web
+ * tech portal.
  *
- * Body: { bookingId, squarePaymentId, payment } where `payment` is exactly
- * what the app would send to record_job_payment.
+ * Body: { bookingId, squarePaymentId | squareOrderId, payment } where
+ * `payment` is exactly what the app would send to record_job_payment.
+ * squareOrderId is the transaction id Square Point of Sale returns; the
+ * payment is found through the order.
+ *
+ * Point of Sale can't tag a payment with our job reference, so for those the
+ * reference check is replaced by: taken in the last 12 hours, and (like every
+ * card payment) never used to close another job.
  *
  * The job only closes once Square confirms the payment is COMPLETED, at our
  * location, carries this job's reference, and is for exactly the total the
@@ -47,10 +54,12 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => ({}));
     const bookingId = typeof body.bookingId === 'string' ? body.bookingId.trim() : '';
-    const squarePaymentId = typeof body.squarePaymentId === 'string' ? body.squarePaymentId.trim() : '';
+    const squareOrderId = typeof body.squareOrderId === 'string' ? body.squareOrderId.trim() : '';
+    const fromPointOfSale = Boolean(squareOrderId);
     const payment = body.payment && typeof body.payment === 'object' ? body.payment : null;
-    if (!bookingId || !squarePaymentId || !payment) {
-      return jsonResponse({ error: 'bookingId, squarePaymentId and payment are required' }, 400);
+    let squarePaymentId = typeof body.squarePaymentId === 'string' ? body.squarePaymentId.trim() : '';
+    if (!bookingId || !(squarePaymentId || squareOrderId) || !payment) {
+      return jsonResponse({ error: 'bookingId, squarePaymentId (or squareOrderId) and payment are required' }, 400);
     }
     if (payment.kind !== 'charge' && payment.kind !== 'diagnostic_only') {
       return jsonResponse({ error: 'Only a repair or diagnostic can be paid by card' }, 400);
@@ -71,6 +80,9 @@ Deno.serve(async (req: Request) => {
     if (!isAdmin && !(profile?.role === 'tech' && booking.mechanic_id === user.id)) {
       return jsonResponse({ error: 'Only the tech on this job can close it' }, 403);
     }
+
+    // Point of Sale returns the sale (order); the card payment hangs off it.
+    if (fromPointOfSale) squarePaymentId = await paymentIdForSquareOrder(cfg, squareOrderId);
 
     // Retry after success: nothing more to do.
     if (existing) {
@@ -107,17 +119,31 @@ Deno.serve(async (req: Request) => {
       partsBy,
     });
 
+    const { data: usedElsewhere } = await admin
+      .from('job_payments')
+      .select('booking_id')
+      .eq('square_payment_id', squarePaymentId)
+      .neq('booking_id', bookingId)
+      .maybeSingle();
+    if (usedElsewhere) {
+      return jsonResponse({ error: `Job not closed: that Square payment already closed another job. Square payment ${squarePaymentId}.` }, 409);
+    }
+
     const sq = await getSquarePayment(cfg, squarePaymentId);
+    const tooOld = !sq.created_at || Date.now() - Date.parse(sq.created_at) > 12 * 60 * 60 * 1000;
+    const wrongJob = (sq.reference_id ?? '').trim().toUpperCase() !== String(booking.reference_code).trim().toUpperCase();
     const problem =
       sq.status !== 'COMPLETED'
         ? `the card payment is ${sq.status.toLowerCase()}, not completed`
         : sq.location_id !== cfg.locationId
           ? 'the card payment was taken at a different Square location'
-          : (sq.reference_id ?? '').trim().toUpperCase() !== String(booking.reference_code).trim().toUpperCase()
-            ? 'the card payment is for a different job'
-            : sq.amount_money?.currency !== 'USD' || sq.amount_money?.amount !== expected.totalCents
-              ? `the card was charged ${formatCents(sq.amount_money?.amount ?? 0)} but the receipt totals ${formatCents(expected.totalCents)}`
-              : null;
+          : fromPointOfSale && tooOld
+            ? 'the Square sale is more than 12 hours old'
+            : !fromPointOfSale && wrongJob
+              ? 'the card payment is for a different job'
+              : sq.amount_money?.currency !== 'USD' || sq.amount_money?.amount !== expected.totalCents
+                ? `the card was charged ${formatCents(sq.amount_money?.amount ?? 0)} but the receipt totals ${formatCents(expected.totalCents)}`
+                : null;
     if (problem) {
       return jsonResponse({ error: `Job not closed: ${problem}. Square payment ${squarePaymentId}.` }, 409);
     }

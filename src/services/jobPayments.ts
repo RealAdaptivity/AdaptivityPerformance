@@ -20,28 +20,41 @@ export async function uploadSignature(bookingId: string, png: Blob): Promise<str
 
 export type RecordedPayment = { totalCents: number; taxCents: number; techPayoutCents: number };
 
+export type CloseOutOptions = {
+  taxMode: TaxMode;
+  partsBy: PartsBy;
+  signaturePath?: string;
+  signerName?: string;
+  techNotes?: string;
+};
+
+/** The p_payment body record_job_payment expects. */
+export function closeOutPayload(closeOut: CloseOut, opts: CloseOutOptions) {
+  return {
+    kind: closeOut.kind,
+    line_items: closeOut.lines.map((l) => ({
+      title: l.title,
+      labor_cents: l.laborCents,
+      parts_cents: l.partsCents,
+    })),
+    diagnostic_cents: closeOut.diagnosticCents,
+    travel_cents: closeOut.travelCents,
+    tax_mode: opts.taxMode,
+    parts_by: opts.partsBy,
+    signature_path: opts.signaturePath ?? null,
+    signer_name: opts.signerName ?? null,
+    tech_notes: opts.techNotes ?? null,
+  };
+}
+
 export async function recordJobPayment(
   bookingId: string,
   closeOut: CloseOut,
-  opts: { taxMode: TaxMode; partsBy: PartsBy; signaturePath?: string; signerName?: string; techNotes?: string }
+  opts: CloseOutOptions
 ): Promise<RecordedPayment> {
   const { data, error } = await supabase.rpc('record_job_payment', {
     p_booking_id: bookingId,
-    p_payment: {
-      kind: closeOut.kind,
-      line_items: closeOut.lines.map((l) => ({
-        title: l.title,
-        labor_cents: l.laborCents,
-        parts_cents: l.partsCents,
-      })),
-      diagnostic_cents: closeOut.diagnosticCents,
-      travel_cents: closeOut.travelCents,
-      tax_mode: opts.taxMode,
-      parts_by: opts.partsBy,
-      signature_path: opts.signaturePath ?? null,
-      signer_name: opts.signerName ?? null,
-      tech_notes: opts.techNotes ?? null,
-    },
+    p_payment: closeOutPayload(closeOut, opts),
   });
   if (error) throw new Error(error.message);
   const r = data as { total_cents: number; tax_cents: number; tech_payout_cents: number };
