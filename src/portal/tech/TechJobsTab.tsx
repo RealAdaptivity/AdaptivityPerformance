@@ -16,7 +16,7 @@ import { uploadJobPhoto } from '../../services/jobPhotos';
 import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
 import { todayISODate } from '../../services/scheduleWindows';
 import { JobChatPanel } from '../../components/JobChatPanel';
-import { DIAGNOSTIC_FEE_DOLLARS } from '../../services/serviceCatalog';
+import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../../services/serviceCatalog';
 import {
   clockIn,
   clockOut,
@@ -229,6 +229,15 @@ export const TechJobsTab: React.FC = () => {
 
   const [includeDiagnosticFee, setIncludeDiagnosticFee] = useState(false);
   const [mileageFee, setMileageFee] = useState('');
+  /* Every mobile visit carries the flat travel fee the customer was shown when
+     they booked, so the line starts filled in. Keyed on the job id so a refresh
+     of the same job keeps whatever the tech typed (clearing it for a member,
+     say); a shop drop-off has no travel. */
+  const activeJobId = activeJob?.id;
+  const activeJobLocation = activeJob?.locationType;
+  useEffect(() => {
+    setMileageFee(activeJobId && activeJobLocation !== 'shop' ? String(TRAVEL_FEE_DOLLARS) : '');
+  }, [activeJobId, activeJobLocation]);
   const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
   const [partsPurchasedBy, setPartsPurchasedBy] = useState<'tech' | 'company'>('tech');
 
@@ -918,7 +927,8 @@ export const TechJobsTab: React.FC = () => {
 
               {/* 3. Mileage / Travel Fee */}
               <div className="space-y-1.5">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Mileage / Travel Fee (Optional)</p>
+                <p className="text-[10px] uppercase font-bold text-slate-400">Travel fee — flat on mobile visits</p>
+                <p className="text-[10px] text-slate-500">Filled in from what the customer saw when booking. Clear it for members — their membership covers travel.</p>
                 <div className="flex gap-2 items-center">
                   <input
                     placeholder="Trip fee description"

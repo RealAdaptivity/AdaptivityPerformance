@@ -1,6 +1,22 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Camera,
+  Check,
+  CheckCircle2,
+  Info,
+  Loader2,
+  MapPin,
+  Phone,
+  Share2,
+  ShieldCheck,
+  Star,
+  Trash2,
+  UserPlus,
+  X,
+} from 'lucide-react';
 import { LOCAL_HUB } from '../site/localSeo';
-import { X, Calendar, MapPin, Truck, ShieldCheck, Loader2, Share2, Star, UserPlus, Camera, Trash2, AlertTriangle, Phone } from 'lucide-react';
 import { createBookingRequest } from '../services/bookingRequestApi';
 import { computeServiceQuote } from '../services/servicePricing';
 import { fetchApprovedPartners, type PartnerLocation } from '../services/partners';
@@ -34,6 +50,29 @@ import {
   formatServiceAddress,
   isIncompleteServiceAddress,
 } from '../services/serviceAddress';
+import { lookupServiceZip } from '../services/serviceArea';
+import {
+  BOOKABLE_SERVICE_CATALOG,
+  TRAVEL_FEE_DOLLARS,
+  getCatalogById,
+  matchCatalogFromLabel,
+} from '../services/serviceCatalog';
+import {
+  BOOKING_STEPS,
+  COUNTED_STEPS,
+  SERVICE_CHOICES,
+  displayPhone,
+  formatDayLong,
+  splitTimeWindow,
+  upcomingDays,
+  validateContact,
+  validateNeed,
+  validateWhen,
+  validateWhere,
+  vinTail,
+  visitCharges,
+} from '../services/bookingFlow';
+import { BrandLogo } from './BrandLogo';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -63,43 +102,82 @@ interface BookingModalProps {
   }) => void;
 }
 
+/** Step indexes: 0–4 are the questions, 5 is the review, 6 is the confirmation. */
+const REVIEW_STEP = BOOKING_STEPS.length - 1;
+const DONE_STEP = BOOKING_STEPS.length;
+
+type Errors = Record<string, string | undefined>;
+
+/** A catalog id for whatever a prefill passed in (an id or a title), so the
+ *  matching quick pick lights up. Anything unrecognised is kept as typed. */
+function resolveServiceId(raw: string): string {
+  return getCatalogById(raw)?.id ?? matchCatalogFromLabel(raw)?.id ?? raw;
+}
+
+function serviceTitle(idOrLabel: string): string {
+  return getCatalogById(idOrLabel)?.title ?? idOrLabel;
+}
+
+const money = (n: number) => `$${n % 1 === 0 ? n : n.toFixed(2)}`;
+
+const inputClass = (invalid: boolean) =>
+  `w-full min-h-[52px] rounded-2xl border bg-[#12141c] px-4 text-base text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand/60 ${
+    invalid ? 'border-amber-400/70' : 'border-white/[0.12]'
+  }`;
+const labelClass = 'mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-slate-400';
+const optionalTag = <span className="normal-case tracking-normal font-normal">(optional)</span>;
+
+const FieldError: React.FC<{ id: string; message?: string }> = ({ id, message }) =>
+  message ? (
+    <p id={id} className="mt-1.5 text-[13px] text-amber-300">
+      {message}
+    </p>
+  ) : null;
+
+const choiceClass = (on: boolean) =>
+  `rounded-2xl border transition-colors ${
+    on
+      ? 'border-brand bg-brand/15 text-white'
+      : 'border-white/[0.12] bg-[#12141c] text-slate-200 hover:border-white/25'
+  }`;
+
 export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen,
   onClose,
   initialEstimateData,
   onBookingSubmitted,
 }) => {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [furthestStep, setFurthestStep] = useState(0);
+  /* Set when the customer taps Edit on the review screen, so Continue takes
+     them straight back there instead of through every later step again. */
+  const [editingFromReview, setEditingFromReview] = useState(false);
+  const [errors, setErrors] = useState<Errors>({});
+
   const [serviceMode, setServiceMode] = useState<'mobile' | 'shop'>('mobile');
-  /* Was a single text box pre-filled with '2020 Ford F-150'. Marked required,
-     but a pre-filled field is already satisfied, so anyone who skipped it
-     booked a truck they did not own and a tech arrived with the wrong parts.
-     Starts empty and is captured part by part now. */
-  const [vehicleDetails, setVehicleDetails] = useState<VehicleDetails>(EMPTY_VEHICLE);
-  const [vehicleErrors, setVehicleErrors] = useState<Partial<Record<keyof VehicleDetails, string>>>({});
+  const [services, setServices] = useState<string[]>(['diagnostic']);
   const [issueDescription, setIssueDescription] = useState('');
-  const [issueError, setIssueError] = useState<string | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
-  const [serviceRequested, setServiceRequested] = useState('Mobile Diagnostic Visit');
-  const vehicle = composeVehicleDescription(vehicleDetails);
-  const setVehicleField = (field: keyof VehicleDetails, value: string) => {
-    setVehicleDetails((v) => ({ ...v, [field]: value }));
-    setVehicleErrors((e) => ({ ...e, [field]: undefined }));
-  };
+  /* Captured part by part. The tech orders parts off this, so a trim and an
+     engine are the difference between one visit and two. */
+  const [vehicleDetails, setVehicleDetails] = useState<VehicleDetails>(EMPTY_VEHICLE);
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
+  const [showLaterDate, setShowLaterDate] = useState(false);
   const [streetAddress, setStreetAddress] = useState('');
   const [city, setCity] = useState('');
   const [zipCode, setZipCode] = useState('');
+  const [notes, setNotes] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [notes, setNotes] = useState('');
   const [referralInput, setReferralInput] = useState('');
+  const [showReferral, setShowReferral] = useState(false);
+  const [agreed, setAgreed] = useState(false); // consent: never pre-checked
   const [bookingRef, setBookingRef] = useState('');
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [isCreatingHold, setIsCreatingHold] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
   const [partnerLocationId, setPartnerLocationId] = useState<string>('');
   const [accountPassword, setAccountPassword] = useState('');
@@ -108,61 +186,64 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [accountError, setAccountError] = useState<string | null>(null);
   const [accountStatus, setAccountStatus] = useState<'idle' | 'created' | 'confirm_email'>('idle');
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  const vehicle = composeVehicleDescription(vehicleDetails);
+  const days = useMemo(() => upcomingDays(new Date(), 7), []);
   const selectedPartner = useMemo(
     () => partners.find((p) => p.id === partnerLocationId) || partners[0] || null,
     [partners, partnerLocationId]
   );
-
-  const quotedQuote = useMemo(() => {
-    const fromField = serviceRequested
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const fromInitial = initialEstimateData?.services || [];
-    return computeServiceQuote(fromField.length ? fromField : fromInitial.length ? fromInitial : ['diagnostic']);
-  }, [serviceRequested, initialEstimateData?.services]);
-  const quotedPreview = quotedQuote.quotedDollars;
+  const quote = useMemo(() => computeServiceQuote(services.length ? services : ['diagnostic']), [services]);
+  const charges = visitCharges(serviceMode, { diagnostic: quote.quotedDollars, travel: TRAVEL_FEE_DOLLARS });
+  const coverage = serviceMode === 'mobile' && /^\d{5}$/.test(zipCode.trim()) ? lookupServiceZip(zipCode) : null;
 
   useEffect(() => {
-    if (initialEstimateData) {
-      if (initialEstimateData.vehicle) {
-        /* The estimate flow passes one string like '2021 Ford F-150'. Keep
-           what maps cleanly and leave the rest for the customer. */
-        const [maybeYear, maybeMake, ...rest] = initialEstimateData.vehicle.trim().split(/\s+/);
-        setVehicleDetails((v) => ({
-          ...v,
-          year: /^\d{4}$/.test(maybeYear ?? '') ? maybeYear : v.year,
-          make: /^\d{4}$/.test(maybeYear ?? '') ? (maybeMake ?? v.make) : (maybeYear ?? v.make),
-          model: (/^\d{4}$/.test(maybeYear ?? '') ? rest.join(' ') : [maybeMake, ...rest].join(' ')) || v.model,
-        }));
-      }
-      if (initialEstimateData.vin) setVehicleField('vin', initialEstimateData.vin);
-      if (initialEstimateData.zipCode) setZipCode(initialEstimateData.zipCode);
-      if (initialEstimateData.issueDescription) setIssueDescription(initialEstimateData.issueDescription);
-      if (initialEstimateData.locationType) setServiceMode(initialEstimateData.locationType);
-      if (initialEstimateData.serviceAddress) {
-        setStreetAddress(initialEstimateData.serviceAddress);
-        const z = extractZipFromAddress(initialEstimateData.serviceAddress);
-        if (z) setZipCode(z);
-      }
-      if (initialEstimateData.services && initialEstimateData.services.length > 0) {
-        setServiceRequested(initialEstimateData.services.join(', '));
-      }
-      if (initialEstimateData.partnerLocationId) {
-        setPartnerLocationId(initialEstimateData.partnerLocationId);
-        setServiceMode('shop');
-      }
-      if (initialEstimateData.referralCode) {
-        setReferralInput(initialEstimateData.referralCode.toUpperCase());
-      }
+    if (!initialEstimateData) return;
+    if (initialEstimateData.vehicle) {
+      /* The estimate flow passes one string like '2021 Ford F-150'. Keep
+         what maps cleanly and leave the rest for the customer. */
+      const [maybeYear, maybeMake, ...rest] = initialEstimateData.vehicle.trim().split(/\s+/);
+      const hasYear = /^\d{4}$/.test(maybeYear ?? '');
+      setVehicleDetails((v) => ({
+        ...v,
+        year: hasYear ? maybeYear : v.year,
+        make: hasYear ? (maybeMake ?? v.make) : (maybeYear ?? v.make),
+        model: (hasYear ? rest.join(' ') : [maybeMake, ...rest].join(' ')) || v.model,
+      }));
+    }
+    if (initialEstimateData.vin) setVehicleDetails((v) => ({ ...v, vin: initialEstimateData.vin!.toUpperCase() }));
+    if (initialEstimateData.zipCode) setZipCode(initialEstimateData.zipCode);
+    if (initialEstimateData.issueDescription) setIssueDescription(initialEstimateData.issueDescription);
+    if (initialEstimateData.locationType) setServiceMode(initialEstimateData.locationType);
+    if (initialEstimateData.serviceAddress) {
+      setStreetAddress(initialEstimateData.serviceAddress);
+      const z = extractZipFromAddress(initialEstimateData.serviceAddress);
+      if (z) setZipCode(z);
+    }
+    if (initialEstimateData.services && initialEstimateData.services.length > 0) {
+      setServices(initialEstimateData.services.map(resolveServiceId));
+    }
+    if (initialEstimateData.partnerLocationId) {
+      setPartnerLocationId(initialEstimateData.partnerLocationId);
+      setServiceMode('shop');
+    }
+    if (initialEstimateData.referralCode) {
+      setReferralInput(initialEstimateData.referralCode.toUpperCase());
+      setShowReferral(true);
     }
   }, [initialEstimateData]);
 
   useEffect(() => {
     if (!isOpen) {
-      setStep(1);
+      setStep(0);
+      setFurthestStep(0);
+      setEditingFromReview(false);
+      setErrors({});
       setSubmitError(null);
       setBookingRef('');
+      setAgreed(false);
       setAccountPassword('');
       setAccountPasswordConfirm('');
       setAccountBusy(false);
@@ -183,44 +264,91 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       .catch(() => setPartners([]));
   }, [isOpen]);
 
+  /* A new screen starts at its top, and focus moves to its heading so a
+     screen reader announces where the customer is. */
+  useEffect(() => {
+    if (!isOpen) return;
+    scrollRef.current?.scrollTo({ top: 0 });
+    headingRef.current?.focus({ preventScroll: true });
+  }, [step, isOpen]);
+
   if (!isOpen) return null;
+
+  const clearError = (field: string) =>
+    setErrors((e) => (e[field] ? { ...e, [field]: undefined } : e));
+  const setVehicleField = (field: keyof VehicleDetails, value: string) => {
+    setVehicleDetails((v) => ({ ...v, [field]: value }));
+    clearError(field);
+  };
+  const describedBy = (field: string) => (errors[field] ? `bk-${field}-err` : undefined);
+
+  const goTo = (next: number) => {
+    setErrors({});
+    setSubmitError(null);
+    setStep(next);
+    setFurthestStep((f) => Math.max(f, next));
+  };
+
+  const editFromReview = (index: number) => {
+    setEditingFromReview(true);
+    goTo(index);
+  };
 
   const buildAddress = () => {
     if (serviceMode === 'mobile') {
-      return formatServiceAddress({
-        street: streetAddress,
-        city,
-        state: 'TX',
-        zip: zipCode,
-      });
+      return formatServiceAddress({ street: streetAddress, city, state: 'TX', zip: zipCode });
     }
     return selectedPartner
       ? `${selectedPartner.businessName} • ${selectedPartner.address}`
       : 'Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247';
   };
 
-  const handleSubmitRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
+  /** Errors for the current screen, all at once so nobody resubmits to find the next. */
+  const checkStep = (index: number): Errors => {
+    switch (BOOKING_STEPS[index]?.id) {
+      case 'need':
+        return validateNeed({ issue: issueDescription });
+      case 'vehicle': {
+        const out: Errors = {};
+        for (const err of validateVehicle(vehicleDetails)) out[err.field] = err.message;
+        return out;
+      }
+      case 'when':
+        return validateWhen({ date: preferredDate, window: preferredTime }, todayISODate());
+      case 'where': {
+        if (serviceMode === 'shop') return {};
+        const out: Errors = validateWhere({ street: streetAddress, city, zip: zipCode });
+        if (!out.street && (isIncompleteServiceAddress(streetAddress) || isIncompleteServiceAddress(buildAddress()))) {
+          out.street = 'Include the street name, not just the house number — e.g. 1234 Canyon Falls Dr.';
+        }
+        if (!out.zip && !lookupServiceZip(zipCode)) {
+          out.zip = `We don’t reach ${zipCode.trim()} yet. Call ${SITE_PHONE_DISPLAY} and we’ll see what we can do.`;
+        }
+        return out;
+      }
+      case 'contact':
+        return validateContact({ fullName, phone, email, agreed });
+      default:
+        return {};
+    }
+  };
 
-    if (serviceMode === 'mobile') {
-      const assembled = buildAddress();
-      if (isIncompleteServiceAddress(assembled) || isIncompleteServiceAddress(streetAddress)) {
-        setSubmitError(
-          'Enter a full street address with street name and city (not just a house number and zip). Example: 1234 Canyon Falls Dr, Northlake'
-        );
+  const handleSubmitRequest = async () => {
+    setSubmitError(null);
+    /* Every screen is checked again: an Edit from review can leave an earlier
+       one half-filled. Jump to the first that is not done. */
+    for (let i = 0; i < REVIEW_STEP; i++) {
+      const found = checkStep(i);
+      if (Object.values(found).some(Boolean)) {
+        setEditingFromReview(true);
+        setStep(i);
+        setErrors(found);
         return;
       }
     }
 
-    setIsCreatingHold(true);
-
+    setSubmitting(true);
     try {
-      const servicesList = serviceRequested
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-
       /* Attachments upload first so their paths can go on the booking row.
          A failed upload never fails the booking: the customer is told which
          file did not make it and the visit still gets scheduled. */
@@ -253,7 +381,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         issueDescription: issueDescription.trim(),
         mediaPaths: uploadedPaths.length ? uploadedPaths : undefined,
         vin: normalizeVin(vehicleDetails.vin) || undefined,
-        services: servicesList.length ? servicesList : [serviceRequested.trim()],
+        services: services.length ? services : ['diagnostic'],
         locationType: serviceMode,
         partnerLocationId:
           serviceMode === 'shop' ? selectedPartner?.id || partnerLocationId || undefined : undefined,
@@ -272,12 +400,34 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         phone,
         vehicle,
       });
-      setStep(3);
+      goTo(DONE_STEP);
     } catch (err: unknown) {
-      setSubmitError(err instanceof Error ? err.message : 'Could not submit your booking request');
+      setSubmitError(err instanceof Error ? err.message : 'Could not send your request');
     } finally {
-      setIsCreatingHold(false);
+      setSubmitting(false);
     }
+  };
+
+  const advance = () => {
+    if (step === REVIEW_STEP) {
+      void handleSubmitRequest();
+      return;
+    }
+    const found = checkStep(step);
+    if (Object.values(found).some(Boolean)) {
+      setErrors(found);
+      return;
+    }
+    if (editingFromReview) {
+      setEditingFromReview(false);
+      goTo(REVIEW_STEP);
+    } else {
+      goTo(step + 1);
+    }
+  };
+
+  const back = () => {
+    if (step > 0) goTo(step - 1);
   };
 
   const handleCreateAccount = async (e: React.FormEvent) => {
@@ -293,17 +443,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
     setAccountBusy(true);
     try {
-      const { data, error } = await signUpPortal('customer', email, accountPassword, fullName, {
-        phone,
-      });
+      const { data, error } = await signUpPortal('customer', email, accountPassword, fullName, { phone });
       if (error) throw error;
 
       const userId = data.user?.id;
       const hasSession = Boolean(data.session?.access_token);
 
-      if (bookingRef) {
-        stashPendingGuestBooking(bookingRef);
-      }
+      if (bookingRef) stashPendingGuestBooking(bookingRef);
 
       if (hasSession && userId) {
         await updateProfilePhone(userId, phone);
@@ -326,685 +472,1061 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     }
   };
 
+  const stepId = BOOKING_STEPS[step]?.id;
+  const done = step === DONE_STEP;
+  const stepTitle =
+    stepId === 'where' && serviceMode === 'shop' ? 'Where to drop it off' : BOOKING_STEPS[step]?.title ?? '';
+  const whenLabel = (() => {
+    const day = formatDayLong(preferredDate) ?? preferredDate;
+    const { name } = splitTimeWindow(preferredTime);
+    return `${day} · ${name}`;
+  })();
+  const primaryService = services[0] ?? 'diagnostic';
+  const serviceLabel = serviceTitle(primaryService) + (services.length > 1 ? ` + ${services.length - 1} more` : '');
+  const quickPick = SERVICE_CHOICES.some((c) => c.id === primaryService) && services.length === 1;
+  const laterDateActive = showLaterDate || !days.some((d) => d.iso === preferredDate);
+  const whereLabel =
+    serviceMode === 'shop'
+      ? selectedPartner?.businessName ?? 'Adaptivity Performance Garage'
+      : streetAddress.trim() && city.trim()
+        ? `${streetAddress.trim()}, ${city.trim()} ${zipCode.trim()}`
+        : '';
+
+  const continueLabel =
+    step === REVIEW_STEP
+      ? 'Request this visit'
+      : editingFromReview
+        ? 'Save and review'
+        : stepId === 'contact'
+          ? 'Review visit'
+          : 'Continue';
+  const footNote =
+    step === 0
+      ? `${money(charges.diagnostic)} diagnostic${charges.travel ? ` + ${money(charges.travel)} travel` : ''} · paid in person · no card needed`
+      : step === REVIEW_STEP
+        ? 'Nothing is charged today.'
+        : null;
+
+  const priceCard = (compact = false) => (
+    <div className={`rounded-2xl border border-brand/35 bg-[#12141c] ${compact ? 'p-4' : 'p-5'} space-y-2.5`}>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm text-slate-300">Diagnostic visit</span>
+        <span className="font-heading text-lg font-bold">{money(charges.diagnostic)}</span>
+      </div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm text-slate-300">Travel</span>
+        <span className="font-heading text-lg font-bold">
+          {charges.travel ? money(charges.travel) : <span className="text-sm font-semibold text-slate-400">None — drop-off</span>}
+        </span>
+      </div>
+      <div className="h-px bg-white/[0.08]" />
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-semibold">Due at the visit</span>
+        <span className="font-heading text-lg font-bold">{money(charges.dueAtVisit)}</span>
+      </div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm font-semibold">Due today</span>
+        <span className="font-heading text-xl font-bold text-brand-soft">$0</span>
+      </div>
+      <p className="text-[13px] leading-relaxed text-slate-400">
+        No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts, and
+        the diagnostic is credited toward it.
+        {charges.travel ? ' Members pay no travel.' : ''}
+      </p>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <div className="bg-[#12141c] w-full max-w-xl rounded-3xl border border-orange-500/40 shadow-2xl overflow-hidden relative text-white max-h-[92vh] flex flex-col">
-        <div className="bg-gradient-to-r from-[#181a26] to-[#0e1017] p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-orange-400">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="font-heading text-base font-bold text-white">Schedule Service • Adaptivity Performance</h3>
-              <p className="text-xs text-slate-400">
-                Step {step} of 3 • Pay in person when the job is done
-              </p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg bg-white/5 hover:bg-white/10">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Step Indicator Bar */}
-        <div className="bg-[#0b0c10] px-6 py-3 border-b border-white/5 flex items-center justify-between text-xs">
-          {[
-            { num: 1, label: 'Vehicle Info' },
-            { num: 2, label: 'Driveway Location' },
-            { num: 3, label: 'Confirmed' },
-          ].map((s) => (
-            <div
-              key={s.num}
-              className={`flex items-center gap-1.5 font-bold ${
-                step === s.num
-                  ? 'text-orange-400'
-                  : step > s.num
-                  ? 'text-emerald-400'
-                  : 'text-slate-500'
-              }`}
-            >
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                  step === s.num
-                    ? 'bg-orange-500 text-white'
-                    : step > s.num
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                    : 'bg-white/5 text-slate-500'
-                }`}
-              >
-                {s.num}
-              </span>
-              <span className="hidden sm:inline">{s.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="p-6 overflow-y-auto flex-1">
-          {step === 1 && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                /* Native `required` cannot check a VIN's shape or a plausible
-                   model year, and reporting one error at a time would make the
-                   customer resubmit to find the next. */
-                const found = validateVehicle(vehicleDetails);
-                const byField: Partial<Record<keyof VehicleDetails, string>> = {};
-                for (const err of found) byField[err.field] = err.message;
-                setVehicleErrors(byField);
-                const missingIssue = !issueDescription.trim();
-                setIssueError(missingIssue ? 'Tell us what the vehicle is doing' : null);
-                if (found.length || missingIssue) return;
-                setStep(2);
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">Service Mode</label>
-                <div className="p-3.5 rounded-2xl border border-orange-500/40 bg-orange-500/10 flex items-center justify-between text-xs font-bold text-white">
-                  <div className="flex items-center space-x-2.5">
-                    <Truck className="w-4 h-4 text-orange-400 shrink-0" />
-                    <div>
-                      <div>100% Mobile Service — We Come To Your Driveway</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Justin · Northlake · Argyle · Denton · Keller · North Fort Worth</div>
+    /* Above the cookie banner (z-[9999]) and the chat bubble: both sit on the
+       bottom edge, which on a phone is exactly where Continue is. */
+    <div
+      className="fixed inset-0 z-[10000] flex bg-black/85 md:items-center md:justify-center md:p-6 md:backdrop-blur-md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="booking-step-title"
+    >
+      <div className="relative flex h-[100dvh] w-full overflow-hidden bg-[#0b0c10] text-white md:grid md:h-[min(780px,94vh)] md:max-w-[900px] md:grid-cols-[220px_minmax(0,1fr)] md:rounded-3xl md:border md:border-white/10 md:shadow-2xl lg:max-w-[1120px] lg:grid-cols-[220px_minmax(0,1fr)_300px]">
+        {/* Step rail — tablets and up */}
+        <aside className="hidden md:flex flex-col gap-7 border-r border-white/[0.06] bg-[#0e1016] p-6">
+          <BrandLogo size={40} />
+          <ol className="space-y-1" aria-label="Booking steps">
+            {BOOKING_STEPS.map((s, i) => {
+              const complete = done || i < step;
+              const current = !done && i === step;
+              const reachable = !done && i <= furthestStep && i !== step;
+              const badge = complete ? (
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/20">
+                  <Check className="h-3.5 w-3.5 text-brand" strokeWidth={3} aria-hidden="true" />
+                </span>
+              ) : (
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-heading text-[13px] font-bold ${
+                    current ? 'bg-brand text-[#0b0c10]' : 'border border-zinc-700 text-zinc-400'
+                  }`}
+                >
+                  {i < COUNTED_STEPS ? i + 1 : <Check className="h-3 w-3" aria-hidden="true" />}
+                </span>
+              );
+              const text = (
+                <span className={current ? 'font-semibold text-white' : complete ? 'text-slate-300' : 'text-zinc-400'}>
+                  {s.label}
+                </span>
+              );
+              return (
+                <li key={s.id}>
+                  {reachable ? (
+                    <button
+                      type="button"
+                      onClick={() => (step === REVIEW_STEP ? editFromReview(i) : goTo(i))}
+                      className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-2 text-left text-[15px] hover:bg-white/[0.04]"
+                    >
+                      {badge}
+                      {text}
+                    </button>
+                  ) : (
+                    <div
+                      className="flex min-h-[44px] items-center gap-3 px-2 text-[15px]"
+                      aria-current={current ? 'step' : undefined}
+                    >
+                      {badge}
+                      {text}
                     </div>
-                  </div>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                    $0 Travel ({LOCAL_HUB.freeRadiusMiles} mi)
-                  </span>
-                </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          <p className="mt-auto text-[13px] leading-relaxed text-slate-400">
+            Rather talk to someone?
+            <br />
+            <a href={SITE_PHONE_TEL} className="font-semibold text-brand-soft hover:text-white">
+              {SITE_PHONE_DISPLAY}
+            </a>
+          </p>
+        </aside>
+
+        {/* The current screen */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="border-b border-white/[0.06] px-3 pb-3 pt-2.5 md:border-0 md:px-10 md:pb-0 md:pt-6">
+            <div className="flex items-center justify-between gap-2">
+              {!done && step > 0 ? (
+                <button
+                  type="button"
+                  onClick={back}
+                  aria-label="Back"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-200 hover:bg-white/5 md:hidden"
+                >
+                  <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+              ) : (
+                <span className="pl-2 md:hidden">
+                  <BrandLogo size={34} />
+                </span>
+              )}
+              <p className="text-[13px] font-semibold text-slate-400">
+                {done ? 'Request sent' : step === REVIEW_STEP ? 'Review' : `Step ${step + 1} of ${COUNTED_STEPS}`}
+              </p>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close booking"
+                className="flex h-11 w-11 items-center justify-center rounded-xl text-slate-300 hover:bg-white/5 hover:text-white"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            {!done && (
+              <div className="mt-2.5 grid grid-cols-5 gap-1.5 px-1 md:hidden" aria-hidden="true">
+                {Array.from({ length: COUNTED_STEPS }, (_, i) => (
+                  <div key={i} className={`h-1 rounded-full ${i <= step ? 'bg-brand' : 'bg-zinc-800'}`} />
+                ))}
               </div>
+            )}
+          </div>
 
-              {/* Vehicle, part by part. The tech orders parts off this, so a
-                  trim and an engine are the difference between one visit and
-                  two. */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-300">Your Vehicle</label>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-8 pt-6 sm:px-8 md:px-10 md:pt-3">
+            {!done && (
+              <h2
+                id="booking-step-title"
+                ref={headingRef}
+                tabIndex={-1}
+                className="font-heading text-[30px] font-bold leading-[1.1] tracking-[-0.02em] outline-none md:text-4xl"
+              >
+                {stepTitle}
+              </h2>
+            )}
 
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div>
-                    <input
-                      type="text" inputMode="numeric" required maxLength={4}
-                      value={vehicleDetails.year}
-                      onChange={e => setVehicleField('year', e.target.value.replace(/\D/g, ''))}
-                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.year ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                      placeholder="Year"
-                      aria-label="Model year"
-                    />
-                    {vehicleErrors.year && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.year}</p>}
-                  </div>
-                  <div>
-                    <input
-                      type="text" required
-                      value={vehicleDetails.make}
-                      onChange={e => setVehicleField('make', e.target.value)}
-                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.make ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                      placeholder="Make"
-                      aria-label="Make"
-                    />
-                    {vehicleErrors.make && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.make}</p>}
-                  </div>
-                  <div>
-                    <input
-                      type="text" required
-                      value={vehicleDetails.model}
-                      onChange={e => setVehicleField('model', e.target.value)}
-                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.model ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                      placeholder="Model"
-                      aria-label="Model"
-                    />
-                    {vehicleErrors.model && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.model}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <input
-                      type="text" required
-                      value={vehicleDetails.trim}
-                      onChange={e => setVehicleField('trim', e.target.value)}
-                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.trim ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                      placeholder="Trim (e.g. Lariat)"
-                      aria-label="Trim"
-                    />
-                    {vehicleErrors.trim && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.trim}</p>}
-                  </div>
-                  <div>
-                    <input
-                      type="text" required
-                      value={vehicleDetails.engine}
-                      onChange={e => setVehicleField('engine', e.target.value)}
-                      className={`w-full bg-[#0b0c10] border rounded-xl px-3 py-3 text-sm text-white focus:outline-none ${vehicleErrors.engine ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                      placeholder="Engine (e.g. 3.5L V6)"
-                      aria-label="Engine"
-                    />
-                    {vehicleErrors.engine && <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.engine}</p>}
-                  </div>
-                </div>
-
+            {stepId === 'need' && (
+              <div className="mt-2 space-y-6">
+                <p className="text-[15px] leading-relaxed text-slate-400">
+                  Not sure what’s wrong? Pick “Diagnose a problem” — the tech finds it on site.
+                </p>
                 <div>
-                  <input
-                    type="text" required maxLength={17}
-                    value={vehicleDetails.vin}
-                    onChange={e => setVehicleField('vin', e.target.value.toUpperCase())}
-                    className={`w-full bg-[#0b0c10] border rounded-xl px-3.5 py-3 text-sm text-white font-mono tracking-wider focus:outline-none ${vehicleErrors.vin ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                    placeholder="VIN (17 characters)"
-                    aria-label="VIN"
-                  />
-                  {vehicleErrors.vin
-                    ? <p className="text-[10px] text-red-400 mt-1">{vehicleErrors.vin}</p>
-                    : <p className="text-[10px] text-slate-500 mt-1">Driver-side door jamb, or the base of the windshield. Lets your tech bring the right parts the first time.</p>}
-                </div>
-              </div>
-
-              {/* What is actually wrong. Previously there was nowhere to say
-                  this before step 2's parking-notes box. */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">What is it doing?</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={issueDescription}
-                  onChange={e => { setIssueDescription(e.target.value); setIssueError(null); }}
-                  className={`w-full bg-[#0b0c10] border rounded-xl px-3.5 py-3 text-sm text-white focus:outline-none ${issueError ? 'border-red-500/70' : 'border-white/15 focus:border-orange-500'}`}
-                  placeholder="e.g. Grinding from the front right when braking, started about a week ago and is worse when cold."
-                />
-                {issueError && <p className="text-[10px] text-red-400 mt-1">{issueError}</p>}
-              </div>
-
-              {/* Optional on purpose: a car that will not start is a bad moment
-                  to ask someone to film it. */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Photos or video <span className="font-normal text-slate-500">— optional</span>
-                </label>
-                <label className="flex items-center gap-2.5 w-full cursor-pointer bg-[#0b0c10] border border-dashed border-white/20 hover:border-orange-500/50 rounded-xl px-3.5 py-3 text-xs text-slate-400 transition-colors">
-                  <Camera className="w-4 h-4 text-orange-400 shrink-0" />
-                  <span>Add up to {MAX_MEDIA_FILES} photos or short videos (50 MB each)</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept={MEDIA_ACCEPT_ATTR}
-                    className="hidden"
-                    onChange={(e) => {
-                      const picked = Array.from(e.target.files ?? []);
-                      const rejected = picked
-                        .map((f) => ({ f, why: describeMediaRejection(f) }))
-                        .filter((r) => r.why);
-                      const ok = picked.filter((f) => !describeMediaRejection(f));
-                      setMediaFiles((prev) => [...prev, ...ok].slice(0, MAX_MEDIA_FILES));
-                      setMediaNotice(
-                        rejected.length
-                          ? `Skipped ${rejected.map((r) => `${r.f.name} (${r.why})`).join(', ')}.`
-                          : null
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Service">
+                    {SERVICE_CHOICES.map((c) => {
+                      const on = services.length === 1 && services[0] === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => setServices([c.id])}
+                          className={`min-h-[44px] rounded-full px-4 text-sm font-semibold ${choiceClass(on)}`}
+                        >
+                          {c.label}
+                        </button>
                       );
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
-
-                {mediaFiles.length > 0 && (
-                  <ul className="mt-2 space-y-1.5">
-                    {mediaFiles.map((f, i) => (
-                      <li key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2">
-                        <span className="text-[11px] text-slate-300 truncate">{f.name}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-[10px] text-slate-500">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
-                          <button
-                            type="button"
-                            aria-label={`Remove ${f.name}`}
-                            onClick={() => setMediaFiles((prev) => prev.filter((_, j) => j !== i))}
-                            className="text-slate-500 hover:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {mediaNotice && (
-                  <p className="mt-2 flex items-start gap-1.5 text-[10px] text-amber-400">
-                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" /> {mediaNotice}
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Preferred Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={preferredDate}
-                    onChange={e => setPreferredDate(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Preferred Time Window</label>
+                    })}
+                  </div>
+                  <label htmlFor="bk-all-services" className="mt-4 block text-sm font-semibold text-brand-soft">
+                    {quickPick ? 'Something else? See all services' : 'Selected service'}
+                  </label>
                   <select
-                    value={preferredTime}
-                    onChange={e => setPreferredTime(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
+                    id="bk-all-services"
+                    value={quickPick ? '' : primaryService}
+                    onChange={(e) => e.target.value && setServices([e.target.value])}
+                    className={`${inputClass(false)} mt-2`}
                   >
-                    {PREFERRED_TIME_WINDOWS.map((w) => (
-                      <option key={w} value={w}>
-                        {w}
+                    <option value="">Choose from all services…</option>
+                    {BOOKABLE_SERVICE_CATALOG.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
                       </option>
                     ))}
+                    {!quickPick && !getCatalogById(primaryService) && (
+                      <option value={primaryService}>{serviceLabel}</option>
+                    )}
                   </select>
                 </div>
-              </div>
 
-              {/* Nothing is taken online — payment happens at the vehicle. */}
-              <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 space-y-1.5 text-xs text-slate-400">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    No card needed to book
-                  </span>
-                  <span className="font-mono text-orange-400 font-bold">${quotedPreview.toFixed(2)} on site</span>
+                <div>
+                  <label htmlFor="bk-issue" className={labelClass}>
+                    What’s it doing?
+                  </label>
+                  <textarea
+                    id="bk-issue"
+                    rows={4}
+                    value={issueDescription}
+                    onChange={(e) => {
+                      setIssueDescription(e.target.value);
+                      clearError('issue');
+                    }}
+                    aria-invalid={errors.issue ? true : undefined}
+                    aria-describedby={describedBy('issue')}
+                    className={`${inputClass(!!errors.issue)} py-3.5 leading-relaxed`}
+                    placeholder="e.g. Grinding from the front right when braking, started about a week ago and is worse when cold."
+                  />
+                  <FieldError id="bk-issue-err" message={errors.issue} />
                 </div>
-                <p className="text-[11px] leading-relaxed text-slate-400">
-                  Nothing is charged online. Your technician takes payment in person when the work is done, and the
-                  diagnostic is <strong>credited in full</strong> toward the repair.
-                </p>
+
+                {/* Optional on purpose: a car that will not start is a bad moment
+                    to ask someone to film it. */}
+                <div>
+                  <label className="flex min-h-[64px] cursor-pointer items-center gap-3.5 rounded-2xl border border-dashed border-white/20 px-4 hover:border-brand/50">
+                    <Camera className="h-6 w-6 shrink-0 text-brand-soft" aria-hidden="true" />
+                    <span className="flex flex-col">
+                      <span className="text-[15px] font-semibold">Add photos or a video</span>
+                      <span className="text-[13px] text-slate-400">
+                        Optional · up to {MAX_MEDIA_FILES} files, 50 MB each · a sound clip helps a lot
+                      </span>
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept={MEDIA_ACCEPT_ATTR}
+                      className="sr-only"
+                      onChange={(e) => {
+                        const picked = Array.from(e.target.files ?? []);
+                        const rejected = picked
+                          .map((f) => ({ f, why: describeMediaRejection(f) }))
+                          .filter((r) => r.why);
+                        const ok = picked.filter((f) => !describeMediaRejection(f));
+                        setMediaFiles((prev) => [...prev, ...ok].slice(0, MAX_MEDIA_FILES));
+                        setMediaNotice(
+                          rejected.length ? `Skipped ${rejected.map((r) => `${r.f.name} (${r.why})`).join(', ')}.` : null
+                        );
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {mediaFiles.length > 0 && (
+                    <ul className="mt-2 space-y-1.5">
+                      {mediaFiles.map((f, i) => (
+                        <li
+                          key={`${f.name}-${i}`}
+                          className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#12141c] py-1 pl-3.5 pr-1"
+                        >
+                          <span className="truncate text-[13px] text-slate-300">{f.name}</span>
+                          <span className="flex shrink-0 items-center gap-1">
+                            <span className="text-xs text-slate-500">{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${f.name}`}
+                              onClick={() => setMediaFiles((prev) => prev.filter((_, j) => j !== i))}
+                              className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-400 hover:text-red-300"
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {mediaNotice && (
+                    <p className="mt-2 flex items-start gap-1.5 text-[13px] text-amber-300">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {mediaNotice}
+                    </p>
+                  )}
+                </div>
               </div>
+            )}
 
-              <button
-                type="submit"
-                className="w-full py-4 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-black text-sm uppercase tracking-wider rounded-2xl shadow-xl shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
-              >
-                Continue: Address & Contact Info →
-              </button>
-            </form>
-          )}
-
-          {step === 2 && (
-            <form onSubmit={handleSubmitRequest} className="space-y-4">
-              {serviceMode === 'mobile' ? (
-                <>
+            {stepId === 'vehicle' && (
+              <div className="mt-2 space-y-5">
+                <p className="text-[15px] leading-relaxed text-slate-400">
+                  So the tech brings the right parts and tools the first time.
+                </p>
+                <div className="grid grid-cols-3 gap-2.5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">
-                      Street address (include street name)
+                    <label htmlFor="bk-year" className={labelClass}>
+                      Year
                     </label>
                     <input
-                      type="text"
-                      required
-                      value={streetAddress}
-                      onChange={e => setStreetAddress(e.target.value)}
-                      className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                      placeholder="e.g. 1234 Canyon Falls Dr"
-                      autoComplete="street-address"
+                      id="bk-year"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={vehicleDetails.year}
+                      onChange={(e) => setVehicleField('year', e.target.value.replace(/\D/g, ''))}
+                      aria-invalid={errors.year ? true : undefined}
+                      aria-describedby={describedBy('year')}
+                      className={inputClass(!!errors.year)}
+                      placeholder="2016"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">City</label>
-                      <input
-                        type="text"
-                        required
-                        value={city}
-                        onChange={e => setCity(e.target.value)}
-                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                        placeholder="Northlake"
-                        autoComplete="address-level2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1">Zip</label>
-                      <input
-                        type="text"
-                        required
-                        value={zipCode}
-                        onChange={e => setZipCode(e.target.value)}
-                        className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                        placeholder="76226"
-                        autoComplete="postal-code"
-                        inputMode="numeric"
-                      />
-                    </div>
+                  <div className="col-span-2">
+                    <label htmlFor="bk-make" className={labelClass}>
+                      Make
+                    </label>
+                    <input
+                      id="bk-make"
+                      value={vehicleDetails.make}
+                      onChange={(e) => setVehicleField('make', e.target.value)}
+                      aria-invalid={errors.make ? true : undefined}
+                      aria-describedby={describedBy('make')}
+                      className={inputClass(!!errors.make)}
+                      placeholder="Ford"
+                    />
                   </div>
-                  <p className="text-[10px] text-slate-500">
-                    Dispatch needs the full address — house number alone (e.g. 15637, 76177) is not enough.
+                </div>
+                {(errors.year || errors.make) && (
+                  <div className="-mt-3">
+                    <FieldError id="bk-year-err" message={errors.year} />
+                    <FieldError id="bk-make-err" message={errors.make} />
+                  </div>
+                )}
+                <div>
+                  <label htmlFor="bk-model" className={labelClass}>
+                    Model
+                  </label>
+                  <input
+                    id="bk-model"
+                    value={vehicleDetails.model}
+                    onChange={(e) => setVehicleField('model', e.target.value)}
+                    aria-invalid={errors.model ? true : undefined}
+                    aria-describedby={describedBy('model')}
+                    className={inputClass(!!errors.model)}
+                    placeholder="F-150"
+                  />
+                  <FieldError id="bk-model-err" message={errors.model} />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label htmlFor="bk-trim" className={labelClass}>
+                      Trim
+                    </label>
+                    <input
+                      id="bk-trim"
+                      value={vehicleDetails.trim}
+                      onChange={(e) => setVehicleField('trim', e.target.value)}
+                      aria-invalid={errors.trim ? true : undefined}
+                      aria-describedby={describedBy('trim')}
+                      className={inputClass(!!errors.trim)}
+                      placeholder="Lariat"
+                    />
+                    <FieldError id="bk-trim-err" message={errors.trim} />
+                  </div>
+                  <div>
+                    <label htmlFor="bk-engine" className={labelClass}>
+                      Engine
+                    </label>
+                    <input
+                      id="bk-engine"
+                      value={vehicleDetails.engine}
+                      onChange={(e) => setVehicleField('engine', e.target.value)}
+                      aria-invalid={errors.engine ? true : undefined}
+                      aria-describedby={describedBy('engine')}
+                      className={inputClass(!!errors.engine)}
+                      placeholder="3.5L V6"
+                    />
+                    <FieldError id="bk-engine-err" message={errors.engine} />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="bk-vin" className={labelClass}>
+                    VIN
+                  </label>
+                  <input
+                    id="bk-vin"
+                    maxLength={17}
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    value={vehicleDetails.vin}
+                    onChange={(e) => setVehicleField('vin', e.target.value.toUpperCase())}
+                    aria-invalid={errors.vin ? true : undefined}
+                    aria-describedby={errors.vin ? 'bk-vin-err' : 'bk-vin-help'}
+                    className={`${inputClass(!!errors.vin)} font-heading tracking-[0.08em]`}
+                    placeholder="17 characters"
+                  />
+                  <FieldError id="bk-vin-err" message={errors.vin} />
+                  <p
+                    id="bk-vin-help"
+                    className="mt-2.5 flex items-start gap-2.5 rounded-xl bg-[#12141c] px-3.5 py-3 text-[13px] leading-relaxed text-slate-400"
+                  >
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                    Bottom corner of the windshield on the driver’s side, the sticker in the driver’s door jamb, or
+                    your insurance card.
                   </p>
-                </>
-              ) : (
-                <div className="p-3.5 bg-slate-900 rounded-xl border border-white/10 text-xs text-slate-300 space-y-1">
-                  <div className="font-bold text-white flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-orange-400" /> Drop-off location:
+                </div>
+              </div>
+            )}
+
+            {stepId === 'when' && (
+              <div className="mt-2 space-y-6">
+                <p className="text-[15px] leading-relaxed text-slate-400">
+                  Pick a day and a window. We text you to lock in the exact time.
+                </p>
+                <fieldset className="min-w-0">
+                  <legend className={labelClass}>Day</legend>
+                  <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 md:grid-cols-7">
+                    {days.map((d) => {
+                      const on = !laterDateActive && preferredDate === d.iso;
+                      return (
+                        <button
+                          key={d.iso}
+                          type="button"
+                          aria-pressed={on}
+                          aria-label={d.long}
+                          onClick={() => {
+                            setPreferredDate(d.iso);
+                            setShowLaterDate(false);
+                            clearError('date');
+                          }}
+                          className={`flex min-h-[76px] w-16 shrink-0 flex-col items-center justify-center gap-0.5 sm:w-auto ${choiceClass(on)}`}
+                        >
+                          <span className={`text-xs font-semibold ${on ? 'text-brand-soft' : 'text-slate-400'}`}>
+                            {d.short}
+                          </span>
+                          <span className="font-heading text-[22px] font-bold">{d.dayOfMonth}</span>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {laterDateActive ? (
+                    <div className="mt-3">
+                      <label htmlFor="bk-date" className="sr-only">
+                        Another date
+                      </label>
+                      <input
+                        id="bk-date"
+                        type="date"
+                        min={todayISODate()}
+                        value={preferredDate}
+                        onChange={(e) => {
+                          setPreferredDate(e.target.value);
+                          clearError('date');
+                        }}
+                        aria-invalid={errors.date ? true : undefined}
+                        aria-describedby={describedBy('date')}
+                        className={inputClass(!!errors.date)}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowLaterDate(true)}
+                      className="mt-2 min-h-[44px] text-sm font-semibold text-brand-soft hover:text-white"
+                    >
+                      Need a later date?
+                    </button>
+                  )}
+                  <FieldError id="bk-date-err" message={errors.date} />
+                </fieldset>
+                <fieldset className="min-w-0">
+                  <legend className={labelClass}>Time window</legend>
+                  <div className="grid gap-2.5 md:grid-cols-2">
+                    {PREFERRED_TIME_WINDOWS.map((w) => {
+                      const on = preferredTime === w;
+                      const { name, hours } = splitTimeWindow(w);
+                      return (
+                        <button
+                          key={w}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => {
+                            setPreferredTime(w);
+                            clearError('window');
+                          }}
+                          className={`flex min-h-[60px] items-center justify-between gap-3 px-[18px] text-left ${choiceClass(on)}`}
+                        >
+                          <span className="text-base font-semibold">{name}</span>
+                          <span className={`text-sm font-medium ${on ? 'text-brand-soft' : 'text-slate-400'}`}>
+                            {hours}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <FieldError id="bk-window-err" message={errors.window} />
+                </fieldset>
+              </div>
+            )}
+
+            {stepId === 'where' && serviceMode === 'mobile' && (
+              <div className="mt-2 space-y-5">
+                <p className="text-[15px] leading-relaxed text-slate-400">
+                  Home, work, or wherever it’s parked. We come to you.
+                </p>
+                <div>
+                  <label htmlFor="bk-street" className={labelClass}>
+                    Street address
+                  </label>
+                  <input
+                    id="bk-street"
+                    autoComplete="street-address"
+                    value={streetAddress}
+                    onChange={(e) => {
+                      setStreetAddress(e.target.value);
+                      clearError('street');
+                    }}
+                    aria-invalid={errors.street ? true : undefined}
+                    aria-describedby={describedBy('street')}
+                    className={inputClass(!!errors.street)}
+                    placeholder="1234 Canyon Falls Dr"
+                  />
+                  <FieldError id="bk-street-err" message={errors.street} />
+                </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="col-span-2">
+                    <label htmlFor="bk-city" className={labelClass}>
+                      City
+                    </label>
+                    <input
+                      id="bk-city"
+                      autoComplete="address-level2"
+                      value={city}
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        clearError('city');
+                      }}
+                      aria-invalid={errors.city ? true : undefined}
+                      aria-describedby={describedBy('city')}
+                      className={inputClass(!!errors.city)}
+                      placeholder="Northlake"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="bk-zip" className={labelClass}>
+                      ZIP
+                    </label>
+                    <input
+                      id="bk-zip"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      maxLength={5}
+                      value={zipCode}
+                      onChange={(e) => {
+                        setZipCode(e.target.value.replace(/\D/g, ''));
+                        clearError('zip');
+                      }}
+                      aria-invalid={errors.zip ? true : undefined}
+                      aria-describedby={describedBy('zip')}
+                      className={inputClass(!!errors.zip)}
+                      placeholder="76226"
+                    />
+                  </div>
+                </div>
+                {(errors.city || errors.zip) && (
+                  <div className="-mt-3">
+                    <FieldError id="bk-city-err" message={errors.city} />
+                    <FieldError id="bk-zip-err" message={errors.zip} />
+                  </div>
+                )}
+                {coverage && !errors.zip && (
+                  <p
+                    className="flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3.5 text-sm leading-snug text-emerald-100"
+                    aria-live="polite"
+                  >
+                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
+                    <span>
+                      <strong>{coverage.city} is in our area.</strong> Flat {money(TRAVEL_FEE_DOLLARS)} travel fee, paid
+                      at the visit.
+                    </span>
+                  </p>
+                )}
+                <div>
+                  <label htmlFor="bk-notes" className={labelClass}>
+                    Parking or gate notes {optionalTag}
+                  </label>
+                  <input
+                    id="bk-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className={inputClass(false)}
+                    placeholder="Gate code, which driveway, where the key is"
+                  />
+                </div>
+              </div>
+            )}
+
+            {stepId === 'where' && serviceMode === 'shop' && (
+              <div className="mt-4 space-y-5">
+                <div className="space-y-1 rounded-2xl border border-white/10 bg-[#12141c] p-5 text-sm text-slate-300">
+                  <p className="flex items-center gap-1.5 font-semibold text-white">
+                    <MapPin className="h-4 w-4 text-brand-soft" aria-hidden="true" /> Drop-off location
+                  </p>
                   {selectedPartner ? (
                     <>
-                      <p className="text-white font-semibold">{selectedPartner.businessName}</p>
+                      <p className="font-semibold text-white">{selectedPartner.businessName}</p>
                       <p>{selectedPartner.address}</p>
-                      {selectedPartner.hoursNote && (
-                        <p className="text-slate-500">{selectedPartner.hoursNote}</p>
-                      )}
+                      {selectedPartner.hoursNote && <p className="text-slate-400">{selectedPartner.hoursNote}</p>}
                     </>
                   ) : (
                     <p>Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247</p>
                   )}
+                  <p className="pt-2 text-slate-400">You bring the car in, so travel doesn’t apply.</p>
                 </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Your Full Name</label>
+                  <label htmlFor="bk-notes" className={labelClass}>
+                    Notes for the shop {optionalTag}
+                  </label>
                   <input
-                    type="text"
-                    required
+                    id="bk-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className={inputClass(false)}
+                    placeholder="Anything we should know at drop-off"
+                  />
+                </div>
+              </div>
+            )}
+
+            {stepId === 'contact' && (
+              <div className="mt-2 space-y-5">
+                <p className="text-[15px] leading-relaxed text-slate-400">We text when your tech is on the way.</p>
+                <div>
+                  <label htmlFor="bk-name" className={labelClass}>
+                    Full name
+                  </label>
+                  <input
+                    id="bk-name"
+                    autoComplete="name"
                     value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                    placeholder="John Doe"
+                    onChange={(e) => {
+                      setFullName(e.target.value);
+                      clearError('fullName');
+                    }}
+                    aria-invalid={errors.fullName ? true : undefined}
+                    aria-describedby={describedBy('fullName')}
+                    className={inputClass(!!errors.fullName)}
+                    placeholder="First and last"
                   />
+                  <FieldError id="bk-fullName-err" message={errors.fullName} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Phone Number</label>
+                  <label htmlFor="bk-phone" className={labelClass}>
+                    Mobile phone
+                  </label>
                   <input
+                    id="bk-phone"
                     type="tel"
-                    required
+                    autoComplete="tel"
                     value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                    placeholder="(940) 304-0620"
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      clearError('phone');
+                    }}
+                    aria-invalid={errors.phone ? true : undefined}
+                    aria-describedby={describedBy('phone')}
+                    className={inputClass(!!errors.phone)}
+                    placeholder="(940) 555-0123"
                   />
+                  <FieldError id="bk-phone-err" message={errors.phone} />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Email (for receipt & card on file)</label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="you@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Additional Issue Notes / Parking Info</label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none"
-                  placeholder="e.g. Parked on left side driveway, key will be under mat."
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Referral code (optional)</label>
-                <input
-                  value={referralInput}
-                  onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
-                  className="w-full bg-[#0b0c10] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:border-orange-500 focus:outline-none"
-                  placeholder="Friend's code"
-                  autoCapitalize="characters"
-                />
-              </div>
-
-              <div className="bg-[#0b0c10] border border-orange-500/30 p-3.5 rounded-xl space-y-2 text-[11px] text-slate-300">
-                <label className="flex items-start space-x-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    required
-                    defaultChecked
-                    className="mt-0.5 w-4 h-4 rounded border-slate-700 text-orange-500 focus:ring-orange-500 bg-slate-900 flex-shrink-0"
-                  />
-                  <span>
-                    I agree to the <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-orange-400 font-bold hover:underline">Adaptivity Terms of Service & Legal Policy</a> (including $100 diagnostic fee credit policy, 12-Month Warranty, 50-mile lug re-torque duty, Mechanics' Lien §70.001, and Denton County jurisdiction). I authorize electronic signature under the federal E-SIGN Act.
-                  </span>
-                </label>
-                <p className="text-[10px] text-slate-500 leading-relaxed pl-6">
-                  By providing your number, you consent to receive service-related text messages
-                  (appointment updates, receipts, and secure payment links) from Adaptivity Performance.
-                  Message &amp; data rates may apply. Reply STOP to opt out, HELP for help.
-                </p>
-              </div>
-
-              <div className="bg-gradient-to-r from-amber-950/40 via-orange-950/30 to-slate-900 border border-amber-500/30 p-3 rounded-xl flex items-start space-x-2 text-[11px] text-slate-300">
-                <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-amber-400 font-bold block">Pay in person when the job is done</strong>
-                  <span>
-                    No card is taken to book. You pay <strong className="text-white">${quotedPreview.toFixed(2)}</strong>
-                    {quotedQuote.mode === 'diagnostic'
-                      ? ' for the diagnostic visit — your tech sets repair pricing on site before any further work'
-                      : ' when the job is completed'}
-                    , paid directly to your technician by card, tap or chip at the vehicle.
-                  </span>
+                  <label htmlFor="bk-email" className={labelClass}>
+                    Email
+                  </label>
+                  <input
+                    id="bk-email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      clearError('email');
+                    }}
+                    aria-invalid={errors.email ? true : undefined}
+                    aria-describedby={describedBy('email')}
+                    className={inputClass(!!errors.email)}
+                    placeholder="For your confirmation and receipt"
+                  />
+                  <FieldError id="bk-email-err" message={errors.email} />
                 </div>
-              </div>
-
-              {submitError && (
-                <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">{submitError}</p>
-              )}
-
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-1/3 py-3 bg-slate-800 text-slate-300 font-bold text-xs rounded-xl hover:bg-slate-700"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreatingHold}
-                  className="w-2/3 py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-                >
-                  {isCreatingHold ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Sending your request…
-                    </>
-                  ) : (
-                    <>Request this visit →</>
-                  )}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {step === 3 && (
-            <div className="text-center space-y-5 py-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto text-2xl font-bold">
-                ✓
-              </div>
-              <div>
-                <span className="text-xs bg-orange-500/10 text-orange-400 font-mono font-bold px-3 py-1 rounded-full border border-orange-500/30">
-                  Confirmation #{bookingRef}
-                </span>
-                <h3 className="font-heading text-2xl font-bold text-white mt-2">Booking request received</h3>
-                <p className="text-xs text-slate-300 max-w-sm mx-auto mt-1">
-                  <strong className="text-white">Nothing has been charged.</strong> Your technician takes
-                  payment in person when the work is done — card, tap or chip. Dispatch will reach you at{' '}
-                  <strong className="text-white">{phone}</strong> to confirm your technician and arrival window.
-                </p>
-              </div>
-
-              {/* A booking request is not a confirmed slot, and dispatch may be
-                  out on a job. Give the customer a way to reach a person now
-                  rather than only waiting to be called back. tel: so it dials
-                  straight from the phone they booked on. */}
-              <a
-                href={SITE_PHONE_TEL}
-                className="flex items-center justify-center gap-2 max-w-md mx-auto px-4 py-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/40 text-orange-300 hover:bg-orange-500/20 active:scale-[0.99] transition-all"
-              >
-                <Phone className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-bold">
-                  Need it sooner, or have a question? Call {SITE_PHONE_DISPLAY}
-                </span>
-              </a>
-
-              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/10 text-left text-xs space-y-2 max-w-md mx-auto">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Service Mode:</span>
-                  <span className="font-bold text-white capitalize">{serviceMode} Service</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Vehicle:</span>
-                  <span className="font-bold text-white">{vehicle}</span>
-                </div>
-                {vehicleDetails.vin.trim() && (
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">VIN Number:</span>
-                    <span className="font-bold font-mono text-orange-400">{normalizeVin(vehicleDetails.vin)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Scheduled:</span>
-                  <span className="font-bold text-orange-400">{preferredDate} ({preferredTime})</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Due in person:</span>
-                  <span className="font-bold text-emerald-400">${quotedPreview.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-4 h-4" /> 12-Month / 12,000-Mile Warranty Auto-Registered
-              </div>
-
-              {accountStatus === 'idle' && (
-                <form
-                  onSubmit={(e) => void handleCreateAccount(e)}
-                  className="max-w-md mx-auto text-left bg-[#0b0c10] border border-orange-500/30 rounded-2xl p-4 space-y-3"
-                >
-                  <div className="flex items-start gap-2">
-                    <UserPlus className="w-4 h-4 text-orange-400 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-white">Save your info — create a free account</p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        Track this job, save your vehicle details, and book faster next time in the customer portal.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-1.5 text-[11px]">
-                    <div className="flex justify-between gap-2">
-                      <span className="text-slate-500">Name</span>
-                      <span className="text-slate-200 font-medium truncate">{fullName || '—'}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-slate-500">Email</span>
-                      <span className="text-slate-200 font-medium truncate">{email || '—'}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-slate-500">Phone</span>
-                      <span className="text-slate-200 font-medium truncate">{phone || '—'}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
+                {showReferral ? (
+                  <div>
+                    <label htmlFor="bk-referral" className={labelClass}>
+                      Referral code {optionalTag}
+                    </label>
                     <input
+                      id="bk-referral"
+                      value={referralInput}
+                      onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+                      autoCapitalize="characters"
+                      className={`${inputClass(false)} font-heading tracking-[0.06em]`}
+                      placeholder="Friend’s code"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowReferral(true)}
+                    className="min-h-[44px] text-sm font-semibold text-brand-soft hover:text-white"
+                  >
+                    Have a referral code?
+                  </button>
+                )}
+                <div>
+                  <label
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border bg-[#12141c] px-4 py-3.5 ${
+                      errors.agreed ? 'border-amber-400/70' : 'border-white/10'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={agreed}
+                      onChange={(e) => {
+                        setAgreed(e.target.checked);
+                        clearError('agreed');
+                      }}
+                      aria-invalid={errors.agreed ? true : undefined}
+                      aria-describedby={describedBy('agreed')}
+                      className="mt-0.5 h-[22px] w-[22px] shrink-0 accent-brand"
+                    />
+                    <span className="text-[13px] leading-relaxed text-slate-300">
+                      I agree to the{' '}
+                      <a
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand-soft hover:underline"
+                      >
+                        Terms of Service
+                      </a>{' '}
+                      (including the {money(charges.diagnostic)} diagnostic credit policy, 12-month warranty, 50-mile lug
+                      re-torque duty, Mechanics’ Lien §70.001 and Denton County jurisdiction) and sign electronically
+                      under the federal E-SIGN Act. I agree to get texts about this visit — appointment updates and
+                      receipts. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
+                    </span>
+                  </label>
+                  <FieldError id="bk-agreed-err" message={errors.agreed} />
+                </div>
+              </div>
+            )}
+
+            {stepId === 'review' && (
+              <div className="mt-4 space-y-6">
+                <dl>
+                  {[
+                    {
+                      label: 'Service',
+                      value: serviceLabel,
+                      sub: issueDescription.trim() + (mediaFiles.length ? ` · ${mediaFiles.length} file${mediaFiles.length > 1 ? 's' : ''}` : ''),
+                      edit: 0,
+                    },
+                    { label: 'Vehicle', value: vehicle || '—', sub: vehicleDetails.vin ? `VIN ···· ${vinTail(vehicleDetails.vin)}` : '', edit: 1 },
+                    { label: 'When', value: whenLabel, sub: splitTimeWindow(preferredTime).hours, edit: 2 },
+                    { label: serviceMode === 'shop' ? 'Drop-off' : 'Where', value: whereLabel || '—', sub: notes.trim(), edit: 3 },
+                    { label: 'You', value: fullName.trim() || '—', sub: [displayPhone(phone), email.trim()].filter(Boolean).join(' · '), edit: 4 },
+                  ].map((row) => (
+                    <div key={row.label} className="flex items-start justify-between gap-3 border-b border-white/[0.08] py-3.5">
+                      <div className="min-w-0">
+                        <dt className="text-xs font-semibold uppercase tracking-[0.06em] text-slate-400">{row.label}</dt>
+                        <dd className="mt-1 text-base font-semibold">{row.value}</dd>
+                        {row.sub && <dd className="mt-0.5 line-clamp-2 text-sm text-slate-400">{row.sub}</dd>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => editFromReview(row.edit)}
+                        className="min-h-[44px] shrink-0 px-1 text-sm font-semibold text-brand-soft hover:text-white"
+                        aria-label={`Edit ${row.label.toLowerCase()}`}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ))}
+                </dl>
+                <div className="lg:hidden">
+                  {priceCard()}
+                </div>
+                {submitError && (
+                  <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {submitError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {done && (
+              <div className="space-y-6 pt-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-brand/15">
+                  <Check className="h-8 w-8 text-brand" strokeWidth={2.6} aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-brand-soft">
+                    Confirmation #{bookingRef}
+                  </p>
+                  <h2
+                    id="booking-step-title"
+                    ref={headingRef}
+                    tabIndex={-1}
+                    className="mt-2 font-heading text-[32px] font-bold leading-[1.1] outline-none"
+                  >
+                    You’re on the board.
+                  </h2>
+                  <p className="mt-2.5 text-[15px] text-slate-400">
+                    {whenLabel} · {vehicle}
+                  </p>
+                </div>
+                <ol className="space-y-1">
+                  {[
+                    <>
+                      <strong>We text {displayPhone(phone)} to confirm</strong> your exact arrival time.
+                    </>,
+                    <>
+                      <strong>Your tech texts</strong> when they’re on the way.
+                    </>,
+                    <>
+                      <strong>Pay in person</strong> when the job is done — {money(charges.dueAtVisit)} for the visit.
+                      Nothing has been charged.
+                    </>,
+                  ].map((body, i) => (
+                    <li key={i} className="flex gap-3.5 py-2.5 text-[15px] leading-relaxed">
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-heading text-sm font-bold ${
+                          i === 0 ? 'bg-brand text-[#0b0c10]' : 'bg-zinc-800 text-white'
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <span>{body}</span>
+                    </li>
+                  ))}
+                </ol>
+                <p className="flex items-center gap-2 text-sm text-emerald-300">
+                  <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> Repairs carry our 12-month / 12,000-mile
+                  warranty, registered automatically.
+                </p>
+                {mediaNotice && (
+                  <p className="flex items-start gap-1.5 text-[13px] text-amber-300">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {mediaNotice}
+                  </p>
+                )}
+
+                {/* A request is not a confirmed slot, and dispatch may be out on
+                    a job. tel: so it dials straight from the phone they booked on. */}
+                <a
+                  href={SITE_PHONE_TEL}
+                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-white/[0.14] text-[15px] font-semibold hover:border-brand/50"
+                >
+                  <Phone className="h-4 w-4" aria-hidden="true" /> Need it sooner? Call {SITE_PHONE_DISPLAY}
+                </a>
+
+                {accountStatus === 'idle' && (
+                  <form
+                    onSubmit={(e) => void handleCreateAccount(e)}
+                    className="space-y-3 rounded-2xl border border-brand/30 bg-[#12141c] p-5"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <UserPlus className="mt-0.5 h-5 w-5 shrink-0 text-brand-soft" aria-hidden="true" />
+                      <div>
+                        <p className="text-base font-semibold">Create an account to track it</p>
+                        <p className="mt-0.5 text-[13px] text-slate-400">
+                          Follow this job, keep your vehicle on file, and book faster next time. Uses {email}.
+                        </p>
+                      </div>
+                    </div>
+                    <label htmlFor="bk-pass" className="sr-only">
+                      Create password
+                    </label>
+                    <input
+                      id="bk-pass"
                       type="password"
                       autoComplete="new-password"
                       placeholder="Create password (8+ characters)"
                       value={accountPassword}
                       onChange={(e) => setAccountPassword(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
+                      className={inputClass(false)}
                       required
                       minLength={8}
                     />
+                    <label htmlFor="bk-pass2" className="sr-only">
+                      Confirm password
+                    </label>
                     <input
+                      id="bk-pass2"
                       type="password"
                       autoComplete="new-password"
                       placeholder="Confirm password"
                       value={accountPasswordConfirm}
                       onChange={(e) => setAccountPasswordConfirm(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-orange-500/50"
+                      className={inputClass(false)}
                       required
                       minLength={8}
                     />
-                  </div>
-                  {accountError && (
-                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-                      {accountError}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={accountBusy}
-                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs rounded-xl disabled:opacity-60 flex items-center justify-center gap-2"
-                  >
-                    {accountBusy ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Creating account…
-                      </>
-                    ) : (
-                      <>Create free account</>
+                    {accountError && (
+                      <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                        {accountError}
+                      </p>
                     )}
+                    <button
+                      type="submit"
+                      disabled={accountBusy}
+                      className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-brand font-heading text-base font-bold text-[#0b0c10] hover:bg-brand-soft disabled:opacity-60"
+                    >
+                      {accountBusy ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Creating account…
+                        </>
+                      ) : (
+                        'Create free account'
+                      )}
+                    </button>
+                  </form>
+                )}
+                {accountStatus === 'created' && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-emerald-300">Account created. This visit is in your portal.</p>
+                    <a
+                      href={portalPath()}
+                      className="flex min-h-[52px] items-center justify-center rounded-2xl bg-brand font-heading font-bold text-[#0b0c10]"
+                    >
+                      Open customer portal
+                    </a>
+                  </div>
+                )}
+                {accountStatus === 'confirm_email' && (
+                  <div className="space-y-2 rounded-2xl border border-amber-500/30 bg-[#12141c] p-4">
+                    <p className="text-sm text-amber-200">
+                      Account created. Confirm your email if asked, then sign in at the customer portal — we’ll attach
+                      #{bookingRef} automatically.
+                    </p>
+                    <a
+                      href={portalPath()}
+                      className="flex min-h-[48px] items-center justify-center rounded-xl bg-zinc-800 font-semibold hover:bg-zinc-700"
+                    >
+                      Go to customer portal
+                    </a>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void shareAdaptivity({
+                        title: 'Adaptivity Performance',
+                        text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake and ${LOCAL_HUB.radiusMiles} miles around.`,
+                      });
+                    }}
+                    className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.14] text-sm font-semibold hover:border-brand/50"
+                  >
+                    <Share2 className="h-4 w-4" aria-hidden="true" /> Share with a neighbor
                   </button>
-                </form>
-              )}
-
-              {accountStatus === 'created' && (
-                <div className="max-w-md mx-auto space-y-2">
-                  <p className="text-xs text-emerald-400 font-semibold">
-                    Account created. Your booking is saved to your portal.
-                  </p>
                   <a
-                    href={portalPath()}
-                    className="block w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold text-xs rounded-xl text-center"
+                    href={GOOGLE_REVIEW_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.14] text-sm font-semibold hover:border-brand/50"
                   >
-                    Open customer portal
+                    <Star className="h-4 w-4" aria-hidden="true" /> Leave a review
                   </a>
                 </div>
-              )}
-
-              {accountStatus === 'confirm_email' && (
-                <div className="max-w-md mx-auto space-y-2 text-left bg-[#0b0c10] border border-amber-500/30 rounded-2xl p-4">
-                  <p className="text-xs text-amber-300 font-semibold">
-                    Account created. Confirm your email if required, then sign in at the customer portal — we&apos;ll
-                    attach appointment #{bookingRef} automatically.
-                  </p>
-                  <a
-                    href={portalPath()}
-                    className="block w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl text-center"
-                  >
-                    Go to customer portal
-                  </a>
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
                 <button
                   type="button"
-                  onClick={() => {
-                    void shareAdaptivity({
-                      title: 'Adaptivity Performance',
-                      text: `I just booked mobile auto service with Adaptivity Performance (${bookingRef}). Driveway service for Justin, Northlake and ${LOCAL_HUB.radiusMiles} miles around.`,
-                    });
-                  }}
-                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-orange-500/40 text-orange-300 font-bold text-xs hover:bg-orange-500/10"
+                  onClick={onClose}
+                  className="min-h-[48px] w-full rounded-xl bg-zinc-800 text-sm font-semibold hover:bg-zinc-700"
                 >
-                  <Share2 className="w-3.5 h-3.5" />
-                  Share with a neighbor
+                  Done
                 </button>
-                <a
-                  href={GOOGLE_REVIEW_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-white/15 text-slate-200 font-bold text-xs hover:border-amber-500/40 hover:text-amber-300"
-                >
-                  <Star className="w-3.5 h-3.5" />
-                  Leave a review
-                </a>
               </div>
+            )}
+          </div>
 
-              <button
-                onClick={onClose}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
-              >
-                Done / Return to Website
-              </button>
+          {!done && (
+            <div className="border-t border-white/[0.06] bg-[#0b0c10] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:px-8 md:border-0 md:px-10 md:pb-8">
+              <div className="flex items-center gap-3">
+                {step > 0 && (
+                  <button
+                    type="button"
+                    onClick={back}
+                    className="hidden min-h-[52px] rounded-2xl border border-white/[0.14] px-6 text-[15px] font-semibold hover:border-white/30 md:block"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={advance}
+                  disabled={submitting}
+                  className="flex min-h-[56px] flex-1 items-center justify-center gap-2 rounded-2xl bg-brand font-heading text-[17px] font-bold text-[#0b0c10] hover:bg-brand-soft disabled:opacity-60 md:max-w-xs md:flex-none md:px-10"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Sending your request…
+                    </>
+                  ) : (
+                    continueLabel
+                  )}
+                </button>
+              </div>
+              {footNote && <p className="mt-2 text-center text-xs text-slate-400 md:text-left">{footNote}</p>}
             </div>
           )}
         </div>
+
+        {/* Live summary — desktop */}
+        <aside className="hidden lg:flex flex-col gap-5 border-l border-white/[0.06] bg-[#0e1016] px-6 pb-7 pt-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.06em] text-slate-400">Your visit</p>
+          <dl className="space-y-4">
+            {[
+              { label: 'Service', value: serviceLabel, sub: issueDescription.trim(), reached: true },
+              { label: 'Vehicle', value: vehicle, reached: furthestStep >= 1 },
+              { label: 'When', value: whenLabel, reached: furthestStep >= 2 },
+              { label: serviceMode === 'shop' ? 'Drop-off' : 'Where', value: whereLabel, reached: furthestStep >= 3 },
+            ].map((row) => (
+              <div key={row.label}>
+                <dt className={`text-[13px] ${row.reached && row.value ? 'text-slate-400' : 'text-zinc-500'}`}>{row.label}</dt>
+                <dd className={`mt-0.5 text-[15px] ${row.reached && row.value ? 'font-semibold' : 'text-zinc-500'}`}>
+                  {row.reached && row.value ? row.value : 'Not yet'}
+                </dd>
+                {row.sub && <dd className="mt-0.5 line-clamp-2 text-[13px] text-slate-400">{row.sub}</dd>}
+              </div>
+            ))}
+          </dl>
+          <div className="mt-auto">
+            {priceCard(true)}
+          </div>
+        </aside>
       </div>
     </div>
   );

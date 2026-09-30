@@ -23,6 +23,9 @@ if (start < 0 || end < 0) throw new Error('Could not locate catalog block');
 const holdMatch = src.match(/export const DIAGNOSTIC_FEE_DOLLARS\s*=\s*(\d+)\s*;/);
 if (!holdMatch) throw new Error('Could not read DIAGNOSTIC_FEE_DOLLARS from serviceCatalog.ts');
 const SOURCE_HOLD_DOLLARS = Number(holdMatch[1]);
+const travelMatch = src.match(/export const TRAVEL_FEE_DOLLARS\s*=\s*(\d+)\s*;/);
+if (!travelMatch) throw new Error('Could not read TRAVEL_FEE_DOLLARS from serviceCatalog.ts');
+const SOURCE_TRAVEL_DOLLARS = Number(travelMatch[1]);
 
 const consultFn = `
 const DIAGNOSTIC_FEE_DOLLARS = ${SOURCE_HOLD_DOLLARS};
@@ -118,6 +121,9 @@ const edgePaths = [
 const edge = `/** Server-side service pricing (keep in sync with src/services/servicePricing.ts). Auto-synced. */
 
 export const DIAGNOSTIC_FEE_DOLLARS = ${DIAGNOSTIC_FEE_DOLLARS};
+
+/** Flat travel fee on a mobile visit. Paid in person; none on a shop drop-off. */
+export const TRAVEL_FEE_DOLLARS = ${SOURCE_TRAVEL_DOLLARS};
 
 type ServiceKind = string;
 

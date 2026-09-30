@@ -15,10 +15,10 @@ import {
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf } from '../site/localSeo';
 import { GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { SiteLink } from '../site/SiteLink';
-import { travelFeeForMiles } from '../services/serviceArea';
 import {
   BOOKABLE_SERVICE_CATALOG,
   DIAGNOSTIC_FEE_DOLLARS,
+  TRAVEL_FEE_DOLLARS,
   type ServiceKind,
 } from '../services/serviceCatalog';
 import {
@@ -38,9 +38,8 @@ type OnBook = (prefill: BookingPrefill, source: string) => void;
    sneaks back in. */
 const FEE = `$${DIAGNOSTIC_FEE_DOLLARS}`;
 const RADIUS = LOCAL_HUB.radiusMiles;
-/** Travel is free across the whole radius today; if that ever changes the copy
- *  that promises it has to change with it, not stay behind. */
-const TRAVEL_INCLUDED = travelFeeForMiles(RADIUS) === 0;
+/** One flat travel fee on every mobile visit, wherever it is in the radius. */
+const TRAVEL = `$${TRAVEL_FEE_DOLLARS}`;
 
 const SERVICE_ICON: Partial<Record<ServiceKind, React.ReactNode>> = {
   diagnostic: <Stethoscope className="w-6 h-6" aria-hidden="true" />,
@@ -62,10 +61,10 @@ export const PriceBand: React.FC = () => (
     <div className="grid gap-4 md:grid-cols-3 md:gap-5">
       <div className="rounded-[18px] border border-white/[0.09] bg-[#12141c] p-6 sm:p-7">
         <p className="font-heading text-4xl font-bold tracking-[-0.04em] text-brand">{FEE}</p>
-        <h3 className="mt-2.5 text-[17px] font-bold text-white">to get us there</h3>
+        <h3 className="mt-2.5 text-[17px] font-bold text-white">diagnostic visit</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
-          One flat call-out anywhere within {RADIUS} miles of {LOCAL_HUB.city}
-          {TRAVEL_INCLUDED ? ' — travel is on us across the whole radius.' : '.'}
+          Plus a flat {TRAVEL} travel fee anywhere within {RADIUS} miles of{' '}
+          {LOCAL_HUB.city}. Both paid in person — no card to book.
         </p>
       </div>
       <div className="rounded-[18px] border border-white/[0.09] bg-[#12141c] p-6 sm:p-7">
@@ -202,9 +201,8 @@ export const CoverageSection: React.FC = () => {
             <br className="hidden lg:block" /> around {LOCAL_HUB.city}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-slate-400">
-            {TRAVEL_INCLUDED
-              ? 'Travel is included everywhere on this list — the call-out is the same whether you’re next door or at the edge of the radius.'
-              : `The call-out is ${FEE} everywhere on this list.`}
+            Travel is a flat {TRAVEL} everywhere on this list — the same whether you’re next door or at the
+            edge of the radius.
           </p>
           <a href="#book" className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand-soft hover:text-white">
             Check your ZIP <ArrowRight className="w-4 h-4" aria-hidden="true" />

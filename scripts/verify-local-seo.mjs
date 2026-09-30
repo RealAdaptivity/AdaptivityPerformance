@@ -191,18 +191,16 @@ for (const url of biz.sameAs || []) {
   }
 }
 
-/* Travel is free across the whole radius (freeRadiusMiles === radiusMiles), so no
-   blurb may promise a per-mile charge. */
+/* Travel is a flat fee on every mobile visit (TRAVEL_FEE_DOLLARS). No blurb may
+   promise free travel or a per-mile charge — both were true once, and a city
+   page still saying so would contradict the booking form. */
 {
-  if (LOCAL_HUB.freeRadiusMiles >= LOCAL_HUB.radiusMiles) {
-    const feeClaim = /per-mile|travel (?:line|billed|charge)(?!\s*(?:on the quote|either way))/i;
-    const offenders = LOCAL_CITIES.filter(
-      (c) => feeClaim.test(c.blurb || '') && !/no travel|travel is free/i.test(c.blurb || '')
-    ).map((c) => c.city);
-    if (offenders.length) {
-      fail(`travel is free everywhere, but these blurbs still quote a fee: ${offenders.join(', ')}`);
-    }
+  const stale = /free travel|travel (?:is|out is|is still) free|no travel|travel charge|trip charge|per-mile|free dispatch|travel radius|travel band/i;
+  const offenders = LOCAL_CITIES.filter((c) => stale.test(c.blurb || '')).map((c) => c.city);
+  if (offenders.length) {
+    fail(`travel is a flat fee now, but these blurbs still promise free or per-mile travel: ${offenders.join(', ')}`);
   }
+  if ('freeRadiusMiles' in LOCAL_HUB) fail('hub still declares freeRadiusMiles — travel has no free radius now');
 }
 
 if (failures.length) {

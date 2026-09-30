@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BUSINESS_HOURS } from '../site/seo';
+import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import { X, ShieldCheck, Check, Sparkles, Sliders, Zap } from 'lucide-react';
 
 interface MembershipModalProps {
@@ -37,9 +38,9 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
 
   // Pricing definitions
   const pricing = {
-    basic: { monthly: 19, annual: 199, laborDiscount: 0.10, travelSaved: 45, oilChangesIncluded: 0 },
-    vip: { monthly: 39, annual: 399, laborDiscount: 0.15, travelSaved: 45, oilChangesIncluded: 2 },
-    fleet: { monthly: 89, annual: 899, laborDiscount: 0.20, travelSaved: 45, oilChangesIncluded: 4 },
+    basic: { monthly: 19, annual: 199, laborDiscount: 0.10, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 0 },
+    vip: { monthly: 39, annual: 399, laborDiscount: 0.15, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 2 },
+    fleet: { monthly: 89, annual: 899, laborDiscount: 0.20, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 4 },
   };
 
   const currentPriceObj = pricing[selectedPlan];

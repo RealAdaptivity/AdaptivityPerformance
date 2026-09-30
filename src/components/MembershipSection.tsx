@@ -1,5 +1,6 @@
 import React from 'react';
 import { BUSINESS_HOURS } from '../site/seo';
+import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import { ShieldCheck, Check, Sparkles, ArrowRight } from 'lucide-react';
 
 interface MembershipSectionProps {
@@ -48,7 +49,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
               </div>
               <p className="text-xs text-slate-300">Ideal for single-vehicle drivers seeking guaranteed $0 travel charges.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Dispatch Fees</strong> ($45 value/visit)</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Dispatch Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>10% Off</strong> All Labor & Diagnostics</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 1 Free Annual Digital Inspection (DVI)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Priority Hotline · {BUSINESS_HOURS.label} Daily</li>
@@ -82,7 +83,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
               </div>
               <p className="text-xs text-slate-300">Complete vehicle protection with 2 free synthetic oil services & towing allowance.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Dispatch Fees</strong> ($45 value/visit)</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Dispatch Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>15% Off</strong> All Repair Labor & Upgrades</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-400 font-bold" /> <strong>2 Free Synthetic Oil Changes/Yr</strong> ($190 value)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited Free Digital Inspections (DVI)</li>

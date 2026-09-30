@@ -16,12 +16,12 @@ import {
   nearbyCities,
   priceRangeLabel,
   serviceCityPath,
-  travelBand,
   travelLabel,
   LOCAL_SERVICES,
   SERVICE_PAGE_CITIES,
   type LocalCity,
 } from '../site/localSeo';
+import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import { GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, shareAdaptivity } from '../site/seo';
 import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { navigateSite } from '../site/siteRoute';
@@ -68,12 +68,8 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4">
               <dt className="text-slate-400">Travel fee</dt>
-              <dd
-                className={`font-heading text-lg font-bold mt-0.5 ${
-                  travelBand(city) === 'free' ? 'text-emerald-400' : 'text-orange-400'
-                }`}
-              >
-                {travelBand(city) === 'free' ? '$0' : '$2/mi'}
+              <dd className="font-heading text-lg font-bold mt-0.5 text-orange-400">
+                ${TRAVEL_FEE_DOLLARS} flat
               </dd>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4">

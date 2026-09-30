@@ -104,11 +104,14 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
-        <SiteLink to="home" className="group min-w-0">
+        <SiteLink to="home" className="group min-w-0 flex-1">
           <BrandLogo withWordmark size={40} />
         </SiteLink>
 
-        <div className="relative flex items-center gap-2 sm:gap-3" ref={menuRef}>
+        {/* shrink-0: the buttons keep their size and the wordmark takes what is
+            left, rather than both squeezing until the button wraps to three
+            lines and the name slides underneath it. */}
+        <div className="relative flex shrink-0 items-center gap-2 sm:gap-3" ref={menuRef}>
           <nav className="hidden lg:flex items-center gap-1 text-sm font-semibold text-slate-300">
             <SiteLink to="home" className={linkClass('home')}>
               Home
@@ -135,7 +138,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <a
             href={SITE_PHONE_TEL}
-            className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 hover:text-orange-400 px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-orange-500/30 transition-colors"
+            /* Hidden from lg to xl: that is where the nav links appear and there
+               is not room for links, number and button in one row. The number
+               stays in the menu at every width. */
+            className="hidden md:inline-flex lg:hidden xl:inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-slate-300 hover:text-orange-400 px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-orange-500/30 transition-colors"
           >
             <Phone className="w-3.5 h-3.5 text-orange-400" />
             <span>{SITE_PHONE_DISPLAY}</span>
@@ -144,10 +150,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onOpenBooking}
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm px-4 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
+            className="inline-flex items-center gap-2 whitespace-nowrap bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm px-3.5 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
           >
-            <Calendar className="w-4 h-4" />
-            <span>Book Service Now</span>
+            <Calendar className="w-4 h-4 hidden min-[400px]:block" aria-hidden="true" />
+            <span className="xl:hidden">Book now</span>
+            <span className="hidden xl:inline">Book Service Now</span>
           </button>
 
           <button

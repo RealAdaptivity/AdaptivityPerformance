@@ -1,5 +1,11 @@
 import { supabase } from './supabaseClient';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
+import {
+  planOnboarding,
+  specialtyLabels,
+  type ExistingApplication,
+  type OnboardingInput,
+} from './techOnboarding';
 
 const TRADE_TO_SPECIALTY: Record<string, string> = {
   'Mechanical / ASE': 'mechanical',
@@ -221,4 +227,99 @@ export async function linkApprovedTechApplication() {
   const { data, error } = await supabase.rpc('link_approved_tech_application');
   if (error) throw error;
   return data as { ok: boolean; reason?: string; applicationId?: string };
+}
+
+export type OnboardTechResult = {
+  /** created: a new application; approved: one they had already submitted;
+   *  resent: they were already approved, so only the email went again. */
+  outcome: 'created' | 'approved' | 'resent';
+  email: string;
+  inviteSent: boolean;
+  message: string;
+};
+
+/**
+ * Add a technician from the admin. Takes a form that has already been through
+ * validateOnboarding.
+ *
+ * Runs the same steps as approving a website application, so the tech ends up
+ * in exactly the same state: an approved application, a password-setup email,
+ * and their account made a tech the first time they sign in.
+ */
+export async function onboardTechnician(
+  input: OnboardingInput,
+  opts: { toolsVerified: boolean; adminNotes?: string }
+): Promise<OnboardTechResult> {
+  // Escape LIKE wildcards: an underscore in an address must not match others.
+  const pattern = input.email.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data: rows, error: findError } = await supabase
+    .from('tech_applications')
+    .select('id, status, created_at')
+    .ilike('email', pattern);
+  if (findError) throw new Error(findError.message);
+
+  const existing: ExistingApplication[] = (rows || []).map((r) => ({
+    id: r.id as string,
+    status: r.status as string,
+    createdAt: r.created_at as string,
+  }));
+  const plan = planOnboarding(existing);
+
+  if (plan.kind === 'resend') {
+    const invite = await inviteApprovedTech(plan.applicationId);
+    return {
+      outcome: 'resent',
+      email: input.email,
+      inviteSent: true,
+      message:
+        invite.message ||
+        `${input.email} was already approved, so nothing new was created — a fresh sign-in email is on its way.`,
+    };
+  }
+
+  const fields = {
+    full_name: input.fullName,
+    phone: input.phone,
+    trades: specialtyLabels(input.specialties),
+    specialties: input.specialties,
+  };
+
+  let applicationId: string;
+  if (plan.kind === 'approve') {
+    // They applied on the website too. Use what the owner just entered.
+    const { error } = await supabase.from('tech_applications').update(fields).eq('id', plan.applicationId);
+    if (error) throw new Error(error.message);
+    applicationId = plan.applicationId;
+  } else {
+    const { data, error } = await supabase
+      .from('tech_applications')
+      .insert({
+        ...fields,
+        email: input.email,
+        status: 'submitted',
+        // Left false: the tech accepts terms themselves, in the portal, through
+        // the contractor agreement and insurance disclosure gates.
+        liability_accepted: false,
+        payload: { source: 'admin_onboarding', addedAt: new Date().toISOString() },
+      })
+      .select('id')
+      .single();
+    if (error || !data) throw new Error(error?.message || 'Could not create the technician record.');
+    applicationId = data.id as string;
+  }
+
+  const approved = await approveTechApplication(applicationId, {
+    markToolsVerified: opts.toolsVerified,
+    adminNotes: opts.adminNotes,
+    sendInvite: true,
+  });
+
+  return {
+    outcome: plan.kind === 'approve' ? 'approved' : 'created',
+    email: input.email,
+    inviteSent: approved.inviteSent !== false,
+    message: approved.inviteSent === false
+      ? approved.nextStep || 'Added, but the sign-in email failed. Use Resend invite in the Techs tab.'
+      : `${input.fullName} is added. A password-setup email is on its way to ${input.email}. They’ll show up in the Technicians list once they set a password and sign in.`,
+  };
 }

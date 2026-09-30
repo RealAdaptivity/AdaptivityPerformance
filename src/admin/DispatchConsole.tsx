@@ -9,15 +9,12 @@ import {
   Truck,
   User,
   Wrench,
-  Receipt,
-  Plus,
-  Trash2,
-  Send,
 } from 'lucide-react';
 import {
   googleMapsSearchUrl,
 } from '../config/mapLinks';
 import { DispatchMap } from './DispatchMap';
+import { AddTechnicianForm } from './AddTechnicianForm';
 import type { Booking, JobStatus } from '../context/BookingContext';
 import { isIncompleteServiceAddress } from '../services/serviceAddress';
 import {
@@ -28,10 +25,8 @@ import {
   subscribeAdminBookings,
   type DispatchTech,
 } from '../services/adminApi';
-import { recordInPersonPayment } from '../services/techDispatch';
-import { sendChargeReceiptSmsAuto } from '../services/sendSms';
 import { FORM_1099_NEC_NOTICE } from '../content/taxForms';
-import { DIAGNOSTIC_FEE_DOLLARS, techCanClaimServices } from '../services/serviceCatalog';
+import { techCanClaimServices } from '../services/serviceCatalog';
 import {
   CANCEL_REASON_PRESETS,
 } from '../services/adminAnalytics';
@@ -326,15 +321,15 @@ export const DispatchConsole: React.FC = () => {
 
       {tab === 'techs' && (
         <section className="space-y-4">
+          <AddTechnicianForm onAdded={() => void load()} />
           <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 text-xs text-amber-100/90 leading-relaxed">
             <strong className="text-amber-300">1099-NEC:</strong> {FORM_1099_NEC_NOTICE}
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {techs.length === 0 ? (
             <p className="text-sm text-slate-500 col-span-full py-8 text-center">
-              No technician profiles yet. Have techs sign in once on{' '}
-              <strong className="text-slate-400">Portal → Tech Login</strong> (creates dispatch profile), or
-              sign up with the Tech tab and role <code className="text-orange-300">tech</code>.
+              No technicians yet. Use <strong className="text-slate-300">Add a technician</strong> above —
+              they appear here once they set a password and sign in to the tech portal.
             </p>
           ) : (
             techs.map((t) => {
@@ -494,8 +489,8 @@ const JobCard: React.FC<{
   const schedule = formatPreferredSchedule(booking.preferredDate, booking.preferredTimeWindow);
   const primaryService = booking.services[0] || 'Service call';
   const extraServices = Math.max(0, booking.services.length - 1);
-  /* Travel is free across the whole dispatch radius, so distance only matters
-     when a booking came in from beyond it — that one needs a decision before
+  /* Travel is one flat fee across the whole dispatch radius, so distance only
+     matters when a booking came in from beyond it — that one needs a decision before
      anybody drives. */
   const outsideRadius = booking.distanceMiles > SERVICE_RADIUS_MILES;
   const addressUnusable = isIncompleteServiceAddress(booking.customerAddress);
@@ -576,148 +571,6 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const mechanicId = booking.claimedBy?.id ?? '';
   const [cancelReason, setCancelReason] = useState<string>('customer_request');
   const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
-
-  // Dispatch Invoice & Transaction state
-  const [laborLines, setLaborLines] = useState<Array<{ title: string; amount: string }>>([
-    { title: 'Diagnostic & Mechanical Labor', amount: '' },
-  ]);
-  const [partsLines, setPartsLines] = useState<Array<{ title: string; amount: string }>>([
-    { title: 'Replacement Parts', amount: '' },
-  ]);
-  const [mileageFee, setMileageFee] = useState('');
-  const [includeDiagnosticFee, setIncludeDiagnosticFee] = useState(false);
-  const [taxMode, setTaxMode] = useState<'parts' | 'total' | 'none'>('parts');
-  const [partsPurchasedBy, setPartsPurchasedBy] = useState<'tech' | 'company'>('tech');
-  const taxRatePercent = '8.25';
-  const [dispatchInvoiceNotes, setDispatchInvoiceNotes] = useState('');
-  const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
-  const [isChargingInvoice, setIsChargingInvoice] = useState(false);
-
-  const quotedDollars = (booking.holdAmountCents ?? DIAGNOSTIC_FEE_DOLLARS * 100) / 100;
-  const appliedDiagnosticDollars = includeDiagnosticFee ? quotedDollars : 0;
-  const laborTotal = laborLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
-  const partsTotal = partsLines.reduce((s, p) => s + (Number(p.amount) || 0), 0);
-  const mileageTotal = Number(mileageFee) || 0;
-  const subtotalBeforeTax = appliedDiagnosticDollars + laborTotal + partsTotal + mileageTotal;
-
-  const currentTaxRate = (Number(taxRatePercent) || 8.25) / 100;
-  const taxableBase =
-    taxMode === 'parts' ? partsTotal : taxMode === 'total' ? subtotalBeforeTax : 0;
-  const texasSalesTax = Math.round(taxableBase * currentTaxRate * 100) / 100;
-  const invoiceGrandTotal = subtotalBeforeTax + texasSalesTax;
-
-  const laborAndDiagSubtotal = appliedDiagnosticDollars + laborTotal + mileageTotal;
-  const techLaborShare = Math.round(laborAndDiagSubtotal * 0.70 * 100) / 100;
-  const techPartsShare = partsPurchasedBy === 'tech' ? partsTotal : 0;
-  const techPayoutTotal = techLaborShare + techPartsShare;
-
-  const handleDispatchFinalCharge = async () => {
-    if (
-      !window.confirm(
-        `Charge customer $${invoiceGrandTotal.toFixed(
-          2
-        )} (${includeDiagnosticFee ? `$${quotedDollars.toFixed(0)} diag + ` : 'diag waived + '}$${texasSalesTax.toFixed(
-          2
-        )} Texas Sales Tax) and complete job?`
-      )
-    ) {
-      return;
-    }
-    setIsChargingInvoice(true);
-    setInvoiceMsg(null);
-    try {
-      const lineItems: Array<{ title: string; laborDollars: number; partsDollars: number }> = [];
-
-      for (const l of laborLines) {
-        const amt = Number(l.amount) || 0;
-        if (amt > 0 && l.title.trim()) {
-          lineItems.push({ title: l.title.trim(), laborDollars: amt, partsDollars: 0 });
-        }
-      }
-      for (const p of partsLines) {
-        const amt = Number(p.amount) || 0;
-        if (amt > 0 && p.title.trim()) {
-          lineItems.push({ title: p.title.trim(), laborDollars: 0, partsDollars: amt });
-        }
-      }
-      if (mileageTotal > 0) {
-        lineItems.push({
-          title: 'Dispatch Travel & Mileage',
-          laborDollars: mileageTotal,
-          partsDollars: 0,
-        });
-      }
-      if (texasSalesTax > 0) {
-        lineItems.push({
-          title: `Texas Sales Tax (${(currentTaxRate * 100).toFixed(2)}%${
-            taxMode === 'parts' ? ' on parts' : ''
-          })`,
-          laborDollars: 0,
-          partsDollars: texasSalesTax,
-        });
-      }
-
-      if (lineItems.length === 0 && invoiceGrandTotal === 0) {
-        setInvoiceMsg('Please enter parts, labor, or include diagnostic fee to process charge.');
-        setIsChargingInvoice(false);
-        return;
-      }
-
-      if (lineItems.length === 0 && includeDiagnosticFee) {
-        // Diagnostic only, collected in person
-        await recordInPersonPayment(booking.id, { totalCollectedDollars: quotedDollars });
-      } else {
-        await recordInPersonPayment(booking.id, {
-          lineItems,
-          includeDiagnosticFee,
-          salesTaxDollars: texasSalesTax,
-        });
-      }
-
-      // Automatically send digital receipt SMS to customer
-      if (booking.customerPhone) {
-        await sendChargeReceiptSmsAuto({
-          phone: booking.customerPhone,
-          customerName: booking.customerName,
-          referenceCode: booking.id,
-          amountDollars: invoiceGrandTotal,
-          kind: 'charge',
-          lines: lineItems,
-          diagnosticDollars: appliedDiagnosticDollars,
-          salesTaxDollars: texasSalesTax,
-        });
-      }
-
-      setInvoiceMsg(`Successfully charged $${invoiceGrandTotal.toFixed(2)} and sent receipt!`);
-      await onPatch(booking.id, { status: 'COMPLETED' });
-    } catch (err: unknown) {
-      setInvoiceMsg(err instanceof Error ? err.message : 'Charge failed');
-    } finally {
-      setIsChargingInvoice(false);
-    }
-  };
-
-  const handleSendReceiptOnly = async () => {
-    if (!booking.customerPhone) {
-      setInvoiceMsg('No customer phone on file to send receipt.');
-      return;
-    }
-    try {
-      const capturedAmount =
-        booking.capturedAmountCents ? booking.capturedAmountCents / 100 : invoiceGrandTotal;
-      await sendChargeReceiptSmsAuto({
-        phone: booking.customerPhone,
-        customerName: booking.customerName,
-        referenceCode: booking.id,
-        amountDollars: capturedAmount,
-        kind: 'charge',
-        diagnosticDollars: quotedDollars,
-      });
-      setInvoiceMsg('Receipt SMS sent to customer!');
-    } catch (err: unknown) {
-      setInvoiceMsg(err instanceof Error ? err.message : 'Failed to send receipt SMS');
-    }
-  };
 
   /* Was gated on booking.paymentIntentId — a Stripe payment intent. Stripe is
      gone and nothing takes a card, so that field is null on every booking made
@@ -888,379 +741,6 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           </button>
         </div>
       )}
-
-      {/* DISPATCH FINAL INVOICE & TRANSACTION CENTER */}
-      {booking.status !== 'CANCELED' && booking.status !== 'COMPLETED' && (
-        <div className="rounded-2xl border border-orange-500/30 bg-[#0d0e14] p-4 space-y-4 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center">
-                <Receipt className="w-4 h-4 text-orange-400" />
-              </div>
-              <div>
-                <p className="text-xs font-black uppercase text-white tracking-wider">
-                  Dispatch Final Invoice & Charge
-                </p>
-                <p className="text-[10px] text-slate-400">Parts, Labor & Mileage final charge</p>
-              </div>
-            </div>
-            <span className="text-xs font-black text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
-              ${invoiceGrandTotal.toFixed(2)}
-            </span>
-          </div>
-
-          {invoiceMsg && (
-            <p className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5">
-              {invoiceMsg}
-            </p>
-          )}
-
-          {/* 1. Diagnostic Fee Handling (Waive vs Apply) */}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/10 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-slate-300">
-                🔍 Mobile Diagnostic (${quotedDollars.toFixed(2)} on file)
-              </span>
-              <span className="font-mono font-bold text-white">
-                {includeDiagnosticFee ? `$${quotedDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-0.5">
-              <button
-                type="button"
-                onClick={() => setIncludeDiagnosticFee(false)}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                  !includeDiagnosticFee
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                }`}
-              >
-                ✓ Waive Diagnostic Fee
-              </button>
-              <button
-                type="button"
-                onClick={() => setIncludeDiagnosticFee(true)}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                  includeDiagnosticFee
-                    ? 'bg-orange-500 text-white border-orange-500 shadow-md'
-                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                }`}
-              >
-                + Charge ${quotedDollars.toFixed(0)} Diag Fee
-              </button>
-            </div>
-            <p className="text-[10px] text-slate-400 leading-tight">
-              {!includeDiagnosticFee
-                ? `Free diagnostic with repair — the $${quotedDollars.toFixed(2)} diagnostic is credited toward the repair, so no separate diagnostic fee is collected.`
-                : `The $${quotedDollars.toFixed(2)} diagnostic visit fee is charged on top of labor & parts.`}
-            </p>
-          </div>
-
-          {/* 2. Labor Lines */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase font-bold text-slate-400">Labor Charges</p>
-              <button
-                type="button"
-                onClick={() => setLaborLines([...laborLines, { title: '', amount: '' }])}
-                className="text-[10px] font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" /> Add Labor
-              </button>
-            </div>
-            {laborLines.map((line, idx) => (
-              <div key={idx} className="flex gap-2 items-center">
-                <input
-                  placeholder="Labor description (e.g. Brake pad & rotor swap)"
-                  value={line.title}
-                  onChange={(e) => {
-                    const next = [...laborLines];
-                    next[idx].title = e.target.value;
-                    setLaborLines(next);
-                  }}
-                  className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                />
-                <div className="w-24 relative">
-                  <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={line.amount}
-                    onChange={(e) => {
-                      const next = [...laborLines];
-                      next[idx].amount = e.target.value;
-                      setLaborLines(next);
-                    }}
-                    className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
-                  />
-                </div>
-                {laborLines.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setLaborLines(laborLines.filter((_, i) => i !== idx))}
-                    className="text-slate-500 hover:text-red-400 p-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* 3. Parts Lines */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase font-bold text-slate-400">Parts & Supplies</p>
-              <button
-                type="button"
-                onClick={() => setPartsLines([...partsLines, { title: '', amount: '' }])}
-                className="text-[10px] font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3" /> Add Part
-              </button>
-            </div>
-            {partsLines.map((line, idx) => (
-              <div key={idx} className="flex gap-2 items-center">
-                <input
-                  placeholder="Part title (e.g. Duralast Ceramic Pads)"
-                  value={line.title}
-                  onChange={(e) => {
-                    const next = [...partsLines];
-                    next[idx].title = e.target.value;
-                    setPartsLines(next);
-                  }}
-                  className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                />
-                <div className="w-24 relative">
-                  <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    value={line.amount}
-                    onChange={(e) => {
-                      const next = [...partsLines];
-                      next[idx].amount = e.target.value;
-                      setPartsLines(next);
-                    }}
-                    className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
-                  />
-                </div>
-                {partsLines.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setPartsLines(partsLines.filter((_, i) => i !== idx))}
-                    className="text-slate-500 hover:text-red-400 p-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* 4. Mileage / Travel Fee */}
-          <div className="space-y-1.5">
-            <p className="text-[10px] uppercase font-bold text-slate-400">Mileage / Dispatch Travel Fee</p>
-            <div className="flex gap-2 items-center">
-              <input
-                placeholder="Trip fee description (e.g. 20 miles roundtrip)"
-                defaultValue="Mobile dispatch travel fee"
-                className="flex-1 bg-[#12141c] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white"
-              />
-              <div className="w-24 relative">
-                <span className="absolute left-2.5 top-1.5 text-xs text-slate-500">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={mileageFee}
-                  onChange={(e) => setMileageFee(e.target.value)}
-                  className="w-full bg-[#12141c] border border-white/10 rounded-lg pl-6 pr-2 py-1.5 text-xs text-white font-mono"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 5. Texas Sales Tax (8.25% State/Local) */}
-          <div className="space-y-1.5 bg-white/5 rounded-xl p-3 border border-white/10">
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] uppercase font-bold text-slate-300 flex items-center gap-1">
-                <span>🏛️ Texas Sales Tax (DFW 8.25%)</span>
-              </p>
-              <span className="font-mono text-xs font-bold text-amber-300">
-                +${texasSalesTax.toFixed(2)}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 pt-1">
-              <button
-                type="button"
-                onClick={() => setTaxMode('parts')}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                  taxMode === 'parts'
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                }`}
-              >
-                Parts Only (8.25%)
-              </button>
-              <button
-                type="button"
-                onClick={() => setTaxMode('total')}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                  taxMode === 'total'
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                }`}
-              >
-                Total Invoice (8.25%)
-              </button>
-              <button
-                type="button"
-                onClick={() => setTaxMode('none')}
-                className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                  taxMode === 'none'
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                }`}
-              >
-                Tax Exempt (0%)
-              </button>
-            </div>
-          </div>
-
-          {/* 6. Parts Purchased By (100% reimbursed to Tech if tech paid out of pocket) */}
-          {partsTotal > 0 && (
-            <div className="space-y-1.5 bg-white/5 rounded-xl p-3 border border-white/10">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase font-bold text-slate-300">
-                  📦 Parts Out-Of-Pocket
-                </p>
-                <span className="text-[10px] font-bold text-orange-400">
-                  {partsPurchasedBy === 'tech' ? '100% reimbursed to tech' : 'Company paid (0% to tech)'}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setPartsPurchasedBy('tech')}
-                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                    partsPurchasedBy === 'tech'
-                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                      : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                  }`}
-                >
-                  👨‍🔧 Tech Bought Parts (100% to tech)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPartsPurchasedBy('company')}
-                  className={`py-1.5 px-2 rounded-lg text-[10px] font-bold border transition-colors ${
-                    partsPurchasedBy === 'company'
-                      ? 'bg-orange-500 text-white border-orange-500 shadow-md'
-                      : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                  }`}
-                >
-                  🏢 Company Supplied Parts
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* 7. Dispatch Notes / Warranty for Customer */}
-          <div className="space-y-1.5">
-            <p className="text-[10px] uppercase font-bold text-slate-400">Invoice Notes / Warranty (Optional)</p>
-            <textarea
-              placeholder="e.g. 12-month / 12,000-mile parts & labor warranty applied."
-              value={dispatchInvoiceNotes}
-              onChange={(e) => setDispatchInvoiceNotes(e.target.value)}
-              rows={2}
-              className="w-full bg-[#12141c] border border-white/10 rounded-lg p-2 text-xs text-white resize-none"
-            />
-          </div>
-
-          {/* Invoice Summary Box */}
-          <div className="rounded-xl bg-orange-500/5 border border-orange-500/20 p-3 space-y-1.5">
-            <div className="flex justify-between text-xs text-slate-300">
-              <span>Diagnostic Fee:</span>
-              <span className="font-mono font-semibold">
-                {includeDiagnosticFee ? `$${quotedDollars.toFixed(2)}` : 'WAIVED ($0.00)'}
-              </span>
-            </div>
-            {laborTotal > 0 && (
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Labor Total:</span>
-                <span className="font-mono font-semibold">${laborTotal.toFixed(2)}</span>
-              </div>
-            )}
-            {partsTotal > 0 && (
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Parts Total:</span>
-                <span className="font-mono font-semibold">
-                  ${partsTotal.toFixed(2)}{' '}
-                  <span className="text-[10px] text-orange-400">
-                    ({partsPurchasedBy === 'tech' ? '100% to tech' : 'company paid'})
-                  </span>
-                </span>
-              </div>
-            )}
-            {mileageTotal > 0 && (
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Mileage / Travel:</span>
-                <span className="font-mono font-semibold">${mileageTotal.toFixed(2)}</span>
-              </div>
-            )}
-            {texasSalesTax > 0 && (
-              <div className="flex justify-between text-xs text-amber-300 font-semibold">
-                <span>Texas Sales Tax ({taxMode === 'parts' ? '8.25% on parts' : '8.25% total'}):</span>
-                <span className="font-mono">${texasSalesTax.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm font-black text-white pt-2 border-t border-white/10">
-              <span>Final Invoice Total:</span>
-              <span className="text-orange-400 font-mono">${invoiceGrandTotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-xs font-bold text-orange-300/90 pt-1 border-t border-white/5">
-              <span>👨‍🔧 Tech Payout Total:</span>
-              <span className="font-mono text-orange-300 font-bold">${techPayoutTotal.toFixed(2)}</span>
-            </div>
-            {partsTotal > 0 && (
-              <div className="text-[10px] text-slate-400 text-right">
-                (${techLaborShare.toFixed(2)} labor 70% + ${techPartsShare.toFixed(2)} parts {partsPurchasedBy === 'tech' ? '100%' : '0%'})
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="space-y-2">
-            <button
-              type="button"
-              disabled={saving || isChargingInvoice}
-              onClick={() => void handleDispatchFinalCharge()}
-              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 disabled:opacity-50 rounded-xl text-xs font-black uppercase text-white tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all"
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>{isChargingInvoice ? 'Processing Charge…' : `Charge Customer $${invoiceGrandTotal.toFixed(2)} & Complete`}</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void handleSendReceiptOnly()}
-              className="w-full py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-2 transition-colors"
-            >
-              <Send className="w-3.5 h-3.5 text-orange-400" />
-              <span>Send Itemized SMS Receipt to Customer</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-
 
       <label className="block space-y-1">
         <span className="text-[10px] uppercase font-bold text-slate-500">Job status</span>

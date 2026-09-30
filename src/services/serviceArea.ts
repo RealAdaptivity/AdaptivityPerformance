@@ -17,20 +17,17 @@ export const SERVICE_HUB = {
 
 /** Hard outer limit for mobile dispatch, in miles from the Justin hub. */
 export const SERVICE_RADIUS_MILES = LOCAL_HUB.radiusMiles;
-export const FREE_MILES_THRESHOLD = LOCAL_HUB.freeRadiusMiles;
-/* Travel is absorbed inside the dispatch radius: freeRadiusMiles now equals
-   radiusMiles, so travelFeeForMiles is zero everywhere we serve. Kept as a
-   named constant rather than deleted because the fee bands, the coverage
-   table and the ZIP checker all read it, and a future change of policy is a
-   one-line edit here. */
-export const PER_MILE_RATE = 0;
+/* Travel is one flat fee on every mobile visit, wherever it is inside the
+   radius (TRAVEL_FEE_DOLLARS in serviceCatalog.ts). It used to be free inside
+   a "free radius" and per-mile past it; both ideas are gone rather than left
+   at zero, so nothing can quote a mileage charge by accident. */
+export { TRAVEL_FEE_DOLLARS } from './serviceCatalog';
 
 export type ServiceZipInfo = {
   city: string;
   area: string;
   distanceMiles: number;
   responseTime: string;
-  status: 'Local Radius' | 'Extended Per-Mile';
 };
 
 function responseWindow(driveMinutes: number): string {
@@ -56,7 +53,6 @@ export const NAMED_SERVICE_ZIPS: Record<string, ServiceZipInfo> = (() => {
         area: city.neighborhoods,
         distanceMiles: city.distanceMiles,
         responseTime: responseWindow(city.driveMinutes),
-        status: city.distanceMiles <= FREE_MILES_THRESHOLD ? 'Local Radius' : 'Extended Per-Mile',
       };
     }
   }
@@ -86,10 +82,4 @@ export function lookupServiceZip(zipCode: string | null | undefined) {
 
 export function resolveServiceZip(zipCode: string | null | undefined, address: string | null | undefined) {
   return normalizeZip(zipCode) || normalizeZip(address) || null;
-}
-
-/** Travel fee past the free radius, in dollars. */
-export function travelFeeForMiles(distanceMiles: number): number {
-  const extra = Math.max(0, distanceMiles - FREE_MILES_THRESHOLD);
-  return Math.round(extra * PER_MILE_RATE * 100) / 100;
 }

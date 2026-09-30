@@ -54,6 +54,11 @@ export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 // Standard diagnostic fee, collected in person.
 export const DIAGNOSTIC_FEE_DOLLARS = 100;
 
+/** Flat travel fee on every mobile visit, collected in person with the
+ *  diagnostic. The same everywhere inside the dispatch radius; a drop-off at a
+ *  partner shop has no travel. */
+export const TRAVEL_FEE_DOLLARS = 20;
+
 function consult(
   id: string,
   title: string,

@@ -181,6 +181,55 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   }
 }
 
+// The travel fee is money too, and it replaced a promise of free travel that
+// was written into dozens of places. Same rules as the hold: one source, the
+// edge copy in step, no literal figure next to the word, and no copy left
+// promising free or per-mile travel. Membership copy is the exception — a
+// member's travel really is waived.
+{
+  const { readdirSync } = await import('node:fs');
+  const feeOf = (path, src) => {
+    const m = src.match(/export const TRAVEL_FEE_DOLLARS\s*=\s*(\d+)\s*;/);
+    if (!m) throw new Error(`Travel fee: TRAVEL_FEE_DOLLARS not declared in ${path}`);
+    return Number(m[1]);
+  };
+  const fee = feeOf('src/services/serviceCatalog.ts', read('src/services/serviceCatalog.ts'));
+  const edgeFee = feeOf('supabase/functions/_shared/servicePricing.ts', read('supabase/functions/_shared/servicePricing.ts'));
+  if (edgeFee !== fee) {
+    throw new Error(
+      `Travel fee: the edge copy says $${edgeFee} but serviceCatalog.ts says $${fee} — run \`npm run sync:service-catalog\``
+    );
+  }
+
+  const root = new URL('../', import.meta.url).pathname;
+  const walk = (dir) => {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const next = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
+      if (entry.isDirectory()) out.push(...walk(next));
+      else if (/\.(ts|tsx|json)$/.test(entry.name)) out.push(next);
+    }
+    return out;
+  };
+  const literalFee = /\$(\d+)(?=[\s-]*(?:flat[\s-]*)?(?:travel|trip))/gi;
+  const staleClaim = /free travel|travel is (?:free|included|on us)|free dispatch|no travel fee|travel radius|freeRadiusMiles|per-mile travel|\$2(?:\.00)?\s*(?:\/|per)\s*(?:extra\s*)?mi/i;
+  for (const file of [
+    ...walk(new URL('src/', new URL(root, 'file:'))),
+    ...walk(new URL('supabase/functions/', new URL(root, 'file:'))),
+  ]) {
+    const rel = file.pathname.slice(root.length);
+    if (/Membership[A-Za-z]*\.tsx$/.test(rel) || rel.endsWith('servicePricing.ts')) continue;
+    const src = read(rel);
+    for (const [match] of src.matchAll(literalFee)) {
+      throw new Error(`Travel fee: ${rel} writes "${match}" — interpolate TRAVEL_FEE_DOLLARS instead`);
+    }
+    const stale = src.match(staleClaim);
+    if (stale) {
+      throw new Error(`Travel fee: ${rel} still says "${stale[0]}" — travel is a flat fee on every mobile visit`);
+    }
+  }
+}
+
 // Payment is taken in person on Square. Nothing in the site or the edge
 // functions may talk to a card processor again without this failing first.
 {
