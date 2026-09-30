@@ -11,6 +11,7 @@ import {
   type TaxMode,
 } from '../../services/closeOut';
 import {
+  closeOutPayload,
   openDeviceEmail,
   openDeviceSms,
   recordJobPayment,
@@ -18,6 +19,7 @@ import {
   uploadSignature,
   type ReceiptSendResult,
 } from '../../services/jobPayments';
+import { savePendingSale, squareChargeUrl, squarePlatform } from '../../services/squarePointOfSale';
 import { SignaturePad } from './SignaturePad';
 import { capClass, cardClass } from './techUi';
 
@@ -73,6 +75,51 @@ export const TechPayScreen: React.FC<{
 
   const setLine = (i: number, patch: Partial<LineDraft>) =>
     setLines((cur) => cur.map((l, j) => (j === i ? { ...l, ...patch } : l)));
+
+  /** Card: save the signed receipt, then hand the amount to the Square Point
+   *  of Sale app. The job closes when Square sends the phone back. */
+  const chargeInSquare = async () => {
+    if (saving) return;
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    const platform = squarePlatform();
+    if (!platform) {
+      setError('Card payments open the Square Point of Sale app — use this page on the phone that has it installed.');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const png = await exportRef.current?.();
+      if (!png) throw new Error('Could not read the signature — have the customer sign again.');
+      const signaturePath = await uploadSignature(job.id, png);
+      savePendingSale({
+        bookingId: job.id,
+        referenceCode: job.referenceCode,
+        totalCents: closeOut.totalCents,
+        payment: closeOutPayload(closeOut, {
+          taxMode,
+          partsBy,
+          signaturePath,
+          signerName: signerName.trim(),
+          techNotes: notes.trim() || undefined,
+        }),
+        startedAt: Date.now(),
+      });
+      window.location.href = squareChargeUrl({
+        platform,
+        amountCents: closeOut.totalCents,
+        bookingId: job.id,
+        referenceCode: job.referenceCode,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not start the card payment');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const confirmPaid = async () => {
     if (problem || saving) return;
@@ -298,6 +345,15 @@ export const TechPayScreen: React.FC<{
       </div>
 
       <div className="sticky bottom-0 -mx-4 space-y-1.5 border-t border-white/[0.06] bg-[#0b0c10] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+        <button
+          type="button"
+          onClick={() => void chargeInSquare()}
+          disabled={saving}
+          className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-brand px-4 font-heading text-base font-bold text-white hover:bg-orange-600 disabled:opacity-60"
+        >
+          {saving ? 'Opening Square…' : `Charge card in Square · ${formatCents(closeOut.totalCents)}`}
+        </button>
+        <p className="text-center text-[11px] text-slate-500">Paid cash or another way? Slide below instead.</p>
         <div className="relative">
           <div className={`pointer-events-none absolute inset-0 flex items-center justify-center rounded-full border ${problem ? 'border-white/10 bg-[#12141c]' : 'border-brand/45 bg-[#12141c]'}`}>
             <span className="pl-12 font-heading text-base font-bold">

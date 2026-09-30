@@ -16,6 +16,8 @@ import { useTechJobs } from './useTechJobs';
 import { DoneScreen, OpenScreen, TodayScreen, type PaymentSummary } from './TechBoard';
 import { TechJobScreen } from './TechJobScreen';
 import { ReceiptSender, TechPayScreen } from './TechPayScreen';
+import { SquareSaleReturn } from './SquareSaleReturn';
+import { clearSquareReturnFromUrl, readSquareReturn, type SquareReturn } from '../../services/squarePointOfSale';
 
 type Tab = 'today' | 'open' | 'done' | 'me';
 type View = { kind: 'job' | 'pay' | 'receipt'; id: string } | null;
@@ -42,6 +44,12 @@ export const TechPortal: React.FC<TechPortalProps> = ({
   // Bumped when the gate captures a signature, so Me refetches its status.
   const [agreementSignedAt, setAgreementSignedAt] = useState(0);
   const [payments, setPayments] = useState<Record<string, PaymentSummary>>({});
+  // Back from Square Point of Sale with a card payment (or a cancel).
+  const [squareReturn, setSquareReturn] = useState<SquareReturn | null>(() => {
+    const r = readSquareReturn(window.location.search);
+    if (r) clearSquareReturnFromUrl();
+    return r;
+  });
 
   const jobById = useMemo(() => new Map(api.jobs.map((j) => [j.id, j])), [api.jobs]);
   const viewJob = view ? jobById.get(view.id) : undefined;
@@ -108,7 +116,20 @@ export const TechPortal: React.FC<TechPortalProps> = ({
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   let body: React.ReactNode;
-  if (api.loading) {
+  if (squareReturn) {
+    body = (
+      <SquareSaleReturn
+        result={squareReturn}
+        jobFor={(id) => jobById.get(id)}
+        onClosed={() => void api.load()}
+        onDone={(bookingId) => {
+          setSquareReturn(null);
+          if (bookingId && jobById.get(bookingId)) setView({ kind: 'pay', id: bookingId });
+          else goTab('today');
+        }}
+      />
+    );
+  } else if (api.loading) {
     body = <p className="py-10 text-center text-sm text-slate-400">Loading your jobs…</p>;
   } else if (view && viewJob && view.kind === 'job') {
     body = (

@@ -41,6 +41,7 @@ export type SquarePayment = {
   status: string;
   location_id: string;
   reference_id?: string;
+  created_at?: string;
   amount_money?: { amount: number; currency: string };
   total_money?: { amount: number; currency: string };
   card_details?: { card?: { card_brand?: string; last_4?: string } };
@@ -60,4 +61,27 @@ export async function getSquarePayment(cfg: SquareConfig, paymentId: string): Pr
     throw new Error(`Could not look up the card payment: ${detail}`);
   }
   return body.payment as SquarePayment;
+}
+
+/** The payment behind a Square Point of Sale checkout. Square Point of Sale
+ *  returns a transaction id, which is the Orders API order id; its card
+ *  tender carries the payment id. */
+export async function paymentIdForSquareOrder(cfg: SquareConfig, orderId: string): Promise<string> {
+  const res = await fetch(`${baseUrl(cfg)}/v2/orders/${encodeURIComponent(orderId)}`, {
+    headers: {
+      Authorization: `Bearer ${cfg.accessToken}`,
+      'Square-Version': '2024-10-17',
+      Accept: 'application/json',
+    },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || !body?.order) {
+    const detail = body?.errors?.[0]?.detail || `Square returned ${res.status}`;
+    throw new Error(`Could not look up the Square sale: ${detail}`);
+  }
+  const tenders: { id?: string; type?: string; payment_id?: string }[] = body.order.tenders ?? [];
+  const card = tenders.find((t) => t.type === 'CARD') ?? tenders[0];
+  const paymentId = card?.payment_id || card?.id;
+  if (!paymentId) throw new Error('The Square sale has no card payment on it.');
+  return paymentId;
 }
