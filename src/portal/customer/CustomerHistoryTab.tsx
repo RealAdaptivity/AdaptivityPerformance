@@ -106,9 +106,37 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
       tech_notes: string | null;
     };
 
+    /* A job closed in the tech portal stores exactly what was collected. It is
+       the receipt; the quote tables below are only for older jobs. */
+    const { data: paid } = await supabase
+      .from('job_payments')
+      .select('line_items, diagnostic_cents, travel_cents, tax_cents, tax_mode, tech_notes')
+      .eq('booking_id', row.id)
+      .maybeSingle();
+    if (paid) {
+      const raw = Array.isArray(paid.line_items) ? (paid.line_items as QuoteLine[]) : [];
+      const repairLines = raw.map((l) => {
+        const labor = (Number(l.labor_cents) || 0) / 100;
+        const parts = (Number(l.parts_cents) || 0) / 100;
+        return { title: String(l.title), laborDollars: labor, partsDollars: parts, amountDollars: labor + parts };
+      });
+      const travel = (Number(paid.travel_cents) || 0) / 100;
+      const tax = (Number(paid.tax_cents) || 0) / 100;
+      lineItems = [
+        ...repairLines,
+        ...(travel > 0 ? [{ title: 'Travel', amountDollars: travel, laborDollars: travel, partsDollars: 0 }] : []),
+        ...(tax > 0
+          ? [{ title: `Sales tax${paid.tax_mode === 'parts' ? ' (parts)' : ''}`, amountDollars: tax, laborDollars: 0, partsDollars: tax }]
+          : []),
+      ];
+      diagnosticDollars = (Number(paid.diagnostic_cents) || 0) / 100;
+      repairsDollars = lineItems.reduce((sum, l) => sum + (l.amountDollars ?? 0), 0);
+      if (paid.tech_notes) techNotes = String(paid.tech_notes);
+    }
+
     let quote: QuoteRow | null = null;
 
-    if (row.active_quote_id) {
+    if (!paid && row.active_quote_id) {
       const { data } = await supabase
         .from('booking_quotes')
         .select('line_items, diagnostic_fee_cents, repairs_cents, tech_notes')
@@ -118,7 +146,7 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
     }
 
     // Fallback: capture may have saved a quote without linking active_quote_id
-    if (!quote) {
+    if (!paid && !quote) {
       const { data } = await supabase
         .from('booking_quotes')
         .select('line_items, diagnostic_fee_cents, repairs_cents, tech_notes')

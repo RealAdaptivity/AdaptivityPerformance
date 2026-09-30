@@ -120,8 +120,16 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   // bookings taken at $85 keep that hold forever, so a hardcoded "$100 on file"
   // would misstate both what the customer authorized and what the button captures.
   // A literal zero is the exception: "WAIVED ($0.00)" is a state, not a price.
+  // The tech's close-out moved out of TechJobsTab into these screens; they
+  // show the diagnostic and take payment, so the same rule applies.
+  const MONEY_SCREENS = [
+    'src/admin/DispatchConsole.tsx',
+    'src/portal/tech/TechJobScreen.tsx',
+    'src/portal/tech/TechPayScreen.tsx',
+    'src/portal/tech/TechBoard.tsx',
+  ];
   const literalMoney = /(?<!\$)\$(\d+(?:\.\d+)?)/g;
-  for (const rel of ['src/admin/DispatchConsole.tsx', 'src/portal/tech/TechJobsTab.tsx']) {
+  for (const rel of MONEY_SCREENS) {
     for (const [match, figure] of read(rel).matchAll(literalMoney)) {
       if (Number(figure) === 0) continue;
       throw new Error(
@@ -134,7 +142,7 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
   // A booking stores the hold its customer authorized; any fallback for a row
   // without one must be the current hold, not a frozen literal.
   const fallback = /holdAmountCents\s*\?\?\s*(\d+)/g;
-  for (const rel of ['src/admin/DispatchConsole.tsx', 'src/portal/tech/TechJobsTab.tsx']) {
+  for (const rel of MONEY_SCREENS) {
     for (const [match, cents] of read(rel).matchAll(fallback)) {
       throw new Error(
         `Diagnostic hold: ${rel} falls back to a literal in "${match}" (${cents} cents) — ` +

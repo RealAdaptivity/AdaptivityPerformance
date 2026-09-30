@@ -10,14 +10,17 @@ export function buildOnTheWayMessage(opts: {
   customerName?: string;
   referenceCode: string;
   etaMinutes?: number;
+  /** The tech's own name, so the customer knows who is coming. */
+  techName?: string;
 }): string {
   const first = (opts.customerName || '').trim().split(/\s+/)[0] || 'there';
+  const tech = (opts.techName || '').trim().split(/\s+/)[0];
   const eta =
     opts.etaMinutes != null && opts.etaMinutes > 0
       ? ` I'm about ${opts.etaMinutes} minutes out.`
       : '';
   return (
-    `Hi ${first}, this is your Adaptivity Performance technician. ` +
+    `Hi ${first}, this is ${tech ? `${tech}, ` : ''}your Adaptivity Performance technician. ` +
     `I'm on the way for job ${opts.referenceCode}.${eta} ` +
     `Reply here if you need anything — see you soon!`
   );
@@ -29,6 +32,7 @@ export function openOnTheWaySms(opts: {
   customerName?: string;
   referenceCode: string;
   etaMinutes?: number;
+  techName?: string;
 }): boolean {
   const to = normalizePhoneForSms(opts.phone);
   if (!to) return false;
