@@ -11,15 +11,18 @@
     </script>
 
     <meta charset="UTF-8" />
-    <!-- logo.png is 1024x1024 / 837 KB — every visitor was downloading it to
-         draw a 16px favicon. logo-64.png is the same mark at 3.7 KB. -->
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <link rel="icon" type="image/png" sizes="64x64" href="/logo-64.png" />
+    <!-- Tab icons cut from the real logo (logo.png), cropped tight so the mark
+         reads at 16px. There is deliberately no SVG icon: browsers prefer SVG
+         over PNG, and the old logo.svg was a hand-drawn imitation of the mark,
+         so every tab showed the wrong logo. -->
+    <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo-256.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     
     <!-- Primary SEO Meta Tags -->
     <title>Adaptivity Performance | Mechanic Shop & Mobile Auto Repair DFW</title>
