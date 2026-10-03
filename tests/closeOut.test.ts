@@ -34,7 +34,7 @@ test('tax rounds half up to the cent', () => {
   assert.equal(taxOn(0), 0);
 });
 
-test('the worked example from the design: $457.50, $355.50 to the tech', () => {
+test('the worked example: $457.50, $361.50 to the tech', () => {
   const c = computeCloseOut({
     kind: 'charge',
     lines: [{ title: 'Front pads & rotors', labor: '180', parts: '145.50' }],
@@ -48,7 +48,9 @@ test('the worked example from the design: $457.50, $355.50 to the tech', () => {
   assert.equal(c.partsCents, 14550);
   assert.equal(c.taxCents, 1200);
   assert.equal(c.totalCents, 45750);
-  assert.equal(c.techPayoutCents, 35550);
+  // 70% of diagnostic + labor ($280 → $196), plus the $20 travel fee and the
+  // $145.50 of parts in full.
+  assert.equal(c.techPayoutCents, 36150);
 });
 
 test('the diagnostic and travel count once, and tax is never counted twice', () => {
@@ -64,7 +66,7 @@ test('the diagnostic and travel count once, and tax is never counted twice', () 
     partsBy: 'company',
   });
   assert.equal(c.totalCents, 10000 + 2000 + 4000 + 20000 + 1650);
-  assert.equal(c.techPayoutCents, Math.floor((16000 * 70 + 50) / 100));
+  assert.equal(c.techPayoutCents, Math.floor((14000 * 70 + 50) / 100) + 2000);
 });
 
 test('blank lines drop out and untitled ones get a title', () => {
@@ -138,7 +140,7 @@ test('the database close-out uses the same tax rate and tech share', () => {
   assert.match(sql, new RegExp(`\\* ${TECH_LABOR_SHARE_PERCENT} \\+ 50\\) / 100`));
 });
 
-test('the weather fee is added, taxed with the ticket and shared like travel', () => {
+test('the weather fee is added, taxed with the ticket and shared like labor', () => {
   const base = {
     kind: 'charge' as const,
     lines: [{ title: 'Battery', labor: '40', parts: '200' }],
@@ -151,9 +153,18 @@ test('the weather fee is added, taxed with the ticket and shared like travel', (
   assert.equal(wet.weatherCents, 3000);
   assert.equal(wet.taxCents, dry.taxCents, 'tax on parts ignores the weather fee');
   assert.equal(wet.totalCents, dry.totalCents + 3000);
-  assert.equal(wet.techPayoutCents, Math.floor(((2000 + 3000 + 4000) * 70 + 50) / 100) + 20000);
+  assert.equal(wet.techPayoutCents, Math.floor(((3000 + 4000) * 70 + 50) / 100) + 2000 + 20000);
   const wetTotal = computeCloseOut({ ...base, weatherCents: 3000, taxMode: 'total' });
   assert.equal(wetTotal.taxCents, taxOn(2000 + 3000 + 4000 + 20000));
+});
+
+test('the travel (service) fee goes to the tech in full', () => {
+  const base = {
+    kind: 'diagnostic_only' as const, lines: [], diagnosticCents: 10000, weatherCents: 0, taxMode: 'none' as const, partsBy: 'tech' as const,
+  };
+  const shop = computeCloseOut({ ...base, travelCents: 0 });
+  const mobile = computeCloseOut({ ...base, travelCents: 2000 });
+  assert.equal(mobile.techPayoutCents - shop.techPayoutCents, 2000);
 });
 
 test('a no-show never carries the weather fee', () => {
@@ -171,8 +182,12 @@ test('the database stores and sums the weather fee the same way', () => {
     .pop();
   const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
   assert.match(sql, /v_before_tax := v_diag \+ v_travel \+ v_weather \+ v_labor_total \+ v_parts_total;/);
-  assert.match(sql, /\(\(v_diag \+ v_travel \+ v_weather \+ v_labor_total\) \* 70 \+ 50\) \/ 100/);
-  assert.match(sql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents \+ tax_cents/);
+  assert.match(sql, /\(\(v_diag \+ v_weather \+ v_labor_total\) \* 70 \+ 50\) \/ 100\s*\+ v_travel/);
+  // The table check that the total adds up lives in whichever migration last set it.
+  const allSql = readdirSync('supabase/migrations')
+    .map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8'))
+    .join('\n');
+  assert.match(allSql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents \+ tax_cents/);
 });
 
 test('the close-out tax rate is the site-wide sales tax rate', async () => {
