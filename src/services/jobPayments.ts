@@ -26,6 +26,8 @@ export type CloseOutOptions = {
   signaturePath?: string;
   signerName?: string;
   techNotes?: string;
+  /** How a tech-confirmed payment was made. Card is set by the server. */
+  paymentMethod?: 'cash' | 'zelle';
 };
 
 /** The p_payment body record_job_payment expects. */
@@ -45,6 +47,7 @@ export function closeOutPayload(closeOut: CloseOut, opts: CloseOutOptions) {
     signature_path: opts.signaturePath ?? null,
     signer_name: opts.signerName ?? null,
     tech_notes: opts.techNotes ?? null,
+    ...(opts.paymentMethod ? { payment_method: opts.paymentMethod } : {}),
   };
 }
 

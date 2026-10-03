@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Mail, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import type { DispatchBooking } from '../../services/techDispatch';
 import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../../services/serviceCatalog';
@@ -20,6 +20,8 @@ import {
   type ReceiptSendResult,
 } from '../../services/jobPayments';
 import { savePendingSale, squareChargeUrl, squarePlatform } from '../../services/squarePointOfSale';
+import { fetchZelleConfig, type ZelleConfig } from '../../services/zelle';
+import { QrCode } from './QrCode';
 import { SignaturePad } from './SignaturePad';
 import { capClass, cardClass } from './techUi';
 
@@ -55,6 +57,8 @@ export const TechPayScreen: React.FC<{
   const [slide, setSlide] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [payMethod, setPayMethod] = useState<'card' | 'zelle' | 'cash'>('card');
+  const [zelle, setZelle] = useState<ZelleConfig | null>(null);
   const [closedTotal, setClosedTotal] = useState<{ total: number; payout: number } | null>(null);
   const exportRef = useRef<(() => Promise<Blob | null>) | null>(null);
 
@@ -124,6 +128,13 @@ export const TechPayScreen: React.FC<{
     }
   };
 
+  useEffect(() => {
+    void fetchZelleConfig()
+      .then(setZelle)
+      .catch(() => setZelle({ qrPayload: null, recipient: null, displayName: null }));
+  }, []);
+
+  /** Zelle or cash (or anything else the tech confirms): record how it was paid. */
   const confirmPaid = async () => {
     if (problem || saving) return;
     setSaving(true);
@@ -138,6 +149,7 @@ export const TechPayScreen: React.FC<{
         signaturePath,
         signerName: signerName.trim(),
         techNotes: notes.trim() || undefined,
+        paymentMethod: payMethod === 'card' ? undefined : payMethod,
       });
       setClosedTotal({ total: saved.totalCents, payout: saved.techPayoutCents });
       onClosed();
@@ -355,6 +367,31 @@ export const TechPayScreen: React.FC<{
           <span className="text-[15px] text-emerald-200">Your payout</span>
           <span className="font-heading text-lg font-bold text-emerald-200">{formatCents(closeOut.techPayoutCents)}</span>
         </div>
+        {payMethod === 'zelle' && (
+          <div className={`${cardClass} space-y-3 p-4`}>
+            <p className="text-center font-heading text-3xl font-bold">{formatCents(closeOut.totalCents)}</p>
+            {zelle?.qrPayload ? (
+              <div className="mx-auto w-fit rounded-xl bg-white p-2">
+                <QrCode value={zelle.qrPayload} size={220} label="Zelle QR code" />
+              </div>
+            ) : (
+              <p className="text-center text-sm text-slate-400">
+                {zelle ? 'The company Zelle QR code isn’t set up yet — ask an admin.' : 'Loading Zelle details…'}
+              </p>
+            )}
+            <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-300">
+              <li>
+                Customer opens their bank app → Zelle → scans this code
+                {zelle?.recipient ? ` (or sends to ${zelle.recipient})` : ''}.
+              </li>
+              <li>
+                They send exactly {formatCents(closeOut.totalCents)} to {zelle?.displayName || 'Adaptivity Performance'} with memo{' '}
+                <span className="font-semibold text-white">{job.referenceCode}</span>.
+              </li>
+              <li>Check the confirmation on their screen, then slide below.</li>
+            </ol>
+          </div>
+        )}
         {error && (
           <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
             {error}
@@ -363,19 +400,42 @@ export const TechPayScreen: React.FC<{
       </div>
 
       <div className="sticky bottom-0 -mx-4 space-y-1.5 border-t border-white/[0.06] bg-[#0b0c10] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-        <button
-          type="button"
-          onClick={() => void chargeInSquare()}
-          disabled={saving}
-          className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-brand px-4 font-heading text-base font-bold text-white hover:bg-orange-600 disabled:opacity-60"
-        >
-          {saving ? 'Opening Square…' : `Charge card in Square · ${formatCents(closeOut.totalCents)}`}
-        </button>
-        <p className="text-center text-[11px] text-slate-500">Paid cash or another way? Slide below instead.</p>
+        <div className="flex gap-1.5" role="group" aria-label="How is the customer paying?">
+          {(['card', 'zelle', 'cash'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={payMethod === m}
+              disabled={saving}
+              onClick={() => {
+                setPayMethod(m);
+                setSlide(0);
+              }}
+              className={seg(payMethod === m)}
+            >
+              {m === 'card' ? 'Card' : m === 'zelle' ? 'Zelle' : 'Cash'}
+            </button>
+          ))}
+        </div>
+        {payMethod === 'card' && (
+          <>
+            <button
+              type="button"
+              onClick={() => void chargeInSquare()}
+              disabled={saving}
+              className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-brand px-4 font-heading text-base font-bold text-white hover:bg-orange-600 disabled:opacity-60"
+            >
+              {saving ? 'Opening Square…' : `Charge card in Square · ${formatCents(closeOut.totalCents)}`}
+            </button>
+            <p className="text-center text-[11px] text-slate-500">Already charged on the Square app? Slide below instead.</p>
+          </>
+        )}
         <div className="relative">
           <div className={`pointer-events-none absolute inset-0 flex items-center justify-center rounded-full border ${problem ? 'border-white/10 bg-[#12141c]' : 'border-brand/45 bg-[#12141c]'}`}>
             <span className="pl-12 font-heading text-base font-bold">
-              {saving ? 'Saving…' : `Slide when paid · ${formatCents(closeOut.totalCents)}`}
+              {saving
+                ? 'Saving…'
+                : `${payMethod === 'zelle' ? 'Slide when Zelle received' : payMethod === 'cash' ? 'Slide when cash received' : 'Slide when paid'} · ${formatCents(closeOut.totalCents)}`}
             </span>
           </div>
           <input
