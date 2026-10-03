@@ -18,6 +18,7 @@ const base: ReceiptInput = {
   lineItems: [{ title: 'Front pads & rotors', labor_cents: 18000, parts_cents: 14550 }],
   diagnosticCents: 10000,
   travelCents: 2000,
+  weatherCents: 0,
   taxCents: 1200,
   taxMode: 'parts',
   totalCents: 45750,
@@ -39,7 +40,7 @@ test('the date is the day in Texas, not in UTC', () => {
 
 test('rows add up to the total and skip zeros', () => {
   const rows = receiptRows(base);
-  assert.deepEqual(rows.map((r) => r.label), ['Diagnostic', 'Front pads & rotors', 'Travel', 'Sales tax 8.25% on parts']);
+  assert.deepEqual(rows.map((r) => r.label), ['Diagnostic', 'Front pads & rotors', 'Service fee', 'Sales tax 8.25% on parts']);
   assert.equal(rows.reduce((s, r) => s + r.cents, 0), base.totalCents);
   assert.deepEqual(receiptRows({ ...base, diagnosticCents: 0, travelCents: 0 }).map((r) => r.label), [
     'Front pads & rotors',
@@ -52,7 +53,7 @@ test('the text receipt names the total, the lines and the warranty', () => {
   assert.match(sms, /receipt AP-7Q2K/);
   assert.match(sms, /Hi Jordan, thanks — \$457\.50 paid in person Sep 30, 2026\./);
   assert.match(sms, /Front pads & rotors \$325\.50/);
-  assert.match(sms, /Travel \$20\.00/);
+  assert.match(sms, /Service fee \$20\.00/);
   assert.match(sms, /12-month \/ 12,000-mile warranty/);
   assert.ok(sms.length <= 153 * 3, `too long for three segments: ${sms.length}`);
 });
@@ -73,4 +74,9 @@ test('the email itemizes and escapes what people typed', () => {
   assert.match(html, /Approved and signed by Jordan Reyes/);
   const text = buildReceiptEmailText(r);
   assert.match(text, /Total paid in person: \$457\.50/);
+});
+
+test('a weather fee gets its own receipt line after the service fee', () => {
+  const labels = receiptRows({ ...base, weatherCents: 3000 }).map((r) => r.label);
+  assert.deepEqual(labels.slice(-3), ['Service fee', 'Severe weather fee', 'Sales tax 8.25% on parts']);
 });

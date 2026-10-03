@@ -14,7 +14,9 @@ export type ReceiptInput = {
   kind: 'charge' | 'diagnostic_only' | 'no_show';
   lineItems: ReceiptLine[];
   diagnosticCents: number;
+  /** The service fee (stored as travel_cents). */
   travelCents: number;
+  weatherCents: number;
   taxCents: number;
   taxMode: 'parts' | 'total' | 'none';
   totalCents: number;
@@ -51,7 +53,8 @@ export function receiptRows(r: ReceiptInput): Row[] {
     ].filter(Boolean);
     rows.push({ label: l.title, detail: parts.length > 1 ? parts.join(' · ') : undefined, cents: l.labor_cents + l.parts_cents });
   }
-  if (r.travelCents > 0) rows.push({ label: 'Travel', cents: r.travelCents });
+  if (r.travelCents > 0) rows.push({ label: 'Service fee', cents: r.travelCents });
+  if (r.weatherCents > 0) rows.push({ label: 'Severe weather fee', cents: r.weatherCents });
   if (r.taxCents > 0) rows.push({ label: `Sales tax 8.25%${r.taxMode === 'parts' ? ' on parts' : ''}`, cents: r.taxCents });
   return rows;
 }

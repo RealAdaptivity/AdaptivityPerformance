@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Mail, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import type { DispatchBooking } from '../../services/techDispatch';
-import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../../services/serviceCatalog';
+import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../../services/serviceCatalog';
 import {
   closeOutProblem,
   computeCloseOut,
@@ -46,6 +46,7 @@ export const TechPayScreen: React.FC<{
   const [lines, setLines] = useState<LineDraft[]>([{ title: '', labor: '', parts: '' }]);
   const [diagChoice, setDiagChoice] = useState<DiagChoice>('auto');
   const [member, setMember] = useState(false);
+  const [weather, setWeather] = useState(false);
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
   const [partsBy, setPartsBy] = useState<PartsBy>('tech');
   const [notes, setNotes] = useState('');
@@ -66,10 +67,12 @@ export const TechPayScreen: React.FC<{
         lines,
         diagnosticCents: collectDiag ? diagnosticFeeCents : 0,
         travelCents: shop || member ? 0 : TRAVEL_FEE_DOLLARS * 100,
+        // Mobile visits only, and members never pay it.
+        weatherCents: weather && !shop && !member ? WEATHER_FEE_DOLLARS * 100 : 0,
         taxMode,
         partsBy,
       }),
-    [mode, lines, collectDiag, diagnosticFeeCents, shop, member, taxMode, partsBy]
+    [mode, lines, collectDiag, diagnosticFeeCents, shop, member, weather, taxMode, partsBy]
   );
   const problem = closeOutProblem(closeOut, signed && signerName.trim().length > 1);
 
@@ -262,10 +265,16 @@ export const TechPayScreen: React.FC<{
 
           {!shop && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
-              <p className="text-[15px] font-semibold">Travel</p>
+              <p className="text-[15px] font-semibold">Service fee</p>
               <span className={`font-heading font-semibold ${member ? 'text-zinc-400 line-through' : ''}`}>
                 {formatCents(TRAVEL_FEE_DOLLARS * 100)}
               </span>
+            </div>
+          )}
+          {closeOut.weatherCents > 0 && (
+            <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
+              <p className="text-[15px] font-semibold">Severe weather fee</p>
+              <span className="font-heading font-semibold">{formatCents(closeOut.weatherCents)}</span>
             </div>
           )}
           {closeOut.taxCents > 0 && (
@@ -294,8 +303,17 @@ export const TechPayScreen: React.FC<{
         <p className={capClass}>Settings for this job</p>
         {!shop && (
           <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4`}>
-            <span className="text-[15px]">Member — waive travel</span>
+            <span className="text-[15px]">Member — waive service &amp; weather fees</span>
             <input type="checkbox" checked={member} onChange={(e) => setMember(e.target.checked)} className="h-6 w-6 accent-brand" />
+          </label>
+        )}
+        {!shop && !member && (
+          <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4 py-2.5`}>
+            <span>
+              <span className="block text-[15px]">Rain / severe weather · +{formatCents(WEATHER_FEE_DOLLARS * 100)}</span>
+              <span className="block text-xs text-slate-400">Tell the customer before you start</span>
+            </span>
+            <input type="checkbox" checked={weather} onChange={(e) => setWeather(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
           </label>
         )}
         {mode === 'charge' && (

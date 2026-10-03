@@ -1,6 +1,6 @@
 /** Site SEO helpers — document title, meta, city landings. */
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf, type LocalCity } from './localSeo';
-import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
+import { TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../services/serviceCatalog';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -122,7 +122,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   faq: {
     title: 'FAQ | Mobile Mechanic Justin & Northlake TX — Adaptivity',
     description:
-      'Travel fees, labor rates, warranty, and mobile vs shop — answers for Justin, Northlake, Argyle and Denton customers.',
+      'Service fees, labor rates, warranty, and mobile vs shop — answers for Justin, Northlake, Argyle and Denton customers.',
     path: '/faq',
   },
   partners: {
@@ -213,8 +213,8 @@ export const SITE_FAQS = [
     a: 'Our certified mobile technicians drive directly to your driveway, office parking lot, or roadside location in Justin (76247) and Northlake (76226 / 76262). We bring professional lift jacks, OEM parts, and diagnostic equipment to perform brakes, oil changes, batteries, starters, and diagnostics on-site.',
   },
   {
-    q: 'Are there travel fees for mobile service in Justin or Northlake?',
-    a: `Every mobile visit has one flat $${TRAVEL_FEE_DOLLARS} travel fee — the same in Justin and Northlake (Harvest, Canyon Falls, Pecan Square) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. There is no per-mile charge. It is shown when you book and paid in person with the visit.`,
+    q: 'Is there a service fee for mobile service in Justin or Northlake?',
+    a: `Every mobile visit has one flat $${TRAVEL_FEE_DOLLARS} service fee — the same in Justin and Northlake (Harvest, Canyon Falls, Pecan Square) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. There is no per-mile charge. It is shown when you book and paid in person with the visit. If your tech has to work in rain or severe weather, a $${WEATHER_FEE_DOLLARS} severe weather fee is added, and they tell you before starting. Members pay neither fee.`,
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',

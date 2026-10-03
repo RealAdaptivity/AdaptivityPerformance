@@ -153,7 +153,7 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
                       {result.distanceMiles === 0
                         ? 'That’s our home town'
                         : `${result.distanceMiles} mi from our shop in ${LOCAL_HUB.city}`}
-                      {` — flat $${TRAVEL_FEE_DOLLARS} travel, same as everywhere we go.`}
+                      {` — flat $${TRAVEL_FEE_DOLLARS} service fee, same as everywhere we go.`}
                     </p>
                   </div>
                 )}

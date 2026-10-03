@@ -95,7 +95,7 @@ export const TechPortal: React.FC<TechPortalProps> = ({
   const noShow = async (job: DispatchBooking) => {
     if (!confirm('Customer didn’t show? This closes the job with nothing collected.')) return;
     try {
-      const c = computeCloseOut({ kind: 'no_show', lines: [], diagnosticCents: 0, travelCents: 0, taxMode: 'none', partsBy: 'tech' });
+      const c = computeCloseOut({ kind: 'no_show', lines: [], diagnosticCents: 0, travelCents: 0, weatherCents: 0, taxMode: 'none', partsBy: 'tech' });
       await recordJobPayment(job.id, c, { taxMode: 'none', partsBy: 'tech' });
       api.setNotice({ tone: 'ok', text: 'No-show recorded. The job is closed.' });
       setView(null);

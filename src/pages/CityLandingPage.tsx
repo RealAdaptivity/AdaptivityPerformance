@@ -67,7 +67,7 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
               </dd>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4">
-              <dt className="text-slate-400">Travel fee</dt>
+              <dt className="text-slate-400">Service fee</dt>
               <dd className="font-heading text-lg font-bold mt-0.5 text-orange-400">
                 ${TRAVEL_FEE_DOLLARS} flat
               </dd>

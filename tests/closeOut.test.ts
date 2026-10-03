@@ -40,6 +40,7 @@ test('the worked example from the design: $457.50, $355.50 to the tech', () => {
     lines: [{ title: 'Front pads & rotors', labor: '180', parts: '145.50' }],
     diagnosticCents: 10000,
     travelCents: 2000,
+    weatherCents: 0,
     taxMode: 'parts',
     partsBy: 'tech',
   });
@@ -58,6 +59,7 @@ test('the diagnostic and travel count once, and tax is never counted twice', () 
     lines: [{ title: 'Battery', labor: '40', parts: '200' }],
     diagnosticCents: 10000,
     travelCents: 2000,
+    weatherCents: 0,
     taxMode: 'parts',
     partsBy: 'company',
   });
@@ -75,6 +77,7 @@ test('blank lines drop out and untitled ones get a title', () => {
     ],
     diagnosticCents: 0,
     travelCents: 0,
+    weatherCents: 0,
     taxMode: 'none',
     partsBy: 'tech',
   });
@@ -90,6 +93,7 @@ test('diagnostic only ignores repair lines but keeps travel', () => {
     lines: [{ title: 'x', labor: '999', parts: '999' }],
     diagnosticCents: 10000,
     travelCents: 2000,
+    weatherCents: 0,
     taxMode: 'parts',
     partsBy: 'tech',
   });
@@ -103,6 +107,7 @@ test('a no-show collects nothing and needs no signature', () => {
     lines: [{ title: 'x', labor: '10', parts: '' }],
     diagnosticCents: 10000,
     travelCents: 2000,
+    weatherCents: 0,
     taxMode: 'total',
     partsBy: 'tech',
   });
@@ -111,7 +116,8 @@ test('a no-show collects nothing and needs no signature', () => {
 });
 
 test('a paid job cannot close unsigned or at $0', () => {
-  const base = { lines: [], diagnosticCents: 10000, travelCents: 2000, taxMode: 'parts' as const, partsBy: 'tech' as const };
+  const base = { lines: [], diagnosticCents: 10000, travelCents: 2000,
+    weatherCents: 0, taxMode: 'parts' as const, partsBy: 'tech' as const };
   assert.match(closeOutProblem(computeCloseOut({ ...base, kind: 'diagnostic_only' }), false) ?? '', /sign/);
   assert.equal(closeOutProblem(computeCloseOut({ ...base, kind: 'diagnostic_only' }), true), null);
   assert.match(
@@ -121,11 +127,52 @@ test('a paid job cannot close unsigned or at $0', () => {
 });
 
 test('the database close-out uses the same tax rate and tech share', () => {
-  const file = readdirSync('supabase/migrations').find((f) => f.endsWith('_job_payments.sql'));
-  assert.ok(file, 'job_payments migration missing');
+  // The newest migration that defines record_job_payment is the one in force.
+  const file = readdirSync('supabase/migrations')
+    .sort()
+    .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
+    .pop();
+  assert.ok(file, 'record_job_payment migration missing');
   const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
   assert.match(sql, new RegExp(`\\* ${SALES_TAX_BASIS_POINTS} \\+ 5000\\) / 10000`));
   assert.match(sql, new RegExp(`\\* ${TECH_LABOR_SHARE_PERCENT} \\+ 50\\) / 100`));
+});
+
+test('the weather fee is added, taxed with the ticket and shared like the service fee', () => {
+  const base = {
+    kind: 'charge' as const,
+    lines: [{ title: 'Battery', labor: '40', parts: '200' }],
+    diagnosticCents: 0,
+    travelCents: 2000,
+    partsBy: 'tech' as const,
+  };
+  const dry = computeCloseOut({ ...base, weatherCents: 0, taxMode: 'parts' });
+  const wet = computeCloseOut({ ...base, weatherCents: 3000, taxMode: 'parts' });
+  assert.equal(wet.weatherCents, 3000);
+  assert.equal(wet.taxCents, dry.taxCents, 'tax on parts ignores the weather fee');
+  assert.equal(wet.totalCents, dry.totalCents + 3000);
+  assert.equal(wet.techPayoutCents, Math.floor(((2000 + 3000 + 4000) * 70 + 50) / 100) + 20000);
+  const wetTotal = computeCloseOut({ ...base, weatherCents: 3000, taxMode: 'total' });
+  assert.equal(wetTotal.taxCents, taxOn(2000 + 3000 + 4000 + 20000));
+});
+
+test('a no-show never carries the weather fee', () => {
+  const c = computeCloseOut({
+    kind: 'no_show', lines: [], diagnosticCents: 10000, travelCents: 2000, weatherCents: 3000, taxMode: 'none', partsBy: 'tech',
+  });
+  assert.equal(c.weatherCents, 0);
+  assert.equal(c.totalCents, 0);
+});
+
+test('the database stores and sums the weather fee the same way', () => {
+  const file = readdirSync('supabase/migrations')
+    .sort()
+    .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
+    .pop();
+  const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
+  assert.match(sql, /v_before_tax := v_diag \+ v_travel \+ v_weather \+ v_labor_total \+ v_parts_total;/);
+  assert.match(sql, /\(\(v_diag \+ v_travel \+ v_weather \+ v_labor_total\) \* 70 \+ 50\) \/ 100/);
+  assert.match(sql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents \+ tax_cents/);
 });
 
 test('the close-out tax rate is the site-wide sales tax rate', async () => {

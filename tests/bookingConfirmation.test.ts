@@ -127,14 +127,14 @@ test('trailing slash on the site URL is not doubled', () => {
   assert.match(sms, /Track it at https:\/\/adaptivityperformance\.com$/);
 });
 
-test('a mobile visit names the travel fee next to the diagnostic; a drop-off does not', () => {
+test('a mobile visit names the service fee next to the diagnostic; a drop-off does not', () => {
   const base = {
     referenceCode: 'AP-6Z2XDPTF',
     services: ['Mobile Diagnostic Visit'],
     quotedDollars: 100,
     quoteMode: 'diagnostic' as const,
   };
-  assert.match(buildBookingConfirmationSms({ ...base, travelDollars: 20 }), /\$100 diagnostic \+ \$20 travel;/);
-  assert.doesNotMatch(buildBookingConfirmationSms({ ...base, travelDollars: 0 }), /travel/);
-  assert.doesNotMatch(buildBookingConfirmationSms(base), /travel/);
+  assert.match(buildBookingConfirmationSms({ ...base, travelDollars: 20 }), /\$100 diagnostic \+ \$20 service fee;/);
+  assert.doesNotMatch(buildBookingConfirmationSms({ ...base, travelDollars: 0 }), /service fee/);
+  assert.doesNotMatch(buildBookingConfirmationSms(base), /service fee/);
 });

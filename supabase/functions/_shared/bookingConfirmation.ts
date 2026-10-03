@@ -13,7 +13,7 @@ export type BookingConfirmationInput = {
   services: string[];
   quotedDollars: number;
   quoteMode: 'diagnostic' | 'direct';
-  /** Flat travel fee on a mobile visit; 0 or absent for a shop drop-off. */
+  /** Flat service fee on a mobile visit; 0 or absent for a shop drop-off. */
   travelDollars?: number;
   vehicleDescription?: string | null;
   /** 'YYYY-MM-DD', as stored in bookings.preferred_date. */
@@ -62,7 +62,7 @@ export function buildBookingConfirmationSms(input: BookingConfirmationInput): st
     .join(', ');
   if (when) parts.push(`${when}.`);
 
-  const travel = input.travelDollars && input.travelDollars > 0 ? ` + $${input.travelDollars} travel` : '';
+  const travel = input.travelDollars && input.travelDollars > 0 ? ` + $${input.travelDollars} service fee` : '';
   parts.push(
     input.quoteMode === 'diagnostic'
       ? `$${input.quotedDollars} diagnostic${travel}; your tech quotes any repair on site before starting.`

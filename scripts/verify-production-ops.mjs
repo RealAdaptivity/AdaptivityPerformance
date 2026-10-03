@@ -219,7 +219,9 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
     }
     return out;
   };
-  const literalFee = /\$(\d+)(?=[\s-]*(?:flat[\s-]*)?(?:travel|trip))/gi;
+  // Customers read it as the service fee; the severe weather fee follows the
+  // same rule (WEATHER_FEE_DOLLARS).
+  const literalFee = /\$(\d+)(?=[\s-]*(?:flat[\s-]*)?(?:travel|trip|service fee|(?:severe[\s-]*)?weather|rain))/gi;
   const staleClaim = /free travel|travel is (?:free|included|on us)|free dispatch|no travel fee|travel radius|freeRadiusMiles|per-mile travel|\$2(?:\.00)?\s*(?:\/|per)\s*(?:extra\s*)?mi/i;
   for (const file of [
     ...walk(new URL('src/', new URL(root, 'file:'))),
@@ -229,7 +231,7 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
     if (/Membership[A-Za-z]*\.tsx$/.test(rel) || rel.endsWith('servicePricing.ts')) continue;
     const src = read(rel);
     for (const [match] of src.matchAll(literalFee)) {
-      throw new Error(`Travel fee: ${rel} writes "${match}" — interpolate TRAVEL_FEE_DOLLARS instead`);
+      throw new Error(`Fees: ${rel} writes "${match}" — interpolate TRAVEL_FEE_DOLLARS or WEATHER_FEE_DOLLARS instead`);
     }
     const stale = src.match(staleClaim);
     if (stale) {

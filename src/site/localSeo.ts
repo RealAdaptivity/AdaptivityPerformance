@@ -6,7 +6,7 @@
  * the router can never drift apart.
  */
 import data from './localSeoData.json';
-import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
+import { TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../services/serviceCatalog';
 
 export type ServiceFaq = { q: string; a: string };
 
@@ -108,10 +108,10 @@ export function priceRangeLabel(service: LocalService): string {
     : `${fmt(service.priceFrom)} - ${fmt(service.priceTo)}`;
 }
 
-/** The travel line for a city page. Travel is one flat fee everywhere we
+/** The service fee line for a city page. It is one flat fee everywhere we
  *  dispatch, so this only names the town; the figure comes from the catalog. */
 export function travelLabel(city: LocalCity): string {
-  return `$${TRAVEL_FEE_DOLLARS} flat travel fee to ${city.city} — the same anywhere inside our ${LOCAL_HUB.radiusMiles}-mile radius, paid in person with the visit.`;
+  return `$${TRAVEL_FEE_DOLLARS} flat service fee to ${city.city} — the same anywhere inside our ${LOCAL_HUB.radiusMiles}-mile radius, paid in person with the visit.`;
 }
 
 /** Nearest other cities, for internal linking between landing pages. */
@@ -143,7 +143,7 @@ export function serviceCityFaqs(service: LocalService, city: LocalCity): Service
     ...service.faqs,
     {
       q: `Do you charge extra to come out to ${city.city}?`,
-      a: `There is one flat $${TRAVEL_FEE_DOLLARS} travel fee on every mobile visit, and it is the same in ${city.city} (${city.distanceMiles} miles from our Justin hub) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. No per-mile charge. You pay it in person with the visit, and you see it before you book.`,
+      a: `There is one flat $${TRAVEL_FEE_DOLLARS} service fee on every mobile visit, and it is the same in ${city.city} (${city.distanceMiles} miles from our Justin hub) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. No per-mile charge. You pay it in person with the visit, and you see it before you book. If your tech has to work in rain or severe weather, a $${WEATHER_FEE_DOLLARS} severe weather fee is added, and they tell you before starting. Members pay neither fee.`,
     },
     {
       q: `How fast can you get to ${city.city}?`,

@@ -110,7 +110,7 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
        the receipt; the quote tables below are only for older jobs. */
     const { data: paid } = await supabase
       .from('job_payments')
-      .select('line_items, diagnostic_cents, travel_cents, tax_cents, tax_mode, tech_notes')
+      .select('line_items, diagnostic_cents, travel_cents, weather_cents, tax_cents, tax_mode, tech_notes')
       .eq('booking_id', row.id)
       .maybeSingle();
     if (paid) {
@@ -121,10 +121,12 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
         return { title: String(l.title), laborDollars: labor, partsDollars: parts, amountDollars: labor + parts };
       });
       const travel = (Number(paid.travel_cents) || 0) / 100;
+      const weather = (Number(paid.weather_cents) || 0) / 100;
       const tax = (Number(paid.tax_cents) || 0) / 100;
       lineItems = [
         ...repairLines,
-        ...(travel > 0 ? [{ title: 'Travel', amountDollars: travel, laborDollars: travel, partsDollars: 0 }] : []),
+        ...(travel > 0 ? [{ title: 'Service fee', amountDollars: travel, laborDollars: travel, partsDollars: 0 }] : []),
+        ...(weather > 0 ? [{ title: 'Severe weather fee', amountDollars: weather, laborDollars: weather, partsDollars: 0 }] : []),
         ...(tax > 0
           ? [{ title: `Sales tax${paid.tax_mode === 'parts' ? ' (parts)' : ''}`, amountDollars: tax, laborDollars: 0, partsDollars: tax }]
           : []),
