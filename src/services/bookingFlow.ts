@@ -3,7 +3,7 @@
  * load them. The form asks one thing per screen: what you need, the vehicle,
  * when, where, and how to reach you, then a review before anything is sent.
  * Prices are passed in rather than imported for the same reason; the form
- * hands over DIAGNOSTIC_FEE_DOLLARS and TRAVEL_FEE_DOLLARS (the service fee) from the catalog.
+ * hands over DIAGNOSTIC_FEE_DOLLARS and TRAVEL_FEE_DOLLARS from the catalog.
  */
 
 export type BookingStepId = 'need' | 'vehicle' | 'when' | 'where' | 'contact' | 'review';
@@ -93,8 +93,8 @@ export type VisitCharges = {
   dueAtVisit: number;
 };
 
-/** A mobile visit pays the diagnostic plus the flat service fee (`travel`); a
- *  drop-off at a partner shop has none. */
+/** A mobile visit pays the diagnostic plus the flat travel fee; a drop-off at a
+ *  partner shop has no travel. */
 export function visitCharges(
   locationType: 'mobile' | 'shop',
   fees: { diagnostic: number; travel: number }

@@ -265,7 +265,7 @@ export const TechPayScreen: React.FC<{
 
           {!shop && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
-              <p className="text-[15px] font-semibold">Service fee</p>
+              <p className="text-[15px] font-semibold">Travel</p>
               <span className={`font-heading font-semibold ${member ? 'text-zinc-400 line-through' : ''}`}>
                 {formatCents(TRAVEL_FEE_DOLLARS * 100)}
               </span>
@@ -303,7 +303,7 @@ export const TechPayScreen: React.FC<{
         <p className={capClass}>Settings for this job</p>
         {!shop && (
           <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4`}>
-            <span className="text-[15px]">Member — waive service &amp; weather fees</span>
+            <span className="text-[15px]">Member — waive travel &amp; weather fees</span>
             <input type="checkbox" checked={member} onChange={(e) => setMember(e.target.checked)} className="h-6 w-6 accent-brand" />
           </label>
         )}

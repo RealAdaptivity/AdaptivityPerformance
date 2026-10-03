@@ -11,7 +11,7 @@
 
 /** Texas sales tax, in basis points (8.25%). */
 export const SALES_TAX_BASIS_POINTS = 825;
-/** The tech's share of diagnostic, labor, the service fee and the weather fee,
+/** The tech's share of diagnostic, labor, travel and the weather fee,
  *  in percent. Parts the tech bought are paid back in full on top. */
 export const TECH_LABOR_SHARE_PERCENT = 70;
 
@@ -26,8 +26,7 @@ export type CloseOut = {
   kind: CloseOutKind;
   lines: CloseOutLine[];
   diagnosticCents: number;
-  /** The flat service fee on a mobile visit. Stored as travel_cents, from when
-   *  it was called the travel fee. */
+  /** The flat travel fee on a mobile visit. */
   travelCents: number;
   /** The severe weather fee, when the tech worked in rain or severe weather. */
   weatherCents: number;

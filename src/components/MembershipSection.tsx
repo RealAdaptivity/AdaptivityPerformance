@@ -22,7 +22,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-heading font-black text-white">
-            Never Pay a Mobile Service Fee Again. <br />
+            Never Pay a Mobile Travel Fee Again. <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500">
               Save Up to $450/Year on Maintenance.
             </span>
@@ -47,9 +47,9 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
                 <h3 className="text-2xl font-bold text-white">Basic Care</h3>
                 <div className="text-3xl font-black text-amber-400 font-mono mt-1">$19<span className="text-xs text-slate-400 font-sans"> / mo</span></div>
               </div>
-              <p className="text-xs text-slate-300">Ideal for single-vehicle drivers seeking guaranteed $0 service fees.</p>
+              <p className="text-xs text-slate-300">Ideal for single-vehicle drivers seeking guaranteed $0 travel charges.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Service & Weather Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Weather Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>10% Off</strong> All Labor & Diagnostics</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 1 Free Annual Digital Inspection (DVI)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Priority Hotline · {BUSINESS_HOURS.label} Daily</li>
@@ -83,7 +83,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
               </div>
               <p className="text-xs text-slate-300">Complete vehicle protection with 2 free synthetic oil services & towing allowance.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Service & Weather Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Weather Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>15% Off</strong> All Repair Labor & Upgrades</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-400 font-bold" /> <strong>2 Free Synthetic Oil Changes/Yr</strong> ($190 value)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited Free Digital Inspections (DVI)</li>

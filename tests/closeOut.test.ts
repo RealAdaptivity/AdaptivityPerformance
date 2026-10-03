@@ -138,7 +138,7 @@ test('the database close-out uses the same tax rate and tech share', () => {
   assert.match(sql, new RegExp(`\\* ${TECH_LABOR_SHARE_PERCENT} \\+ 50\\) / 100`));
 });
 
-test('the weather fee is added, taxed with the ticket and shared like the service fee', () => {
+test('the weather fee is added, taxed with the ticket and shared like travel', () => {
   const base = {
     kind: 'charge' as const,
     lines: [{ title: 'Battery', labor: '40', parts: '200' }],

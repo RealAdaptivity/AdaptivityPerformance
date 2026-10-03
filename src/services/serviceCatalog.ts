@@ -54,11 +54,9 @@ export const DIRECT_BOOK_KINDS: ServiceKind[] = [];
 // Standard diagnostic fee, collected in person.
 export const DIAGNOSTIC_FEE_DOLLARS = 100;
 
-/** Flat service fee on every mobile visit, collected in person with the
+/** Flat travel fee on every mobile visit, collected in person with the
  *  diagnostic. The same everywhere inside the dispatch radius; a drop-off at a
- *  partner shop has none, and members never pay it. Customers have seen it
- *  called the service fee since October 2026; before that it was the travel
- *  fee, which is still its name here and in job_payments.travel_cents. */
+ *  partner shop has no travel. */
 export const TRAVEL_FEE_DOLLARS = 20;
 
 /** Severe weather fee: the tech adds it at close-out when the work was done in

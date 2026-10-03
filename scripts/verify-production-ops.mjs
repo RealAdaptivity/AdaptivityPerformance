@@ -219,9 +219,8 @@ requireText(w9Migration, 'not coalesce(v_detail.tax_id_provided, false)', 'W-9 c
     }
     return out;
   };
-  // Customers read it as the service fee; the severe weather fee follows the
-  // same rule (WEATHER_FEE_DOLLARS).
-  const literalFee = /\$(\d+)(?=[\s-]*(?:flat[\s-]*)?(?:travel|trip|service fee|(?:severe[\s-]*)?weather|rain))/gi;
+  // The severe weather fee follows the same rule (WEATHER_FEE_DOLLARS).
+  const literalFee = /\$(\d+)(?=[\s-]*(?:flat[\s-]*)?(?:travel|trip|(?:severe[\s-]*)?weather|rain))/gi;
   const staleClaim = /free travel|travel is (?:free|included|on us)|free dispatch|no travel fee|travel radius|freeRadiusMiles|per-mile travel|\$2(?:\.00)?\s*(?:\/|per)\s*(?:extra\s*)?mi/i;
   for (const file of [
     ...walk(new URL('src/', new URL(root, 'file:'))),

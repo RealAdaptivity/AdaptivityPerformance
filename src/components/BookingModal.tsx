@@ -503,7 +503,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
           : 'Continue';
   const footNote =
     step === 0
-      ? `${money(charges.diagnostic)} diagnostic${charges.travel ? ` + ${money(charges.travel)} service fee` : ''} · paid in person · no card needed`
+      ? `${money(charges.diagnostic)} diagnostic${charges.travel ? ` + ${money(charges.travel)} travel` : ''} · paid in person · no card needed`
       : step === REVIEW_STEP
         ? 'Nothing is charged today.'
         : null;
@@ -515,7 +515,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         <span className="font-heading text-lg font-bold">{money(charges.diagnostic)}</span>
       </div>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm text-slate-300">Service fee</span>
+        <span className="text-sm text-slate-300">Travel</span>
         <span className="font-heading text-lg font-bold">
           {charges.travel ? money(charges.travel) : <span className="text-sm font-semibold text-slate-400">None — drop-off</span>}
         </span>
@@ -532,7 +532,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       <p className="text-[13px] leading-relaxed text-slate-400">
         No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts, and
         the diagnostic is credited toward it.
-        {charges.travel ? ` ${WEATHER_FEE_NOTE} Members pay neither fee.` : ''}
+        {charges.travel ? ` ${WEATHER_FEE_NOTE} Members pay no travel or weather fee.` : ''}
       </p>
     </div>
   );
@@ -1069,7 +1069,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   >
                     <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-300" aria-hidden="true" />
                     <span>
-                      <strong>{coverage.city} is in our area.</strong> Flat {money(TRAVEL_FEE_DOLLARS)} service fee, paid
+                      <strong>{coverage.city} is in our area.</strong> Flat {money(TRAVEL_FEE_DOLLARS)} travel fee, paid
                       at the visit.
                     </span>
                   </p>
@@ -1104,7 +1104,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   ) : (
                     <p>Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247</p>
                   )}
-                  <p className="pt-2 text-slate-400">You bring the car in, so there’s no service fee.</p>
+                  <p className="pt-2 text-slate-400">You bring the car in, so travel doesn’t apply.</p>
                 </div>
                 <div>
                   <label htmlFor="bk-notes" className={labelClass}>

@@ -26,9 +26,9 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
     setHasSearched(true);
   };
 
-  /* The service fee is one flat fee everywhere inside the radius, so every
-     in-area ZIP gets the same answer. */
-  const travelFeeLabel = `$${TRAVEL_FEE_DOLLARS} flat service fee`;
+  /* Travel is one flat fee everywhere inside the radius, so every in-area ZIP
+     gets the same answer. */
+  const travelFeeLabel = `$${TRAVEL_FEE_DOLLARS} flat travel`;
 
   return (
     <section id="area" className="py-20 bg-[#0e1017] border-t border-white/5 relative">
@@ -43,7 +43,7 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
           </h2>
           <p className="text-slate-400 text-sm sm:text-base">
             We dispatch from one hub in Justin and we stay inside a {SERVICE_RADIUS_MILES}-mile ring, because a van
-            stuck in cross-metro traffic is a van not fixing your car. The service fee is one flat ${TRAVEL_FEE_DOLLARS} to every
+            stuck in cross-metro traffic is a van not fixing your car. Travel is one flat ${TRAVEL_FEE_DOLLARS} to every
             driveway inside that ring — no mileage charge, anywhere we serve.
           </p>
         </div>
@@ -55,13 +55,13 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
                 <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded bg-orange-500/20 text-orange-300">
                   0 – {SERVICE_RADIUS_MILES} MILES
                 </span>
-                <div className="font-bold text-base text-white mt-1">One flat service fee, whole radius</div>
+                <div className="font-bold text-base text-white mt-1">One flat travel fee, whole radius</div>
                 <div className="text-xs text-slate-400">Justin, Northlake, Argyle, Roanoke, Denton, Haslet, Keller, Fort Worth, Grapevine, Southlake, Lewisville, Decatur, Azle and everywhere between</div>
               </div>
               <span className="text-xl font-extrabold text-orange-400 font-heading shrink-0">${TRAVEL_FEE_DOLLARS}</span>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-slate-400">
-              {WEATHER_FEE_NOTE} Members pay neither fee.
+              {WEATHER_FEE_NOTE} Members pay no travel or weather fee.
             </p>
           </div>
 

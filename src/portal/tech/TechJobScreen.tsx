@@ -177,7 +177,7 @@ export const TechJobScreen: React.FC<{
           <div>
             <p className={capClass}>Due at the visit</p>
             <p className="mt-1 text-sm text-slate-300">
-              ${diagnostic.toFixed(0)} diagnostic{travel ? ` + $${travel} service fee` : ''}, before any repair
+              ${diagnostic.toFixed(0)} diagnostic{travel ? ` + $${travel} travel` : ''}, before any repair
             </p>
           </div>
           <p className="font-heading text-xl font-bold">${(diagnostic + travel).toFixed(0)}</p>

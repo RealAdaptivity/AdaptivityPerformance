@@ -39,7 +39,7 @@ type OnBook = (prefill: BookingPrefill, source: string) => void;
    sneaks back in. */
 const FEE = `$${DIAGNOSTIC_FEE_DOLLARS}`;
 const RADIUS = LOCAL_HUB.radiusMiles;
-/** One flat service fee on every mobile visit, wherever it is in the radius. */
+/** One flat travel fee on every mobile visit, wherever it is in the radius. */
 const TRAVEL = `$${TRAVEL_FEE_DOLLARS}`;
 
 const SERVICE_ICON: Partial<Record<ServiceKind, React.ReactNode>> = {
@@ -64,11 +64,11 @@ export const PriceBand: React.FC = () => (
         <p className="font-heading text-4xl font-bold tracking-[-0.04em] text-brand">{FEE}</p>
         <h3 className="mt-2.5 text-[17px] font-bold text-white">diagnostic visit</h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
-          Plus a flat {TRAVEL} service fee anywhere within {RADIUS} miles of{' '}
+          Plus a flat {TRAVEL} travel fee anywhere within {RADIUS} miles of{' '}
           {LOCAL_HUB.city}. Both paid in person — no card to book.
         </p>
         <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
-          {WEATHER_FEE_NOTE} Members pay neither fee.
+          {WEATHER_FEE_NOTE} Members pay no travel or weather fee.
         </p>
       </div>
       <div className="rounded-[18px] border border-white/[0.09] bg-[#12141c] p-6 sm:p-7">
@@ -205,7 +205,7 @@ export const CoverageSection: React.FC = () => {
             <br className="hidden lg:block" /> around {LOCAL_HUB.city}
           </h2>
           <p className="mt-3.5 text-[15px] leading-relaxed text-slate-400">
-            The service fee is a flat {TRAVEL} everywhere on this list — the same whether you’re next door or at the
+            Travel is a flat {TRAVEL} everywhere on this list — the same whether you’re next door or at the
             edge of the radius.
           </p>
           <a href="#book" className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand-soft hover:text-white">

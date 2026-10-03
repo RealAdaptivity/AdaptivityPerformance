@@ -72,7 +72,7 @@ export const AD_LANDINGS: AdLanding[] = [
     bullets: [
       'We come to your home or your workplace anywhere in Dallas',
       'Labor and parts priced on site, before anything comes apart',
-      'Every fee is shown up front — you see the number before you approve anything',
+      'Travel is quoted up front — you see the number before you approve anything',
       '12-month / 12,000-mile warranty on parts and labor',
     ],
     proof: ['ASE-level techs', 'Fully equipped vans', 'Priced before we start'],

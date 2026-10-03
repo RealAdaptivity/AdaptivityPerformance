@@ -125,7 +125,7 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
       const tax = (Number(paid.tax_cents) || 0) / 100;
       lineItems = [
         ...repairLines,
-        ...(travel > 0 ? [{ title: 'Service fee', amountDollars: travel, laborDollars: travel, partsDollars: 0 }] : []),
+        ...(travel > 0 ? [{ title: 'Travel', amountDollars: travel, laborDollars: travel, partsDollars: 0 }] : []),
         ...(weather > 0 ? [{ title: 'Severe weather fee', amountDollars: weather, laborDollars: weather, partsDollars: 0 }] : []),
         ...(tax > 0
           ? [{ title: `Sales tax${paid.tax_mode === 'parts' ? ' (parts)' : ''}`, amountDollars: tax, laborDollars: 0, partsDollars: tax }]
