@@ -24,7 +24,14 @@
  * So: desktop and Android get the silent frame and an immediate print dialog.
  * iOS, and anything where the print call throws, get the same document shown
  * full-screen with its own button, which is a thing a person can actually use.
+ *
+ * 3. That full-screen view was itself an iframe, and on iOS a print started
+ *    inside an iframe prints the page around it. The saved PDF was the admin
+ *    screen with the document floating over it. It is drawn on the page now
+ *    (see showOverlay).
  */
+
+import { DOC_BODY_CLASS, scopeDocumentCss } from './printScope';
 
 const PRINT_FRAME_ID = 'adaptivity-print-frame';
 const PRINT_OVERLAY_ID = 'adaptivity-print-overlay';
@@ -43,50 +50,99 @@ function isIos(): boolean {
   return /Macintosh/.test(ua) && typeof document !== 'undefined' && 'ontouchend' in document;
 }
 
-/** The document, full screen, with a close button. Its own "Print / Save as
- *  PDF" button is visible here, which is the whole point. */
+/** Print rules for the app's own page while a document is shown on iOS:
+ *  everything but the document is hidden, and the document flows onto as
+ *  many pages as it needs. */
+const PRINT_ONLY_DOCUMENT_CSS = `
+@media print {
+  html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
+  body > *:not(#${PRINT_OVERLAY_ID}) { display: none !important; }
+  #${PRINT_OVERLAY_ID} { position: static !important; display: block !important; background: #fff !important; overflow: visible !important; }
+  #${PRINT_OVERLAY_ID} .adaptivity-print-bar { display: none !important; }
+  #${PRINT_OVERLAY_ID} .adaptivity-print-scroll { overflow: visible !important; height: auto !important; }
+}`;
+
+/**
+ * The document, full screen, with Print and Close buttons.
+ *
+ * It is drawn into the app's own page, not an iframe. On iOS a print started
+ * from inside an iframe prints the page around it instead: the saved PDF was
+ * the admin screen with the quote floating over it, the quote list behind it
+ * and a black page for the overlay. With the document on the page itself and
+ * print rules that hide everything else, the PDF is the document alone.
+ *
+ * A shadow root keeps the document's CSS (it styles `body`, `h1`, `table`)
+ * from restyling the app behind it, and the app's from reaching the document.
+ */
 function showOverlay(html: string) {
   removeExisting();
+
+  const parsed = new DOMParser().parseFromString(html, 'text/html');
+  const css = [...parsed.querySelectorAll('style')].map((s) => s.textContent ?? '').join('\n');
 
   const overlay = document.createElement('div');
   overlay.id = PRINT_OVERLAY_ID;
   overlay.setAttribute('role', 'dialog');
-  overlay.setAttribute('aria-label', 'Printable document');
+  overlay.setAttribute('aria-label', parsed.title || 'Printable document');
   overlay.style.cssText = [
     'position:fixed', 'inset:0', 'z-index:2147483647',
     'background:#0b0c10', 'display:flex', 'flex-direction:column',
   ].join(';');
 
+  const printCss = document.createElement('style');
+  printCss.textContent = PRINT_ONLY_DOCUMENT_CSS;
+
   const bar = document.createElement('div');
+  bar.className = 'adaptivity-print-bar';
   bar.style.cssText = [
     'display:flex', 'align-items:center', 'justify-content:space-between',
     'gap:12px', 'padding:12px 16px', 'background:#12141c',
     'border-bottom:1px solid rgba(255,255,255,0.1)', 'flex:0 0 auto',
   ].join(';');
 
-  const hint = document.createElement('span');
-  hint.textContent = 'Use the Print / Save as PDF button below';
-  hint.style.cssText = 'color:#cbd5e1;font:600 12px system-ui,sans-serif';
+  const buttonCss = [
+    'appearance:none', 'border-radius:10px', 'font:700 14px system-ui,sans-serif',
+    'padding:10px 16px', 'cursor:pointer', 'min-height:44px',
+  ];
+  const print = document.createElement('button');
+  print.type = 'button';
+  print.textContent = 'Print / Save as PDF';
+  print.style.cssText = [...buttonCss, 'border:0', 'background:#fd6a02', 'color:#0b0c10'].join(';');
+  print.onclick = () => window.print();
 
   const close = document.createElement('button');
   close.type = 'button';
   close.textContent = 'Close';
-  close.style.cssText = [
-    'appearance:none', 'border:1px solid rgba(255,255,255,0.2)', 'border-radius:10px',
-    'background:#1e2230', 'color:#fff', 'font:700 12px system-ui,sans-serif',
-    'padding:8px 16px', 'cursor:pointer',
-  ].join(';');
+  close.style.cssText = [...buttonCss, 'border:1px solid rgba(255,255,255,0.2)', 'background:#1e2230', 'color:#fff'].join(';');
   close.onclick = removeExisting;
 
-  bar.append(hint, close);
+  bar.append(print, close);
 
-  const frame = document.createElement('iframe');
-  frame.title = 'Printable document';
-  frame.style.cssText = 'flex:1 1 auto;width:100%;border:0;background:#fff';
-  // Before append, so the about:blank load never happens.
-  frame.srcdoc = html;
+  const scroll = document.createElement('div');
+  scroll.className = 'adaptivity-print-scroll';
+  scroll.style.cssText = 'flex:1 1 auto;overflow:auto;-webkit-overflow-scrolling:touch;background:#fff';
 
-  overlay.append(bar, frame);
+  const host = document.createElement('div');
+  const root = host.attachShadow({ mode: 'open' });
+  const style = document.createElement('style');
+  // Inherited properties (color, font) still cross into a shadow root, and the
+  // app's are light text for a dark page. Start the document from defaults.
+  style.textContent = `:host{all:initial;display:block}\n${scopeDocumentCss(css)}`;
+  const body = document.createElement('div');
+  body.className = DOC_BODY_CLASS;
+  body.innerHTML = parsed.body.innerHTML;
+  // Scripts never run from innerHTML; the documents' own print buttons use an
+  // inline onclick, so give them a real handler.
+  body.querySelectorAll('script').forEach((el) => el.remove());
+  body.querySelectorAll<HTMLElement>('[onclick]').forEach((el) => {
+    const printsPage = /print\(\)/.test(el.getAttribute('onclick') ?? '');
+    el.removeAttribute('onclick');
+    if (printsPage) el.addEventListener('click', () => window.print());
+  });
+  root.append(style, body);
+
+  scroll.append(host);
+  overlay.append(printCss, bar, scroll);
   document.body.appendChild(overlay);
 }
 
