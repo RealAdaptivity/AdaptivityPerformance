@@ -59,6 +59,14 @@ export const DIAGNOSTIC_FEE_DOLLARS = 100;
  *  partner shop has no travel. */
 export const TRAVEL_FEE_DOLLARS = 20;
 
+/** Severe weather fee: the tech adds it at close-out when the work was done in
+ *  rain or severe weather, and tells the customer before starting. Mobile
+ *  visits only (a shop drop-off is under a roof); members never pay it. */
+export const WEATHER_FEE_DOLLARS = 30;
+
+/** The weather fee as a customer reads it, wherever prices are shown. */
+export const WEATHER_FEE_NOTE = `Working in rain or severe weather adds a $${WEATHER_FEE_DOLLARS} severe weather fee — your tech tells you before starting.`;
+
 function consult(
   id: string,
   title: string,

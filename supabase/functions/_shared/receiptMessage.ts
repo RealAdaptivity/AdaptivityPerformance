@@ -15,6 +15,7 @@ export type ReceiptInput = {
   lineItems: ReceiptLine[];
   diagnosticCents: number;
   travelCents: number;
+  weatherCents: number;
   taxCents: number;
   taxMode: 'parts' | 'total' | 'none';
   totalCents: number;
@@ -52,6 +53,7 @@ export function receiptRows(r: ReceiptInput): Row[] {
     rows.push({ label: l.title, detail: parts.length > 1 ? parts.join(' · ') : undefined, cents: l.labor_cents + l.parts_cents });
   }
   if (r.travelCents > 0) rows.push({ label: 'Travel', cents: r.travelCents });
+  if (r.weatherCents > 0) rows.push({ label: 'Severe weather fee', cents: r.weatherCents });
   if (r.taxCents > 0) rows.push({ label: `Sales tax 8.25%${r.taxMode === 'parts' ? ' on parts' : ''}`, cents: r.taxCents });
   return rows;
 }

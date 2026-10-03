@@ -54,6 +54,7 @@ import { lookupServiceZip } from '../services/serviceArea';
 import {
   BOOKABLE_SERVICE_CATALOG,
   TRAVEL_FEE_DOLLARS,
+  WEATHER_FEE_NOTE,
   getCatalogById,
   matchCatalogFromLabel,
 } from '../services/serviceCatalog';
@@ -531,7 +532,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       <p className="text-[13px] leading-relaxed text-slate-400">
         No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts, and
         the diagnostic is credited toward it.
-        {charges.travel ? ' Members pay no travel.' : ''}
+        {charges.travel ? ` ${WEATHER_FEE_NOTE} Members pay no travel or weather fee.` : ''}
       </p>
     </div>
   );

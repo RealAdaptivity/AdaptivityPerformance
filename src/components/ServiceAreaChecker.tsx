@@ -8,6 +8,7 @@ import {
   normalizeZip,
   TRAVEL_FEE_DOLLARS,
 } from '../services/serviceArea';
+import { WEATHER_FEE_NOTE } from '../services/serviceCatalog';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 interface ServiceAreaCheckerProps {
   onBookMobile: (zip: string) => void;
@@ -59,6 +60,9 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
               </div>
               <span className="text-xl font-extrabold text-orange-400 font-heading shrink-0">${TRAVEL_FEE_DOLLARS}</span>
             </div>
+            <p className="mt-3 text-xs leading-relaxed text-slate-400">
+              {WEATHER_FEE_NOTE} Members pay no travel or weather fee.
+            </p>
           </div>
 
           <form onSubmit={handleSearch} className="max-w-lg mx-auto mb-8">

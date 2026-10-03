@@ -18,6 +18,7 @@ const base: ReceiptInput = {
   lineItems: [{ title: 'Front pads & rotors', labor_cents: 18000, parts_cents: 14550 }],
   diagnosticCents: 10000,
   travelCents: 2000,
+  weatherCents: 0,
   taxCents: 1200,
   taxMode: 'parts',
   totalCents: 45750,
@@ -73,4 +74,9 @@ test('the email itemizes and escapes what people typed', () => {
   assert.match(html, /Approved and signed by Jordan Reyes/);
   const text = buildReceiptEmailText(r);
   assert.match(text, /Total paid in person: \$457\.50/);
+});
+
+test('a weather fee gets its own receipt line after travel', () => {
+  const labels = receiptRows({ ...base, weatherCents: 3000 }).map((r) => r.label);
+  assert.deepEqual(labels.slice(-3), ['Travel', 'Severe weather fee', 'Sales tax 8.25% on parts']);
 });

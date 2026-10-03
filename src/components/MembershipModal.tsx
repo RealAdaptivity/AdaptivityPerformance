@@ -194,7 +194,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                     </div>
                     <p className="text-xs text-slate-300">Essential protection for single vehicle owners needing zero travel fees.</p>
                     <ul className="space-y-2 text-xs text-slate-300 pt-2">
-                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel/Dispatch Fees</li>
+                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel & Weather Fees</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 10% Off All Repairs & Labor</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 1 Free Annual Digital Inspection</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Priority Phone Support · {BUSINESS_HOURS.label} Daily</li>
@@ -232,7 +232,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                     </div>
                     <p className="text-xs text-slate-300">Complete peace of mind with 2 free oil changes, 15% discounts & towing.</p>
                     <ul className="space-y-2 text-xs text-slate-300 pt-2">
-                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel/Dispatch Fees</li>
+                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel & Weather Fees</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 15% Off All Repairs & Upgrades</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-amber-400 font-bold" /> 2 Free Synthetic Oil Changes/Yr</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Unlimited Free Digital Inspections</li>

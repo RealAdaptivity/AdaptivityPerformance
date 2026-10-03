@@ -11,8 +11,8 @@
 
 /** Texas sales tax, in basis points (8.25%). */
 export const SALES_TAX_BASIS_POINTS = 825;
-/** The tech's share of diagnostic, labor and travel, in percent. Parts the
- *  tech bought are paid back in full on top. */
+/** The tech's share of diagnostic, labor, travel and the weather fee,
+ *  in percent. Parts the tech bought are paid back in full on top. */
 export const TECH_LABOR_SHARE_PERCENT = 70;
 
 export type TaxMode = 'parts' | 'total' | 'none';
@@ -26,7 +26,10 @@ export type CloseOut = {
   kind: CloseOutKind;
   lines: CloseOutLine[];
   diagnosticCents: number;
+  /** The flat travel fee on a mobile visit. */
   travelCents: number;
+  /** The severe weather fee, when the tech worked in rain or severe weather. */
+  weatherCents: number;
   laborCents: number;
   partsCents: number;
   taxCents: number;
@@ -67,6 +70,7 @@ export function computeCloseOut(input: {
   lines: LineDraft[];
   diagnosticCents: number;
   travelCents: number;
+  weatherCents: number;
   taxMode: TaxMode;
   partsBy: PartsBy;
 }): CloseOut {
@@ -83,12 +87,13 @@ export function computeCloseOut(input: {
       : [];
   const diagnosticCents = noShow ? 0 : Math.max(0, Math.round(input.diagnosticCents));
   const travelCents = noShow ? 0 : Math.max(0, Math.round(input.travelCents));
+  const weatherCents = noShow ? 0 : Math.max(0, Math.round(input.weatherCents));
   const laborCents = lines.reduce((s, l) => s + l.laborCents, 0);
   const partsCents = lines.reduce((s, l) => s + l.partsCents, 0);
-  const beforeTax = diagnosticCents + travelCents + laborCents + partsCents;
+  const beforeTax = diagnosticCents + travelCents + weatherCents + laborCents + partsCents;
   const taxCents =
     input.taxMode === 'parts' ? taxOn(partsCents) : input.taxMode === 'total' ? taxOn(beforeTax) : 0;
-  const shareable = diagnosticCents + travelCents + laborCents;
+  const shareable = diagnosticCents + travelCents + weatherCents + laborCents;
   const techPayoutCents =
     Math.floor((shareable * TECH_LABOR_SHARE_PERCENT + 50) / 100) + (input.partsBy === 'tech' ? partsCents : 0);
   return {
@@ -96,6 +101,7 @@ export function computeCloseOut(input: {
     lines,
     diagnosticCents,
     travelCents,
+    weatherCents,
     laborCents,
     partsCents,
     taxCents,

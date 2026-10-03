@@ -1,6 +1,6 @@
 /** Site SEO helpers — document title, meta, city landings. */
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf, type LocalCity } from './localSeo';
-import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
+import { TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../services/serviceCatalog';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -214,7 +214,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Are there travel fees for mobile service in Justin or Northlake?',
-    a: `Every mobile visit has one flat $${TRAVEL_FEE_DOLLARS} travel fee — the same in Justin and Northlake (Harvest, Canyon Falls, Pecan Square) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. There is no per-mile charge. It is shown when you book and paid in person with the visit.`,
+    a: `Every mobile visit has one flat $${TRAVEL_FEE_DOLLARS} travel fee — the same in Justin and Northlake (Harvest, Canyon Falls, Pecan Square) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. There is no per-mile charge. It is shown when you book and paid in person with the visit. If your tech has to work in rain or severe weather, a $${WEATHER_FEE_DOLLARS} severe weather fee is added, and they tell you before starting. Members pay no travel or weather fee.`,
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',

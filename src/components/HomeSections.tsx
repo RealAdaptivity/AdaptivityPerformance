@@ -19,6 +19,7 @@ import {
   BOOKABLE_SERVICE_CATALOG,
   DIAGNOSTIC_FEE_DOLLARS,
   TRAVEL_FEE_DOLLARS,
+  WEATHER_FEE_NOTE,
   type ServiceKind,
 } from '../services/serviceCatalog';
 import {
@@ -65,6 +66,9 @@ export const PriceBand: React.FC = () => (
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
           Plus a flat {TRAVEL} travel fee anywhere within {RADIUS} miles of{' '}
           {LOCAL_HUB.city}. Both paid in person — no card to book.
+        </p>
+        <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
+          {WEATHER_FEE_NOTE} Members pay no travel or weather fee.
         </p>
       </div>
       <div className="rounded-[18px] border border-white/[0.09] bg-[#12141c] p-6 sm:p-7">
