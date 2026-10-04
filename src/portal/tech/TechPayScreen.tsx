@@ -21,6 +21,7 @@ import {
 } from '../../services/jobPayments';
 import { savePendingSale, squareChargeUrl, squarePlatform } from '../../services/squarePointOfSale';
 import { fetchZelleConfig, type ZelleConfig } from '../../services/zelle';
+import { cashHandlingSteps } from '../../services/cashHandling';
 import { QrCode } from './QrCode';
 import { SignaturePad } from './SignaturePad';
 import { capClass, cardClass } from './techUi';
@@ -367,6 +368,23 @@ export const TechPayScreen: React.FC<{
           <span className="text-[15px] text-emerald-200">Your payout</span>
           <span className="font-heading text-lg font-bold text-emerald-200">{formatCents(closeOut.techPayoutCents)}</span>
         </div>
+        {payMethod === 'cash' && (
+          <div className={`${cardClass} space-y-3 border-amber-500/30 p-4`}>
+            <p className="text-center font-heading text-3xl font-bold">{formatCents(closeOut.totalCents)}</p>
+            <p className="text-sm font-bold text-amber-200">What to do with the cash</p>
+            <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-300">
+              {cashHandlingSteps({
+                amount: formatCents(closeOut.totalCents),
+                referenceCode: job.referenceCode,
+                zelleName: zelle?.displayName,
+                zelleRecipient: zelle?.recipient,
+              }).map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+            <p className="text-xs text-slate-400">Slide below once you have the cash in hand.</p>
+          </div>
+        )}
         {payMethod === 'zelle' && (
           <div className={`${cardClass} space-y-3 p-4`}>
             <p className="text-center font-heading text-3xl font-bold">{formatCents(closeOut.totalCents)}</p>
