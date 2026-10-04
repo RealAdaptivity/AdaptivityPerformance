@@ -108,3 +108,44 @@ export async function signatureUrl(path: string): Promise<string | null> {
   const { data } = await supabase.storage.from(SIGNATURE_BUCKET).createSignedUrl(path, 300);
   return data?.signedUrl ?? null;
 }
+
+export type JobPaymentSummary = {
+  method: 'card' | 'zelle' | 'cash' | 'in_person';
+  cardBrand: string | null;
+  cardLast4: string | null;
+  totalCents: number;
+  recordedAt: string;
+};
+
+/** How a closed job was paid, for the admin dashboard. Null when no payment
+ *  has been recorded for the job. */
+export async function fetchJobPaymentSummary(bookingId: string): Promise<JobPaymentSummary | null> {
+  const { data, error } = await supabase
+    .from('job_payments')
+    .select('payment_method, card_brand, card_last4, total_cents, created_at')
+    .eq('booking_id', bookingId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const m = String(data.payment_method ?? 'in_person');
+  return {
+    method: m === 'card' || m === 'zelle' || m === 'cash' ? m : 'in_person',
+    cardBrand: (data.card_brand as string | null) ?? null,
+    cardLast4: (data.card_last4 as string | null) ?? null,
+    totalCents: Number(data.total_cents ?? 0),
+    recordedAt: String(data.created_at ?? ''),
+  };
+}
+
+/** "Card · Visa ••1234", "Zelle", "Cash" or "In person". */
+export function paymentMethodLabel(p: Pick<JobPaymentSummary, 'method' | 'cardBrand' | 'cardLast4'>): string {
+  if (p.method === 'card') {
+    const brand = p.cardBrand ? p.cardBrand.charAt(0) + p.cardBrand.slice(1).toLowerCase().replace(/_/g, ' ') : '';
+    const last4 = p.cardLast4 ? `••${p.cardLast4}` : '';
+    const detail = [brand, last4].filter(Boolean).join(' ');
+    return detail ? `Card · ${detail}` : 'Card';
+  }
+  if (p.method === 'zelle') return 'Zelle';
+  if (p.method === 'cash') return 'Cash';
+  return 'In person';
+}
