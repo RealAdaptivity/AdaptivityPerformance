@@ -11,8 +11,9 @@
 
 /** Texas sales tax, in basis points (8.25%). */
 export const SALES_TAX_BASIS_POINTS = 825;
-/** The tech's share of diagnostic, labor, travel and the weather fee,
- *  in percent. Parts the tech bought are paid back in full on top. */
+/** The tech's share of diagnostic, labor and the weather fee, in percent.
+ *  The travel (service) fee and parts the tech bought go to the tech in full
+ *  on top. */
 export const TECH_LABOR_SHARE_PERCENT = 70;
 
 export type TaxMode = 'parts' | 'total' | 'none';
@@ -93,9 +94,11 @@ export function computeCloseOut(input: {
   const beforeTax = diagnosticCents + travelCents + weatherCents + laborCents + partsCents;
   const taxCents =
     input.taxMode === 'parts' ? taxOn(partsCents) : input.taxMode === 'total' ? taxOn(beforeTax) : 0;
-  const shareable = diagnosticCents + travelCents + weatherCents + laborCents;
+  const shareable = diagnosticCents + weatherCents + laborCents;
   const techPayoutCents =
-    Math.floor((shareable * TECH_LABOR_SHARE_PERCENT + 50) / 100) + (input.partsBy === 'tech' ? partsCents : 0);
+    Math.floor((shareable * TECH_LABOR_SHARE_PERCENT + 50) / 100) +
+    travelCents +
+    (input.partsBy === 'tech' ? partsCents : 0);
   return {
     kind: input.kind,
     lines,

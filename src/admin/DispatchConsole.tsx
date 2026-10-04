@@ -14,6 +14,7 @@ import {
   googleMapsSearchUrl,
 } from '../config/mapLinks';
 import { DispatchMap } from './DispatchMap';
+import { fetchJobPaymentSummary, paymentMethodLabel, type JobPaymentSummary } from '../services/jobPayments';
 import { AddTechnicianForm } from './AddTechnicianForm';
 import type { Booking, JobStatus } from '../context/BookingContext';
 import { isIncompleteServiceAddress } from '../services/serviceAddress';
@@ -571,6 +572,21 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const mechanicId = booking.claimedBy?.id ?? '';
   const [cancelReason, setCancelReason] = useState<string>('customer_request');
   const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
+  const [payment, setPayment] = useState<JobPaymentSummary | null>(null);
+
+  // How the job was paid (card / Zelle / cash), once the tech has closed it.
+  useEffect(() => {
+    let cancelled = false;
+    setPayment(null);
+    void fetchJobPaymentSummary(booking.id)
+      .then((p) => {
+        if (!cancelled) setPayment(p);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [booking.id, booking.status, booking.paymentStatus]);
 
   /* Was gated on booking.paymentIntentId — a Stripe payment intent. Stripe is
      gone and nothing takes a card, so that field is null on every booking made
@@ -711,8 +727,21 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <CreditCard className="w-3 h-3" /> Payment
         </p>
         <p className="text-xs text-slate-400">
-          Status: <span className="text-slate-200">{booking.paymentStatus ?? 'none'}</span>
+          Status:{' '}
+          <span className="text-slate-200">
+            {booking.paymentStatus === 'paid_in_person'
+              ? `Paid in person${payment ? ` · ${paymentMethodLabel(payment)}` : ''}`
+              : booking.paymentStatus === 'no_show'
+                ? 'No-show (nothing collected)'
+                : (booking.paymentStatus ?? 'none')}
+          </span>
         </p>
+        {payment && booking.paymentStatus === 'paid_in_person' && (
+          <p className="text-xs text-slate-400">
+            Collected <span className="text-slate-200">{formatMoney(payment.totalCents)}</span>
+            {payment.recordedAt && ` · ${new Date(payment.recordedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`}
+          </p>
+        )}
       </div>
 
       {canReleaseToPool && (
