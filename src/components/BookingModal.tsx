@@ -189,6 +189,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const [visibleArea, setVisibleArea] = useState<{ top: number; height: number } | null>(null);
 
   const vehicle = composeVehicleDescription(vehicleDetails);
   const days = useMemo(() => upcomingDays(new Date(), 7), []);
@@ -272,6 +273,40 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     scrollRef.current?.scrollTo({ top: 0 });
     headingRef.current?.focus({ preventScroll: true });
   }, [step, isOpen]);
+
+  /* On a phone the keyboard covers the bottom of the screen, and iOS Safari
+     does not shrink 100dvh for it: on a step full of fields (the vehicle one)
+     the rest of the form and Continue sat under the keyboard with nothing
+     left to scroll, and a swipe scrolled the page behind instead. So while the
+     dialog is open the page behind does not scroll, and the dialog is sized to
+     the part of the screen that is actually visible (the visual viewport). */
+  useEffect(() => {
+    if (!isOpen) return;
+    const html = document.documentElement;
+    const prev = [html.style.overflow, document.body.style.overflow];
+    html.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+
+    const vv = window.visualViewport;
+    const sync = () => {
+      if (!vv) return;
+      setVisibleArea({ top: Math.round(vv.offsetTop), height: Math.round(vv.height) });
+      // Keep the field being typed in on screen once the dialog shrinks.
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active !== headingRef.current && scrollRef.current?.contains(active)) {
+        active.scrollIntoView({ block: 'nearest' });
+      }
+    };
+    sync();
+    vv?.addEventListener('resize', sync);
+    vv?.addEventListener('scroll', sync);
+    return () => {
+      vv?.removeEventListener('resize', sync);
+      vv?.removeEventListener('scroll', sync);
+      [html.style.overflow, document.body.style.overflow] = prev;
+      setVisibleArea(null);
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -541,12 +576,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     /* Above the cookie banner (z-[9999]) and the chat bubble: both sit on the
        bottom edge, which on a phone is exactly where Continue is. */
     <div
-      className="fixed inset-0 z-[10000] flex bg-black/85 md:items-center md:justify-center md:p-6 md:backdrop-blur-md"
+      className="fixed inset-x-0 top-0 z-[10000] flex h-[100dvh] bg-black/85 md:items-center md:justify-center md:p-6 md:backdrop-blur-md"
+      style={visibleArea ? { top: visibleArea.top, height: visibleArea.height } : undefined}
       role="dialog"
       aria-modal="true"
       aria-labelledby="booking-step-title"
     >
-      <div className="relative flex h-[100dvh] w-full overflow-hidden bg-[#0b0c10] text-white md:grid md:h-[min(780px,94vh)] md:max-w-[900px] md:grid-cols-[220px_minmax(0,1fr)] md:rounded-3xl md:border md:border-white/10 md:shadow-2xl lg:max-w-[1120px] lg:grid-cols-[220px_minmax(0,1fr)_300px]">
+      <div className="relative flex h-full w-full overflow-hidden bg-[#0b0c10] text-white md:grid md:h-[min(780px,94vh)] md:max-w-[900px] md:grid-cols-[220px_minmax(0,1fr)] md:rounded-3xl md:border md:border-white/10 md:shadow-2xl lg:max-w-[1120px] lg:grid-cols-[220px_minmax(0,1fr)_300px]">
         {/* Step rail — tablets and up */}
         <aside className="hidden md:flex flex-col gap-7 border-r border-white/[0.06] bg-[#0e1016] p-6">
           <BrandLogo size={40} />
@@ -645,7 +681,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
             )}
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 pb-8 pt-6 sm:px-8 md:px-10 md:pt-3">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-contain px-5 pb-8 pt-6 sm:px-8 md:px-10 md:pt-3">
             {!done && (
               <h2
                 id="booking-step-title"
