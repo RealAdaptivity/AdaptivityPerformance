@@ -31,6 +31,8 @@ const ADMIN_BOOKING_SELECT = `
   customer_notes,
   preferred_mechanic_id,
   hold_expires_at,
+  booking_source,
+  booked_by_profile:profiles!bookings_booked_by_fkey ( full_name ),
   mechanic:profiles!bookings_mechanic_id_fkey (
     id,
     full_name,

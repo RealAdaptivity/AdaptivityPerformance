@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Printer, Trash2, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, CheckCircle2, Loader2, Lock, Plus, Printer, Trash2, X } from 'lucide-react';
 import {
   createQuote,
   deleteQuote,
@@ -12,8 +12,8 @@ import {
   type QuoteStatus,
 } from '../services/quotes';
 import { openQuotePrintWindow } from '../services/quotePdf';
-import { VinLookupPanel } from './VinLookupPanel';
-import { vehicleLine } from '../services/vinDecode';
+import { lookupVin, type VinSummary } from '../services/vinLookup';
+import { isVinShaped, normalizeVin, vehicleLine } from '../services/vinDecode';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
 import {
   LABOR_RATE_CENTS,
@@ -50,6 +50,16 @@ export const QuotesAdmin: React.FC = () => {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [vehicle, setVehicle] = useState('');
+  /* The VIN comes first: services and labor stay locked until it is in, so
+     every quote is priced for the exact vehicle. It decodes (NHTSA) as soon
+     as all 17 characters are typed and fills in the vehicle line. */
+  const [vin, setVin] = useState('');
+  const [vinLookup, setVinLookup] = useState<
+    | { status: 'idle' | 'loading' }
+    | { status: 'done'; summary: VinSummary }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' });
+  const lastDecodedVin = useRef('');
   const [notes, setNotes] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
@@ -88,12 +98,44 @@ export const QuotesAdmin: React.FC = () => {
     [lines, taxMode, rateCents]
   );
 
+  const vinReady = isVinShaped(normalizeVin(vin));
+
+  const decodeVin = async (raw: string) => {
+    const v = normalizeVin(raw);
+    if (v === lastDecodedVin.current) return;
+    lastDecodedVin.current = v;
+    setVinLookup({ status: 'loading' });
+    try {
+      const s = await lookupVin(v);
+      if (lastDecodedVin.current !== v) return;
+      setVehicle(vehicleLine(s));
+      setVinLookup({ status: 'done', summary: s });
+    } catch (e) {
+      if (lastDecodedVin.current !== v) return;
+      lastDecodedVin.current = '';
+      setVinLookup({ status: 'error', message: e instanceof Error ? e.message : 'Could not look up that VIN.' });
+    }
+  };
+
+  const onVinChange = (value: string) => {
+    setVin(value.toUpperCase());
+    const v = normalizeVin(value);
+    if (isVinShaped(v)) void decodeVin(v);
+    else {
+      lastDecodedVin.current = '';
+      setVinLookup({ status: 'idle' });
+    }
+  };
+
   const resetForm = () => {
     setCustomerName('');
     setCustomerPhone('');
     setCustomerEmail('');
     setCustomerAddress('');
     setVehicle('');
+    setVin('');
+    setVinLookup({ status: 'idle' });
+    lastDecodedVin.current = '';
     setNotes('');
     setValidUntil('');
     setTaxMode('parts');
@@ -115,6 +157,7 @@ export const QuotesAdmin: React.FC = () => {
         customerEmail,
         customerAddress,
         vehicle,
+        vin,
         lineItems: lines,
         taxMode,
         laborRateCents: rateCents,
@@ -251,15 +294,56 @@ export const QuotesAdmin: React.FC = () => {
                 onChange={(e) => setCustomerName(e.target.value)} />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Vehicle</label>
-              <input className={inputCls} value={vehicle} placeholder="2019 Ford F-150 5.0"
+              <label htmlFor="quote-vin" className="block text-[11px] font-semibold text-slate-300 mb-1">
+                VIN <span className="text-orange-400">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="quote-vin"
+                  className={`${inputCls} font-mono tracking-wider pr-9`}
+                  value={vin}
+                  maxLength={20}
+                  spellCheck={false}
+                  autoComplete="off"
+                  placeholder="17 characters"
+                  onChange={(e) => onVinChange(e.target.value)}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden="true">
+                  {vinLookup.status === 'loading' ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                  ) : vinReady ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : null}
+                </span>
+              </div>
+              <div aria-live="polite">
+                {vinLookup.status === 'done' && (
+                  <p className="mt-1.5 text-[11px] text-emerald-300">
+                    {vinLookup.summary.description}
+                    {vinLookup.summary.trim ? ` · ${vinLookup.summary.trim}` : ''}
+                  </p>
+                )}
+                {vinLookup.status === 'done' &&
+                  vinLookup.summary.warnings.map((w) => (
+                    <p key={w} className="mt-1 flex items-start gap-1.5 text-[11px] text-amber-300">
+                      <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+                      {w}
+                    </p>
+                  ))}
+                {vinLookup.status === 'error' && (
+                  <p className="mt-1.5 text-[11px] text-amber-300">
+                    {vinLookup.message} Type the vehicle in below.
+                  </p>
+                )}
+                {!vinReady && vin.trim() && (
+                  <p className="mt-1.5 text-[11px] text-slate-500">
+                    {normalizeVin(vin).length}/17 — a VIN has no I, O or Q.
+                  </p>
+                )}
+              </div>
+              <label className="block text-[11px] font-semibold text-slate-300 mb-1 mt-3">Vehicle</label>
+              <input className={inputCls} value={vehicle} placeholder="Filled in from the VIN"
                 onChange={(e) => setVehicle(e.target.value)} />
-              <details className="mt-1.5">
-                <summary className="cursor-pointer text-[11px] font-semibold text-orange-400">Look up a VIN</summary>
-                <div className="mt-2">
-                  <VinLookupPanel onUse={(s) => setVehicle(vehicleLine(s))} useLabel="Use for this quote" />
-                </div>
-              </details>
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">Phone</label>
@@ -280,6 +364,13 @@ export const QuotesAdmin: React.FC = () => {
             </div>
           </div>
 
+          {!vinReady && (
+            <p className="flex items-center gap-2 rounded-xl border border-orange-500/30 bg-orange-500/10 px-3 py-2.5 text-xs text-orange-200">
+              <Lock className="w-4 h-4 shrink-0" aria-hidden="true" />
+              Enter the VIN to add services and labor. Pricing is for the exact vehicle.
+            </p>
+          )}
+          <fieldset disabled={!vinReady} className={`space-y-4 min-w-0 ${vinReady ? '' : 'opacity-40'}`}>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
@@ -421,6 +512,7 @@ export const QuotesAdmin: React.FC = () => {
               Save as draft
             </button>
           </div>
+          </fieldset>
         </div>
       )}
 
@@ -449,6 +541,7 @@ export const QuotesAdmin: React.FC = () => {
                     {q.customerName}
                     {q.vehicle ? ` · ${q.vehicle}` : ''}
                   </p>
+                  {q.vin && <p className="text-[10px] font-mono text-slate-500">VIN {q.vin}</p>}
                   <p className="text-[11px] text-slate-500">
                     {new Date(q.createdAt).toLocaleDateString()} · {q.lineItems.length} line
                     {q.lineItems.length === 1 ? '' : 's'}

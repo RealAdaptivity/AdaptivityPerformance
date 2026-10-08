@@ -111,3 +111,10 @@ test('phone numbers display the usual way, and anything odd is left alone', () =
   assert.equal(displayPhone('+1 940.555.0123'), '(940) 555-0123');
   assert.equal(displayPhone(' 555-01 '), '555-01');
 });
+
+test('a phone booking may leave the email blank, but not a bad one', () => {
+  const base = { fullName: 'Jordan Reyes', phone: '9405550123', agreed: true, emailOptional: true };
+  assert.deepEqual(validateContact({ ...base, email: '' }), {});
+  assert.ok(validateContact({ ...base, email: 'nope' }).email);
+  assert.ok(validateContact({ ...base, email: '', emailOptional: false }).email);
+});
