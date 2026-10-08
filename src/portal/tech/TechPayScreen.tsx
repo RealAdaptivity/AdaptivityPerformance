@@ -27,7 +27,6 @@ import { SignaturePad } from './SignaturePad';
 import { capClass, cardClass } from './techUi';
 
 type Mode = 'charge' | 'diagnostic_only';
-type DiagChoice = 'auto' | 'collect' | 'credit';
 
 const seg = (on: boolean) =>
   `min-h-[40px] flex-1 rounded-xl px-2 text-sm font-semibold ${
@@ -47,7 +46,6 @@ export const TechPayScreen: React.FC<{
 
   const [mode, setMode] = useState<Mode>('charge');
   const [lines, setLines] = useState<LineDraft[]>([{ title: '', labor: '', parts: '' }]);
-  const [diagChoice, setDiagChoice] = useState<DiagChoice>('auto');
   const [member, setMember] = useState(false);
   const [weather, setWeather] = useState(false);
   const [firstResponder, setFirstResponder] = useState(false);
@@ -64,14 +62,13 @@ export const TechPayScreen: React.FC<{
   const [closedTotal, setClosedTotal] = useState<{ total: number; payout: number } | null>(null);
   const exportRef = useRef<(() => Promise<Blob | null>) | null>(null);
 
-  const repairsEntered = lines.some((l) => l.labor.trim() || l.parts.trim());
-  const collectDiag = mode === 'diagnostic_only' || diagChoice === 'collect' || (diagChoice === 'auto' && !repairsEntered);
   const closeOut = useMemo(
     () =>
       computeCloseOut({
         kind: mode,
         lines,
-        diagnosticCents: collectDiag ? diagnosticFeeCents : 0,
+        // Always charged: the diagnostic is not credited toward a repair.
+        diagnosticCents: diagnosticFeeCents,
         travelCents: shop || member ? 0 : TRAVEL_FEE_DOLLARS * 100,
         // Mobile visits only, and members never pay it.
         weatherCents: weather && !shop && !member ? WEATHER_FEE_DOLLARS * 100 : 0,
@@ -80,7 +77,7 @@ export const TechPayScreen: React.FC<{
         // One discount per visit: never on top of a membership.
         firstResponder: firstResponder && !member,
       }),
-    [mode, lines, collectDiag, diagnosticFeeCents, shop, member, weather, firstResponder, taxMode, partsBy]
+    [mode, lines, diagnosticFeeCents, shop, member, weather, firstResponder, taxMode, partsBy]
   );
   const problem = closeOutProblem(closeOut, signed && signerName.trim().length > 1);
 
@@ -215,19 +212,8 @@ export const TechPayScreen: React.FC<{
           </div>
 
           <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
-            <div>
-              <p className="text-[15px] font-semibold">Diagnostic</p>
-              {mode === 'charge' && (
-                <button
-                  type="button"
-                  onClick={() => setDiagChoice(collectDiag ? 'credit' : 'collect')}
-                  className="min-h-[32px] text-xs font-semibold text-orange-700"
-                >
-                  {collectDiag ? 'Credit toward the repair instead' : 'Credited to repair · charge it instead'}
-                </button>
-              )}
-            </div>
-            <span className={`font-heading font-semibold ${collectDiag ? '' : 'text-zinc-400 line-through'}`}>
+            <p className="text-[15px] font-semibold">Diagnostic</p>
+            <span className="font-heading font-semibold">
               {formatCents(diagnosticFeeCents)}
             </span>
           </div>

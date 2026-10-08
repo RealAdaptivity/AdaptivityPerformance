@@ -226,7 +226,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you charge a diagnostic fee?',
-    a: 'Yes. A $100 diagnostic fee applies to all vehicle inspections and check engine light scans. This fee is fully credited toward any repair we perform on the same visit — so if you approve the repair, the diagnostic effectively costs you nothing. If you decline the repair, the $100 covers the technician\'s time and equipment usage.',
+    a: 'Yes. A $100 diagnostic fee applies to all vehicle inspections and check engine light scans. It pays for the technician\'s time, testing and equipment, and it is separate from the repair: it is not credited toward the repair, whether or not you go ahead with the work.',
   },
   {
     q: 'Do you offer financing or payment plans?',
@@ -238,7 +238,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do I need to pay anything to book an appointment?',
-    a: 'No. Booking takes no card and charges nothing. You pay your technician in person when the work is done, by card, tap or chip on their reader. If you approve a repair, the $100 diagnostic is credited in full toward your final invoice.',
+    a: 'No. Booking takes no card and charges nothing. You pay your technician in person when the work is done, by card, tap or chip on their reader. The $100 diagnostic is paid at the visit and is separate from any repair you approve.',
   },
   {
     q: 'What happens if I need to cancel or reschedule my appointment?',

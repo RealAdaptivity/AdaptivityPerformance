@@ -612,8 +612,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         <span className="font-heading text-xl font-bold text-brand-soft">$0</span>
       </div>
       <p className="text-[13px] leading-relaxed text-slate-400">
-        No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts, and
-        the diagnostic is credited toward it.
+        No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts; the
+        diagnostic is its own charge and is not applied toward the repair.
         {charges.travel ? ` ${WEATHER_FEE_NOTE} Members pay no travel or weather fee.` : ''}
         {` ${FIRST_RESPONDER_DISCOUNT_NOTE}`}
       </p>
@@ -1359,7 +1359,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       >
                         Terms of Service
                       </a>{' '}
-                      (including the {money(charges.diagnostic)} diagnostic credit policy, 12-month warranty, 50-mile lug
+                      (including the {money(charges.diagnostic)} diagnostic fee, 12-month warranty, 50-mile lug
                       re-torque duty, Mechanics’ Lien §70.001 and Denton County jurisdiction) and sign electronically
                       under the federal E-SIGN Act. I agree to get texts about this visit — appointment updates and
                       receipts. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
