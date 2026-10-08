@@ -6,6 +6,7 @@ import {
   closeOutProblem,
   computeCloseOut,
   formatCents,
+  PARTS_PICKUP_PERCENT,
   type LineDraft,
   type PartsBy,
   type TaxMode,
@@ -56,6 +57,9 @@ export const TechPayScreen: React.FC<{
   const [member, setMember] = useState(false);
   const [weather, setWeather] = useState(false);
   const [firstResponder, setFirstResponder] = useState(false);
+  /* On by default: when we supply the parts (the tech or the company bought
+     them), someone made the trip to get them. Off for parts already on the van. */
+  const [partsPickup, setPartsPickup] = useState(true);
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
   const [partsBy, setPartsBy] = useState<PartsBy>('tech');
   const [notes, setNotes] = useState('');
@@ -86,8 +90,9 @@ export const TechPayScreen: React.FC<{
         partsBy,
         // One discount per visit: never on top of a membership.
         firstResponder: firstResponder && !member,
+        partsPickup,
       }),
-    [mode, lines, diagnosticFeeCents, shop, member, weather, firstResponder, taxMode, partsBy]
+    [mode, lines, diagnosticFeeCents, shop, member, weather, firstResponder, partsPickup, taxMode, partsBy]
   );
   const problem = closeOutProblem(closeOut, signed && signerName.trim().length > 1);
 
@@ -322,6 +327,12 @@ export const TechPayScreen: React.FC<{
               </span>
             </div>
           )}
+          {closeOut.partsPickupCents > 0 && (
+            <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
+              <p className="text-[15px] font-semibold">Parts pickup ({PARTS_PICKUP_PERCENT}% of parts)</p>
+              <span className="font-heading font-semibold">{formatCents(closeOut.partsPickupCents)}</span>
+            </div>
+          )}
           {closeOut.weatherCents > 0 && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
               <p className="text-[15px] font-semibold">Severe weather fee</p>
@@ -330,7 +341,7 @@ export const TechPayScreen: React.FC<{
           )}
           {closeOut.taxCents > 0 && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
-              <p className="text-[15px] font-semibold">Sales tax 8.25%{taxMode === 'parts' ? ' on parts' : ''}</p>
+              <p className="text-[15px] font-semibold">Sales tax 8.25%{taxMode === 'parts' ? (closeOut.partsPickupCents > 0 ? ' on parts & pickup' : ' on parts') : ''}</p>
               <span className="font-heading font-semibold">{formatCents(closeOut.taxCents)}</span>
             </div>
           )}
@@ -374,6 +385,15 @@ export const TechPayScreen: React.FC<{
               <span className="block text-xs text-slate-400">Veterans, police, firefighters, EMTs, paramedics · check ID</span>
             </span>
             <input type="checkbox" checked={firstResponder} onChange={(e) => setFirstResponder(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
+          </label>
+        )}
+        {mode === 'charge' && closeOut.partsCents > 0 && (
+          <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4 py-2.5`}>
+            <span>
+              <span className="block text-[15px]">Parts pickup · +{PARTS_PICKUP_PERCENT}% of parts</span>
+              <span className="block text-xs text-slate-400">Whether you or the company bought them · off if they were already on the van</span>
+            </span>
+            <input type="checkbox" checked={partsPickup} onChange={(e) => setPartsPickup(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
           </label>
         )}
         {mode === 'charge' && (

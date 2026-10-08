@@ -1,6 +1,12 @@
 /** Site SEO helpers — document title, meta, city landings. */
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf, type LocalCity } from './localSeo';
-import { FIRST_RESPONDER_DISCOUNT_NOTE, TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../services/serviceCatalog';
+import {
+  FIRST_RESPONDER_DISCOUNT_NOTE,
+  LABOR_RATE_PER_HOUR_DOLLARS,
+  PARTS_PICKUP_NOTE,
+  TRAVEL_FEE_DOLLARS,
+  WEATHER_FEE_DOLLARS,
+} from '../services/serviceCatalog';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -222,7 +228,11 @@ export const SITE_FAQS = [
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',
-    a: 'Adaptivity Performance operates on a flat, transparent labor rate of $125 per hour for both mobile and in-shop repairs. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.',
+    a: `Adaptivity Performance operates on a flat, transparent labor rate of $${LABOR_RATE_PER_HOUR_DOLLARS} per hour for both mobile and in-shop repairs. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.`,
+  },
+  {
+    q: 'Is there a charge for picking up parts?',
+    a: `${PARTS_PICKUP_NOTE} Parts you supply yourself have no pickup fee (and no parts warranty).`,
   },
   {
     q: 'Do you charge a diagnostic fee?',
