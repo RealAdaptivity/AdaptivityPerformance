@@ -55,6 +55,7 @@ import {
   BOOKABLE_SERVICE_CATALOG,
   TRAVEL_FEE_DOLLARS,
   WEATHER_FEE_NOTE,
+  FIRST_RESPONDER_DISCOUNT_NOTE,
   getCatalogById,
   matchCatalogFromLabel,
 } from '../services/serviceCatalog';
@@ -568,6 +569,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts, and
         the diagnostic is credited toward it.
         {charges.travel ? ` ${WEATHER_FEE_NOTE} Members pay no travel or weather fee.` : ''}
+        {` ${FIRST_RESPONDER_DISCOUNT_NOTE}`}
       </p>
     </div>
   );

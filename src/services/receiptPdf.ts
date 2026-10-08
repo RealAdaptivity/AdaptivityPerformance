@@ -31,7 +31,7 @@ export type ReceiptData = {
 };
 
 function money(n: number) {
-  return `$${n.toFixed(2)}`;
+  return `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(2)}`;
 }
 
 function paymentLabel(status: string) {

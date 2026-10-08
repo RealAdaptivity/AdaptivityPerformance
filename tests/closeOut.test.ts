@@ -181,13 +181,58 @@ test('the database stores and sums the weather fee the same way', () => {
     .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
     .pop();
   const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
-  assert.match(sql, /v_before_tax := v_diag \+ v_travel \+ v_weather \+ v_labor_total \+ v_parts_total;/);
-  assert.match(sql, /\(\(v_diag \+ v_weather \+ v_labor_total\) \* 70 \+ 50\) \/ 100\s*\+ v_travel/);
+  assert.match(sql, /v_before_tax := v_diag \+ v_travel \+ v_weather \+ v_labor_total \+ v_parts_total - v_discount;/);
+  assert.match(sql, /\(\(v_diag \+ v_weather \+ v_labor_total - v_discount\) \* 70 \+ 50\) \/ 100\s*\+ v_travel/);
   // The table check that the total adds up lives in whichever migration last set it.
   const allSql = readdirSync('supabase/migrations')
     .map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8'))
     .join('\n');
-  assert.match(allSql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents \+ tax_cents/);
+  assert.match(allSql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents - discount_cents \+ tax_cents/);
+});
+
+test('first responders get 5% off labor only, rounded half up, shared like labor', () => {
+  const base = {
+    kind: 'charge' as const,
+    lines: [{ title: 'Front pads & rotors', labor: '225', parts: '180' }],
+    diagnosticCents: 0,
+    travelCents: 2000,
+    weatherCents: 3000,
+    taxMode: 'parts' as const,
+    partsBy: 'tech' as const,
+  };
+  const full = computeCloseOut(base);
+  const fr = computeCloseOut({ ...base, firstResponder: true });
+  assert.equal(full.discountCents, 0);
+  assert.equal(fr.discountCents, 1125); // 5% of $225.00
+  assert.equal(fr.totalCents, full.totalCents - 1125);
+  assert.equal(fr.taxCents, full.taxCents, 'parts tax is untouched');
+  assert.equal(fr.techPayoutCents, Math.floor(((3000 + 22500 - 1125) * 70 + 50) / 100) + 2000 + 18000);
+  // half up: 5% of $0.10 is half a cent
+  assert.equal(computeCloseOut({ ...base, lines: [{ title: 'x', labor: '0.10', parts: '' }], firstResponder: true }).discountCents, 1);
+  // tax on the whole ticket is on the discounted amount
+  const frTotal = computeCloseOut({ ...base, taxMode: 'total', firstResponder: true });
+  assert.equal(frTotal.taxCents, taxOn(2000 + 3000 + 22500 + 18000 - 1125));
+});
+
+test('no first responder discount without labor to take it off', () => {
+  const base = { lines: [], diagnosticCents: 10000, travelCents: 2000, weatherCents: 0, taxMode: 'parts' as const, partsBy: 'tech' as const };
+  assert.equal(computeCloseOut({ ...base, kind: 'diagnostic_only', firstResponder: true }).discountCents, 0);
+  assert.equal(computeCloseOut({ ...base, kind: 'no_show', firstResponder: true }).discountCents, 0);
+  assert.equal(computeCloseOut({ ...base, kind: 'diagnostic_only', firstResponder: true }).firstResponder, false);
+});
+
+test('the site, the close-out and the database use the same first responder percent', async () => {
+  const { FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT } = await import('../src/services/closeOut.ts');
+  const { FIRST_RESPONDER_DISCOUNT_PERCENT, FIRST_RESPONDER_DISCOUNT_NOTE } = await import('../src/services/serviceCatalog.ts');
+  assert.equal(FIRST_RESPONDER_DISCOUNT_PERCENT, FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT);
+  assert.match(FIRST_RESPONDER_DISCOUNT_NOTE, new RegExp(`${FIRST_RESPONDER_DISCOUNT_PERCENT}% off labor`));
+  const file = readdirSync('supabase/migrations')
+    .sort()
+    .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
+    .pop();
+  const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
+  assert.match(sql, new RegExp(`v_discount := \\(v_labor_total \\* ${FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT} \\+ 50\\) / 100;`));
+  assert.match(sql, /if v_kind = 'charge' and v_first_responder then/);
 });
 
 test('the close-out tax rate is the site-wide sales tax rate', async () => {

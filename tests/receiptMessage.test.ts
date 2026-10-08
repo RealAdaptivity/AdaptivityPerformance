@@ -80,3 +80,12 @@ test('a weather fee gets its own receipt line after travel', () => {
   const labels = receiptRows({ ...base, weatherCents: 3000 }).map((r) => r.label);
   assert.deepEqual(labels.slice(-3), ['Travel', 'Severe weather fee', 'Sales tax 8.25% on parts']);
 });
+
+test('a first responder discount is a negative line after the repairs', () => {
+  const rows = receiptRows({ ...base, discountCents: 900 });
+  const i = rows.findIndex((r) => r.label === 'First responder discount (5% off labor)');
+  assert.ok(i > 0, 'discount row present');
+  assert.equal(rows[i].cents, -900);
+  assert.equal(money(rows[i].cents), '-$9.00');
+  assert.match(buildReceiptSms({ ...base, discountCents: 900 }), /First responder discount \(5% off labor\) -\$9\.00/);
+});

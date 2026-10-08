@@ -50,6 +50,7 @@ export const TechPayScreen: React.FC<{
   const [diagChoice, setDiagChoice] = useState<DiagChoice>('auto');
   const [member, setMember] = useState(false);
   const [weather, setWeather] = useState(false);
+  const [firstResponder, setFirstResponder] = useState(false);
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
   const [partsBy, setPartsBy] = useState<PartsBy>('tech');
   const [notes, setNotes] = useState('');
@@ -76,8 +77,10 @@ export const TechPayScreen: React.FC<{
         weatherCents: weather && !shop && !member ? WEATHER_FEE_DOLLARS * 100 : 0,
         taxMode,
         partsBy,
+        // One discount per visit: never on top of a membership.
+        firstResponder: firstResponder && !member,
       }),
-    [mode, lines, collectDiag, diagnosticFeeCents, shop, member, weather, taxMode, partsBy]
+    [mode, lines, collectDiag, diagnosticFeeCents, shop, member, weather, firstResponder, taxMode, partsBy]
   );
   const problem = closeOutProblem(closeOut, signed && signerName.trim().length > 1);
 
@@ -276,6 +279,12 @@ export const TechPayScreen: React.FC<{
             </button>
           )}
 
+          {closeOut.discountCents > 0 && (
+            <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
+              <p className="text-[15px] font-semibold">First responder discount (5% off labor)</p>
+              <span className="shrink-0 whitespace-nowrap font-heading font-semibold text-emerald-700">−{formatCents(closeOut.discountCents)}</span>
+            </div>
+          )}
           {!shop && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
               <p className="text-[15px] font-semibold">Travel</p>
@@ -327,6 +336,15 @@ export const TechPayScreen: React.FC<{
               <span className="block text-xs text-slate-400">Tell the customer before you start</span>
             </span>
             <input type="checkbox" checked={weather} onChange={(e) => setWeather(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
+          </label>
+        )}
+        {mode === 'charge' && !member && (
+          <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4 py-2.5`}>
+            <span>
+              <span className="block text-[15px]">First responder / veteran · −5% labor</span>
+              <span className="block text-xs text-slate-400">Veterans, police, firefighters, EMTs, paramedics · check ID</span>
+            </span>
+            <input type="checkbox" checked={firstResponder} onChange={(e) => setFirstResponder(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
           </label>
         )}
         {mode === 'charge' && (

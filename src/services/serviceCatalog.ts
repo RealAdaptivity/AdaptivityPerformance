@@ -67,6 +67,14 @@ export const WEATHER_FEE_DOLLARS = 30;
 /** The weather fee as a customer reads it, wherever prices are shown. */
 export const WEATHER_FEE_NOTE = `Working in rain or severe weather adds a $${WEATHER_FEE_DOLLARS} severe weather fee — your tech tells you before starting.`;
 
+/** First responder discount, in percent of labor. The close-out math
+ *  (FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT in closeOut.ts) and
+ *  record_job_payment charge it; tests/closeOut.test.ts keeps all three equal. */
+export const FIRST_RESPONDER_DISCOUNT_PERCENT = 5;
+
+/** The first responder discount as a customer reads it. */
+export const FIRST_RESPONDER_DISCOUNT_NOTE = `Veterans, police, firefighters, EMTs and paramedics get ${FIRST_RESPONDER_DISCOUNT_PERCENT}% off labor — show your ID to the tech. One discount per visit; not combined with a membership.`;
+
 function consult(
   id: string,
   title: string,
