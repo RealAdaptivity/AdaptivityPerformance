@@ -15,6 +15,9 @@ export const SALES_TAX_BASIS_POINTS = 825;
  *  The travel (service) fee and parts the tech bought go to the tech in full
  *  on top. */
 export const TECH_LABOR_SHARE_PERCENT = 70;
+/** First responder discount, in percent of labor (veterans, police,
+ *  firefighters, EMTs and paramedics). Repairs only; never with a membership. */
+export const FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT = 5;
 
 export type TaxMode = 'parts' | 'total' | 'none';
 export type PartsBy = 'tech' | 'company';
@@ -32,6 +35,9 @@ export type CloseOut = {
   /** The severe weather fee, when the tech worked in rain or severe weather. */
   weatherCents: number;
   laborCents: number;
+  /** First responder discount, taken off labor. 0 when it does not apply. */
+  discountCents: number;
+  firstResponder: boolean;
   partsCents: number;
   taxCents: number;
   totalCents: number;
@@ -74,6 +80,7 @@ export function computeCloseOut(input: {
   weatherCents: number;
   taxMode: TaxMode;
   partsBy: PartsBy;
+  firstResponder?: boolean;
 }): CloseOut {
   const noShow = input.kind === 'no_show';
   const lines: CloseOutLine[] =
@@ -91,10 +98,15 @@ export function computeCloseOut(input: {
   const weatherCents = noShow ? 0 : Math.max(0, Math.round(input.weatherCents));
   const laborCents = lines.reduce((s, l) => s + l.laborCents, 0);
   const partsCents = lines.reduce((s, l) => s + l.partsCents, 0);
-  const beforeTax = diagnosticCents + travelCents + weatherCents + laborCents + partsCents;
+  // Half up to the cent in integers, as record_job_payment does it.
+  const firstResponder = input.kind === 'charge' && Boolean(input.firstResponder);
+  const discountCents = firstResponder
+    ? Math.floor((laborCents * FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT + 50) / 100)
+    : 0;
+  const beforeTax = diagnosticCents + travelCents + weatherCents + laborCents + partsCents - discountCents;
   const taxCents =
     input.taxMode === 'parts' ? taxOn(partsCents) : input.taxMode === 'total' ? taxOn(beforeTax) : 0;
-  const shareable = diagnosticCents + weatherCents + laborCents;
+  const shareable = diagnosticCents + weatherCents + laborCents - discountCents;
   const techPayoutCents =
     Math.floor((shareable * TECH_LABOR_SHARE_PERCENT + 50) / 100) +
     travelCents +
@@ -107,6 +119,8 @@ export function computeCloseOut(input: {
     weatherCents,
     laborCents,
     partsCents,
+    discountCents,
+    firstResponder,
     taxCents,
     totalCents: beforeTax + taxCents,
     techPayoutCents,

@@ -1,6 +1,6 @@
 /** Site SEO helpers — document title, meta, city landings. */
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf, type LocalCity } from './localSeo';
-import { TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../services/serviceCatalog';
+import { FIRST_RESPONDER_DISCOUNT_NOTE, TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../services/serviceCatalog';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -217,12 +217,16 @@ export const SITE_FAQS = [
     a: `Every mobile visit has one flat $${TRAVEL_FEE_DOLLARS} travel fee — the same in Justin and Northlake (Harvest, Canyon Falls, Pecan Square) as anywhere else inside our ${LOCAL_HUB.radiusMiles}-mile radius. There is no per-mile charge. It is shown when you book and paid in person with the visit. If your tech has to work in rain or severe weather, a $${WEATHER_FEE_DOLLARS} severe weather fee is added, and they tell you before starting. Members pay no travel or weather fee.`,
   },
   {
+    q: 'Do you have a first responder or veteran discount?',
+    a: FIRST_RESPONDER_DISCOUNT_NOTE,
+  },
+  {
     q: 'What is your hourly labor rate for auto repairs?',
     a: 'Adaptivity Performance operates on a flat, transparent labor rate of $125 per hour for both mobile and in-shop repairs. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.',
   },
   {
     q: 'Do you charge a diagnostic fee?',
-    a: 'Yes. A $100 diagnostic fee applies to all vehicle inspections and check engine light scans. This fee is fully credited toward any repair we perform on the same visit — so if you approve the repair, the diagnostic effectively costs you nothing. If you decline the repair, the $100 covers the technician\'s time and equipment usage.',
+    a: 'Yes. A $100 diagnostic fee applies to all vehicle inspections and check engine light scans. It pays for the technician\'s time, testing and equipment, and it is separate from the repair: it is not credited toward the repair, whether or not you go ahead with the work.',
   },
   {
     q: 'Do you offer financing or payment plans?',
@@ -234,7 +238,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do I need to pay anything to book an appointment?',
-    a: 'No. Booking takes no card and charges nothing. You pay your technician in person when the work is done, by card, tap or chip on their reader. If you approve a repair, the $100 diagnostic is credited in full toward your final invoice.',
+    a: 'No. Booking takes no card and charges nothing. You pay your technician in person when the work is done, by card, tap or chip on their reader. The $100 diagnostic is paid at the visit and is separate from any repair you approve.',
   },
   {
     q: 'What happens if I need to cancel or reschedule my appointment?',

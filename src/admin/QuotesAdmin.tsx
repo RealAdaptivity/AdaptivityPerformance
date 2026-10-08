@@ -12,6 +12,8 @@ import {
   type QuoteStatus,
 } from '../services/quotes';
 import { openQuotePrintWindow } from '../services/quotePdf';
+import { VinLookupPanel } from './VinLookupPanel';
+import { vehicleLine } from '../services/vinDecode';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
 import {
   LABOR_RATE_CENTS,
@@ -252,6 +254,12 @@ export const QuotesAdmin: React.FC = () => {
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">Vehicle</label>
               <input className={inputCls} value={vehicle} placeholder="2019 Ford F-150 5.0"
                 onChange={(e) => setVehicle(e.target.value)} />
+              <details className="mt-1.5">
+                <summary className="cursor-pointer text-[11px] font-semibold text-orange-400">Look up a VIN</summary>
+                <div className="mt-2">
+                  <VinLookupPanel onUse={(s) => setVehicle(vehicleLine(s))} useLabel="Use for this quote" />
+                </div>
+              </details>
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">Phone</label>

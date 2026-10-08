@@ -1,6 +1,9 @@
 import type { ReceiptData } from './receiptPdf';
 import { SITE_PHONE_DISPLAY } from '../site/seo';
 
+/** '$12.50', or '-$6.75' for a discount line. */
+const usd = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toFixed(2)}`;
+
 /** Open device mail client with a plain-text receipt (server email deferred). */
 export function openReceiptEmail(data: ReceiptData & { toEmail?: string }) {
   const hasLines = Boolean(data.lineItems?.some((l) => l.title.trim()));
@@ -9,7 +12,7 @@ export function openReceiptEmail(data: ReceiptData & { toEmail?: string }) {
         const labor = Number(l.laborDollars) || 0;
         const parts = Number(l.partsDollars) || 0;
         const amount = Number(l.amountDollars ?? labor + parts) || 0;
-        return `• ${l.title}\n    Labor $${labor.toFixed(2)}  |  Parts $${parts.toFixed(2)}  |  Amount $${amount.toFixed(2)}`;
+        return `• ${l.title}\n    Labor ${usd(labor)}  |  Parts ${usd(parts)}  |  Amount ${usd(amount)}`;
       })
     : [
         ...data.services.map((s) => `• ${s}`),

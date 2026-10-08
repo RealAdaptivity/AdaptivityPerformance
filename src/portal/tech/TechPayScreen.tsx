@@ -27,7 +27,6 @@ import { SignaturePad } from './SignaturePad';
 import { capClass, cardClass } from './techUi';
 
 type Mode = 'charge' | 'diagnostic_only';
-type DiagChoice = 'auto' | 'collect' | 'credit';
 
 const seg = (on: boolean) =>
   `min-h-[40px] flex-1 rounded-xl px-2 text-sm font-semibold ${
@@ -47,9 +46,9 @@ export const TechPayScreen: React.FC<{
 
   const [mode, setMode] = useState<Mode>('charge');
   const [lines, setLines] = useState<LineDraft[]>([{ title: '', labor: '', parts: '' }]);
-  const [diagChoice, setDiagChoice] = useState<DiagChoice>('auto');
   const [member, setMember] = useState(false);
   const [weather, setWeather] = useState(false);
+  const [firstResponder, setFirstResponder] = useState(false);
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
   const [partsBy, setPartsBy] = useState<PartsBy>('tech');
   const [notes, setNotes] = useState('');
@@ -63,21 +62,22 @@ export const TechPayScreen: React.FC<{
   const [closedTotal, setClosedTotal] = useState<{ total: number; payout: number } | null>(null);
   const exportRef = useRef<(() => Promise<Blob | null>) | null>(null);
 
-  const repairsEntered = lines.some((l) => l.labor.trim() || l.parts.trim());
-  const collectDiag = mode === 'diagnostic_only' || diagChoice === 'collect' || (diagChoice === 'auto' && !repairsEntered);
   const closeOut = useMemo(
     () =>
       computeCloseOut({
         kind: mode,
         lines,
-        diagnosticCents: collectDiag ? diagnosticFeeCents : 0,
+        // Always charged: the diagnostic is not credited toward a repair.
+        diagnosticCents: diagnosticFeeCents,
         travelCents: shop || member ? 0 : TRAVEL_FEE_DOLLARS * 100,
         // Mobile visits only, and members never pay it.
         weatherCents: weather && !shop && !member ? WEATHER_FEE_DOLLARS * 100 : 0,
         taxMode,
         partsBy,
+        // One discount per visit: never on top of a membership.
+        firstResponder: firstResponder && !member,
       }),
-    [mode, lines, collectDiag, diagnosticFeeCents, shop, member, weather, taxMode, partsBy]
+    [mode, lines, diagnosticFeeCents, shop, member, weather, firstResponder, taxMode, partsBy]
   );
   const problem = closeOutProblem(closeOut, signed && signerName.trim().length > 1);
 
@@ -212,19 +212,8 @@ export const TechPayScreen: React.FC<{
           </div>
 
           <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
-            <div>
-              <p className="text-[15px] font-semibold">Diagnostic</p>
-              {mode === 'charge' && (
-                <button
-                  type="button"
-                  onClick={() => setDiagChoice(collectDiag ? 'credit' : 'collect')}
-                  className="min-h-[32px] text-xs font-semibold text-orange-700"
-                >
-                  {collectDiag ? 'Credit toward the repair instead' : 'Credited to repair · charge it instead'}
-                </button>
-              )}
-            </div>
-            <span className={`font-heading font-semibold ${collectDiag ? '' : 'text-zinc-400 line-through'}`}>
+            <p className="text-[15px] font-semibold">Diagnostic</p>
+            <span className="font-heading font-semibold">
               {formatCents(diagnosticFeeCents)}
             </span>
           </div>
@@ -276,6 +265,12 @@ export const TechPayScreen: React.FC<{
             </button>
           )}
 
+          {closeOut.discountCents > 0 && (
+            <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
+              <p className="text-[15px] font-semibold">First responder discount (5% off labor)</p>
+              <span className="shrink-0 whitespace-nowrap font-heading font-semibold text-emerald-700">−{formatCents(closeOut.discountCents)}</span>
+            </div>
+          )}
           {!shop && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
               <p className="text-[15px] font-semibold">Travel</p>
@@ -327,6 +322,15 @@ export const TechPayScreen: React.FC<{
               <span className="block text-xs text-slate-400">Tell the customer before you start</span>
             </span>
             <input type="checkbox" checked={weather} onChange={(e) => setWeather(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
+          </label>
+        )}
+        {mode === 'charge' && !member && (
+          <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4 py-2.5`}>
+            <span>
+              <span className="block text-[15px]">First responder / veteran · −5% labor</span>
+              <span className="block text-xs text-slate-400">Veterans, police, firefighters, EMTs, paramedics · check ID</span>
+            </span>
+            <input type="checkbox" checked={firstResponder} onChange={(e) => setFirstResponder(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
           </label>
         )}
         {mode === 'charge' && (

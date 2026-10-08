@@ -14,6 +14,7 @@ import {
   googleMapsSearchUrl,
 } from '../config/mapLinks';
 import { DispatchMap } from './DispatchMap';
+import { VinLookupPanel } from './VinLookupPanel';
 import { fetchJobPaymentSummary, paymentMethodLabel, type JobPaymentSummary } from '../services/jobPayments';
 import { AddTechnicianForm } from './AddTechnicianForm';
 import type { Booking, JobStatus } from '../context/BookingContext';
@@ -705,6 +706,13 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <Truck className="w-3.5 h-3.5" />
           {booking.vehicle}
         </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">
+          VIN{booking.vin ? '' : ' · not given'}
+        </p>
+        <VinLookupPanel key={booking.id} initialVin={booking.vin} />
       </div>
 
       <div>

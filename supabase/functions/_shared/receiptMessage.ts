@@ -16,6 +16,8 @@ export type ReceiptInput = {
   diagnosticCents: number;
   travelCents: number;
   weatherCents: number;
+  /** First responder discount off labor; shown as a negative line. */
+  discountCents?: number;
   taxCents: number;
   taxMode: 'parts' | 'total' | 'none';
   totalCents: number;
@@ -29,7 +31,8 @@ export type ReceiptInput = {
 
 export function money(cents: number): string {
   const abs = Math.abs(Math.round(cents));
-  return `$${Math.floor(abs / 100).toLocaleString('en-US')}.${String(abs % 100).padStart(2, '0')}`;
+  const sign = Math.round(cents) < 0 ? '-' : '';
+  return `${sign}$${Math.floor(abs / 100).toLocaleString('en-US')}.${String(abs % 100).padStart(2, '0')}`;
 }
 
 /** 'Sep 30, 2026' in Texas time, whatever zone the server runs in. */
@@ -54,6 +57,7 @@ export function receiptRows(r: ReceiptInput): Row[] {
   }
   if (r.travelCents > 0) rows.push({ label: 'Travel', cents: r.travelCents });
   if (r.weatherCents > 0) rows.push({ label: 'Severe weather fee', cents: r.weatherCents });
+  if ((r.discountCents ?? 0) > 0) rows.push({ label: 'First responder discount (5% off labor)', cents: -(r.discountCents ?? 0) });
   if (r.taxCents > 0) rows.push({ label: `Sales tax 8.25%${r.taxMode === 'parts' ? ' on parts' : ''}`, cents: r.taxCents });
   return rows;
 }

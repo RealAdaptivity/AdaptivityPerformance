@@ -79,7 +79,7 @@ export const RefundPolicyPage: React.FC = () => {
 
           <p className="text-xs text-slate-300 leading-relaxed">
             Booking a mobile repair or on-site diagnosis costs nothing and takes no card. The <strong>$100.00</strong> diagnostic
-            is paid to your technician in person when they arrive, and is <em>credited in full</em> toward the repair if you approve the work.
+            is paid to your technician in person at the visit. It covers the diagnosis and is <em>not</em> applied toward any repair you approve.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">

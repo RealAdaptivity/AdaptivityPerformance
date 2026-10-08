@@ -23,7 +23,7 @@ export const AD_LANDINGS: AdLanding[] = [
     slug: 'same-day',
     headline: 'Mobile mechanic today, at your driveway',
     subhead: `We dispatch from Justin and stay inside ${LOCAL_HUB.radiusMiles} miles, so a same-day slot is a real promise and not a callback tomorrow.`,
-    offer: '$100 diagnostic — credited in full toward the repair',
+    offer: '$100 on-site diagnostic — any repair priced before we start',
     bullets: [
       'Same-day and next-day slots most weekdays',
       'We come to your house or your workplace parking lot',
@@ -60,7 +60,7 @@ export const AD_LANDINGS: AdLanding[] = [
       'Written findings and a priced repair plan, same visit',
       'We come to you — the car never leaves your driveway',
     ],
-    proof: ['Live data, not a code read', 'Written findings', 'Diagnostic credited'],
+    proof: ['Live data, not a code read', 'Written findings', 'Priced before we start'],
     ctaLabel: 'Diagnose my check engine light',
   },
   {
@@ -68,7 +68,7 @@ export const AD_LANDINGS: AdLanding[] = [
     headline: 'A mobile mechanic who comes to you in Dallas',
     subhead:
       'We run out of a shop in Justin and dispatch across the metroplex. Brakes, diagnostics, batteries, starters and A/C done in your driveway or your office parking lot — no tow, no drop-off, no waiting room.',
-    offer: '$100 diagnostic — credited in full toward the repair',
+    offer: '$100 on-site diagnostic — any repair priced before we start',
     bullets: [
       'We come to your home or your workplace anywhere in Dallas',
       'Labor and parts priced on site, before anything comes apart',
@@ -83,7 +83,7 @@ export const AD_LANDINGS: AdLanding[] = [
     headline: 'A mobile mechanic who comes to you in Fort Worth',
     subhead:
       'We are already in north Fort Worth most days — Alliance, Presidio, Park Glen, Heritage — and we cover downtown, the Cultural District and the near west side from our Justin shop.',
-    offer: '$100 diagnostic — credited in full toward the repair',
+    offer: '$100 on-site diagnostic — any repair priced before we start',
     bullets: [
       'Driveway and workplace visits across Fort Worth',
       'Same-day and next-day slots most weekdays',
