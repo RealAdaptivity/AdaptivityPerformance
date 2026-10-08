@@ -71,7 +71,14 @@ export type VehicleFieldError = { field: keyof VehicleDetails; message: string }
 /** Returns every problem rather than the first, so the form can mark all the
  *  offending inputs at once instead of making the customer resubmit to find
  *  the next one. */
-export function validateVehicle(v: VehicleDetails, now = new Date()): VehicleFieldError[] {
+export function validateVehicle(
+  v: VehicleDetails,
+  now = new Date(),
+  /** A booking taken over the phone: callers often don't know the trim,
+   *  engine or VIN, so only year, make and model are required. Anything
+   *  given is still checked. */
+  opts: { phoneBooking?: boolean } = {}
+): VehicleFieldError[] {
   const errors: VehicleFieldError[] = [];
 
   if (!v.year.trim()) errors.push({ field: 'year', message: 'Year is required' });
@@ -81,11 +88,12 @@ export function validateVehicle(v: VehicleDetails, now = new Date()): VehicleFie
 
   if (!v.make.trim()) errors.push({ field: 'make', message: 'Make is required' });
   if (!v.model.trim()) errors.push({ field: 'model', message: 'Model is required' });
-  if (!v.trim.trim()) errors.push({ field: 'trim', message: 'Trim is required' });
-  if (!v.engine.trim()) errors.push({ field: 'engine', message: 'Engine is required' });
+  if (!opts.phoneBooking && !v.trim.trim()) errors.push({ field: 'trim', message: 'Trim is required' });
+  if (!opts.phoneBooking && !v.engine.trim()) errors.push({ field: 'engine', message: 'Engine is required' });
 
-  if (!v.vin.trim()) errors.push({ field: 'vin', message: 'VIN is required' });
-  else if (!isValidVin(v.vin)) {
+  if (!v.vin.trim()) {
+    if (!opts.phoneBooking) errors.push({ field: 'vin', message: 'VIN is required' });
+  } else if (!isValidVin(v.vin)) {
     errors.push({ field: 'vin', message: 'A VIN is 17 characters and has no I, O or Q' });
   }
 

@@ -38,6 +38,10 @@ export interface Booking {
   createdAtIso?: string;
   preferredMechanicId?: string | null;
   holdExpiresAt?: string | null;
+  /** 'phone' when an admin booked it for a caller from the dispatch board. */
+  bookingSource?: 'website' | 'phone';
+  /** The admin who took a phone booking. */
+  bookedByName?: string | null;
   /** Supabase row UUID (for authenticated updates). */
   supabaseId?: string;
   paymentIntentId?: string | null;

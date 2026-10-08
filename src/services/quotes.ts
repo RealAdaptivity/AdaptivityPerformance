@@ -3,6 +3,7 @@
 import { supabase } from './supabaseClient';
 import { SALES_TAX_BASIS_POINTS, salesTaxCents, type TaxMode } from './salesTax';
 import { LABOR_RATE_CENTS, laborCentsForHours } from './laborRate';
+import { isVinShaped, normalizeVin } from './vinDecode';
 
 export type QuoteLine = {
   title: string;
@@ -27,6 +28,8 @@ export type Quote = {
   customerEmail: string | null;
   customerAddress: string | null;
   vehicle: string | null;
+  /** Null only on quotes saved before the builder required one. */
+  vin: string | null;
   lineItems: QuoteLine[];
   laborCents: number;
   partsCents: number;
@@ -47,6 +50,8 @@ export type QuoteDraft = {
   customerEmail?: string;
   customerAddress?: string;
   vehicle?: string;
+  /** Required: services and labor are priced for the exact vehicle. */
+  vin: string;
   lineItems: QuoteLine[];
   taxMode: TaxMode;
   laborRateCents?: number;
@@ -93,6 +98,7 @@ function rowToQuote(row: Record<string, unknown>): Quote {
     customerEmail: (row.customer_email as string) ?? null,
     customerAddress: (row.customer_address as string) ?? null,
     vehicle: (row.vehicle as string) ?? null,
+    vin: (row.vin as string) ?? null,
     lineItems: Array.isArray(row.line_items) ? (row.line_items as QuoteLine[]) : [],
     laborCents: (row.labor_cents as number) ?? 0,
     partsCents: (row.parts_cents as number) ?? 0,
@@ -121,6 +127,8 @@ export async function listQuotes(limit = 100): Promise<Quote[]> {
 export async function createQuote(draft: QuoteDraft): Promise<Quote> {
   const name = draft.customerName.trim();
   if (!name) throw new Error('Customer name is required');
+  const vin = normalizeVin(draft.vin);
+  if (!isVinShaped(vin)) throw new Error('Enter the vehicle’s 17-character VIN first');
 
   const lines = draft.lineItems.filter((l) => l.title.trim());
   if (!lines.length) throw new Error('Add at least one line item');
@@ -139,6 +147,7 @@ export async function createQuote(draft: QuoteDraft): Promise<Quote> {
       customer_email: draft.customerEmail?.trim() || null,
       customer_address: draft.customerAddress?.trim() || null,
       vehicle: draft.vehicle?.trim() || null,
+      vin,
       line_items: lines,
       labor_cents: totals.laborCents,
       parts_cents: totals.partsCents,

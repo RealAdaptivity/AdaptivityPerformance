@@ -1,0 +1,120 @@
+{
+  "recalls": {
+    "Count": 4,
+    "results": [
+      {
+        "Manufacturer": "Ford Motor Company",
+        "NHTSACampaignNumber": "18V894000",
+        "parkIt": false,
+        "parkOutSide": false,
+        "overTheAirUpdate": false,
+        "ReportReceivedDate": "18/12/2018",
+        "Component": "ENGINE",
+        "Summary": "Ford Motor Company (Ford) is recalling certain 2015-2019 Ford F-150 ... equipped with an engine block heater.   Water and contaminants may get into the block heater cable's splice connector causing corrosion and damage.",
+        "Consequence": "When the heater is plugged in, prolonged corrosion could cause a resistive short, increasing the risk of overheated or melted wiring which can increase the risk of a fire.",
+        "Remedy": "Ford will notify owners, and dealers will disable the block heater cable, free of charge.  Ford's number for this recall is 18S45.",
+        "ModelYear": "2016",
+        "Make": "FORD",
+        "Model": "F-150"
+      },
+      {
+        "Manufacturer": "Ford Motor Company",
+        "NHTSACampaignNumber": "19V278000",
+        "parkIt": false,
+        "parkOutSide": true,
+        "overTheAirUpdate": false,
+        "ReportReceivedDate": "08/04/2019",
+        "Component": "ENGINE",
+        "Summary": "Ford Motor Company (Ford) is recalling certain 2015-2019 Ford F-150 ... previously remedied under recall 18V894.",
+        "Consequence": "A damaged cable could cause a resistive short, increasing the risk of a fire.",
+        "Remedy": "Ford will notify owners, and dealers will disable the engine block heater from being used.",
+        "ModelYear": "2016",
+        "Make": "FORD",
+        "Model": "F-150"
+      },
+      {
+        "Manufacturer": "Ford Motor Company",
+        "NHTSACampaignNumber": "17V526000",
+        "parkIt": false,
+        "parkOutSide": false,
+        "overTheAirUpdate": false,
+        "ReportReceivedDate": "28/08/2017",
+        "Component": "SEAT BELTS:REAR/OTHER",
+        "Summary": "Ford Motor Company (Ford) is recalling certain 2015-2017 F-150 ... crew cab.",
+        "Consequence": "The seat occupant may not be adequately restrained, increasing their risk of injury.",
+        "Remedy": "Ford will notify owners, and dealers will inspect the seat belt assembly.",
+        "ModelYear": "2016",
+        "Make": "FORD",
+        "Model": "F-150"
+      },
+      {
+        "Manufacturer": "Ford Motor Company",
+        "NHTSACampaignNumber": "17V526000",
+        "parkIt": false,
+        "parkOutSide": false,
+        "overTheAirUpdate": false,
+        "ReportReceivedDate": "28/08/2017",
+        "Component": "SEAT BELTS:REAR/OTHER",
+        "Summary": "Duplicate row as NHTSA sometimes returns.",
+        "Consequence": "",
+        "Remedy": "",
+        "ModelYear": "2016",
+        "Make": "FORD",
+        "Model": "F-150"
+      }
+    ]
+  },
+  "complaints": {
+    "count": 4,
+    "results": [
+      {
+        "odiNumber": 11759088,
+        "crash": false,
+        "fire": false,
+        "numberOfInjuries": 0,
+        "numberOfDeaths": 0,
+        "dateOfIncident": "01/16/2025",
+        "dateComplaintFiled": "08/24/2026",
+        "vin": "1FTEW1EP4GF",
+        "components": "STEERING",
+        "summary": "While operating my 2016 Ford F-150, the vehicle lost power-steering assist."
+      },
+      {
+        "odiNumber": 11769149,
+        "crash": false,
+        "fire": false,
+        "numberOfInjuries": 0,
+        "numberOfDeaths": 0,
+        "dateOfIncident": "07/29/2026",
+        "dateComplaintFiled": "10/05/2026",
+        "vin": "1FTEW1EF8GF",
+        "components": "POWER TRAIN",
+        "summary": "Uncommanded downshift from 4th gear into 1st gear at highway speed."
+      },
+      {
+        "odiNumber": 11768800,
+        "crash": true,
+        "fire": false,
+        "numberOfInjuries": 0,
+        "numberOfDeaths": 0,
+        "dateOfIncident": "10/03/2026",
+        "dateComplaintFiled": "10/04/2026",
+        "vin": "1FTEW1EF9GK",
+        "components": "POWER TRAIN,ENGINE",
+        "summary": "I placed the transmission selector in park and the truck rolled."
+      },
+      {
+        "odiNumber": 11768498,
+        "crash": false,
+        "fire": false,
+        "numberOfInjuries": 2,
+        "numberOfDeaths": 0,
+        "dateOfIncident": "12/02/2024",
+        "dateComplaintFiled": "10/02/2026",
+        "vin": "1FTEW1EP5GK",
+        "components": "SERVICE BRAKES, HYDRAULIC,POWER TRAIN",
+        "summary": "While driving 60 MPH, the transmission unexpectedly downshifted."
+      }
+    ]
+  }
+}

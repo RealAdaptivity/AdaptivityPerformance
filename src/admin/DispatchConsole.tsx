@@ -6,6 +6,7 @@ import {
   Loader2,
   MapPin,
   Phone,
+  PhoneCall,
   Truck,
   User,
   Wrench,
@@ -15,6 +16,7 @@ import {
 } from '../config/mapLinks';
 import { DispatchMap } from './DispatchMap';
 import { VinLookupPanel } from './VinLookupPanel';
+import { BookingModal } from '../components/BookingModal';
 import { fetchJobPaymentSummary, paymentMethodLabel, type JobPaymentSummary } from '../services/jobPayments';
 import { AddTechnicianForm } from './AddTechnicianForm';
 import type { Booking, JobStatus } from '../context/BookingContext';
@@ -70,6 +72,9 @@ function getAssignedTechName(b: Booking, techs: DispatchTech[]): string {
 }
 
 export const DispatchConsole: React.FC = () => {
+  /* Bumped each time so every call starts on a blank form, not the last
+     caller's details. Null while the form is closed. */
+  const [phoneBookingKey, setPhoneBookingKey] = useState<number | null>(null);
   const [tab, setTab] = useState<TabId>('dispatch');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [techs, setTechs] = useState<DispatchTech[]>([]);
@@ -211,8 +216,25 @@ export const DispatchConsole: React.FC = () => {
             </button>
           ))}
         </nav>
-        
+        <button
+          type="button"
+          onClick={() => setPhoneBookingKey(Date.now())}
+          className="inline-flex min-h-[40px] items-center gap-2 rounded-xl bg-orange-500 px-4 text-xs font-bold text-white hover:bg-orange-600"
+        >
+          <PhoneCall className="h-4 w-4" aria-hidden="true" />
+          New phone booking
+        </button>
       </div>
+
+      {phoneBookingKey !== null && (
+        <BookingModal
+          key={phoneBookingKey}
+          isOpen
+          phoneBooking
+          onClose={() => setPhoneBookingKey(null)}
+          onBookingSubmitted={() => void load()}
+        />
+      )}
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-300 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
@@ -523,8 +545,13 @@ const JobCard: React.FC<{
         ${booking.totalEstimate.toFixed(2)}
       </p>
 
-      {(outsideRadius || addressUnusable || slaHot) && (
+      {(outsideRadius || addressUnusable || slaHot || booking.bookingSource === 'phone') && (
         <span className="flex flex-wrap gap-1 mt-2">
+          {booking.bookingSource === 'phone' && (
+            <span className="text-[9px] font-bold text-sky-300 bg-sky-500/15 border border-sky-500/30 rounded-full px-2 py-0.5">
+              Phone booking
+            </span>
+          )}
           {addressUnusable && (
             <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 rounded-full px-2 py-0.5">
               Address needs fixing
@@ -706,6 +733,12 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <Truck className="w-3.5 h-3.5" />
           {booking.vehicle}
         </p>
+        {booking.bookingSource === 'phone' && (
+          <p className="flex items-center gap-2 text-[11px] text-sky-300">
+            <PhoneCall className="w-3.5 h-3.5" />
+            Booked by phone{booking.bookedByName ? ` · taken by ${booking.bookedByName}` : ''}
+          </p>
+        )}
       </div>
 
       <div>

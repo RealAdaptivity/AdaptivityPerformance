@@ -130,13 +130,16 @@ export function validateContact(input: {
   phone: string;
   email: string;
   agreed: boolean;
+  /** Phone bookings: a caller may not have an email to give. */
+  emailOptional?: boolean;
 }): FieldErrors<'fullName' | 'phone' | 'email' | 'agreed'> {
   const errors: FieldErrors<'fullName' | 'phone' | 'email' | 'agreed'> = {};
   if (input.fullName.trim().replace(/\s+/g, ' ').length < 2) errors.fullName = 'Enter your name.';
   let digits = input.phone.replace(/\D/g, '');
   if (digits.length === 11 && digits.startsWith('1')) digits = digits.slice(1);
   if (digits.length !== 10) errors.phone = 'Enter a 10-digit mobile number.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email.trim())) errors.email = 'Enter a valid email.';
+  const email = input.email.trim();
+  if (!(input.emailOptional && !email) && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email.';
   if (!input.agreed) errors.agreed = 'Check the box to continue.';
   return errors;
 }

@@ -96,3 +96,13 @@ test('whitespace is not a value', () => {
   const errors = validateVehicle({ ...full, make: '   ', trim: '\t' });
   assert.deepEqual(errors.map((e) => e.field).sort(), ['make', 'trim']);
 });
+
+test('a phone booking needs only year, make and model; a VIN given is still checked', () => {
+  const callerKnows = { ...EMPTY_VEHICLE, year: '2016', make: 'Ford', model: 'F-150' };
+  assert.deepEqual(validateVehicle(callerKnows, new Date('2026-10-08'), { phoneBooking: true }), []);
+  assert.deepEqual(
+    validateVehicle({ ...callerKnows, vin: 'NOTAVIN' }, new Date('2026-10-08'), { phoneBooking: true }).map((e) => e.field),
+    ['vin']
+  );
+  assert.ok(validateVehicle(callerKnows, new Date('2026-10-08')).length > 0, 'the website still needs everything');
+});

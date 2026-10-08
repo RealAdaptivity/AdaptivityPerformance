@@ -105,6 +105,11 @@ interface BookingModalProps {
     phone: string;
     vehicle: string;
   }) => void;
+  /** An admin booking for a caller from the dispatch board. Same steps, but
+   *  VIN, trim, engine and email are optional (a caller often can't say), the
+   *  consent box records that the terms were read to them, and the
+   *  confirmation tells the admin what to say instead of offering an account. */
+  phoneBooking?: boolean;
 }
 
 /** Step indexes: 0–4 are the questions, 5 is the review, 6 is the confirmation. */
@@ -151,6 +156,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   initialEstimateData,
   onBookingSubmitted,
+  phoneBooking = false,
 }) => {
   const [step, setStep] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
@@ -393,7 +399,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         return validateNeed({ issue: issueDescription });
       case 'vehicle': {
         const out: Errors = {};
-        for (const err of validateVehicle(vehicleDetails)) out[err.field] = err.message;
+        for (const err of validateVehicle(vehicleDetails, new Date(), { phoneBooking })) out[err.field] = err.message;
         return out;
       }
       case 'when':
@@ -410,7 +416,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         return out;
       }
       case 'contact':
-        return validateContact({ fullName, phone, email, agreed });
+        return validateContact({ fullName, phone, email, agreed, emailOptional: phoneBooking });
       default:
         return {};
     }
@@ -449,7 +455,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       const booking = await createBookingRequest({
         customerName: fullName.trim(),
         customerPhone: phone.trim(),
-        customerEmail: email.trim(),
+        customerEmail: email.trim() || undefined,
         customerAddress: buildAddress(),
         zipCode:
           serviceMode === 'shop'
@@ -473,6 +479,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         customerNotes: notes.trim() || undefined,
         preferredMechanicId: initialEstimateData?.preferredMechanicId || undefined,
         ...applyReferralCodeOnBooking(referralInput),
+        ...(phoneBooking ? { phoneBooking: true } : {}),
       });
 
       setBookingRef(booking.bookingReference);
@@ -577,7 +584,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
   const continueLabel =
     step === REVIEW_STEP
-      ? 'Request this visit'
+      ? phoneBooking
+        ? 'Book this visit'
+        : 'Request this visit'
       : editingFromReview
         ? 'Save and review'
         : stepId === 'contact'
@@ -709,7 +718,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </span>
               )}
               <p className="text-[13px] font-semibold text-slate-400">
-                {done ? 'Request sent' : step === REVIEW_STEP ? 'Review' : `Step ${step + 1} of ${COUNTED_STEPS}`}
+                {phoneBooking && (
+                  <span className="mr-2 inline-flex items-center gap-1 rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-brand-soft">
+                    <Phone className="h-3 w-3" aria-hidden="true" /> Phone booking
+                  </span>
+                )}
+                {done ? (phoneBooking ? 'Booked' : 'Request sent') : step === REVIEW_STEP ? 'Review' : `Step ${step + 1} of ${COUNTED_STEPS}`}
               </p>
               <button
                 type="button"
@@ -873,7 +887,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </p>
                 <div>
                   <label htmlFor="bk-vin" className={labelClass}>
-                    VIN · fills in the rest for you
+                    VIN · fills in the rest for you{phoneBooking && <> {optionalTag}</>}
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -934,8 +948,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     className="mt-2.5 flex items-start gap-2.5 rounded-xl bg-[#12141c] px-3.5 py-3 text-[13px] leading-relaxed text-slate-400"
                   >
                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" aria-hidden="true" />
-                    Bottom corner of the windshield on the driver’s side, the sticker in the driver’s door jamb, or
-                    your insurance card.
+                    {phoneBooking
+                      ? 'Ask the caller to read it off the bottom corner of the windshield on the driver’s side, the driver’s door jamb sticker, or their insurance card. It decodes as soon as all 17 characters are in.'
+                      : 'Bottom corner of the windshield on the driver’s side, the sticker in the driver’s door jamb, or your insurance card.'}
                   </p>
                 </div>
                 <div className="grid grid-cols-3 gap-2.5">
@@ -994,7 +1009,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div>
                     <label htmlFor="bk-trim" className={labelClass}>
-                      Trim
+                      Trim{phoneBooking && <> {optionalTag}</>}
                     </label>
                     <input
                       id="bk-trim"
@@ -1009,7 +1024,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
                   <div>
                     <label htmlFor="bk-engine" className={labelClass}>
-                      Engine
+                      Engine{phoneBooking && <> {optionalTag}</>}
                     </label>
                     <input
                       id="bk-engine"
@@ -1249,7 +1264,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
 
             {stepId === 'contact' && (
               <div className="mt-2 space-y-5">
-                <p className="text-[15px] leading-relaxed text-slate-400">We text when your tech is on the way.</p>
+                <p className="text-[15px] leading-relaxed text-slate-400">
+                  {phoneBooking
+                    ? 'The caller’s details. We text this number to confirm and when the tech is on the way.'
+                    : 'We text when your tech is on the way.'}
+                </p>
                 <div>
                   <label htmlFor="bk-name" className={labelClass}>
                     Full name
@@ -1291,7 +1310,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 </div>
                 <div>
                   <label htmlFor="bk-email" className={labelClass}>
-                    Email
+                    Email{phoneBooking && <> {optionalTag}</>}
                   </label>
                   <input
                     id="bk-email"
@@ -1349,6 +1368,23 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       aria-describedby={describedBy('agreed')}
                       className="mt-0.5 h-[22px] w-[22px] shrink-0 accent-brand"
                     />
+                    {phoneBooking ? (
+                      <span className="text-[13px] leading-relaxed text-slate-300">
+                        I read the caller the{' '}
+                        <a
+                          href="/terms"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-brand-soft hover:underline"
+                        >
+                          Terms of Service
+                        </a>{' '}
+                        summary (the {money(charges.diagnostic)} diagnostic is its own charge and is not applied toward
+                        the repair{charges.travel ? `, ${money(charges.travel)} travel fee` : ''}, sales tax, the 12-month
+                        warranty on parts we supply) and they agreed, including texts about this visit. They can reply
+                        STOP to opt out.
+                      </span>
+                    ) : (
                     <span className="text-[13px] leading-relaxed text-slate-300">
                       I agree to the{' '}
                       <a
@@ -1364,6 +1400,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       under the federal E-SIGN Act. I agree to get texts about this visit — appointment updates and
                       receipts. Msg &amp; data rates may apply. Reply STOP to opt out, HELP for help.
                     </span>
+                    )}
                   </label>
                   <FieldError id="bk-agreed-err" message={errors.agreed} />
                 </div>
@@ -1428,12 +1465,48 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     tabIndex={-1}
                     className="mt-2 font-heading text-[32px] font-bold leading-[1.1] outline-none"
                   >
-                    You’re on the board.
+                    {phoneBooking ? 'On the board.' : 'You’re on the board.'}
                   </h2>
                   <p className="mt-2.5 text-[15px] text-slate-400">
                     {whenLabel} · {vehicle}
                   </p>
                 </div>
+                {phoneBooking ? (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-brand/30 bg-[#12141c] p-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.06em] text-brand-soft">Tell the caller</p>
+                      <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-slate-200">
+                        <li>
+                          “Your confirmation number is <strong>{bookingRef}</strong>.”
+                        </li>
+                        <li>
+                          “We’ll text {displayPhone(phone)} to confirm your arrival time, and your tech texts when
+                          they’re on the way.”
+                        </li>
+                        <li>
+                          “Nothing is charged today. You pay the tech in person — {money(charges.dueAtVisit)} for the
+                          visit, plus sales tax. Any repair is priced before it starts.”
+                        </li>
+                      </ul>
+                    </div>
+                    {mediaNotice && (
+                      <p className="flex items-start gap-1.5 text-[13px] text-amber-300">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /> {mediaNotice}
+                      </p>
+                    )}
+                    <p className="text-[13px] text-slate-400">
+                      It’s on the dispatch board now as a phone booking under your name. Assign a tech from there.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="min-h-[52px] w-full rounded-2xl bg-brand font-heading text-base font-bold text-[#0b0c10] hover:bg-brand-soft"
+                    >
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                <>
                 <ol className="space-y-1">
                   {[
                     <>
@@ -1595,6 +1668,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 >
                   Done
                 </button>
+                </>
+                )}
               </div>
             )}
           </div>
@@ -1619,7 +1694,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> Sending your request…
+                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> {phoneBooking ? 'Booking…' : 'Sending your request…'}
                     </>
                   ) : (
                     continueLabel

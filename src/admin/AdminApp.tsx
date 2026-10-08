@@ -8,6 +8,7 @@ import {
   LogOut,
   Package,
   Radio,
+  Search,
   Shield,
   Sparkles,
   UserPlus,
@@ -33,8 +34,9 @@ import { AddTechnicianForm } from './AddTechnicianForm';
 import { AdminContractorAgreementsTab } from './AdminContractorAgreementsTab';
 import { QuotesAdmin } from './QuotesAdmin';
 import { AdminsAdmin } from './AdminsAdmin';
+import { ResearchAdmin } from './ResearchAdmin';
 
-type AdminTab = 'dispatch' | 'quotes' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth' | 'admins';
+type AdminTab = 'dispatch' | 'quotes' | 'research' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth' | 'admins';
 
 export const AdminApp: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -141,6 +143,12 @@ export const AdminApp: React.FC = () => {
       activeClass: 'bg-sky-600 text-white',
     },
     {
+      id: 'research',
+      label: 'Research',
+      icon: <Search className="w-3 h-3" />,
+      activeClass: 'bg-orange-600 text-white',
+    },
+    {
       id: 'techs',
       label: 'Techs',
       icon: <UserPlus className="w-3 h-3" />,
@@ -202,7 +210,7 @@ export const AdminApp: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden md:flex rounded-lg border border-white/10 p-0.5 bg-[#12141c] overflow-x-auto max-w-[min(100vw-12rem,46rem)]">
+            <div className="hidden md:flex rounded-lg border border-white/10 p-0.5 bg-[#12141c] overflow-x-auto max-w-[min(100vw-12rem,49rem)]">
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -217,7 +225,7 @@ export const AdminApp: React.FC = () => {
                 </button>
               ))}
             </div>
-            <span className="hidden xl:flex items-center gap-1.5 text-xs text-slate-400">
+            <span className="hidden 2xl:flex items-center gap-1.5 text-xs text-slate-400">
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
               {profile.fullName || profile.email}
             </span>
@@ -289,6 +297,10 @@ export const AdminApp: React.FC = () => {
       ) : adminTab === 'quotes' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">
           <QuotesAdmin />
+        </div>
+      ) : adminTab === 'research' ? (
+        <div className="max-w-3xl mx-auto w-full px-4 py-6">
+          <ResearchAdmin />
         </div>
       ) : adminTab === 'admins' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">

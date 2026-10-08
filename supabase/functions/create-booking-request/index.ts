@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
       referralCode,
       preferredMechanicId: preferredMechanicIdRaw,
     } = body;
+    /* An admin booking a visit for a caller from the dispatch board. */
+    const phoneBooking = body.phoneBooking === true;
 
     if (!customerName?.trim() || !customerAddress?.trim() || !Array.isArray(services) || services.length === 0) {
       return jsonResponse({ error: 'Missing required booking fields' }, 400);
@@ -95,14 +97,25 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    let callerRole: string | null = null;
     if (userId) {
       const { data: profileRow } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, role')
         .eq('id', userId)
         .maybeSingle();
       if (!profileRow) userId = null;
+      callerRole = (profileRow?.role as string | undefined) ?? null;
     }
+
+    /* A phone booking belongs to the caller, not to the admin who typed it:
+       customer_id stays empty (the customer can claim it later like any
+       guest booking) and the admin is recorded as booked_by. Only an admin
+       may book this way. */
+    if (phoneBooking && callerRole !== 'admin') {
+      return jsonResponse({ error: 'Only an admin can book a visit for a caller.' }, 403);
+    }
+    const customerId = phoneBooking ? null : userId;
 
     let resolvedPartnerId: string | null = null;
     if (locationType === 'shop' && typeof partnerLocationId === 'string' && partnerLocationId.trim()) {
@@ -126,7 +139,7 @@ Deno.serve(async (req) => {
         .eq('code', referralRaw)
         .eq('active', true)
         .maybeSingle();
-      if (codeRow?.code && codeRow.profile_id !== userId) {
+      if (codeRow?.code && codeRow.profile_id !== customerId) {
         referralCodeUsed = codeRow.code as string;
         referralCodeId = codeRow.id as string;
       }
@@ -174,7 +187,9 @@ Deno.serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
-        customer_id: userId,
+        customer_id: customerId,
+        booking_source: phoneBooking ? 'phone' : 'website',
+        booked_by: phoneBooking ? userId : null,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_email: email ?? null,
@@ -221,10 +236,10 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: bookingError?.message || 'Could not create booking' }, 500);
     }
 
-    if (referralCodeId && userId) {
+    if (referralCodeId && customerId) {
       await supabase.from('referral_redemptions').insert({
         referral_code_id: referralCodeId,
-        referred_profile_id: userId,
+        referred_profile_id: customerId,
         booking_id: booking.id,
         status: 'pending',
       });

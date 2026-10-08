@@ -28,6 +28,8 @@ export type BookingRow = {
   customer_notes?: string | null;
   preferred_mechanic_id?: string | null;
   hold_expires_at?: string | null;
+  booking_source?: string | null;
+  booked_by_profile?: { full_name: string | null } | null;
   mechanic?: {
     id: string;
     full_name: string | null;
@@ -87,6 +89,8 @@ export function rowToBooking(row: BookingRow): Booking {
     createdAtIso: row.created_at,
     preferredMechanicId: row.preferred_mechanic_id ?? null,
     holdExpiresAt: row.hold_expires_at ?? null,
+    bookingSource: row.booking_source === 'phone' ? 'phone' : 'website',
+    bookedByName: row.booked_by_profile?.full_name ?? null,
     supabaseId: row.id,
     paymentIntentId: row.payment_intent_id ?? null,
     paymentStatus: row.payment_status ?? 'none',

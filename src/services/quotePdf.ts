@@ -116,6 +116,7 @@ ${PRINT_DOCUMENT_STYLES}
         <div class="card">
           <h3>Vehicle</h3>
           <p>${escapeHtml(quote.vehicle?.trim() || 'Not specified')}</p>
+          ${quote.vin ? `<p><span class="label">VIN</span>${escapeHtml(quote.vin)}</p>` : ''}
           ${validUntil ? `<p><span class="label">Valid until</span>${escapeHtml(validUntil)}</p>` : ''}
         </div>
       </div>
