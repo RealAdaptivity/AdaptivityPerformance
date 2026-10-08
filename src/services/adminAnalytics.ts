@@ -280,3 +280,44 @@ export function suggestedRefundForCancelReason(reason: string | null | undefined
   const hit = CANCEL_REASON_PRESETS.find((r) => r.value === reason);
   return hit ? hit.suggestedRefundDollars : null;
 }
+
+export type CollectedByMethod = {
+  rows: { method: 'card' | 'cash' | 'zelle' | 'in_person'; jobs: number; cents: number }[];
+  totalCents: number;
+  refundedCents: number;
+  /** What the techs were paid out of it. */
+  techPayoutCents: number;
+};
+
+/** What jobs closed in the tech app actually collected, by how it was paid
+ *  (job_payments; no-shows collect nothing and are left out). */
+export async function fetchCollectedByMethod(days = 30): Promise<CollectedByMethod> {
+  const { data, error } = await supabase
+    .from('job_payments')
+    .select('payment_method, total_cents, refunded_cents, tech_payout_cents, kind')
+    .neq('kind', 'no_show')
+    .gte('created_at', daysAgoIso(days))
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  const order = ['card', 'cash', 'zelle', 'in_person'] as const;
+  const by = new Map<string, { jobs: number; cents: number }>(order.map((m) => [m, { jobs: 0, cents: 0 }]));
+  let totalCents = 0;
+  let refundedCents = 0;
+  let techPayoutCents = 0;
+  for (const row of data || []) {
+    const m = order.includes(row.payment_method as (typeof order)[number]) ? String(row.payment_method) : 'in_person';
+    const cents = Number(row.total_cents) || 0;
+    const slot = by.get(m)!;
+    slot.jobs += 1;
+    slot.cents += cents;
+    totalCents += cents;
+    refundedCents += Number(row.refunded_cents) || 0;
+    techPayoutCents += Number(row.tech_payout_cents) || 0;
+  }
+  return {
+    rows: order.map((method) => ({ method, ...by.get(method)! })).filter((r) => r.jobs > 0),
+    totalCents,
+    refundedCents,
+    techPayoutCents,
+  };
+}

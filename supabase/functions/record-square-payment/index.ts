@@ -16,7 +16,9 @@ import { computeCloseOut, formatCents, type PartsBy, type TaxMode } from '../_sh
  *
  * Point of Sale can't tag a payment with our job reference, so for those the
  * reference check is replaced by: taken in the last 12 hours, and (like every
- * card payment) never used to close another job.
+ * card payment) never used to close another job. The same goes for a sale the
+ * tech rang up in the Square app directly and picked from square-open-sales
+ * (pickedSale: true).
  *
  * The job only closes once Square confirms the payment is COMPLETED, at our
  * location, carries this job's reference, and is for exactly the total the
@@ -56,6 +58,8 @@ Deno.serve(async (req: Request) => {
     const bookingId = typeof body.bookingId === 'string' ? body.bookingId.trim() : '';
     const squareOrderId = typeof body.squareOrderId === 'string' ? body.squareOrderId.trim() : '';
     const fromPointOfSale = Boolean(squareOrderId);
+    // Sales without our reference on them: Point of Sale, or picked from the list.
+    const noReference = fromPointOfSale || body.pickedSale === true;
     const payment = body.payment && typeof body.payment === 'object' ? body.payment : null;
     let squarePaymentId = typeof body.squarePaymentId === 'string' ? body.squarePaymentId.trim() : '';
     if (!bookingId || !(squarePaymentId || squareOrderId) || !payment) {
@@ -139,9 +143,9 @@ Deno.serve(async (req: Request) => {
         ? `the card payment is ${sq.status.toLowerCase()}, not completed`
         : sq.location_id !== cfg.locationId
           ? 'the card payment was taken at a different Square location'
-          : fromPointOfSale && tooOld
+          : noReference && tooOld
             ? 'the Square sale is more than 12 hours old'
-            : !fromPointOfSale && wrongJob
+            : !noReference && wrongJob
               ? 'the card payment is for a different job'
               : sq.amount_money?.currency !== 'USD' || sq.amount_money?.amount !== expected.totalCents
                 ? `the card was charged ${formatCents(sq.amount_money?.amount ?? 0)} but the receipt totals ${formatCents(expected.totalCents)}`

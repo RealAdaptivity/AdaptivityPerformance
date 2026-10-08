@@ -19,7 +19,14 @@ import {
   uploadSignature,
   type ReceiptSendResult,
 } from '../../services/jobPayments';
-import { savePendingSale, squareChargeUrl, squarePlatform } from '../../services/squarePointOfSale';
+import {
+  attachSquareSale,
+  savePendingSale,
+  squareChargeUrl,
+  squarePlatform,
+  type OpenSquareSale,
+} from '../../services/squarePointOfSale';
+import { SquareSalePicker } from './SquareSalePicker';
 import { fetchZelleConfig, type ZelleConfig } from '../../services/zelle';
 import { cashHandlingSteps } from '../../services/cashHandling';
 import { QrCode } from './QrCode';
@@ -60,6 +67,9 @@ export const TechPayScreen: React.FC<{
   const [payMethod, setPayMethod] = useState<'card' | 'zelle' | 'cash'>('card');
   const [zelle, setZelle] = useState<ZelleConfig | null>(null);
   const [closedTotal, setClosedTotal] = useState<{ total: number; payout: number } | null>(null);
+  /** Card already charged in the Square app: 'find' lists the sales to pick
+   *  from; 'manual' falls back to sliding without a Square record. */
+  const [chargedInSquare, setChargedInSquare] = useState<'no' | 'find' | 'manual'>('no');
   const exportRef = useRef<(() => Promise<Blob | null>) | null>(null);
 
   const closeOut = useMemo(
@@ -124,6 +134,39 @@ export const TechPayScreen: React.FC<{
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not start the card payment');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  /** A sale rung up in the Square app: close the job with it, checked by Square. */
+  const closeWithSquareSale = async (sale: OpenSquareSale) => {
+    if (saving) return;
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const png = await exportRef.current?.();
+      if (!png) throw new Error('Could not read the signature — have the customer sign again.');
+      const signaturePath = await uploadSignature(job.id, png);
+      const saved = await attachSquareSale({
+        bookingId: job.id,
+        squarePaymentId: sale.id,
+        payment: closeOutPayload(closeOut, {
+          taxMode,
+          partsBy,
+          signaturePath,
+          signerName: signerName.trim(),
+          techNotes: notes.trim() || undefined,
+        }),
+      });
+      setClosedTotal({ total: saved.totalCents, payout: saved.techPayoutCents });
+      onClosed();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not close the job with that sale');
     } finally {
       setSaving(false);
     }
@@ -449,9 +492,36 @@ export const TechPayScreen: React.FC<{
             >
               {saving ? 'Opening Square…' : `Charge card in Square · ${formatCents(closeOut.totalCents)}`}
             </button>
-            <p className="text-center text-[11px] text-slate-500">Already charged on the Square app? Slide below instead.</p>
+            {chargedInSquare === 'no' ? (
+              <button
+                type="button"
+                onClick={() => setChargedInSquare('find')}
+                disabled={saving}
+                className="w-full text-center text-[12px] font-semibold text-slate-400 underline-offset-2 hover:underline"
+              >
+                Already charged in the Square app? Find the sale
+              </button>
+            ) : chargedInSquare === 'find' ? (
+              <>
+                {problem ? (
+                  <p className="text-center text-xs text-slate-400">{problem}</p>
+                ) : (
+                  <SquareSalePicker bookingId={job.id} totalCents={closeOut.totalCents} busy={saving} onPick={(s) => void closeWithSquareSale(s)} />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setChargedInSquare('manual')}
+                  disabled={saving}
+                  className="w-full text-center text-[11px] text-slate-500 underline-offset-2 hover:underline"
+                >
+                  Can’t find it? Close without the Square record
+                </button>
+              </>
+            ) : null}
           </>
         )}
+        {(payMethod !== 'card' || chargedInSquare === 'manual') && (
+        <>
         <div className="relative">
           <div className={`pointer-events-none absolute inset-0 flex items-center justify-center rounded-full border ${problem ? 'border-white/10 bg-[#12141c]' : 'border-brand/45 bg-[#12141c]'}`}>
             <span className="pl-12 font-heading text-base font-bold">
@@ -478,6 +548,8 @@ export const TechPayScreen: React.FC<{
           />
         </div>
         <p className="text-center text-xs text-slate-400">{problem ?? 'Unlocked — slide all the way to close the job'}</p>
+        </>
+        )}
       </div>
     </div>
   );
