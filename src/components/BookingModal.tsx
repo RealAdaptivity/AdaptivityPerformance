@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle2,
   Info,
+  Search,
   Loader2,
   MapPin,
   Phone,
@@ -26,6 +27,7 @@ import { applyReferralCodeOnBooking } from '../services/referrals';
 import {
   EMPTY_VEHICLE,
   composeVehicleDescription,
+  isValidVin,
   normalizeVin,
   validateVehicle,
   type VehicleDetails,
@@ -75,6 +77,7 @@ import {
   visitCharges,
 } from '../services/bookingFlow';
 import { BrandLogo } from './BrandLogo';
+import { lookupVin, type VinSummary } from '../services/vinLookup';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -189,6 +192,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [accountStatus, setAccountStatus] = useState<'idle' | 'created' | 'confirm_email'>('idle');
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lastDecodedVin = useRef('');
+  const [vinLookup, setVinLookup] = useState<
+    | { status: 'idle' | 'loading' }
+    | { status: 'done'; summary: VinSummary }
+    | { status: 'error'; message: string }
+  >({ status: 'idle' });
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [visibleArea, setVisibleArea] = useState<{ top: number; height: number } | null>(null);
 
@@ -316,6 +325,43 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const setVehicleField = (field: keyof VehicleDetails, value: string) => {
     setVehicleDetails((v) => ({ ...v, [field]: value }));
     clearError(field);
+  };
+
+  /* The VIN fills in year, make, model, trim and engine (NHTSA, through the
+     decode-vin edge function). Decoded values replace what was typed, because
+     the VIN is the more reliable of the two; the customer can still edit. */
+  const decodeVin = async (raw: string) => {
+    const vin = normalizeVin(raw);
+    if (vin === lastDecodedVin.current) return;
+    lastDecodedVin.current = vin;
+    setVinLookup({ status: 'loading' });
+    try {
+      const s = await lookupVin(vin);
+      if (lastDecodedVin.current !== vin) return;
+      setVehicleDetails((v) => ({
+        ...v,
+        year: s.year || v.year,
+        make: s.make || v.make,
+        model: s.model || v.model,
+        trim: s.trim || v.trim,
+        engine: s.engine || v.engine,
+      }));
+      for (const f of ['year', 'make', 'model', 'trim', 'engine'] as const) clearError(f);
+      setVinLookup({ status: 'done', summary: s });
+    } catch (e) {
+      if (lastDecodedVin.current !== vin) return;
+      lastDecodedVin.current = '';
+      setVinLookup({ status: 'error', message: e instanceof Error ? e.message : 'Could not look up that VIN.' });
+    }
+  };
+  const onVinChange = (value: string) => {
+    setVehicleField('vin', value.toUpperCase());
+    const vin = normalizeVin(value);
+    if (isValidVin(vin)) void decodeVin(vin);
+    else if (vinLookup.status !== 'idle') {
+      lastDecodedVin.current = '';
+      setVinLookup({ status: 'idle' });
+    }
   };
   const describedBy = (field: string) => (errors[field] ? `bk-${field}-err` : undefined);
 
@@ -825,6 +871,73 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 <p className="text-[15px] leading-relaxed text-slate-400">
                   So the tech brings the right parts and tools the first time.
                 </p>
+                <div>
+                  <label htmlFor="bk-vin" className={labelClass}>
+                    VIN · fills in the rest for you
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="bk-vin"
+                      maxLength={20}
+                      autoCapitalize="characters"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={vehicleDetails.vin}
+                      onChange={(e) => onVinChange(e.target.value)}
+                      aria-invalid={errors.vin ? true : undefined}
+                      aria-describedby={errors.vin ? 'bk-vin-err' : 'bk-vin-help'}
+                      className={`${inputClass(!!errors.vin)} min-w-0 flex-1 font-heading tracking-[0.08em]`}
+                      placeholder="17 characters"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        lastDecodedVin.current = '';
+                        void decodeVin(vehicleDetails.vin);
+                      }}
+                      disabled={!isValidVin(vehicleDetails.vin) || vinLookup.status === 'loading'}
+                      className="inline-flex min-h-[52px] shrink-0 items-center gap-1.5 rounded-2xl border border-white/[0.14] px-4 text-sm font-semibold text-slate-200 hover:border-white/30 disabled:opacity-40"
+                    >
+                      {vinLookup.status === 'loading' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <Search className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      Look up
+                    </button>
+                  </div>
+                  <FieldError id="bk-vin-err" message={errors.vin} />
+                  <div aria-live="polite">
+                    {vinLookup.status === 'done' && (
+                      <div className="mt-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-3 text-[13px] leading-relaxed text-emerald-100">
+                        <p className="flex items-start gap-2">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+                          <span>
+                            <strong>{vinLookup.summary.description}</strong>
+                            {vinLookup.summary.trim ? ` · ${vinLookup.summary.trim}` : ''} — filled in below. Fix
+                            anything that looks wrong.
+                          </span>
+                        </p>
+                        {vinLookup.summary.warnings.map((w) => (
+                          <p key={w} className="mt-1.5 pl-6 text-amber-200">{w}</p>
+                        ))}
+                      </div>
+                    )}
+                    {vinLookup.status === 'error' && (
+                      <p className="mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-[13px] text-amber-100">
+                        {vinLookup.message} You can still fill the vehicle in below.
+                      </p>
+                    )}
+                  </div>
+                  <p
+                    id="bk-vin-help"
+                    className="mt-2.5 flex items-start gap-2.5 rounded-xl bg-[#12141c] px-3.5 py-3 text-[13px] leading-relaxed text-slate-400"
+                  >
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" aria-hidden="true" />
+                    Bottom corner of the windshield on the driver’s side, the sticker in the driver’s door jamb, or
+                    your insurance card.
+                  </p>
+                </div>
                 <div className="grid grid-cols-3 gap-2.5">
                   <div>
                     <label htmlFor="bk-year" className={labelClass}>
@@ -910,32 +1023,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     <FieldError id="bk-engine-err" message={errors.engine} />
                   </div>
                 </div>
-                <div>
-                  <label htmlFor="bk-vin" className={labelClass}>
-                    VIN
-                  </label>
-                  <input
-                    id="bk-vin"
-                    maxLength={17}
-                    autoCapitalize="characters"
-                    spellCheck={false}
-                    value={vehicleDetails.vin}
-                    onChange={(e) => setVehicleField('vin', e.target.value.toUpperCase())}
-                    aria-invalid={errors.vin ? true : undefined}
-                    aria-describedby={errors.vin ? 'bk-vin-err' : 'bk-vin-help'}
-                    className={`${inputClass(!!errors.vin)} font-heading tracking-[0.08em]`}
-                    placeholder="17 characters"
-                  />
-                  <FieldError id="bk-vin-err" message={errors.vin} />
-                  <p
-                    id="bk-vin-help"
-                    className="mt-2.5 flex items-start gap-2.5 rounded-xl bg-[#12141c] px-3.5 py-3 text-[13px] leading-relaxed text-slate-400"
-                  >
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" aria-hidden="true" />
-                    Bottom corner of the windshield on the driver’s side, the sticker in the driver’s door jamb, or
-                    your insurance card.
-                  </p>
-                </div>
+
               </div>
             )}
 
