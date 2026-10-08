@@ -184,3 +184,34 @@ export function recordSquareSale(pending: PendingSquareSale, transactionId: stri
     payment: pending.payment,
   });
 }
+
+/** A card sale rung up in the Square app that is not on a job yet. */
+export type OpenSquareSale = {
+  id: string;
+  amountCents: number;
+  createdAt: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+  note: string | null;
+};
+
+/** The last 12 hours of Square card sales not attached to any job. */
+export async function fetchOpenSquareSales(bookingId: string): Promise<OpenSquareSale[]> {
+  const { sales } = await invokeEdgeFunction<{ sales: OpenSquareSale[] }>('square-open-sales', { bookingId });
+  return sales ?? [];
+}
+
+/** Close the job with a sale the tech picked: checked with Square (completed,
+ *  ours, exact total, not on another job) before anything is saved. */
+export function attachSquareSale(opts: {
+  bookingId: string;
+  squarePaymentId: string;
+  payment: Record<string, unknown>;
+}): Promise<RecordedPayment> {
+  return invokeEdgeFunction<RecordedPayment>('record-square-payment', {
+    bookingId: opts.bookingId,
+    squarePaymentId: opts.squarePaymentId,
+    pickedSale: true,
+    payment: opts.payment,
+  });
+}

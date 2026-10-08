@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
       admin.from('profiles').select('role').eq('id', user.id).maybeSingle(),
       admin
         .from('bookings')
-        .select('id, reference_code, customer_name, customer_phone, customer_email, vehicle_description, mechanic_id')
+        .select('id, reference_code, customer_name, customer_phone, customer_email, vehicle_description, vin, mechanic_id')
         .eq('id', bookingId)
         .maybeSingle(),
       admin.from('job_payments').select('*').eq('booking_id', bookingId).maybeSingle(),
@@ -67,6 +67,9 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Only the tech on this job can send its receipt' }, 403);
     }
     if (!payment) return jsonResponse({ error: 'Close the job before sending a receipt' }, 409);
+    const { data: tech } = booking.mechanic_id
+      ? await admin.from('profiles').select('full_name').eq('id', booking.mechanic_id).maybeSingle()
+      : { data: null };
     if (payment.kind === 'no_show') return jsonResponse({ error: 'A no-show has no receipt' }, 409);
 
     const siteUrl = (Deno.env.get('ADAPTIVITY_SITE_URL')?.trim() || 'https://adaptivityperformance.com').replace(/\/$/, '');
@@ -88,6 +91,14 @@ Deno.serve(async (req: Request) => {
       techNotes: payment.tech_notes,
       businessPhone: BUSINESS_PHONE,
       siteUrl,
+      vin: booking.vin ?? null,
+      techName: tech?.full_name ?? null,
+      payment: {
+        method: ['card', 'cash', 'zelle'].includes(payment.payment_method) ? payment.payment_method : 'in_person',
+        cardBrand: payment.card_brand ?? null,
+        cardLast4: payment.card_last4 ?? null,
+      },
+      refundedCents: payment.refunded_cents ?? 0,
     };
     const smsBody = buildReceiptSms(receipt);
     const subject = receiptSubject(receipt);

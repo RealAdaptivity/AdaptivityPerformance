@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
-import { openReceiptPrintWindow } from '../../services/receiptPdf';
+import { openInvoicePrintWindow, openReceiptPrintWindow } from '../../services/receiptPdf';
+import { loadInvoice } from '../../services/invoiceData';
+import { buildReceiptEmailText, receiptSubject } from '../../services/receiptMessage';
+import { openDeviceEmail } from '../../services/jobPayments';
 import { openReceiptEmail } from '../../services/receiptEmail';
 import { addFavoriteTech, submitWarrantyClaim } from '../../services/customerExtras';
 import { ReviewRequestCard } from '../../components/ReviewRequestCard';
@@ -309,7 +312,9 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
                   onClick={() => {
                     void (async () => {
                       try {
-                        openReceiptPrintWindow(await receiptData(row));
+                        const invoice = await loadInvoice(row.id);
+                        if (invoice) openInvoicePrintWindow(invoice);
+                        else openReceiptPrintWindow(await receiptData(row));
                       } catch (e) {
                         setMsg(e instanceof Error ? e.message : 'Could not open receipt');
                       }
@@ -317,14 +322,21 @@ export const CustomerHistoryTab: React.FC<Props> = ({ onBookService, customerId 
                   }}
                   className="block w-full text-[11px] font-bold text-orange-400 hover:underline"
                 >
-                  Receipt PDF →
+                  Invoice PDF →
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     void (async () => {
                       try {
-                        openReceiptEmail(await receiptData(row));
+                        const invoice = await loadInvoice(row.id);
+                        if (invoice) {
+                          const subject = receiptSubject(invoice.receipt);
+                          const text = buildReceiptEmailText(invoice.receipt);
+                          if (!openDeviceEmail(invoice.customerEmail || '', subject, text)) {
+                            window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
+                          }
+                        } else openReceiptEmail(await receiptData(row));
                       } catch (e) {
                         setMsg(e instanceof Error ? e.message : 'Could not open email receipt');
                       }

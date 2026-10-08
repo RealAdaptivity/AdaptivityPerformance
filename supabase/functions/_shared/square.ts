@@ -41,6 +41,7 @@ export type SquarePayment = {
   status: string;
   location_id: string;
   reference_id?: string;
+  note?: string;
   created_at?: string;
   amount_money?: { amount: number; currency: string };
   total_money?: { amount: number; currency: string };
@@ -84,4 +85,28 @@ export async function paymentIdForSquareOrder(cfg: SquareConfig, orderId: string
   const paymentId = card?.payment_id || card?.id;
   if (!paymentId) throw new Error('The Square sale has no card payment on it.');
   return paymentId;
+}
+
+/** Card payments at our location since `beginTime` (ISO), newest first, up to
+ *  100. Used to let a tech attach a sale rung up straight in Square. */
+export async function listSquarePayments(cfg: SquareConfig, beginTime: string): Promise<SquarePayment[]> {
+  const q = new URLSearchParams({
+    begin_time: beginTime,
+    location_id: cfg.locationId,
+    sort_order: 'DESC',
+    limit: '100',
+  });
+  const res = await fetch(`${baseUrl(cfg)}/v2/payments?${q}`, {
+    headers: {
+      Authorization: `Bearer ${cfg.accessToken}`,
+      'Square-Version': '2024-10-17',
+      Accept: 'application/json',
+    },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = body?.errors?.[0]?.detail || `Square returned ${res.status}`;
+    throw new Error(`Could not list Square sales: ${detail}`);
+  }
+  return (body.payments ?? []) as SquarePayment[];
 }

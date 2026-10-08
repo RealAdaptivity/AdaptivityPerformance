@@ -3,10 +3,12 @@ import {
   AlertCircle,
   CreditCard,
   ExternalLink,
+  FileText,
   Loader2,
   MapPin,
   Phone,
   PhoneCall,
+  Send,
   Truck,
   User,
   Wrench,
@@ -17,7 +19,14 @@ import {
 import { DispatchMap } from './DispatchMap';
 import { VinLookupPanel } from './VinLookupPanel';
 import { BookingModal } from '../components/BookingModal';
-import { fetchJobPaymentSummary, paymentMethodLabel, type JobPaymentSummary } from '../services/jobPayments';
+import {
+  fetchJobPaymentSummary,
+  paymentMethodLabel,
+  sendReceipt,
+  type JobPaymentSummary,
+} from '../services/jobPayments';
+import { loadInvoice } from '../services/invoiceData';
+import { openInvoicePrintWindow } from '../services/receiptPdf';
 import { AddTechnicianForm } from './AddTechnicianForm';
 import type { Booking, JobStatus } from '../context/BookingContext';
 import { isIncompleteServiceAddress } from '../services/serviceAddress';
@@ -601,12 +610,47 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const [cancelReason, setCancelReason] = useState<string>('customer_request');
   const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
   const [payment, setPayment] = useState<JobPaymentSummary | null>(null);
+  const [invoiceBusy, setInvoiceBusy] = useState<'print' | 'send' | null>(null);
+  const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
+
+  const printInvoice = async () => {
+    setInvoiceBusy('print');
+    setInvoiceMsg(null);
+    try {
+      const doc = booking.supabaseId ? await loadInvoice(booking.supabaseId) : null;
+      if (doc) openInvoicePrintWindow(doc);
+      else setInvoiceMsg('This job was not closed in the tech app, so there is no invoice to print.');
+    } catch (e) {
+      setInvoiceMsg(e instanceof Error ? e.message : 'Could not open the invoice');
+    } finally {
+      setInvoiceBusy(null);
+    }
+  };
+
+  /** Text and email the customer their invoice again, from the business number and address. */
+  const resendInvoice = async () => {
+    setInvoiceBusy('send');
+    setInvoiceMsg(null);
+    try {
+      if (!booking.supabaseId) throw new Error('This job has no database id yet — refresh the board.');
+      const r = await sendReceipt(booking.supabaseId, ['sms', 'email'], {});
+      const said = (label: string, c?: { status: string; detail?: string; to?: string }) =>
+        c ? `${label} ${c.status === 'sent' ? `sent to ${c.to}` : c.status === 'skipped' ? 'not set up yet' : `failed${c.detail ? ` (${c.detail})` : ''}`}` : '';
+      setInvoiceMsg([said('Text', r.sms), said('Email', r.email)].filter(Boolean).join(' · '));
+    } catch (e) {
+      setInvoiceMsg(e instanceof Error ? e.message : 'Could not send the invoice');
+    } finally {
+      setInvoiceBusy(null);
+    }
+  };
 
   // How the job was paid (card / Zelle / cash), once the tech has closed it.
   useEffect(() => {
     let cancelled = false;
     setPayment(null);
-    void fetchJobPaymentSummary(booking.id)
+    // booking.id is the reference code; job_payments is keyed by the row id.
+    if (!booking.supabaseId) return;
+    void fetchJobPaymentSummary(booking.supabaseId)
       .then((p) => {
         if (!cancelled) setPayment(p);
       })
@@ -614,7 +658,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [booking.id, booking.status, booking.paymentStatus]);
+  }, [booking.supabaseId, booking.status, booking.paymentStatus]);
 
   /* Was gated on booking.paymentIntentId — a Stripe payment intent. Stripe is
      gone and nothing takes a card, so that field is null on every booking made
@@ -772,16 +816,44 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <span className="text-slate-200">
             {booking.paymentStatus === 'paid_in_person'
               ? `Paid in person${payment ? ` · ${paymentMethodLabel(payment)}` : ''}`
+              : booking.paymentStatus === 'refunded' || booking.paymentStatus === 'partially_refunded'
+                ? `${booking.paymentStatus === 'refunded' ? 'Refunded' : 'Partly refunded'}${payment ? ` · ${paymentMethodLabel(payment)}` : ''}`
               : booking.paymentStatus === 'no_show'
                 ? 'No-show (nothing collected)'
                 : (booking.paymentStatus ?? 'none')}
           </span>
         </p>
-        {payment && booking.paymentStatus === 'paid_in_person' && (
-          <p className="text-xs text-slate-400">
-            Collected <span className="text-slate-200">{formatMoney(payment.totalCents)}</span>
-            {payment.recordedAt && ` · ${new Date(payment.recordedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`}
-          </p>
+        {payment && payment.kind !== 'no_show' && (
+          <>
+            <p className="text-xs text-slate-400">
+              Collected <span className="text-slate-200">{formatMoney(payment.totalCents)}</span>
+              {payment.recordedAt && ` · ${new Date(payment.recordedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`}
+            </p>
+            {payment.refundedCents > 0 && (
+              <p className="text-xs text-amber-300">Refunded in Square: {formatMoney(payment.refundedCents)}</p>
+            )}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => void printInvoice()}
+                disabled={invoiceBusy !== null}
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-white/15 px-3 text-[11px] font-bold text-slate-200 hover:border-white/30 disabled:opacity-50"
+              >
+                {invoiceBusy === 'print' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+                Invoice PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => void resendInvoice()}
+                disabled={invoiceBusy !== null}
+                className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-white/15 px-3 text-[11px] font-bold text-slate-200 hover:border-white/30 disabled:opacity-50"
+              >
+                {invoiceBusy === 'send' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                Resend to customer
+              </button>
+            </div>
+            {invoiceMsg && <p className="text-[11px] text-slate-400">{invoiceMsg}</p>}
+          </>
         )}
       </div>
 

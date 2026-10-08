@@ -117,6 +117,9 @@ export type JobPaymentSummary = {
   cardLast4: string | null;
   totalCents: number;
   recordedAt: string;
+  kind: 'charge' | 'diagnostic_only' | 'no_show';
+  /** Given back through Square since (square-webhook keeps it current). */
+  refundedCents: number;
 };
 
 /** How a closed job was paid, for the admin dashboard. Null when no payment
@@ -124,7 +127,7 @@ export type JobPaymentSummary = {
 export async function fetchJobPaymentSummary(bookingId: string): Promise<JobPaymentSummary | null> {
   const { data, error } = await supabase
     .from('job_payments')
-    .select('payment_method, card_brand, card_last4, total_cents, created_at')
+    .select('payment_method, card_brand, card_last4, total_cents, created_at, kind, refunded_cents')
     .eq('booking_id', bookingId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -136,6 +139,8 @@ export async function fetchJobPaymentSummary(bookingId: string): Promise<JobPaym
     cardLast4: (data.card_last4 as string | null) ?? null,
     totalCents: Number(data.total_cents ?? 0),
     recordedAt: String(data.created_at ?? ''),
+    kind: data.kind === 'diagnostic_only' || data.kind === 'no_show' ? data.kind : 'charge',
+    refundedCents: Number(data.refunded_cents ?? 0),
   };
 }
 
