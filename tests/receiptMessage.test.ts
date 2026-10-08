@@ -165,3 +165,12 @@ test('the invoice names the registered entity and address', async () => {
   assert.equal(BUSINESS.legalName, identity.LEGAL_ENTITY_NAME);
   assert.equal(BUSINESS.address, identity.LEGAL_ENTITY_ADDRESS);
 });
+
+test('the parts pickup fee gets its own line after travel, and the tax line says what it covers', () => {
+  const r = { ...base, partsPickupCents: 1455, taxCents: 1320, totalCents: 47325 };
+  const labels = receiptRows(r).map((x) => x.label);
+  assert.deepEqual(labels.slice(-3), ['Travel', 'Parts pickup (10% of parts)', 'Sales tax 8.25% on parts & pickup']);
+  assert.equal(receiptRows(r).reduce((s, x) => s + x.cents, 0), r.totalCents);
+  assert.equal(receiptChargeRows(r).reduce((s, x) => s + x.cents, 0), receiptSubtotalCents(r));
+  assert.match(buildReceiptEmailText(r), /Parts pickup \(10% of parts\): \$14\.55/);
+});
