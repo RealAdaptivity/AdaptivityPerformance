@@ -1,11 +1,15 @@
 /** Receipts: every paid job closed in the tech app (job_payments), and the
- *  receipts an admin makes from a quote that was paid some other way
- *  (public.receipts). Both are numbered from the same R- sequence. Admin only. */
+ *  receipts an admin makes in the Receipts tab (public.receipts) — for a
+ *  quote that was paid, or for a customer who never booked. All are numbered
+ *  from the same R- sequence. Admin only. */
 
 import { supabase } from './supabaseClient';
 import { paymentMethodText, type PaymentMethod } from './receiptMessage';
 import { SITE_ORIGIN, SITE_PHONE_DISPLAY } from '../site/seo';
-import { lineLaborCents, setQuoteStatus, type Quote } from './quotes';
+import { lineLaborCents, setQuoteStatus, totalsFor, type Quote, type QuoteLine } from './quotes';
+import { SALES_TAX_BASIS_POINTS, type TaxMode } from './salesTax';
+import { LABOR_RATE_CENTS } from './laborRate';
+import { isVinShaped, normalizeVin } from './vinDecode';
 import type { InvoiceDoc } from './invoiceData';
 import {
   normalizeReference,
@@ -21,12 +25,13 @@ import {
 const dollarsToCents = (n: number) => Math.round((Number(n) || 0) * 100);
 
 export type ReceiptRow = {
-  /** 'job' — closed in the tech app; 'quote' — made here from a quote. */
-  source: 'job' | 'quote';
+  /** 'job' — closed in the tech app; 'manual' — made in the Receipts tab,
+   *  from a quote or for a customer who never booked. */
+  source: 'job' | 'manual';
   /** booking id for a job, receipts.id for one made from a quote. */
   id: string;
   receiptNumber: string;
-  /** AP-… for a job, Q-… for a quote, when known. */
+  /** AP-… for a job, Q-… for a receipt made from a quote; null for a walk-in. */
   reference: string | null;
   customerName: string;
   customerPhone: string | null;
@@ -39,6 +44,8 @@ export type ReceiptRow = {
   paidAt: string;
   sentByText: boolean;
   sentByEmail: boolean;
+  /** The whole receipt, for one made in the Receipts tab. */
+  standalone?: StandaloneReceipt;
 };
 
 type JobRow = {
@@ -163,7 +170,7 @@ export async function listReceipts(limit = 200): Promise<ReceiptRow[]> {
   const fromQuotes: ReceiptRow[] = (made.data ?? []).map((row) => {
     const r = rowToStandalone(row as Record<string, unknown>);
     return {
-      source: 'quote',
+      source: 'manual',
       id: r.id,
       receiptNumber: r.receiptNumber,
       reference: r.quoteId ? quoteNumbers.get(r.quoteId) ?? null : null,
@@ -177,6 +184,7 @@ export async function listReceipts(limit = 200): Promise<ReceiptRow[]> {
       paidAt: paidOnInstant(r.paidOn),
       sentByText: false,
       sentByEmail: false,
+      standalone: r,
     };
   });
 
@@ -198,26 +206,31 @@ export type ReceiptPayment = {
   notes?: string;
 };
 
-/**
- * The receipt for a quote the customer paid: the quote's own lines and
- * totals, exactly as quoted, plus how and when it was paid. The quote is
- * marked accepted.
- */
-export async function createReceiptFromQuote(quote: Quote, payment: ReceiptPayment): Promise<StandaloneReceipt> {
+type ReceiptFields = {
+  quoteId: string | null;
+  customerName: string;
+  customerPhone: string | null;
+  customerEmail: string | null;
+  customerAddress: string | null;
+  vehicle: string | null;
+  vin: string | null;
+  lines: StoredReceiptLine[];
+  laborCents: number;
+  partsCents: number;
+  partsPickupCents: number;
+  taxMode: TaxMode;
+  taxRateBasisPoints: number;
+  taxCents: number;
+  totalCents: number;
+  laborRateCents: number;
+};
+
+async function insertReceipt(f: ReceiptFields, payment: ReceiptPayment): Promise<StandaloneReceipt> {
   const problem = receiptReferenceError(payment.method, payment.reference);
   if (problem) throw new Error(problem);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(payment.paidOn)) throw new Error('Pick the date it was paid');
-  if (quote.totalCents <= 0) throw new Error('This quote has no total to receipt');
+  if (f.totalCents <= 0) throw new Error('The receipt needs a total above $0');
 
-  const lines: StoredReceiptLine[] = quote.lineItems
-    .filter((l) => l.title.trim())
-    .map((l) => ({
-      title: l.title.trim(),
-      labor_cents: lineLaborCents(l, quote.laborRateCents),
-      parts_cents: dollarsToCents(l.partsDollars),
-      ...(l.hours && l.hours > 0 ? { hours: l.hours } : {}),
-      ...(l.note?.trim() ? { note: l.note.trim() } : {}),
-    }));
   const reference = normalizeReference(payment.method, payment.reference);
   const {
     data: { user },
@@ -226,23 +239,23 @@ export async function createReceiptFromQuote(quote: Quote, payment: ReceiptPayme
   const { data, error } = await supabase
     .from('receipts')
     .insert({
-      quote_id: quote.id,
-      customer_name: quote.customerName,
-      customer_phone: quote.customerPhone,
-      customer_email: quote.customerEmail,
-      customer_address: quote.customerAddress,
-      vehicle: quote.vehicle,
-      vin: quote.vin,
-      line_items: withPickupLine(lines, quote.partsPickupCents),
-      labor_cents: quote.laborCents,
+      quote_id: f.quoteId,
+      customer_name: f.customerName,
+      customer_phone: f.customerPhone,
+      customer_email: f.customerEmail,
+      customer_address: f.customerAddress,
+      vehicle: f.vehicle,
+      vin: f.vin,
+      line_items: withPickupLine(f.lines, f.partsPickupCents),
+      labor_cents: f.laborCents,
       // The table adds up labor + parts + tax: the pickup fee rides with the
       // parts (and is taxed with them), and line_items keeps it apart.
-      parts_cents: quote.partsCents + quote.partsPickupCents,
-      tax_mode: quote.taxMode,
-      tax_rate_basis_points: quote.taxRateBasisPoints,
-      tax_cents: quote.taxCents,
-      total_cents: quote.totalCents,
-      labor_rate_cents: quote.laborRateCents,
+      parts_cents: f.partsCents + f.partsPickupCents,
+      tax_mode: f.taxMode,
+      tax_rate_basis_points: f.taxRateBasisPoints,
+      tax_cents: f.taxCents,
+      total_cents: f.totalCents,
+      labor_rate_cents: f.laborRateCents,
       payment_method: payment.method,
       payment_reference: reference || null,
       paid_on: payment.paidOn,
@@ -252,11 +265,104 @@ export async function createReceiptFromQuote(quote: Quote, payment: ReceiptPayme
     .select('*')
     .single();
   if (error) throw new Error(error.message);
+  return rowToStandalone(data as Record<string, unknown>);
+}
 
+function storedLines(lines: QuoteLine[], rateCents: number): StoredReceiptLine[] {
+  return lines
+    .filter((l) => l.title.trim())
+    .map((l) => ({
+      title: l.title.trim(),
+      labor_cents: lineLaborCents(l, rateCents),
+      parts_cents: dollarsToCents(l.partsDollars),
+      ...(l.hours && l.hours > 0 ? { hours: l.hours } : {}),
+      ...(l.note?.trim() ? { note: l.note.trim() } : {}),
+    }));
+}
+
+/**
+ * The receipt for a quote the customer paid: the quote's own lines and
+ * totals, exactly as quoted, plus how and when it was paid. The quote is
+ * marked accepted.
+ */
+export async function createReceiptFromQuote(quote: Quote, payment: ReceiptPayment): Promise<StandaloneReceipt> {
+  const r = await insertReceipt(
+    {
+      quoteId: quote.id,
+      customerName: quote.customerName,
+      customerPhone: quote.customerPhone,
+      customerEmail: quote.customerEmail,
+      customerAddress: quote.customerAddress,
+      vehicle: quote.vehicle,
+      vin: quote.vin,
+      lines: storedLines(quote.lineItems, quote.laborRateCents),
+      laborCents: quote.laborCents,
+      partsCents: quote.partsCents,
+      partsPickupCents: quote.partsPickupCents,
+      taxMode: quote.taxMode,
+      taxRateBasisPoints: quote.taxRateBasisPoints,
+      taxCents: quote.taxCents,
+      totalCents: quote.totalCents,
+      laborRateCents: quote.laborRateCents,
+    },
+    payment
+  );
   if (quote.status !== 'accepted') {
     await setQuoteStatus(quote.id, 'accepted').catch(() => undefined);
   }
-  return rowToStandalone(data as Record<string, unknown>);
+  return r;
+}
+
+export type WalkInDraft = {
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerAddress?: string;
+  vehicle?: string;
+  /** Optional, but when given it must be a whole VIN. */
+  vin?: string;
+  lineItems: QuoteLine[];
+  taxMode: TaxMode;
+  /** The 10% parts pickup fee, when the parts were picked up for the job. */
+  partsPickup: boolean;
+  laborRateCents?: number;
+};
+
+/**
+ * A receipt for a customer who never booked and has no quote: typed in from
+ * scratch, priced with the same arithmetic as quotes and close-outs.
+ */
+export async function createWalkInReceipt(draft: WalkInDraft, payment: ReceiptPayment): Promise<StandaloneReceipt> {
+  const name = draft.customerName.trim();
+  if (!name) throw new Error('Enter the customer’s name');
+  const vin = normalizeVin(draft.vin ?? '');
+  if (vin && !isVinShaped(vin)) throw new Error('That VIN is not 17 characters — fix it or leave it blank');
+  const work = draft.lineItems.filter((l) => l.title.trim());
+  if (!work.length) throw new Error('Add at least one line for the work done');
+
+  const rateCents = draft.laborRateCents ?? LABOR_RATE_CENTS;
+  const totals = totalsFor(work, draft.taxMode, rateCents, draft.partsPickup);
+  return insertReceipt(
+    {
+      quoteId: null,
+      customerName: name,
+      customerPhone: draft.customerPhone?.trim() || null,
+      customerEmail: draft.customerEmail?.trim() || null,
+      customerAddress: draft.customerAddress?.trim() || null,
+      vehicle: draft.vehicle?.trim() || null,
+      vin: vin || null,
+      lines: storedLines(work, rateCents),
+      laborCents: totals.laborCents,
+      partsCents: totals.partsCents,
+      partsPickupCents: totals.partsPickupCents,
+      taxMode: draft.taxMode,
+      taxRateBasisPoints: SALES_TAX_BASIS_POINTS,
+      taxCents: totals.taxCents,
+      totalCents: totals.totalCents,
+      laborRateCents: rateCents,
+    },
+    payment
+  );
 }
 
 export async function fetchStandaloneReceipt(id: string): Promise<StandaloneReceipt | null> {
