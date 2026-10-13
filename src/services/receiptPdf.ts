@@ -303,7 +303,8 @@ function prettyPhone(raw: string | null): string {
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : (raw ?? '').trim();
 }
 
-/** The invoice for a job closed in the tech app. */
+/** The invoice for a job closed in the tech app, or a receipt made in the
+ *  admin Receipts tab. */
 export function buildInvoiceHtml(doc: InvoiceDoc, opts: { logoUrl: string }): string {
   const r = doc.receipt;
   const rows = receiptChargeRows(r)
@@ -353,6 +354,7 @@ ${INVOICE_STYLES}
         <div class="doc-meta">
           <span class="doc-badge">Invoice</span>
           <p class="doc-id">${escapeHtml(r.referenceCode)}</p>
+          ${doc.receiptNumber && doc.receiptNumber !== r.referenceCode ? `<p class="doc-date">Receipt ${escapeHtml(doc.receiptNumber)}</p>` : ''}
           ${paidOn ? `<p class="doc-date">Paid ${escapeHtml(paidOn)}</p>` : ''}
           ${serviceOn ? `<p class="doc-date">Service date ${escapeHtml(serviceOn)}</p>` : ''}
           <span class="stamp${refunded > 0 ? ' refund' : ''}">${fullyRefunded ? 'REFUNDED' : refunded > 0 ? 'PARTLY REFUNDED' : 'PAID'}</span>
@@ -394,7 +396,7 @@ ${INVOICE_STYLES}
           <div class="totals-row"><span>Subtotal</span><strong>${centsMoney(receiptSubtotalCents(r))}</strong></div>
           ${r.taxCents > 0 ? `<div class="totals-row"><span>${escapeHtml(taxLabel(r))}</span><strong>${centsMoney(r.taxCents)}</strong></div>` : ''}
           <div class="totals-row grand"><span>Total</span><strong>${centsMoney(r.totalCents)}</strong></div>
-          <div class="totals-row paid-by"><span>Paid · ${escapeHtml(paymentMethodText(r.payment))}</span><strong>${centsMoney(r.totalCents)}</strong></div>
+          <div class="totals-row paid-by"><span>Paid · ${escapeHtml(doc.paidVia || paymentMethodText(r.payment))}</span><strong>${centsMoney(r.totalCents)}</strong></div>
           ${refunded > 0 ? `<div class="totals-row refund"><span>Refunded</span><strong>-${centsMoney(refunded)}</strong></div>` : ''}
           <div class="totals-row"><span>Balance due</span><strong>$0.00</strong></div>
         </div>
@@ -407,6 +409,7 @@ ${INVOICE_STYLES}
           : ''
       }
       ${r.techNotes?.trim() ? `<div class="notes"><strong>Technician notes</strong><br/>${escapeHtml(r.techNotes.trim())}</div>` : ''}
+      ${doc.notes?.trim() ? `<div class="notes"><strong>Notes</strong><br/>${escapeHtml(doc.notes.trim())}</div>` : ''}
 
       <div class="footer">
         <div>

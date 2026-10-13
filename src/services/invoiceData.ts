@@ -11,6 +11,13 @@ export type InvoiceDoc = {
   /** 'YYYY-MM-DD' the visit was booked for, when it was. */
   serviceDate: string | null;
   squarePaymentId: string | null;
+  /** R-1001 and up, the customer-facing receipt number. */
+  receiptNumber?: string | null;
+  /** How it was paid, when the receipt says more than paymentMethodText can
+   *  ("Check #1042", "Zelle · conf. ABC123"). */
+  paidVia?: string | null;
+  /** Shown under the charges as "Notes". */
+  notes?: string | null;
 };
 
 type BookingRow = {
@@ -43,7 +50,7 @@ export async function loadInvoice(bookingId: string): Promise<InvoiceDoc | null>
     supabase
       .from('job_payments')
       .select(
-        'kind, line_items, diagnostic_cents, travel_cents, weather_cents, discount_cents, parts_pickup_cents, tax_cents, tax_mode, total_cents, signer_name, tech_notes, created_at, payment_method, card_brand, card_last4, square_payment_id, refunded_cents'
+        'kind, line_items, diagnostic_cents, travel_cents, weather_cents, discount_cents, parts_pickup_cents, tax_cents, tax_mode, total_cents, signer_name, tech_notes, created_at, payment_method, card_brand, card_last4, square_payment_id, refunded_cents, receipt_number, zelle_confirmation'
       )
       .eq('booking_id', bookingId)
       .maybeSingle(),
@@ -97,5 +104,7 @@ export async function loadInvoice(bookingId: string): Promise<InvoiceDoc | null>
     address: b.customer_address,
     serviceDate: b.preferred_date,
     squarePaymentId: (paid.square_payment_id as string | null) ?? null,
+    receiptNumber: (paid.receipt_number as string | null) ?? null,
+    paidVia: method === 'zelle' && paid.zelle_confirmation ? `Zelle · conf. ${String(paid.zelle_confirmation)}` : null,
   };
 }

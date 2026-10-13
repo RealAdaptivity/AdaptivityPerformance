@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  BadgeDollarSign,
   Building2,
   FileText,
   ReceiptText,
@@ -35,8 +36,9 @@ import { AdminContractorAgreementsTab } from './AdminContractorAgreementsTab';
 import { QuotesAdmin } from './QuotesAdmin';
 import { AdminsAdmin } from './AdminsAdmin';
 import { ResearchAdmin } from './ResearchAdmin';
+import { ReceiptsAdmin } from './ReceiptsAdmin';
 
-type AdminTab = 'dispatch' | 'quotes' | 'research' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth' | 'admins';
+type AdminTab = 'dispatch' | 'quotes' | 'receipts' | 'research' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth' | 'admins';
 
 export const AdminApp: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -45,6 +47,9 @@ export const AdminApp: React.FC = () => {
   const [needsBootstrap, setNeedsBootstrap] = useState<boolean | null>(null);
   const [adminTab, setAdminTab] = useState<AdminTab>('dispatch');
   const [techApplicationsVersion, setTechApplicationsVersion] = useState(0);
+  /* A quote's "Paid → receipt" button opens the Receipts tab on that quote. */
+  const [receiptQuoteId, setReceiptQuoteId] = useState<string | null>(null);
+  const clearReceiptQuote = useCallback(() => setReceiptQuoteId(null), []);
 
   const refreshProfile = useCallback(async () => {
     const next = await fetchAdminProfile();
@@ -143,6 +148,12 @@ export const AdminApp: React.FC = () => {
       activeClass: 'bg-sky-600 text-white',
     },
     {
+      id: 'receipts',
+      label: 'Receipts',
+      icon: <BadgeDollarSign className="w-3 h-3" />,
+      activeClass: 'bg-emerald-600 text-white',
+    },
+    {
       id: 'research',
       label: 'Research',
       icon: <Search className="w-3 h-3" />,
@@ -210,7 +221,7 @@ export const AdminApp: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden md:flex rounded-lg border border-white/10 p-0.5 bg-[#12141c] overflow-x-auto max-w-[min(100vw-12rem,49rem)]">
+            <div className="hidden md:flex rounded-lg border border-white/10 p-0.5 bg-[#12141c] overflow-x-auto max-w-[min(100vw-12rem,55rem)]">
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -296,7 +307,16 @@ export const AdminApp: React.FC = () => {
         </div>
       ) : adminTab === 'quotes' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">
-          <QuotesAdmin />
+          <QuotesAdmin
+            onMakeReceipt={(id) => {
+              setReceiptQuoteId(id);
+              setAdminTab('receipts');
+            }}
+          />
+        </div>
+      ) : adminTab === 'receipts' ? (
+        <div className="max-w-3xl mx-auto w-full px-4 py-6">
+          <ReceiptsAdmin startFromQuoteId={receiptQuoteId} onStarted={clearReceiptQuote} />
         </div>
       ) : adminTab === 'research' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">
