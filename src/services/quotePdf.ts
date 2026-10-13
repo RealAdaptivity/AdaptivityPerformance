@@ -48,7 +48,7 @@ export function buildQuoteHtml(quote: Quote): string {
       const labor = lineLaborCents(l, rateCents);
       const parts = Math.round((Number(l.partsDollars) || 0) * 100);
       // Show the customer the arithmetic rather than an unexplained figure —
-      // "2.5 hrs x $125/hr" answers the question before they ask it.
+      // "2.5 hrs x $150/hr" answers the question before they ask it.
       const hoursBit =
         l.hours && l.hours > 0
           ? `${l.hours} hr${l.hours === 1 ? '' : 's'} \u00d7 ${money(rateCents)}/hr`
@@ -138,6 +138,11 @@ ${PRINT_DOCUMENT_STYLES}
         <div class="totals-box">
           <div class="totals-row"><span>Labor</span><strong>${money(quote.laborCents)}</strong></div>
           <div class="totals-row"><span>Parts</span><strong>${money(quote.partsCents)}</strong></div>
+          ${
+            quote.partsPickupCents > 0
+              ? `<div class="totals-row"><span>Parts pickup (10% of parts)</span><strong>${money(quote.partsPickupCents)}</strong></div>`
+              : ''
+          }
           ${
             quote.taxCents > 0
               ? `<div class="totals-row"><span>${escapeHtml(taxRowLabel(quote.taxMode))}</span><strong>${money(quote.taxCents)}</strong></div>`

@@ -57,6 +57,7 @@ import {
   BOOKABLE_SERVICE_CATALOG,
   TRAVEL_FEE_DOLLARS,
   WEATHER_FEE_NOTE,
+  PARTS_PICKUP_NOTE,
   FIRST_RESPONDER_DISCOUNT_NOTE,
   getCatalogById,
   matchCatalogFromLabel,
@@ -624,6 +625,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         No card needed. Pay your tech in person when the job is done. Any repair is quoted before it starts; the
         diagnostic is its own charge and is not applied toward the repair.
         {charges.travel ? ` ${WEATHER_FEE_NOTE} Members pay no travel or weather fee.` : ''}
+        {` ${PARTS_PICKUP_NOTE}`}
         {` ${FIRST_RESPONDER_DISCOUNT_NOTE}`}
       </p>
     </div>
@@ -1485,7 +1487,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                         </li>
                         <li>
                           “Nothing is charged today. You pay the tech in person — {money(charges.dueAtVisit)} for the
-                          visit, plus sales tax. Any repair is priced before it starts.”
+                          visit. Any repair is priced before it starts.”
                         </li>
                       </ul>
                     </div>

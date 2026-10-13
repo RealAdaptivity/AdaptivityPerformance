@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, X, Shield, Clock, Wrench, Car, ArrowRight } from 'lucide-react';
+import { LABOR_RATE_LABEL } from '../services/laborRate';
 
 interface ComparisonTableProps {
   onOpenBooking: () => void;
@@ -71,7 +72,7 @@ export const ComparisonTable: React.FC<ComparisonTableProps> = ({ onOpenBooking 
                 <X className="w-4 h-4 text-rose-500" /> $185 - $240 / hr + shop supplies
               </div>
               <div className="text-center font-bold text-orange-300 flex items-center justify-center gap-1">
-                <Check className="w-4 h-4 text-emerald-400" /> $125 / hr flat transparent
+                <Check className="w-4 h-4 text-emerald-400" /> {LABOR_RATE_LABEL.replace('/hr', ' / hr')} flat transparent
               </div>
             </div>
 

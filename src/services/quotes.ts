@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient';
 import { SALES_TAX_BASIS_POINTS, salesTaxCents, type TaxMode } from './salesTax';
 import { LABOR_RATE_CENTS, laborCentsForHours } from './laborRate';
 import { isVinShaped, normalizeVin } from './vinDecode';
+import { PARTS_PICKUP_PERCENT } from './closeOut';
 
 export type QuoteLine = {
   title: string;
@@ -33,6 +34,8 @@ export type Quote = {
   lineItems: QuoteLine[];
   laborCents: number;
   partsCents: number;
+  /** Parts pickup fee (10% of parts) in the quoted total; 0 on older quotes. */
+  partsPickupCents: number;
   taxMode: TaxMode;
   taxRateBasisPoints: number;
   taxCents: number;
@@ -54,6 +57,8 @@ export type QuoteDraft = {
   vin: string;
   lineItems: QuoteLine[];
   taxMode: TaxMode;
+  /** Quote the 10% parts pickup fee the tech will charge for getting the parts. */
+  partsPickup?: boolean;
   laborRateCents?: number;
   notes?: string;
   validUntil?: string | null;
@@ -76,16 +81,21 @@ export function lineLaborCents(line: QuoteLine, rateCents = LABOR_RATE_CENTS): n
 export function totalsFor(
   lineItems: QuoteLine[],
   taxMode: TaxMode,
-  rateCents = LABOR_RATE_CENTS
+  rateCents = LABOR_RATE_CENTS,
+  partsPickup = false
 ) {
   const laborCents = lineItems.reduce((sum, l) => sum + lineLaborCents(l, rateCents), 0);
   const partsCents = lineItems.reduce((sum, l) => sum + dollarsToCents(l.partsDollars), 0);
-  const taxCents = salesTaxCents({ laborCents, partsCents, mode: taxMode });
+  // Same sum and rounding as the close-out, so the invoice matches the quote.
+  const partsPickupCents = partsPickup ? Math.floor((partsCents * PARTS_PICKUP_PERCENT + 50) / 100) : 0;
+  // Taxed with the parts, as at close-out.
+  const taxCents = salesTaxCents({ laborCents, partsCents: partsCents + partsPickupCents, mode: taxMode });
   return {
     laborCents,
     partsCents,
+    partsPickupCents,
     taxCents,
-    totalCents: laborCents + partsCents + taxCents,
+    totalCents: laborCents + partsCents + partsPickupCents + taxCents,
   };
 }
 
@@ -102,6 +112,7 @@ function rowToQuote(row: Record<string, unknown>): Quote {
     lineItems: Array.isArray(row.line_items) ? (row.line_items as QuoteLine[]) : [],
     laborCents: (row.labor_cents as number) ?? 0,
     partsCents: (row.parts_cents as number) ?? 0,
+    partsPickupCents: (row.parts_pickup_cents as number) ?? 0,
     taxMode: (row.tax_mode as TaxMode) ?? 'parts',
     taxRateBasisPoints: (row.tax_rate_basis_points as number) ?? SALES_TAX_BASIS_POINTS,
     taxCents: (row.tax_cents as number) ?? 0,
@@ -134,7 +145,7 @@ export async function createQuote(draft: QuoteDraft): Promise<Quote> {
   if (!lines.length) throw new Error('Add at least one line item');
 
   const rateCents = draft.laborRateCents ?? LABOR_RATE_CENTS;
-  const totals = totalsFor(lines, draft.taxMode, rateCents);
+  const totals = totalsFor(lines, draft.taxMode, rateCents, draft.partsPickup === true);
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -151,6 +162,7 @@ export async function createQuote(draft: QuoteDraft): Promise<Quote> {
       line_items: lines,
       labor_cents: totals.laborCents,
       parts_cents: totals.partsCents,
+      parts_pickup_cents: totals.partsPickupCents,
       tax_mode: draft.taxMode,
       tax_rate_basis_points: SALES_TAX_BASIS_POINTS,
       tax_cents: totals.taxCents,

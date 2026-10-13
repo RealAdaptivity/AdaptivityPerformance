@@ -72,6 +72,19 @@ export const WEATHER_FEE_NOTE = `Working in rain or severe weather adds a $${WEA
  *  record_job_payment charge it; tests/closeOut.test.ts keeps all three equal. */
 export const FIRST_RESPONDER_DISCOUNT_PERCENT = 5;
 
+/** Shop labor rate in dollars per hour: what the site advertises and what
+ *  quotes start at (laborRate.ts builds LABOR_RATE_CENTS from it). Here so
+ *  the import-free site copy (seo.ts) can quote it too. */
+export const LABOR_RATE_PER_HOUR_DOLLARS = 150;
+
+/** Parts pickup fee, in percent of the parts on a repair: the trip to get
+ *  them, whether the tech or the company bought them. PARTS_PICKUP_PERCENT in
+ *  closeOut.ts and record_job_payment charge it; tests keep them equal. */
+export const PARTS_PICKUP_FEE_PERCENT = 10;
+
+/** The parts pickup fee as a customer reads it. */
+export const PARTS_PICKUP_NOTE = `When your repair needs parts we supply, a parts pickup fee of ${PARTS_PICKUP_FEE_PERCENT}% of the parts cost covers the trip to get them. It is included in your repair quote before any work starts.`;
+
 /** The first responder discount as a customer reads it. */
 export const FIRST_RESPONDER_DISCOUNT_NOTE = `Veterans, police, firefighters, EMTs and paramedics get ${FIRST_RESPONDER_DISCOUNT_PERCENT}% off labor — show your ID to the tech. One discount per visit; not combined with a membership.`;
 

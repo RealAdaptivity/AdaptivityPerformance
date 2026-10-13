@@ -121,6 +121,7 @@ Deno.serve(async (req: Request) => {
       travelCents: cents(payment.travel_cents),
       weatherCents: cents(payment.weather_cents),
       firstResponder: payment.first_responder === true,
+      partsPickup: payment.parts_pickup === true,
       taxMode,
       partsBy,
     });

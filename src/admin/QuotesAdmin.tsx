@@ -63,6 +63,9 @@ export const QuotesAdmin: React.FC = () => {
   const [notes, setNotes] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
+  /* The tech charges 10% of parts for the trip to get them (whoever buys
+     them), so the quote includes it unless the parts are already on hand. */
+  const [partsPickup, setPartsPickup] = useState(true);
   const [rateDollars, setRateDollars] = useState<number>(LABOR_RATE_CENTS / 100);
   /* The shop default, owner-set and stored in app_config. Quotes start here. */
   const [shopRateCents, setShopRateCents] = useState<number>(LABOR_RATE_CENTS);
@@ -94,8 +97,8 @@ export const QuotesAdmin: React.FC = () => {
      figure on the PDF cannot disagree. */
   const rateCents = Math.round((Number(rateDollars) || 0) * 100);
   const totals = useMemo(
-    () => totalsFor(lines.filter((l) => l.title.trim()), taxMode, rateCents),
-    [lines, taxMode, rateCents]
+    () => totalsFor(lines.filter((l) => l.title.trim()), taxMode, rateCents, partsPickup),
+    [lines, taxMode, rateCents, partsPickup]
   );
 
   const vinReady = isVinShaped(normalizeVin(vin));
@@ -139,6 +142,7 @@ export const QuotesAdmin: React.FC = () => {
     setNotes('');
     setValidUntil('');
     setTaxMode('parts');
+    setPartsPickup(true);
     setRateDollars(shopRateCents / 100);
     setLines([emptyLine()]);
   };
@@ -160,6 +164,7 @@ export const QuotesAdmin: React.FC = () => {
         vin,
         lineItems: lines,
         taxMode,
+        partsPickup,
         laborRateCents: rateCents,
         notes,
         validUntil: validUntil || null,
@@ -472,6 +477,11 @@ export const QuotesAdmin: React.FC = () => {
               <p className="text-[10px] text-slate-500 mt-1">
                 Texas repair labor is not taxed when stated separately — parts only is the norm.
               </p>
+              <label className="mt-2 flex items-start gap-2 text-[11px] text-slate-300">
+                <input type="checkbox" checked={partsPickup} onChange={(e) => setPartsPickup(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-orange-500" />
+                <span>Parts pickup · 10% of parts <span className="block text-[10px] text-slate-500">Off only if the parts are already on hand</span></span>
+              </label>
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-300 mb-1">Valid until</label>
@@ -485,6 +495,11 @@ export const QuotesAdmin: React.FC = () => {
               <div className="flex justify-between text-slate-400">
                 <span>Parts</span><span className="tabular-nums">{money(totals.partsCents)}</span>
               </div>
+              {totals.partsPickupCents > 0 && (
+                <div className="flex justify-between text-slate-400">
+                  <span>Parts pickup (10%)</span><span className="tabular-nums">{money(totals.partsPickupCents)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-slate-400">
                 <span>Tax ({SALES_TAX_LABEL})</span>
                 <span className="tabular-nums">{money(totals.taxCents)}</span>

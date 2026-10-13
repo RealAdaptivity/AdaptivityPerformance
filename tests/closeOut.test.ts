@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import {
+  PARTS_PICKUP_PERCENT,
   SALES_TAX_BASIS_POINTS,
   TECH_LABOR_SHARE_PERCENT,
   closeOutProblem,
@@ -181,13 +182,13 @@ test('the database stores and sums the weather fee the same way', () => {
     .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
     .pop();
   const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
-  assert.match(sql, /v_before_tax := v_diag \+ v_travel \+ v_weather \+ v_labor_total \+ v_parts_total - v_discount;/);
-  assert.match(sql, /\(\(v_diag \+ v_weather \+ v_labor_total - v_discount\) \* 70 \+ 50\) \/ 100\s*\+ v_travel/);
+  assert.match(sql, /v_before_tax := v_diag \+ v_travel \+ v_weather \+ v_labor_total \+ v_parts_total \+ v_pickup - v_discount;/);
+  assert.match(sql, /\(\(v_diag \+ v_weather \+ v_labor_total - v_discount\) \* 70 \+ 50\) \/ 100\s*\+ v_travel\s*\+ v_pickup/);
   // The table check that the total adds up lives in whichever migration last set it.
   const allSql = readdirSync('supabase/migrations')
     .map((f) => readFileSync(`supabase/migrations/${f}`, 'utf8'))
     .join('\n');
-  assert.match(allSql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents - discount_cents \+ tax_cents/);
+  assert.match(allSql, /total_cents = diagnostic_cents \+ travel_cents \+ weather_cents \+ labor_cents \+ parts_cents \+ parts_pickup_cents - discount_cents \+ tax_cents/);
 });
 
 test('first responders get 5% off labor only, rounded half up, shared like labor', () => {
@@ -247,4 +248,62 @@ test('the edge functions sum a close-out with the same code as the site', () => 
     readFileSync('supabase/functions/_shared/closeOut.ts', 'utf8'),
     readFileSync('src/services/closeOut.ts', 'utf8')
   );
+});
+
+test('parts pickup: 10% of parts, taxed with the parts, paid to the tech in full', () => {
+  const base = {
+    kind: 'charge' as const,
+    lines: [{ title: 'Front pads & rotors', labor: '180', parts: '145.50' }],
+    diagnosticCents: 10000,
+    travelCents: 2000,
+    weatherCents: 0,
+    taxMode: 'parts' as const,
+  };
+  // Same job the live database was checked with: $473.25, $14.55 pickup.
+  const company = computeCloseOut({ ...base, partsBy: 'company', partsPickup: true });
+  assert.equal(PARTS_PICKUP_PERCENT, 10);
+  assert.equal(company.partsPickupCents, 1455);
+  assert.equal(company.taxCents, taxOn(14550 + 1455));
+  assert.equal(company.totalCents, 47325);
+  assert.equal(company.techPayoutCents, 23055);
+  const tech = computeCloseOut({ ...base, partsBy: 'tech', partsPickup: true });
+  assert.equal(tech.partsPickupCents, 1455, 'charged whether the tech or the company bought the parts');
+  assert.equal(tech.techPayoutCents - company.techPayoutCents, 14550, 'only the parts reimbursement differs');
+  const off = computeCloseOut({ ...base, partsBy: 'tech' });
+  assert.equal(off.partsPickupCents, 0);
+  assert.equal(off.totalCents, 45750, 'without the flag a close-out is unchanged');
+  // Rounds half up to the cent, like the SQL.
+  assert.equal(computeCloseOut({ ...base, lines: [{ title: 'x', labor: '', parts: '0.05' }], partsBy: 'tech', partsPickup: true }).partsPickupCents, 1);
+  // No parts, or no repair, no fee.
+  assert.equal(computeCloseOut({ ...base, lines: [{ title: 'x', labor: '100', parts: '' }], partsBy: 'tech', partsPickup: true }).partsPickupCents, 0);
+  assert.equal(computeCloseOut({ ...base, kind: 'diagnostic_only', partsBy: 'tech', partsPickup: true }).partsPickupCents, 0);
+  const total = computeCloseOut({ ...base, taxMode: 'total', partsBy: 'tech', partsPickup: true });
+  assert.equal(total.taxCents, taxOn(10000 + 2000 + 18000 + 14550 + 1455));
+});
+
+test('the database charges the parts pickup the same way', () => {
+  const file = readdirSync('supabase/migrations')
+    .sort()
+    .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
+    .pop();
+  const sql = readFileSync(`supabase/migrations/${file}`, 'utf8');
+  assert.match(sql, new RegExp(`v_pickup := \\(v_parts_total \\* ${PARTS_PICKUP_PERCENT} \\+ 50\\) / 100;`));
+  assert.match(sql, /when 'parts' then \(\(v_parts_total \+ v_pickup\) \* 825 \+ 5000\) \/ 10000/);
+});
+
+test('the site tells customers the same parts pickup percent the close-out charges', async () => {
+  const { PARTS_PICKUP_FEE_PERCENT, PARTS_PICKUP_NOTE } = await import('../src/services/serviceCatalog.ts');
+  assert.equal(PARTS_PICKUP_FEE_PERCENT, PARTS_PICKUP_PERCENT);
+  assert.match(PARTS_PICKUP_NOTE, new RegExp(`${PARTS_PICKUP_PERCENT}% of the parts cost`));
+});
+
+test('the site advertises the labor rate quotes start at, and nowhere says $125/hr', async () => {
+  const { LABOR_RATE_PER_HOUR_DOLLARS } = await import('../src/services/serviceCatalog.ts');
+  assert.equal(LABOR_RATE_PER_HOUR_DOLLARS, 150);
+  const walk = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(`${dir}/${e.name}`) : /\.(ts|tsx|json)$/.test(e.name) ? [`${dir}/${e.name}`] : []
+    );
+  const stale = walk('src').filter((f) => /\$125\s*(\/|per)\s*(hr|hour)/i.test(readFileSync(f, 'utf8')));
+  assert.deepEqual(stale, []);
 });

@@ -37,6 +37,8 @@ export type ReceiptInput = {
   weatherCents: number;
   /** First responder discount off labor; shown as a negative line. */
   discountCents?: number;
+  /** Parts pickup fee (10% of parts), when the tech went to get them. */
+  partsPickupCents?: number;
   taxCents: number;
   taxMode: 'parts' | 'total' | 'none';
   totalCents: number;
@@ -122,8 +124,9 @@ export function receiptSubtotalCents(r: ReceiptInput): number {
   return r.totalCents - Math.max(0, r.taxCents);
 }
 
-export function taxLabel(r: Pick<ReceiptInput, 'taxMode'>): string {
-  return `Sales tax 8.25%${r.taxMode === 'parts' ? ' on parts' : ''}`;
+export function taxLabel(r: Pick<ReceiptInput, 'taxMode' | 'partsPickupCents'>): string {
+  if (r.taxMode !== 'parts') return 'Sales tax 8.25%';
+  return `Sales tax 8.25% on parts${(r.partsPickupCents ?? 0) > 0 ? ' & pickup' : ''}`;
 }
 
 /** Every charge on the receipt in the order a customer reads it. Zero rows drop out. */
@@ -144,6 +147,7 @@ export function receiptRows(r: ReceiptInput): Row[] {
     });
   }
   if (r.travelCents > 0) rows.push({ label: 'Travel', cents: r.travelCents });
+  if ((r.partsPickupCents ?? 0) > 0) rows.push({ label: 'Parts pickup (10% of parts)', cents: r.partsPickupCents ?? 0 });
   if (r.weatherCents > 0) rows.push({ label: 'Severe weather fee', cents: r.weatherCents });
   if ((r.discountCents ?? 0) > 0) rows.push({ label: 'First responder discount (5% off labor)', cents: -(r.discountCents ?? 0) });
   if (r.taxCents > 0) rows.push({ label: taxLabel(r), cents: r.taxCents, isTax: true });

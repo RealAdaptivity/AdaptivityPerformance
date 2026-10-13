@@ -12,12 +12,16 @@
 /** Texas sales tax, in basis points (8.25%). */
 export const SALES_TAX_BASIS_POINTS = 825;
 /** The tech's share of diagnostic, labor and the weather fee, in percent.
- *  The travel (service) fee and parts the tech bought go to the tech in full
- *  on top. */
+ *  The travel (service) fee, the parts pickup fee and parts the tech bought
+ *  go to the tech in full on top. */
 export const TECH_LABOR_SHARE_PERCENT = 70;
 /** First responder discount, in percent of labor (veterans, police,
  *  firefighters, EMTs and paramedics). Repairs only; never with a membership. */
 export const FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT = 5;
+/** Parts pickup fee, in percent of the parts on the repair: the trip to get
+ *  them, whether the tech or the company bought them. Repairs only; never on
+ *  customer-supplied parts, which are not on the ticket. */
+export const PARTS_PICKUP_PERCENT = 10;
 
 export type TaxMode = 'parts' | 'total' | 'none';
 export type PartsBy = 'tech' | 'company';
@@ -37,6 +41,8 @@ export type CloseOut = {
   laborCents: number;
   /** First responder discount, taken off labor. 0 when it does not apply. */
   discountCents: number;
+  /** Parts pickup fee (10% of parts). 0 when there are no parts or it is off. */
+  partsPickupCents: number;
   firstResponder: boolean;
   partsCents: number;
   taxCents: number;
@@ -81,6 +87,8 @@ export function computeCloseOut(input: {
   taxMode: TaxMode;
   partsBy: PartsBy;
   firstResponder?: boolean;
+  /** The tech went to get the parts (bought by the tech or the company). */
+  partsPickup?: boolean;
 }): CloseOut {
   const noShow = input.kind === 'no_show';
   const lines: CloseOutLine[] =
@@ -103,13 +111,23 @@ export function computeCloseOut(input: {
   const discountCents = firstResponder
     ? Math.floor((laborCents * FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT + 50) / 100)
     : 0;
-  const beforeTax = diagnosticCents + travelCents + weatherCents + laborCents + partsCents - discountCents;
+  const partsPickupCents =
+    input.kind === 'charge' && input.partsPickup ? Math.floor((partsCents * PARTS_PICKUP_PERCENT + 50) / 100) : 0;
+  const beforeTax =
+    diagnosticCents + travelCents + weatherCents + laborCents + partsCents + partsPickupCents - discountCents;
+  // Getting the parts to the car is part of selling them, so in "parts" mode
+  // the pickup fee is taxed with the parts.
   const taxCents =
-    input.taxMode === 'parts' ? taxOn(partsCents) : input.taxMode === 'total' ? taxOn(beforeTax) : 0;
+    input.taxMode === 'parts'
+      ? taxOn(partsCents + partsPickupCents)
+      : input.taxMode === 'total'
+        ? taxOn(beforeTax)
+        : 0;
   const shareable = diagnosticCents + weatherCents + laborCents - discountCents;
   const techPayoutCents =
     Math.floor((shareable * TECH_LABOR_SHARE_PERCENT + 50) / 100) +
     travelCents +
+    partsPickupCents +
     (input.partsBy === 'tech' ? partsCents : 0);
   return {
     kind: input.kind,
@@ -120,6 +138,7 @@ export function computeCloseOut(input: {
     laborCents,
     partsCents,
     discountCents,
+    partsPickupCents,
     firstResponder,
     taxCents,
     totalCents: beforeTax + taxCents,

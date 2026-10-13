@@ -44,6 +44,8 @@ export function closeOutPayload(closeOut: CloseOut, opts: CloseOutOptions) {
     weather_cents: closeOut.weatherCents,
     // The database works out the discount itself from the labor lines.
     first_responder: closeOut.firstResponder,
+    // Likewise the parts pickup fee: the flag only, the amount is the server's.
+    parts_pickup: closeOut.partsPickupCents > 0,
     tax_mode: opts.taxMode,
     parts_by: opts.partsBy,
     signature_path: opts.signaturePath ?? null,
