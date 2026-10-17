@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Loader2, Lock, Plus, Printer, Trash2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Loader2, Lock, Plus, Printer, ReceiptText, Trash2, X } from 'lucide-react';
 import {
   createQuote,
   deleteQuote,
@@ -12,6 +12,7 @@ import {
   type QuoteStatus,
 } from '../services/quotes';
 import { openQuotePrintWindow } from '../services/quotePdf';
+import { receiptNumbersByQuote } from '../services/receipts';
 import { lookupVin, type VinSummary } from '../services/vinLookup';
 import { isVinShaped, normalizeVin, vehicleLine } from '../services/vinDecode';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
@@ -37,8 +38,12 @@ const STATUS_STYLE: Record<QuoteStatus, string> = {
 
 const emptyLine = (): QuoteLine => ({ title: '', laborDollars: 0, partsDollars: 0, note: '' });
 
-export const QuotesAdmin: React.FC = () => {
+export const QuotesAdmin: React.FC<{
+  /** Opens the Receipts tab on this quote, once the customer has paid. */
+  onMakeReceipt?: (quoteId: string) => void;
+}> = ({ onMakeReceipt }) => {
   const [rows, setRows] = useState<Quote[]>([]);
+  const [receipted, setReceipted] = useState<Map<string, { id: string; receiptNumber: string }>>(new Map());
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +81,13 @@ export const QuotesAdmin: React.FC = () => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [quotes, rate] = await Promise.all([listQuotes(), fetchDefaultLaborRateCents()]);
+      const [quotes, rate, done] = await Promise.all([
+        listQuotes(),
+        fetchDefaultLaborRateCents(),
+        receiptNumbersByQuote().catch(() => new Map<string, { id: string; receiptNumber: string }>()),
+      ]);
       setRows(quotes);
+      setReceipted(done);
       setShopRateCents(rate);
       setShopRateDraft(String(rate / 100));
       setRateDollars(rate / 100);
@@ -551,6 +561,11 @@ export const QuotesAdmin: React.FC = () => {
                     <span className={`text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_STYLE[q.status]}`}>
                       {q.status}
                     </span>
+                    {receipted.has(q.id) && (
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-400/30">
+                        Paid · {receipted.get(q.id)!.receiptNumber}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-300 mt-1">
                     {q.customerName}
@@ -572,6 +587,12 @@ export const QuotesAdmin: React.FC = () => {
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/15 text-slate-200 text-[11px] font-bold">
                   <Printer className="w-3.5 h-3.5" /> Print PDF
                 </button>
+                {onMakeReceipt && !receipted.has(q.id) && q.status !== 'declined' && (
+                  <button type="button" onClick={() => onMakeReceipt(q.id)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-emerald-500/40 text-emerald-300 text-[11px] font-bold">
+                    <ReceiptText className="w-3.5 h-3.5" /> Paid → receipt
+                  </button>
+                )}
                 <select
                   value={q.status}
                   onChange={(e) => void changeStatus(q, e.target.value as QuoteStatus)}
