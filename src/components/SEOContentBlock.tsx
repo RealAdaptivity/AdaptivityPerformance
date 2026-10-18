@@ -59,9 +59,8 @@ export const SEOContentBlock: React.FC = () => {
               ASE-certified mobile vans are fully equipped for rapid dispatch.
             </p>
             <p>
-              In addition to our mobile units, Adaptivity Performance operates a state-of-the-art
-              garage hub in Justin, TX for heavy-duty truck lifts, custom exhaust installations,
-              suspension tuning, and in-depth engine diagnostics. We charge a flat{' '}
+              Bigger jobs come to you too: truck lift kits, custom exhaust installs, suspension work
+              and engine replacements are done on site by the same mobile techs. We charge a flat{' '}
               <strong className="text-white">{LABOR_RATE_LABEL} labor rate</strong> with zero hidden fees and
               back every job with a 12-month warranty. Call{' '}
               <strong className="text-orange-400 font-bold">{SITE_PHONE_DISPLAY}</strong> today.
@@ -88,7 +87,7 @@ export const SEOContentBlock: React.FC = () => {
           <div className="text-center space-y-2 mb-8">
             <h3 className="font-heading text-2xl font-bold text-white">Frequently Asked Questions</h3>
             <p className="text-xs text-slate-400">
-              Everything you need to know about our mobile & shop mechanic services in Denton County.
+              Everything you need to know about our mobile mechanic service in Denton County.
             </p>
           </div>
 

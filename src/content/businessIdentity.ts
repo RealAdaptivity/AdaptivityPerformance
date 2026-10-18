@@ -24,3 +24,9 @@ export const TRADING_NAME = 'Adaptivity Performance';
 
 /** Registered business address. */
 export const LEGAL_ENTITY_ADDRESS = '410 FM 156, Justin, TX 76247';
+
+/** The one inbox customers, techs and partners are told to write to: site
+ *  pages, invoices, quotes and receipts. tests/businessEmail.test.ts keeps any
+ *  other address from creeping back. (receipts@ is only the sender address
+ *  receipt emails go out from; replies come here.) */
+export const BUSINESS_EMAIL = 'owner@adaptivityperformance.com';

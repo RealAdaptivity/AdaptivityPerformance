@@ -1,10 +1,11 @@
 import React from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
-import { Phone, MapPin, ShieldCheck, Mail, Smartphone } from 'lucide-react';
+import { Phone, MapPin, ShieldCheck, Mail, Smartphone, Star } from 'lucide-react';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
 import { SiteLink } from '../site/SiteLink';
-import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
-import { BUSINESS_HOURS, CITY_LANDINGS, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, SOCIAL_PROFILES, cityPath } from '../site/seo';
+import { BUSINESS_EMAIL, LEGAL_ENTITY_ADDRESS, LEGAL_ENTITY_NAME } from '../content/businessIdentity';
+import { CUSTOMER_APP_LIVE } from '../config/customerAppLinks';
+import { BUSINESS_HOURS, CITY_LANDINGS, GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL, SOCIAL_PROFILES, cityPath } from '../site/seo';
 
 interface FooterProps {
   onOpenBooking: () => void;
@@ -36,45 +37,54 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
           </div>
 
           <p className="text-slate-400 leading-relaxed">
-            Justin, TX mobile auto repair and garage performance specialist, serving every driveway within {LOCAL_HUB.radiusMiles} miles of the hub. Quality OE parts, a flat $100 diagnostic, tech-set on-site pricing, and 12-month nationwide warranty on all work.
+            Mobile auto repair from Justin, TX. ASE-certified technicians come to your driveway or workplace anywhere within {LOCAL_HUB.radiusMiles} miles — a $100 diagnostic, a price you approve before any work, and a 12-month / 12,000-mile warranty.
           </p>
 
           <div className="flex items-center space-x-3 text-white font-semibold pt-1">
             <ShieldCheck className="w-4 h-4 text-orange-400" />
-            <span>ASE Certified Technicians</span>
+            <span>ASE-certified technicians</span>
           </div>
+          <a
+            href={GOOGLE_REVIEW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-3 text-white font-semibold hover:text-orange-300"
+          >
+            <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+            <span>{GOOGLE_RATING} on Google</span>
+          </a>
 
-          <div className="pt-4 space-y-3">
-            <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wider">
-              <Smartphone className="w-4 h-4 text-orange-400" />
-              <span>Customer Mobile App</span>
+          {CUSTOMER_APP_LIVE && (
+            <div className="pt-4 space-y-3">
+              <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wider">
+                <Smartphone className="w-4 h-4 text-orange-400" />
+                <span>Customer Mobile App</span>
+              </div>
+              <p className="text-slate-500 text-[11px] leading-relaxed">
+                Book service, manage your garage, and track repairs from your phone.
+              </p>
+              <StoreBadgeLinks size="sm" />
             </div>
-            <p className="text-slate-500 text-[11px] leading-relaxed">
-              Book service, manage your garage, and track repairs from your phone.
-            </p>
-            <StoreBadgeLinks size="sm" />
-          </div>
+          )}
         </div>
 
         {/* Quick Links */}
         <div className="space-y-3">
-          <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">Quick Navigation</h4>
+          <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">For customers</h4>
           <ul className="space-y-2">
-            <li><SiteLink to="about" className="hover:text-orange-400 transition-colors">About Us</SiteLink></li>
-            <li><SiteLink to="about" hash="future" className="hover:text-orange-400 transition-colors">Future plans</SiteLink></li>
-            <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services</SiteLink></li>
-            <li><SiteLink to="contact" className="hover:text-orange-400 transition-colors">Contact Us</SiteLink></li>
-            <li><SiteLink to="diagnostics" className="hover:text-orange-400 transition-colors">Symptom Checker</SiteLink></li>
-            <li><SiteLink to="join" className="hover:text-orange-400 transition-colors">Join as Tech</SiteLink></li>
-            <li><SiteLink to="learn" className="hover:text-orange-400 transition-colors">Want to Learn</SiteLink></li>
-            <li><SiteLink to="wantToTeach" className="hover:text-orange-400 transition-colors">Want to Teach</SiteLink></li>
-            <li><SiteLink to="careers" className="hover:text-orange-400 transition-colors">Careers</SiteLink></li>
-            <li><SiteLink to="partners" className="hover:text-orange-400 transition-colors">Shop & garage partners</SiteLink></li>
+            <li><button type="button" onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Book a visit</button></li>
+            <li><button type="button" onClick={onOpenTracker} className="hover:text-orange-400 transition-colors">Track my repair</button></li>
+            <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services &amp; prices</SiteLink></li>
             <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">Service area — {LOCAL_HUB.radiusMiles} miles from Justin</SiteLink></li>
-            <li><SiteLink to="performance" className="hover:text-orange-400 transition-colors">Truck Lifts & Upgrades</SiteLink></li>
             <li><SiteLink to="faq" className="hover:text-orange-400 transition-colors">FAQ</SiteLink></li>
-            <li><button onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Book Service Online</button></li>
-            <li><button onClick={onOpenTracker} className="text-orange-400 hover:underline">Track Live Repair / Dispatch</button></li>
+            <li><SiteLink to="about" className="hover:text-orange-400 transition-colors">About us</SiteLink></li>
+            <li><SiteLink to="contact" className="hover:text-orange-400 transition-colors">Contact</SiteLink></li>
+          </ul>
+          <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider pt-4">Work with us</h4>
+          <ul className="space-y-2">
+            <li><SiteLink to="join" className="hover:text-orange-400 transition-colors">Join as a technician</SiteLink></li>
+            <li><SiteLink to="careers" className="hover:text-orange-400 transition-colors">Careers</SiteLink></li>
+            <li><SiteLink to="partners" className="hover:text-orange-400 transition-colors">Partner with us</SiteLink></li>
           </ul>
         </div>
 
@@ -115,13 +125,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
         {/* Location Info */}
         <div className="space-y-3">
-          <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">Garage & Dispatch Location</h4>
+          <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">Contact</h4>
           <div className="space-y-2 text-slate-300">
             <div className="flex items-start space-x-2">
               <MapPin className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white">Shop Base:</strong> 410 FM 156, Justin, TX 76247
-                <p className="text-[11px] text-slate-500">Dispatching within {LOCAL_HUB.radiusMiles} miles of Justin, TX ({LOCAL_HUB.zip})</p>
+                <strong className="text-white">Mobile only — we come to you</strong>
+                <p className="text-[11px] text-slate-500">
+                  Anywhere within {LOCAL_HUB.radiusMiles} miles of Justin, TX ({LOCAL_HUB.zip}). Business address: {LEGAL_ENTITY_ADDRESS} — not a drop-off location.
+                </p>
               </div>
             </div>
 
@@ -132,7 +144,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
 
             <div className="flex items-center space-x-2">
               <Mail className="w-4 h-4 text-orange-400 flex-shrink-0" />
-              <span>service@adaptivityperformance.com</span>
+              <a href={`mailto:${BUSINESS_EMAIL}`} className="hover:text-orange-400">{BUSINESS_EMAIL}</a>
             </div>
 
             {/* Real crawlable links to the same profiles the business schema

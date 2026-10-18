@@ -67,7 +67,7 @@ export const CareersPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartnerA
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                 <UserPlus className="w-5 h-5" />
               </div>
-              <h3 className="font-heading text-xl font-extrabold text-white">Mobile / shop technician</h3>
+              <h3 className="font-heading text-xl font-extrabold text-white">Mobile technician</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
                 Independent contractor. Claim jobs by trade, keep most of the labor + tips, Instant or
                 Standard payouts. Multi-job or standalone — and a path to become a partner later.
@@ -194,7 +194,7 @@ export const CareersPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartnerA
               </p>
             </div>
             <a
-              href="mailto:service@adaptivityperformance.com?subject=Future%20interest%20%E2%80%94%20Support%20%2F%20Dispatch&body=Name%3A%0ARole%20interest%20(Customer%20Support%20or%20Dispatch%20Admin)%3A%0APhone%3A%0AShort%20background%3A%0A"
+              href="mailto:owner@adaptivityperformance.com?subject=Future%20interest%20%E2%80%94%20Support%20%2F%20Dispatch&body=Name%3A%0ARole%20interest%20(Customer%20Support%20or%20Dispatch%20Admin)%3A%0APhone%3A%0AShort%20background%3A%0A"
               className="shrink-0 px-5 py-3 rounded-xl border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-xs font-bold inline-flex items-center gap-2"
             >
               Email future interest

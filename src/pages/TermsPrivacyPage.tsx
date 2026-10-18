@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, Warehouse, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck, MessageSquare } from 'lucide-react';
+import { ShieldCheck, FileText, CheckCircle2, AlertTriangle, Wrench, KeyRound, Leaf, Scale, Clock, ShieldAlert, MapPin, Camera, Disc, ShieldX, Car, AlertOctagon, Fuel, ShieldOff, Cpu, CreditCard, UserX, FileCheck, Radio, PenTool, Flame, RefreshCw, Key, Zap, BatteryCharging, Truck, MessageSquare } from 'lucide-react';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { DIAGNOSTIC_FEE_DOLLARS } from '../services/serviceCatalog';
 import { LEGAL_ENTITY_NAME } from '../content/businessIdentity';
@@ -238,10 +238,10 @@ export const TermsPrivacyPage: React.FC = () => {
 
               <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
                 <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-amber-400">
-                  <Truck className="w-4 h-4" /> Towing & Shop Transport Authorization
+                  <Truck className="w-4 h-4" /> Mobile Service Only
                 </div>
                 <p className="text-slate-300 leading-relaxed">
-                  You grant authorization to utilize certified flatbed towing partners to transport non-driveable vehicles to our Justin garage hub if driveway repair cannot be safely completed on-site.
+                  All service is performed where your vehicle is parked. Adaptivity Performance does not tow vehicles or take them to any facility. If a repair cannot be safely completed on site, your technician will tell you before any work begins.
                 </p>
               </div>
 
@@ -284,14 +284,6 @@ export const TermsPrivacyPage: React.FC = () => {
                 </p>
               </div>
 
-              <div className="bg-[#0b0c10] p-4 rounded-2xl border border-white/5 space-y-2">
-                <div className="font-bold text-white flex items-center gap-1.5 text-xs uppercase tracking-wider text-orange-400">
-                  <Warehouse className="w-4 h-4" /> Unclaimed Vehicle Storage Fees
-                </div>
-                <p className="text-slate-300 leading-relaxed">
-                  Vehicles dropped off at our Justin garage hub that remain unclaimed 5 business days after repair completion notification incur a daily storage fee of $45/day pursuant to Texas Property Code § 70.003.
-                </p>
-              </div>
             </div>
           </div>
         </section>

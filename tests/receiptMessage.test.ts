@@ -164,6 +164,7 @@ test('the invoice names the registered entity and address', async () => {
   const identity = await import('../src/content/businessIdentity.ts');
   assert.equal(BUSINESS.legalName, identity.LEGAL_ENTITY_NAME);
   assert.equal(BUSINESS.address, identity.LEGAL_ENTITY_ADDRESS);
+  assert.equal(BUSINESS.email, identity.BUSINESS_EMAIL);
 });
 
 test('the parts pickup fee gets its own line after travel, and the tax line says what it covers', () => {

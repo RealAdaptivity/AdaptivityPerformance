@@ -578,7 +578,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const laterDateActive = showLaterDate || !days.some((d) => d.iso === preferredDate);
   const whereLabel =
     serviceMode === 'shop'
-      ? selectedPartner?.businessName ?? 'Adaptivity Performance Garage'
+      ? selectedPartner?.businessName ?? 'Partner garage'
       : streetAddress.trim() && city.trim()
         ? `${streetAddress.trim()}, ${city.trim()} ${zipCode.trim()}`
         : '';
@@ -1245,13 +1245,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       {selectedPartner.hoursNote && <p className="text-slate-400">{selectedPartner.hoursNote}</p>}
                     </>
                   ) : (
-                    <p>Adaptivity Performance Garage • 410 FM 156, Justin, TX 76247</p>
+                    // Drop-off only ever means a partner's garage: Adaptivity itself is mobile only.
+                    <p>Partner garage — we’ll text you the address to confirm.</p>
                   )}
                   <p className="pt-2 text-slate-400">You bring the car in, so travel doesn’t apply.</p>
                 </div>
                 <div>
                   <label htmlFor="bk-notes" className={labelClass}>
-                    Notes for the shop {optionalTag}
+                    Notes for the garage {optionalTag}
                   </label>
                   <input
                     id="bk-notes"

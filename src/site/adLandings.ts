@@ -82,7 +82,7 @@ export const AD_LANDINGS: AdLanding[] = [
     slug: 'fort-worth',
     headline: 'A mobile mechanic who comes to you in Fort Worth',
     subhead:
-      'We are already in north Fort Worth most days — Alliance, Presidio, Park Glen, Heritage — and we cover downtown, the Cultural District and the near west side from our Justin shop.',
+      'We are already in north Fort Worth most days — Alliance, Presidio, Park Glen, Heritage — and we cover downtown, the Cultural District and the near west side from our base in Justin.',
     offer: '$100 on-site diagnostic — any repair priced before we start',
     bullets: [
       'Driveway and workplace visits across Fort Worth',

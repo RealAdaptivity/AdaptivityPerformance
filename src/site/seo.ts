@@ -26,6 +26,12 @@ export const GOOGLE_REVIEW_URL =
   (import.meta.env.VITE_GOOGLE_REVIEW_URL as string | undefined)?.trim() ||
   'https://g.page/r/CaIynDu9Qo0SEBM/review';
 
+/** The star rating on our Google Business Profile, as Google shows it. Typed
+ *  in by hand: update it when Google's number changes, so the site never
+ *  claims a rating Google does not show. Visible copy only — Google does not
+ *  allow a business to mark up its own reviews as structured data. */
+export const GOOGLE_RATING = '5.0';
+
 /**
  * Profiles that belong to this business, for schema.org `sameAs`.
  *
@@ -103,13 +109,13 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
     path: '/',
   },
   about: {
-    title: 'About Us | Premier Mechanic Shop & Mobile Auto Repair — Adaptivity',
+    title: 'About Us | Mobile Auto Repair in Justin, TX — Adaptivity Performance',
     description:
-      `Adaptivity Performance runs one shop hub in Justin, TX and a mobile fleet that stays inside a ${LOCAL_HUB.radiusMiles}-mile radius — so the van that quotes you is the van that shows up.`,
+      `Adaptivity Performance is a mobile-only auto repair company in Justin, TX. ASE-certified technicians come to you anywhere within ${LOCAL_HUB.radiusMiles} miles, with the price agreed before any work and a 12-month / 12,000-mile warranty.`,
     path: '/about',
   },
   services: {
-    title: 'Auto Repair Services | Mechanic Shop & Mobile Van Dispatch — Adaptivity',
+    title: 'Mobile Auto Repair Services | Justin, TX — Adaptivity Performance',
     description:
       'Brake replacement, check engine diagnostics, battery and starter swaps, A/C repair, pre-purchase inspections and full synthetic oil changes — done in your driveway.',
     path: '/services',
@@ -128,7 +134,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   faq: {
     title: 'FAQ | Mobile Mechanic Justin & Northlake TX — Adaptivity',
     description:
-      'Travel fees, labor rates, warranty, and mobile vs shop — answers for Justin, Northlake, Argyle and Denton customers.',
+      'Travel fees, labor rates, warranty and how mobile repair works — answers for Justin, Northlake, Argyle and Denton customers.',
     path: '/faq',
   },
   partners: {
@@ -158,7 +164,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   performance: {
     title: 'Performance Upgrades | Adaptivity Performance Justin TX',
-    description: 'Lifts, exhaust, tuning, and shop builds at the Justin hub.',
+    description: 'Exhaust, tuning and bolt-on performance upgrades, installed at your place by our mobile techs.',
     path: '/performance',
   },
   wantToTeach: {
@@ -168,7 +174,7 @@ export const PAGE_SEO: Record<string, SeoMeta> = {
   },
   learn: {
     title: 'Learn Auto Repair | Adaptivity Training',
-    description: 'Hands-on learning paths for aspiring mobile and shop technicians.',
+    description: 'Hands-on learning paths for aspiring automotive technicians.',
     path: '/learn',
   },
   terms: {
@@ -228,7 +234,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',
-    a: `Adaptivity Performance operates on a flat, transparent labor rate of $${LABOR_RATE_PER_HOUR_DOLLARS} per hour for both mobile and in-shop repairs. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.`,
+    a: `Adaptivity Performance operates on a flat, transparent labor rate of $${LABOR_RATE_PER_HOUR_DOLLARS} per hour. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.`,
   },
   {
     q: 'Is there a charge for picking up parts?',
@@ -240,7 +246,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you offer financing or payment plans?',
-    a: 'Yes! We partner with Affirm, Klarna, and Afterpay to offer 0% APR Pay-in-4 installment plans on qualifying repair totals. Select your financing option at checkout before confirming your booking. Subject to lender approval and credit terms.',
+    a: 'Yes! We partner with Affirm, Klarna, and Afterpay to offer 0% APR Pay-in-4 installment plans on qualifying repair totals. Nothing is paid online when you book: ask your technician for financing when you pay. Subject to lender approval and credit terms.',
   },
   {
     q: 'Do you accept cash?',
@@ -257,8 +263,8 @@ export const SITE_FAQS = [
 
   // SERVICES
   {
-    q: 'What services can be performed mobile vs. requiring the shop?',
-    a: 'Our mobile units handle: oil changes, brake pad/rotor replacements, battery swaps, starter/alternator replacements, serpentine belts, spark plugs, diagnostic scans, tire rotations, fluid flushes, and most bolt-on repairs. Services requiring the shop include: engine overhauls, transmission rebuilds, full wheel alignments, frame/body work, and truck suspension lifts with alignment.',
+    q: 'Is there anything you can’t do in a driveway?',
+    a: 'Very little. We’re mobile only, so every job is done where the vehicle is parked — from oil changes, brakes, batteries, starters and alternators, belts, spark plugs, diagnostics and fluid services all the way up to engine replacements and lift kits. If a job ever can’t be done safely on site, we tell you before any work starts.',
   },
   {
     q: 'Do you work on diesel trucks?',
@@ -270,7 +276,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you perform Texas state vehicle inspections?',
-    a: 'We specialize in mobile on-site mechanical repairs, diagnostics, brakes, batteries, and maintenance services. State vehicle inspections require fixed lane equipment and will be offered once our physical garage hub location completes buildout.',
+    a: 'We specialize in mobile on-site mechanical repairs, diagnostics, brakes, batteries, and maintenance services. We don’t do state vehicle inspections: they need fixed inspection-lane equipment, and we’re mobile only.',
   },
   {
     q: 'Can you service my vehicle at my workplace or apartment complex?',
@@ -284,15 +290,15 @@ export const SITE_FAQS = [
   // BOOKING PROCESS
   {
     q: 'How do I book an appointment?',
-    a: `Booking is 100% online — click Book Service on our website, select your service mode (mobile or shop), enter your vehicle details and service address, and choose an appointment window. No card is needed and nothing is charged online; you pay in person when the job is done. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
+    a: `Booking is 100% online — click Book Service on our website, enter your vehicle details and service address, and choose an appointment window. No card is needed and nothing is charged online; you pay in person when the job is done. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
   },
   {
     q: 'How long does a typical mobile repair take?',
-    a: 'Most common services take between 30 minutes and 2.5 hours on-site: oil changes run 30–45 min, brake pad and rotor replacements take 1.5–2 hrs, battery swaps take 30–45 min, and full diagnostics take 45–90 min. Complex repairs or multi-system jobs may require same-day or next-day shop follow-up. Your tech will give you a time estimate before starting.',
+    a: 'Most common services take between 30 minutes and 2.5 hours on-site: oil changes run 30–45 min, brake pad and rotor replacements take 1.5–2 hrs, battery swaps take 30–45 min, and full diagnostics take 45–90 min. Complex repairs or multi-system jobs may need a second visit. Your tech will give you a time estimate before starting.',
   },
   {
     q: 'What if my vehicle is not driveable — do you offer towing?',
-    a: 'Yes. We coordinate certified flatbed towing to our Justin shop for non-driveable vehicles. Towing is arranged through our licensed transport partners and billed separately at market rate. You will authorize towing in writing before dispatch. We manage the full coordination so you do not have to make multiple calls.',
+    a: 'Usually you don’t need it — we come to the vehicle and fix it where it sits, in your driveway or parking spot. We’re mobile only and don’t tow. If a repair can’t be done on site, we tell you before any work starts.',
   },
   {
     q: 'Will I receive a digital inspection report after my service?',
@@ -306,7 +312,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'What happens if a part fails after my repair?',
-    a: 'Contact us immediately. If the failure is within the 12-month / 12,000-mile warranty window and related to our repair, we dispatch a technician or schedule shop time to fix it at no additional cost. For parts that carry manufacturer warranties beyond 12 months, we assist you in filing a claim with the parts distributor.',
+    a: 'Contact us immediately. If the failure is within the 12-month / 12,000-mile warranty window and related to our repair, we send a technician back out to fix it at no additional cost. For parts that carry manufacturer warranties beyond 12 months, we assist you in filing a claim with the parts distributor.',
   },
   {
     q: 'Will mobile repairs affect my factory warranty on a new vehicle?',
@@ -324,7 +330,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you do truck lifts, leveling kits, and performance upgrades?',
-    a: 'Yes — that is a core specialty at our Justin garage hub. We install leveling kits, suspension lifts (2 to 8 inch), coilover upgrades, custom exhaust systems, cold air intakes, programmer tunes, upgraded brake packages, and other bolt-on performance modifications. All lift work requires a post-install alignment. We service trucks, SUVs, and off-road vehicles.',
+    a: 'Yes, at your place. We install leveling kits, bolt-on suspension lifts, coilover upgrades, custom exhaust systems, cold air intakes, programmer tunes, upgraded brake packages, and other bolt-on performance modifications on site. Every lift needs a wheel alignment afterward, and we plan that with you before the install. We service trucks, SUVs, and off-road vehicles.',
   },
   {
     q: 'What services do you provide on-site?',

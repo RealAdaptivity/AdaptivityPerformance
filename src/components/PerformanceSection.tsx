@@ -10,7 +10,7 @@ const PERFORMANCE_SERVICES = [
     title: 'Truck Lifts & Leveling Kits',
     tag: 'Suspension',
     description: 'Precision 2"-6" lift kits, coilover upgrades, and leveling kits engineered for North Texas trucks.',
-    specs: ['Rough Country & Icon Certified', 'Includes camber/caster alignment', 'Driveway or Shop install'],
+    specs: ['Rough Country & Icon Certified', 'Installed in your driveway', 'Alignment planned before install'],
     highlightPrice: 'From $450',
   },
   {
@@ -51,7 +51,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({ onOpenBo
             High Performance & <span className="text-orange-500">Custom Upgrades</span>
           </h2>
           <p className="text-slate-400 text-sm sm:text-base">
-            From leveling kits on daily drivers to custom exhaust bolt-ons and heavy towing upgrades, our shop delivers precision installation backed by warranty.
+            From leveling kits on daily drivers to custom exhaust bolt-ons and heavy towing upgrades, our technicians install them at your place, backed by our warranty.
           </p>
         </div>
 

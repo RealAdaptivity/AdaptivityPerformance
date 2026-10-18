@@ -249,7 +249,7 @@ ${PRINT_DOCUMENT_STYLES}
           <strong>Questions?</strong>
           ${SITE_PHONE_DISPLAY}<br/>
           ${SITE_ORIGIN.replace(/^https?:\/\//, '')}<br/>
-          hello@adaptivityperformance.com
+          owner@adaptivityperformance.com
         </div>
       </div>
 

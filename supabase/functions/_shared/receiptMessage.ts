@@ -13,7 +13,7 @@
 export const BUSINESS = {
   legalName: 'RealAdaptivity LLC DBA AdaptivityPerformance',
   address: '410 FM 156, Justin, TX 76247',
-  email: 'hello@adaptivityperformance.com',
+  email: 'owner@adaptivityperformance.com',
 } as const;
 
 export type PaymentMethod = 'card' | 'cash' | 'zelle' | 'in_person';

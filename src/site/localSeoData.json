@@ -144,7 +144,7 @@
       "faqs": [
         {
           "q": "Is this really a driveway job?",
-          "a": "On most vehicles, yes. Some transverse V6 layouts bury the starter under the intake, and if yours is one of them we will tell you up front and route the job to our Justin shop hub instead of burning your afternoon."
+          "a": "On most vehicles, yes. Some transverse V6 layouts bury the starter under the intake, and if yours is one of them we will tell you up front, before anything comes apart, rather than burn your afternoon."
         },
         {
           "q": "How do you know it is the alternator and not the battery?",
@@ -239,7 +239,7 @@
       "priceTo": 2400,
       "priceUnit": "install, kit and alignment separate",
       "durationLabel": "4 hours - 2 days",
-      "blurb": "Leveling kits, 2 to 8 inch suspension lifts, coilovers, and the geometry work that has to follow. This is shop work at our Justin hub, not a driveway job, because lift installs require an alignment afterward.",
+      "blurb": "Leveling kits, suspension lifts, and coilovers, installed on site like everything else we do. Every lift needs a wheel alignment afterward, and we plan that with you before the install.",
       "symptoms": [
         "Want to clear a larger tire",
         "Factory rake you want to level out",
@@ -255,15 +255,15 @@
       "faqs": [
         {
           "q": "Do you install a kit I bought myself?",
-          "a": "Yes. Bring the kit and we will install it. We will also flag fitment problems before we start - the wrong kit for your tire size or a kit missing the hardware to correct driveline angle is a problem worth catching in the parking lot, not halfway through."
+          "a": "Yes. Have the kit on hand and we will install it. We will also flag fitment problems before we start - the wrong kit for your tire size or a kit missing the hardware to correct driveline angle is a problem worth catching in the parking lot, not halfway through."
         },
         {
           "q": "Is an alignment required after a lift?",
           "a": "Always. Changing ride height changes camber, caster, and toe. Skipping the alignment will chew through a set of tires in a few thousand miles, so we build it into the plan."
         },
         {
-          "q": "Why is this shop work instead of mobile?",
-          "a": "Lift work needs a lift, a press, and alignment equipment. We run it at the Justin hub. Everything else on this site comes to you - this one you bring to us."
+          "q": "Can you really do this in my driveway?",
+          "a": "Yes. We are mobile only, so lift kits are done where your truck is parked, like everything else - our techs bring the equipment and torque everything to spec. If anything about your build can't be done safely on site, we tell you before you book."
         }
       ]
     },
@@ -316,7 +316,7 @@
       "distanceMiles": 0,
       "driveMinutes": 15,
       "servicePages": true,
-      "blurb": "Justin is home. Our shop hub and every service van start their day here, which makes Justin the fastest dispatch on the board - often same-day, and the same flat travel fee as everywhere else we go."
+      "blurb": "Justin is home. Every service van starts its day here, which makes Justin the fastest dispatch on the board - often same-day, and the same flat travel fee as everywhere else we go."
     },
     {
       "slug": "northlake",
@@ -508,7 +508,7 @@
       "distanceMiles": 13,
       "driveMinutes": 24,
       "servicePages": false,
-      "blurb": "Krum is well inside the radius. Small-town rates from a shop that is not going to tell you the nearest option is Denton."
+      "blurb": "Krum is well inside the radius. Small-town rates from a crew that is not going to tell you the nearest option is Denton."
     },
     {
       "slug": "sanger",

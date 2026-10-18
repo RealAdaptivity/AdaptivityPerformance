@@ -161,9 +161,8 @@ export const ServiceAreaChecker: React.FC<ServiceAreaCheckerProps> = ({ onBookMo
                     Outside our {SERVICE_RADIUS_MILES}-mile radius
                   </h4>
                   <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Zip {zipInput} sits beyond {SERVICE_RADIUS_MILES} miles from our Justin hub, so we can’t promise a
-                    van the same day. You’re still welcome at the Justin shop, and we’ll quote the drive if the job is
-                    worth the trip.
+                    Zip {zipInput} is more than {SERVICE_RADIUS_MILES} miles from Justin, so we can’t promise a tech
+                    the same day. Call us — we’ll tell you honestly whether we can make the trip for your job.
                   </p>
                   <a href={SITE_PHONE_TEL} className="inline-block text-xs font-bold text-orange-400 underline pt-1">
                     Call {SITE_PHONE_DISPLAY} for a custom quote

@@ -136,7 +136,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
             </span>
           </h1>
           <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            Adaptivity is a mobile + shop network working a {LOCAL_HUB.radiusMiles}-mile radius out of Justin, TX. Independent techs claim jobs by trade,
+            Adaptivity is a mobile repair network working a {LOCAL_HUB.radiusMiles}-mile radius out of Justin, TX. Independent techs claim jobs by trade,
             keep 70% of labor billed (30% to Adaptivity), collected from the customer in person at the vehicle.
             Start as a normal tech; as you complete jobs and grow your own shop or business, you can advance
             into a partnered host with us. Already own a shop or garage? You can partner as a host sooner.
