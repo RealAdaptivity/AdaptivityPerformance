@@ -67,7 +67,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
     {
       icon: <ReceiptText className="w-5 h-5 text-orange-400" />,
       title: 'Pay and get an itemized invoice',
-      body: 'Pay in person by card, cash or Zelle when the work is done. Your invoice lists every part and every hour.',
+      body: 'Pay in person by card, cash or Zelle when the work is done, or over time with Affirm or Klarna. Your invoice lists every part and every hour.',
     },
   ];
 
@@ -148,6 +148,10 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
               ))}
             </dl>
             <ul className="space-y-2 text-xs text-slate-400 leading-relaxed">
+              <li>
+                <strong className="text-slate-200">Pay over time:</strong> Affirm, Klarna and other pay-later plans
+                on qualifying repairs, subject to lender approval — ask your tech when you pay.
+              </li>
               <li>{PARTS_PICKUP_NOTE}</li>
               <li>{WEATHER_FEE_NOTE}</li>
               <li className="text-emerald-300/90">{FIRST_RESPONDER_DISCOUNT_NOTE}</li>

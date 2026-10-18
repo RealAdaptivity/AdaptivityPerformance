@@ -246,7 +246,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you offer financing or payment plans?',
-    a: 'Yes! We partner with Affirm, Klarna, and Afterpay to offer 0% APR Pay-in-4 installment plans on qualifying repair totals. Select your financing option at checkout before confirming your booking. Subject to lender approval and credit terms.',
+    a: 'Yes! We partner with Affirm, Klarna, and Afterpay to offer 0% APR Pay-in-4 installment plans on qualifying repair totals. Nothing is paid online when you book: ask your technician for financing when you pay. Subject to lender approval and credit terms.',
   },
   {
     q: 'Do you accept cash?',
@@ -264,7 +264,7 @@ export const SITE_FAQS = [
   // SERVICES
   {
     q: 'Is there anything you can’t do in a driveway?',
-    a: 'Our technicians handle oil changes, brake pads and rotors, batteries, starters and alternators, serpentine belts, spark plugs, diagnostics, tire rotations, fluid services and most bolt-on repairs right where the vehicle is parked. We’re mobile only, so jobs that need a lift or a full shop — engine overhauls, transmission rebuilds, wheel alignments, and frame and body work — aren’t work we take on. If your job is one of them, we tell you before any work starts.',
+    a: 'Very little. We’re mobile only, so every job is done where the vehicle is parked — from oil changes, brakes, batteries, starters and alternators, belts, spark plugs, diagnostics and fluid services all the way up to engine replacements and lift kits. If a job ever can’t be done safely on site, we tell you before any work starts.',
   },
   {
     q: 'Do you work on diesel trucks?',
@@ -330,7 +330,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you do truck lifts, leveling kits, and performance upgrades?',
-    a: 'Yes, at your place. We install leveling kits, bolt-on suspension lifts, coilover upgrades, custom exhaust systems, cold air intakes, programmer tunes, upgraded brake packages, and other bolt-on performance modifications on site. Every lift needs a wheel alignment afterward, which takes a shop alignment rack — we plan that with you before the install. We service trucks, SUVs, and off-road vehicles.',
+    a: 'Yes, at your place. We install leveling kits, bolt-on suspension lifts, coilover upgrades, custom exhaust systems, cold air intakes, programmer tunes, upgraded brake packages, and other bolt-on performance modifications on site. Every lift needs a wheel alignment afterward, and we plan that with you before the install. We service trucks, SUVs, and off-road vehicles.',
   },
   {
     q: 'What services do you provide on-site?',

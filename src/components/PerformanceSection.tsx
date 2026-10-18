@@ -10,7 +10,7 @@ const PERFORMANCE_SERVICES = [
     title: 'Truck Lifts & Leveling Kits',
     tag: 'Suspension',
     description: 'Precision 2"-6" lift kits, coilover upgrades, and leveling kits engineered for North Texas trucks.',
-    specs: ['Rough Country & Icon Certified', 'Installed in your driveway', 'Wheel alignment afterward not included'],
+    specs: ['Rough Country & Icon Certified', 'Installed in your driveway', 'Alignment planned before install'],
     highlightPrice: 'From $450',
   },
   {
