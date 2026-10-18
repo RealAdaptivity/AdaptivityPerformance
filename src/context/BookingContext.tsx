@@ -15,7 +15,8 @@ export interface TechProfile {
   role: string;
   vanNumber: string;
   phone: string;
-  rating: number;
+  /** From the tech's profile; null when none is on file (never made up). */
+  rating: number | null;
 }
 
 export interface Booking {
@@ -57,19 +58,9 @@ export interface Booking {
 
 interface BookingContextType {
   bookings: Booking[];
-  activeTech: TechProfile;
-  setActiveTech: (tech: TechProfile) => void;
-  addBooking: (booking: Omit<Booking, 'id' | 'status' | 'dateCreated'>) => string;
-  claimBooking: (bookingId: string) => void;
-  updateBookingStatus: (bookingId: string, status: JobStatus, distanceMiles?: number, etaMinutes?: number) => void;
   getBookingById: (bookingId: string) => Booking | undefined;
   refreshBookings: () => Promise<void>;
 }
-
-const DEFAULT_TECHS: TechProfile[] = [
-  { id: 'tech-1', name: 'Adaptivity Technician', role: 'Senior ASE Master Tech', vanNumber: 'Mobile Unit #2 (Ford F-250 Rig)', phone: '(940) 304-0620', rating: 4.9 },
-  { id: 'tech-2', name: 'Adaptivity Technician', role: 'Diagnostic & Brake Specialist', vanNumber: 'Mobile Unit #1 (Transit Rig)', phone: '(940) 304-0620', rating: 4.9 },
-];
 
 const INITIAL_BOOKINGS: Booking[] = [];
 
@@ -77,7 +68,6 @@ const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
 export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
-  const [activeTech, setActiveTech] = useState<TechProfile>(DEFAULT_TECHS[0]);
 
   const refreshBookings = useCallback(async () => {
     const { fetchAllBookings } = await bookingsApi();
@@ -90,67 +80,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
      an empty list. The tracker looks a booking up by its reference itself, and
      a new booking refreshes this list when it is made. */
 
-  const addBooking = (bookingData: Omit<Booking, 'id' | 'status' | 'dateCreated'>): string => {
-    const fallbackId = 'AP-' + Math.floor(1000 + Math.random() * 9000);
-    const newBooking: Booking = {
-      ...bookingData,
-      id: fallbackId,
-      status: 'UNASSIGNED',
-      dateCreated: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setBookings(prev => [newBooking, ...prev]);
-
-    void (async () => {
-      const { createBooking } = await bookingsApi();
-      const created = await createBooking(bookingData);
-      if (created) {
-        setBookings(prev => [
-          created,
-          ...prev.filter(b => b.id !== fallbackId && b.id !== created.id),
-        ]);
-      }
-    })();
-
-    return fallbackId;
-  };
-
-  const claimBooking = (bookingId: string) => {
-    setBookings(prev =>
-      prev.map(b =>
-        b.id === bookingId
-          ? { ...b, status: 'EN_ROUTE', claimedBy: activeTech, distanceMiles: b.distanceMiles || 5.0, etaMinutes: 12 }
-          : b
-      )
-    );
-    void bookingsApi().then(({ updateBookingStatusRemote }) =>
-      updateBookingStatusRemote(bookingId, 'EN_ROUTE', {
-        distanceMiles: 5,
-        etaMinutes: 12,
-        mechanicId: activeTech.id.startsWith('tech-') ? null : activeTech.id,
-      })
-    );
-  };
-
-  const updateBookingStatus = (bookingId: string, status: JobStatus, distanceMiles?: number, etaMinutes?: number) => {
-    setBookings(prev =>
-      prev.map(b => {
-        if (b.id === bookingId) {
-          return {
-            ...b,
-            status,
-            distanceMiles: distanceMiles !== undefined ? distanceMiles : b.distanceMiles,
-            etaMinutes: etaMinutes !== undefined ? etaMinutes : b.etaMinutes,
-          };
-        }
-        return b;
-      })
-    );
-    void bookingsApi().then(({ updateBookingStatusRemote }) =>
-      updateBookingStatusRemote(bookingId, status, { distanceMiles, etaMinutes })
-    );
-  };
-
   const getBookingById = (bookingId: string) => {
     return bookings.find(b => b.id.toUpperCase() === bookingId.toUpperCase());
   };
@@ -159,11 +88,6 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <BookingContext.Provider
       value={{
         bookings,
-        activeTech,
-        setActiveTech,
-        addBooking,
-        claimBooking,
-        updateBookingStatus,
         getBookingById,
         refreshBookings,
       }}

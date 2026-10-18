@@ -52,7 +52,7 @@ export function rowToBooking(row: BookingRow): Booking {
       role: row.mechanic.mechanic_details?.role_title || 'ASE Technician',
       vanNumber: row.mechanic.mechanic_details?.van_number || 'Mobile Unit',
       phone: row.mechanic.phone || '',
-      rating: row.mechanic.mechanic_details?.rating ?? 4.9,
+      rating: row.mechanic.mechanic_details?.rating ?? null,
     };
   } else if (row.mechanic_id) {
     claimedBy = {
@@ -61,7 +61,7 @@ export function rowToBooking(row: BookingRow): Booking {
       role: 'Mobile Technician',
       vanNumber: 'Mobile Unit',
       phone: '',
-      rating: 5.0,
+      rating: null,
     };
   }
 

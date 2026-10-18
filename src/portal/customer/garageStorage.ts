@@ -1,3 +1,6 @@
+import { supabase } from '../../services/supabaseClient';
+
+/** A vehicle in the customer's garage: the `vehicles` rows they own. */
 export type GarageVehicle = {
   id: string;
   year: string;
@@ -5,43 +8,40 @@ export type GarageVehicle = {
   model: string;
   vin: string;
   mileage: string;
-  healthScore: number;
-  healthStatus: 'good' | 'warning' | 'urgent';
-  healthLabel: string;
+  /** Only when a technician recorded one; nothing computes a score yet, so
+   *  most vehicles have none and none is shown. */
+  healthScore: number | null;
+  healthStatus: 'good' | 'warning' | 'urgent' | null;
+  healthLabel: string | null;
 };
 
-const STORAGE_KEY = 'adaptivity_portal_garage';
-
-const DEFAULT_VEHICLES: GarageVehicle[] = [
-  {
-    id: 'v1',
-    year: '2021',
-    make: 'Ford',
-    model: 'F-150 XLT',
-    vin: '1FTFW1E84MKD12345',
-    mileage: '42,180',
-    healthScore: 82,
-    healthStatus: 'good',
-    healthLabel: 'Healthy — next service in 2,500 mi',
-  },
-];
-
-export function loadGarageVehicles(): GarageVehicle[] {
-  if (typeof window === 'undefined') return DEFAULT_VEHICLES;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_VEHICLES;
-    const parsed = JSON.parse(raw) as GarageVehicle[];
-    return parsed.length ? parsed : DEFAULT_VEHICLES;
-  } catch {
-    return DEFAULT_VEHICLES;
-  }
+export function garageVehicleFromRow(row: Record<string, unknown>): GarageVehicle {
+  const status = row.health_status;
+  return {
+    id: row.id as string,
+    year: (row.year as string) || '',
+    make: (row.make as string) || '',
+    model: (row.model as string) || '',
+    vin: (row.vin as string) || '',
+    mileage: (row.mileage as string) || '',
+    healthScore: typeof row.health_score === 'number' ? row.health_score : null,
+    healthStatus: status === 'good' || status === 'warning' || status === 'urgent' ? status : null,
+    healthLabel: (row.health_label as string) || null,
+  };
 }
 
-export function saveGarageVehicles(vehicles: GarageVehicle[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+/** The customer's saved vehicles, newest first. Empty when they have none —
+ *  never a sample vehicle. */
+export async function fetchGarageVehicles(customerId: string): Promise<GarageVehicle[]> {
+  const { data, error } = await supabase
+    .from('vehicles')
+    .select('*')
+    .eq('owner_id', customerId)
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => garageVehicleFromRow(r as Record<string, unknown>));
 }
 
 export function vehicleLabel(v: GarageVehicle) {
-  return `${v.year} ${v.make} ${v.model}`;
+  return [v.year, v.make, v.model].filter(Boolean).join(' ');
 }

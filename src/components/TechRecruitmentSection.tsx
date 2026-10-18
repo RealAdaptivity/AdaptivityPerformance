@@ -1,5 +1,11 @@
 import React from 'react';
 import { Wrench, ShieldCheck, DollarSign, Truck, ArrowRight, UserPlus, CheckCircle } from 'lucide-react';
+import { LABOR_RATE_PER_HOUR_DOLLARS } from '../services/serviceCatalog';
+import { TECH_LABOR_SHARE_PERCENT } from '../services/closeOut';
+
+/** What a tech keeps per billed labor hour at the shop rate. */
+const TECH_HOURLY_DOLLARS = (LABOR_RATE_PER_HOUR_DOLLARS * TECH_LABOR_SHARE_PERCENT) / 100;
+
 
 interface TechRecruitmentSectionProps {
   onOpenRecruitment: () => void;
@@ -25,7 +31,7 @@ export const TechRecruitmentSection: React.FC<TechRecruitmentSectionProps> = ({ 
               <h2 className="text-3xl lg:text-4xl font-heading font-black text-white leading-tight">
                 Got Your Own Tools & Rig? <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-amber-400 to-orange-500">
-                  Techs Keep 70% of Labor Billed ($65–$95+/hr)
+                  Techs Keep {TECH_LABOR_SHARE_PERCENT}% of Labor Billed (${TECH_HOURLY_DOLLARS}/hr)
                 </span>
               </h2>
 

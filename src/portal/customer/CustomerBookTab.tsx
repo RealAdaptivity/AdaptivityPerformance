@@ -1,15 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
 import { createBookingRequest } from '../../services/bookingRequestApi';
 import { SERVICE_CATALOG } from '../../services/serviceCatalog';
 import { computeServiceQuote } from '../../services/servicePricing';
-import { loadGarageVehicles, vehicleLabel } from './garageStorage';
+import { fetchGarageVehicles, vehicleLabel, type GarageVehicle } from './garageStorage';
 import { CUSTOMER_TECH_LIABILITY_NOTICE } from '../../content/contractorLiability';
 import { PREFERRED_TIME_WINDOWS, todayISODate } from '../../services/scheduleWindows';
 import { applyReferralCodeOnBooking } from '../../services/referrals';
 import type { RebookPrefill } from './CustomerHistoryTab';
 import { matchCatalogFromLabel } from '../../services/serviceCatalog';
-import { isIncompleteServiceAddress } from '../../services/serviceAddress';
+import { extractZipFromAddress, isIncompleteServiceAddress } from '../../services/serviceAddress';
 
 type Props = {
   profile: PortalProfile;
@@ -32,18 +32,44 @@ export const CustomerBookTab: React.FC<Props> = ({
   prefill,
   onGoTrack,
 }) => {
-  const vehicles = useMemo(() => loadGarageVehicles(), []);
+  /* The customer's own saved vehicles. This used to read a sample 2021
+     F-150 from the browser when the garage was empty, and real requests went
+     out for a truck the customer does not own. */
+  const [vehicles, setVehicles] = useState<GarageVehicle[]>([]);
+  const [typedVehicle, setTypedVehicle] = useState(prefill?.vehicleDescription ?? '');
   const matchedVehicle = useMemo(() => {
     if (!prefill?.vehicleDescription) return undefined;
     const needle = prefill.vehicleDescription.toLowerCase();
     return vehicles.find((v) => vehicleLabel(v).toLowerCase() === needle);
   }, [vehicles, prefill?.vehicleDescription]);
-  const [vehicleId, setVehicleId] = useState(
-    preselectedVehicleId || matchedVehicle?.id || vehicles[0]?.id || ''
-  );
+  const [vehicleId, setVehicleId] = useState(preselectedVehicleId || '');
+  useEffect(() => {
+    let cancelled = false;
+    void fetchGarageVehicles(profile.id)
+      .then((list) => {
+        if (cancelled) return;
+        setVehicles(list);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.id]);
+  /* Pick a garage vehicle once, when the garage loads: the one being rebooked,
+     else the first — unless a rebook names a vehicle that is not in the
+     garage, which then stays typed in. "Another vehicle" ('') is a choice. */
+  const autoPicked = useRef(Boolean(preselectedVehicleId));
+  useEffect(() => {
+    if (autoPicked.current || !vehicles.length) return;
+    autoPicked.current = true;
+    if (matchedVehicle) setVehicleId(matchedVehicle.id);
+    else if (!prefill?.vehicleDescription) setVehicleId(vehicles[0].id);
+  }, [vehicles, matchedVehicle, prefill?.vehicleDescription]);
   const [selected, setSelected] = useState<string[]>(() => catalogIdsFromTitles(prefill?.services));
-  const [address, setAddress] = useState('1234 Canyon Falls Dr, Northlake, TX 76226');
-  const [zip, setZip] = useState('76226');
+  // Blank until the customer types theirs: a pre-filled example address was
+  // being sent as the real one.
+  const [address, setAddress] = useState('');
+  const [zip, setZip] = useState('');
   const [phone, setPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [referralInput, setReferralInput] = useState('');
@@ -54,7 +80,8 @@ export const CustomerBookTab: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
 
-  const vehicle = vehicles.find((v) => v.id === vehicleId) || vehicles[0];
+  const vehicle = vehicles.find((v) => v.id === vehicleId);
+  const vehicleDescription = vehicle ? vehicleLabel(vehicle) : typedVehicle.trim();
   const quote = useMemo(() => computeServiceQuote(selected), [selected]);
 
   const toggle = (id: string) => {
@@ -78,6 +105,15 @@ export const CustomerBookTab: React.FC<Props> = ({
       setError('Phone is required.');
       return;
     }
+    if (!vehicleDescription) {
+      setError('Enter your vehicle’s year, make and model.');
+      return;
+    }
+    const serviceZip = zip.trim() || extractZipFromAddress(address) || '';
+    if (!/^\d{5}$/.test(serviceZip)) {
+      setError('Enter the zip code where the vehicle is.');
+      return;
+    }
     if (isIncompleteServiceAddress(address)) {
       setError(
         'Enter a full street address with street name and city (not just a house number and zip).'
@@ -92,9 +128,9 @@ export const CustomerBookTab: React.FC<Props> = ({
         customerPhone: phone.trim(),
         customerEmail: profile.email,
         customerAddress: address.trim(),
-        zipCode: zip.trim() || '76247',
-        vehicleDescription: vehicle ? vehicleLabel(vehicle) : 'Customer vehicle',
-        vin: vehicle?.vin,
+        zipCode: serviceZip,
+        vehicleDescription,
+        vin: vehicle?.vin || undefined,
         services: serviceTitles,
         locationType: 'mobile',
         preferredDate,
@@ -138,8 +174,9 @@ export const CustomerBookTab: React.FC<Props> = ({
 
       {vehicles.length > 0 && (
         <div>
-          <label className="text-xs font-semibold text-slate-300">Vehicle</label>
+          <label htmlFor="portal-book-garage" className="text-xs font-semibold text-slate-300">Vehicle</label>
           <select
+            id="portal-book-garage"
             value={vehicleId}
             onChange={(e) => setVehicleId(e.target.value)}
             className="w-full mt-1 bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm"
@@ -149,7 +186,23 @@ export const CustomerBookTab: React.FC<Props> = ({
                 {vehicleLabel(v)}
               </option>
             ))}
+            <option value="">Another vehicle…</option>
           </select>
+        </div>
+      )}
+      {!vehicle && (
+        <div>
+          <label htmlFor="portal-book-vehicle" className="text-xs font-semibold text-slate-300">
+            {vehicles.length ? 'Which vehicle? *' : 'Vehicle *'}
+          </label>
+          <input
+            id="portal-book-vehicle"
+            placeholder="Year, make & model"
+            value={typedVehicle}
+            onChange={(e) => setTypedVehicle(e.target.value)}
+            className="w-full mt-1 bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm"
+          />
+          <p className="mt-1 text-[11px] text-slate-500">Or add it in your Garage tab to book it again in one tap.</p>
         </div>
       )}
       <div>
@@ -187,7 +240,7 @@ export const CustomerBookTab: React.FC<Props> = ({
         </div>
       </div>
       <input
-        placeholder="Mobile service address"
+        placeholder="Street address, city — where the vehicle is"
         value={address}
         onChange={(e) => setAddress(e.target.value)}
         className="w-full bg-[#0b0c10] border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm"
