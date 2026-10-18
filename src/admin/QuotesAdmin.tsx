@@ -14,6 +14,7 @@ import {
 import { openQuotePrintWindow } from '../services/quotePdf';
 import { receiptNumbersByQuote } from '../services/receipts';
 import { lookupVin, type VinSummary } from '../services/vinLookup';
+import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS, isEuropeanVehicle, laborRateCentsForVehicle } from '../services/europeanRate';
 import { isVinShaped, normalizeVin, vehicleLine } from '../services/vinDecode';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
 import {
@@ -72,6 +73,8 @@ export const QuotesAdmin: React.FC<{
      them), so the quote includes it unless the parts are already on hand. */
   const [partsPickup, setPartsPickup] = useState(true);
   const [rateDollars, setRateDollars] = useState<number>(LABOR_RATE_CENTS / 100);
+  /* Once the rate is typed in by hand, the vehicle stops choosing it. */
+  const [rateTouched, setRateTouched] = useState(false);
   /* The shop default, owner-set and stored in app_config. Quotes start here. */
   const [shopRateCents, setShopRateCents] = useState<number>(LABOR_RATE_CENTS);
   const [shopRateDraft, setShopRateDraft] = useState<string>('');
@@ -112,6 +115,13 @@ export const QuotesAdmin: React.FC<{
   );
 
   const vinReady = isVinShaped(normalizeVin(vin));
+
+  /* European vehicles are billed at their own rate: the decoded or typed
+     vehicle picks it, unless the rate was set by hand for this quote. */
+  const european = isEuropeanVehicle(vehicle);
+  useEffect(() => {
+    if (!rateTouched) setRateDollars(laborRateCentsForVehicle(vehicle, shopRateCents) / 100);
+  }, [vehicle, shopRateCents, rateTouched]);
 
   const decodeVin = async (raw: string) => {
     const v = normalizeVin(raw);
@@ -154,6 +164,7 @@ export const QuotesAdmin: React.FC<{
     setTaxMode('parts');
     setPartsPickup(true);
     setRateDollars(shopRateCents / 100);
+    setRateTouched(false);
     setLines([emptyLine()]);
   };
 
@@ -469,9 +480,17 @@ export const QuotesAdmin: React.FC<{
               <input
                 type="number" min="0" step="1" className={inputCls}
                 value={rateDollars || ''}
-                onChange={(e) => setRateDollars(Number(e.target.value) || 0)}
+                onChange={(e) => {
+                  setRateTouched(true);
+                  setRateDollars(Number(e.target.value) || 0);
+                }}
               />
               <p className="text-[10px] text-slate-500 mt-1">
+                {european && (
+                  <span className="block text-amber-300 font-semibold">
+                    European vehicle — ${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr{rateTouched ? ' (rate set by hand)' : ''}
+                  </span>
+                )}
                 Applies to every line with hours. Saved on the quote, so a reprint
                 shows the rate you quoted.
               </p>

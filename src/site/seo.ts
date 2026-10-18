@@ -7,6 +7,7 @@ import {
   TRAVEL_FEE_DOLLARS,
   WEATHER_FEE_DOLLARS,
 } from '../services/serviceCatalog';
+import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/europeanRate';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -234,7 +235,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',
-    a: `Adaptivity Performance operates on a flat, transparent labor rate of $${LABOR_RATE_PER_HOUR_DOLLARS} per hour. Specialty German/European vehicles (BMW, Mercedes, Audi) carry a 1.35x specialty multiplier due to European fluid standards and diagnostic coding requirements. Heavy-duty diesel trucks and exotics also carry applicable multipliers disclosed up front before any work begins.`,
+    a: `Labor is $${LABOR_RATE_PER_HOUR_DOLLARS} per hour, and $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS} per hour on European vehicles (BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Volvo, Mini, Jaguar, Land Rover and other European makes), which need manufacturer-specific fluids, coding and parts. Your tech tells you the hours and the price before any work begins.`,
   },
   {
     q: 'Is there a charge for picking up parts?',
@@ -272,7 +273,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you service European and luxury vehicles (BMW, Mercedes, Audi, Porsche, Land Rover)?',
-    a: 'Yes. We specialize in European and luxury vehicles with factory-spec OEM parts and coding tools. BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Jaguar, and Land Rover are all within our scope. A 1.35x European specialty multiplier applies to account for manufacturer-specific fluid standards, coding procedures, and parts procurement. All service is reported to CARFAX.',
+    a: `Yes. We specialize in European and luxury vehicles with factory-spec OEM parts and coding tools. BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Jaguar, and Land Rover are all within our scope. Labor on European vehicles is $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS} per hour, for their manufacturer-specific fluid standards, coding procedures, and parts sourcing. All service is reported to CARFAX.`,
   },
   {
     q: 'Do you perform Texas state vehicle inspections?',
