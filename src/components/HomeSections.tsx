@@ -13,7 +13,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf } from '../site/localSeo';
-import { GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { SiteLink } from '../site/SiteLink';
 import {
   BOOKABLE_SERVICE_CATALOG,
@@ -30,6 +30,7 @@ import {
   type BookingPrefill,
 } from '../site/homeContent';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { CUSTOMER_APP_LIVE } from '../config/customerAppLinks';
 
 type OnBook = (prefill: BookingPrefill, source: string) => void;
 
@@ -253,7 +254,17 @@ export const TrustBand: React.FC = () => (
       <div className="flex gap-4 rounded-[18px] border border-white/[0.09] bg-[#12141c] p-6 sm:p-7">
         <Star className="mt-0.5 w-7 h-7 shrink-0 text-brand-soft" aria-hidden="true" />
         <div>
-          <h3 className="font-heading text-[22px] font-bold tracking-tight text-white">Reviews, unedited</h3>
+          <h3 className="font-heading text-[22px] font-bold tracking-tight text-white">
+            Rated {GOOGLE_RATING} on Google
+          </h3>
+          <p className="mt-1 flex gap-0.5" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Star
+                key={i}
+                className={`w-4 h-4 text-amber-400 ${i < Math.round(Number(GOOGLE_RATING)) ? 'fill-amber-400' : ''}`}
+              />
+            ))}
+          </p>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
             We don’t print testimonials on our own site. Read what {LOCAL_HUB.city}-area drivers
             actually wrote, on Google.
@@ -289,10 +300,12 @@ export const MoreLinks: React.FC = () => (
           <li><SiteLink to="faq" className="inline-flex min-h-[40px] items-center text-slate-200 hover:text-brand-soft">FAQ</SiteLink></li>
         </ul>
       </div>
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Get the customer app</p>
-        <StoreBadgeLinks className="mt-3" />
-      </div>
+      {CUSTOMER_APP_LIVE && (
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Get the customer app</p>
+          <StoreBadgeLinks className="mt-3" />
+        </div>
+      )}
     </div>
   </section>
 );

@@ -173,7 +173,7 @@ ${PRINT_DOCUMENT_STYLES}
           <strong>Questions or ready to book?</strong>
           ${escapeHtml(SITE_PHONE_DISPLAY)}<br/>
           ${escapeHtml(SITE_ORIGIN.replace(/^https?:\/\//, ''))}<br/>
-          hello@adaptivityperformance.com
+          owner@adaptivityperformance.com
         </div>
       </div>
 

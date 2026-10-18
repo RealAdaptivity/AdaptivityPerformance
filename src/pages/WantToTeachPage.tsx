@@ -38,7 +38,7 @@ export const WantToTeachPage: React.FC<Props> = ({ onOpenRecruitment }) => {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
             <a
-              href="mailto:service@adaptivityperformance.com?subject=Want%20to%20Teach%20%E2%80%94%20Instructor%20interest&body=Name%3A%0APhone%3A%0AAlready%20an%20Adaptivity%20tech%3F%20(yes%2Fno)%3A%0ATrades%20you%20can%20teach%3A%0AYears%20experience%3A%0ANotes%3A%0A"
+              href="mailto:owner@adaptivityperformance.com?subject=Want%20to%20Teach%20%E2%80%94%20Instructor%20interest&body=Name%3A%0APhone%3A%0AAlready%20an%20Adaptivity%20tech%3F%20(yes%2Fno)%3A%0ATrades%20you%20can%20teach%3A%0AYears%20experience%3A%0ANotes%3A%0A"
               className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-orange-600 text-white font-bold text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20"
             >
               Apply to teach
@@ -184,7 +184,7 @@ export const WantToTeachPage: React.FC<Props> = ({ onOpenRecruitment }) => {
             </div>
             <div className="lg:col-span-5 space-y-3">
               <a
-                href="mailto:service@adaptivityperformance.com?subject=Want%20to%20Teach%20%E2%80%94%20Instructor%20interest&body=Name%3A%0APhone%3A%0AAlready%20an%20Adaptivity%20tech%3F%3A%0ATrades%20you%20can%20teach%3A%0A"
+                href="mailto:owner@adaptivityperformance.com?subject=Want%20to%20Teach%20%E2%80%94%20Instructor%20interest&body=Name%3A%0APhone%3A%0AAlready%20an%20Adaptivity%20tech%3F%3A%0ATrades%20you%20can%20teach%3A%0A"
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-500 to-orange-600 text-white font-bold text-sm inline-flex items-center justify-center gap-2"
               >
                 I want to teach — email us

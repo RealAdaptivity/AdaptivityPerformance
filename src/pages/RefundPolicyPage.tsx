@@ -207,13 +207,13 @@ export const RefundPolicyPage: React.FC = () => {
             </a>
 
             <a
-              href="mailto:service@adaptivityperformance.com"
+              href="mailto:owner@adaptivityperformance.com"
               className="p-4 rounded-xl bg-black/40 border border-white/10 hover:border-orange-500/50 transition flex flex-col items-center text-center space-y-2 group"
             >
               <Mail className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
               <div>
                 <strong className="text-white block">Email Billing Support</strong>
-                <span className="text-slate-400">service@adaptivityperformance.com</span>
+                <span className="text-slate-400">owner@adaptivityperformance.com</span>
               </div>
             </a>
 

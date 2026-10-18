@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 /**
  * `bookingsApi` is loaded on demand rather than imported. It pulls in the
  * Supabase client — 200 KB — and this provider wraps the whole site, so a
@@ -84,25 +84,11 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBookings(await fetchAllBookings());
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    let channel: { unsubscribe: () => void } | null = null;
-
-    void (async () => {
-      const { subscribeAllBookings } = await bookingsApi();
-      if (cancelled) return;
-      await refreshBookings();
-      if (cancelled) return;
-      channel = subscribeAllBookings(() => {
-        void refreshBookings();
-      });
-    })();
-
-    return () => {
-      cancelled = true;
-      channel?.unsubscribe();
-    };
-  }, [refreshBookings]);
+  /* Nothing loads on mount. This provider only wraps the public site, where a
+     visitor can read no bookings: fetching them and holding a realtime channel
+     open cost every page the Supabase client, a request and two websockets for
+     an empty list. The tracker looks a booking up by its reference itself, and
+     a new booking refreshes this list when it is made. */
 
   const addBooking = (bookingData: Omit<Booking, 'id' | 'status' | 'dateCreated'>): string => {
     const fallbackId = 'AP-' + Math.floor(1000 + Math.random() * 9000);

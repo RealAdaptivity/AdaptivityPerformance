@@ -91,10 +91,3 @@ export async function updateBookingStatusRemote(
 
   if (error) console.warn('[Supabase] updateBookingStatusRemote:', error.message);
 }
-
-export function subscribeAllBookings(onChange: () => void) {
-  return supabase
-    .channel('adaptivity-bookings')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => onChange())
-    .subscribe();
-}

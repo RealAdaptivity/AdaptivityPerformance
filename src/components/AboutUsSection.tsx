@@ -1,19 +1,27 @@
 import React from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
 import {
-  Users,
-  Building2,
-  Wrench,
-  HeartHandshake,
-  CalendarRange,
-  MapPin,
   ArrowRight,
-  CheckCircle2,
-  Truck,
-  Globe2,
-  Rocket,
+  BadgeCheck,
+  CalendarCheck,
+  ClipboardCheck,
+  MapPin,
+  Phone,
+  ReceiptText,
+  ShieldCheck,
+  Star,
+  Wrench,
 } from 'lucide-react';
 import { SiteLink } from '../site/SiteLink';
+import { BUSINESS_HOURS, GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import {
+  DIAGNOSTIC_FEE_DOLLARS,
+  FIRST_RESPONDER_DISCOUNT_NOTE,
+  LABOR_RATE_PER_HOUR_DOLLARS,
+  PARTS_PICKUP_NOTE,
+  TRAVEL_FEE_DOLLARS,
+  WEATHER_FEE_NOTE,
+} from '../services/serviceCatalog';
 
 interface AboutUsSectionProps {
   onOpenBooking: () => void;
@@ -21,314 +29,190 @@ interface AboutUsSectionProps {
   onOpenPartnerApply: () => void;
 }
 
+/**
+ * About, written for the person whose car needs fixing: who we are, how a
+ * visit goes, what it costs and what is covered. How techs are paid and where
+ * the company is headed belong on the Careers and Partners pages, not here.
+ */
 export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
   onOpenBooking,
   onOpenRecruitment,
   onOpenPartnerApply,
 }) => {
+  const radius = LOCAL_HUB.radiusMiles;
+
+  const facts = [
+    { icon: <Star className="w-4 h-4 text-amber-400 fill-amber-400" />, label: `${GOOGLE_RATING} on Google`, href: GOOGLE_REVIEW_URL },
+    { icon: <BadgeCheck className="w-4 h-4 text-orange-400" />, label: 'ASE-certified technicians' },
+    { icon: <ShieldCheck className="w-4 h-4 text-orange-400" />, label: '12-month / 12,000-mile warranty' },
+    { icon: <MapPin className="w-4 h-4 text-orange-400" />, label: `Within ${radius} miles of ${LOCAL_HUB.city}` },
+  ];
+
+  const steps = [
+    {
+      icon: <CalendarCheck className="w-5 h-5 text-orange-400" />,
+      title: 'Book a time',
+      body: `Online in about a minute, or call ${SITE_PHONE_DISPLAY}. Tell us the vehicle, where it is and what it’s doing.`,
+    },
+    {
+      icon: <Wrench className="w-5 h-5 text-orange-400" />,
+      title: 'A technician comes to you',
+      body: `An ASE-certified tech arrives with the tools and diagnoses it where it sits — at home, at work, wherever it’s parked.`,
+    },
+    {
+      icon: <ClipboardCheck className="w-5 h-5 text-orange-400" />,
+      title: 'You approve the price first',
+      body: 'You hear what’s wrong, what it takes and what it costs. Nothing is repaired until you say yes.',
+    },
+    {
+      icon: <ReceiptText className="w-5 h-5 text-orange-400" />,
+      title: 'Pay and get an itemized invoice',
+      body: 'Pay in person by card, cash or Zelle when the work is done. Your invoice lists every part and every hour.',
+    },
+  ];
+
+  const prices = [
+    { label: 'Diagnostic visit', value: `$${DIAGNOSTIC_FEE_DOLLARS}` },
+    { label: `Travel, anywhere within ${radius} miles`, value: `$${TRAVEL_FEE_DOLLARS} flat` },
+    { label: 'Labor', value: `$${LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
+  ];
+
   return (
     <section id="about" className="py-20 bg-[#0c0d12] border-t border-white/10 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-[420px] h-[420px] bg-orange-600/10 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[360px] h-[360px] bg-amber-500/5 blur-[100px] rounded-full pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10 space-y-14">
-        <div className="max-w-3xl mx-auto text-center space-y-4">
-          <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3.5 py-1.5 rounded-full">
+      <div className="container mx-auto px-4 relative z-10 max-w-5xl space-y-14">
+        <header className="max-w-3xl mx-auto text-center space-y-4">
+          <span className="inline-block text-[11px] font-bold uppercase tracking-[0.14em] text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3 py-1 rounded-full">
             About Adaptivity Performance
           </span>
-          <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight">
-            Built for drivers, shops, techs,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500">
-              and the DFW community
-            </span>
-          </h2>
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed">
-            We’re a Justin-based mobile and shop automotive network. We make it easier to keep vehicles
-            maintained — by coming to you, partnering with local garages, paying technicians fairly, and
-            offering flexible ways to pay so important repairs don’t get put off.
+          <h1 className="font-heading text-3xl sm:text-5xl font-extrabold text-white leading-tight">
+            Auto repair that <span className="text-orange-500">comes to you</span>
+          </h1>
+          <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
+            We’re a mobile-only auto repair company based in {LOCAL_HUB.city}, Texas. Our ASE-certified
+            technicians bring the tools and the parts to your driveway or workplace anywhere within {radius}{' '}
+            miles — so you don’t lose a day to a waiting room or a tow.
           </p>
-        </div>
+          <ul className="flex flex-wrap justify-center gap-2.5 pt-2" aria-label="At a glance">
+            {facts.map((f) => (
+              <li key={f.label}>
+                {f.href ? (
+                  <a
+                    href={f.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200 hover:border-amber-400/60"
+                  >
+                    {f.icon}
+                    {f.label}
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200">
+                    {f.icon}
+                    {f.label}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
-          <article className="rounded-3xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-3 text-left">
-            <div className="w-11 h-11 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400">
-              <Users className="w-5 h-5" />
-            </div>
-            <h3 className="font-heading text-xl font-extrabold text-white">How we serve customers</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Book mobile service directly to your driveway or workplace. You get transparent
-              tech-set pricing on-site, a flat $100 diagnostic instead of surprise dealership markups, live repair tracking, and
-              certified master techs across repairs, brakes, batteries, diagnostics, and maintenance.
-            </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-1">
-              {[
-                `Mobile dispatch within ${LOCAL_HUB.radiusMiles} miles of Justin`,
-                'Flat $100 diagnostic — tech sets repair price after diagnosis',
-                'Garage history, receipts, and repair tracking in one place',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="rounded-3xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-3 text-left">
-            <div className="w-11 h-11 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <h3 className="font-heading text-xl font-extrabold text-white">How we grow local businesses</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Independent shops and people with garage space partner with us as host locations. We bring
-              booked customers, payments, and dispatch — you provide the bay, lift, or workspace and get
-              more steady work without spending on ads alone.
-            </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-1">
-              {[
-                'Listed as an approved drop-off / host location',
-                'We handle booking, scheduling, and customer updates',
-                'You keep running your shop — we send demand your way',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="rounded-3xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-3 text-left">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <Wrench className="w-5 h-5" />
-            </div>
-            <h3 className="font-heading text-xl font-extrabold text-white">How we make techs more profitable</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Mobile mechanics, audio, tint, wrap, body, detailing, and performance techs keep{' '}
-              <strong className="text-white">70% of labor billed</strong> (30% platform) — paid
-              Express payouts, Instant or Standard cash-out, and a dispatch board that matches jobs to your
-              trade.
-            </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-1">
-              {[
-                '70% revenue share on completed jobs (plus 100% of tips)',
-                'We find the customers — you bring tools and skill',
-                'Claim jobs by specialty and get paid after capture',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-
-          <article className="rounded-3xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-3 text-left">
-            <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <HeartHandshake className="w-5 h-5" />
-            </div>
-            <h3 className="font-heading text-xl font-extrabold text-white">How we serve the community</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Reliable transportation keeps people working, picking up kids, and getting to appointments.
-              We focus on the neighborhoods around the hub — Justin, Northlake, Argyle, Denton, Keller and north Fort Worth — so
-              maintenance stays local, honest, and reachable before small problems become roadside emergencies.
-            </p>
-            <ul className="space-y-2 text-xs text-slate-300 pt-1">
-              {[
-                'Local techs and partner shops, not a faceless call center',
-                'Help drivers fix issues early instead of delaying care',
-                'Emergency mobile options when plans go sideways',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </article>
-        </div>
-
-        {/* Pay in 4 / Pay in 8 */}
-        <div className="max-w-5xl mx-auto rounded-3xl border border-orange-500/30 bg-gradient-to-br from-orange-950/40 via-[#151822] to-[#12141c] p-6 sm:p-8 overflow-hidden relative">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-orange-500/20 blur-3xl rounded-full pointer-events-none" />
-          <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7 space-y-4">
-              <div className="inline-flex items-center gap-2 text-xs font-bold text-orange-300 bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-full">
-                <CalendarRange className="w-3.5 h-3.5" />
-                Flexible payments
-              </div>
-              <h3 className="font-heading text-2xl sm:text-3xl font-black text-white leading-tight">
-                Pay in 4 or longer plans — keep maintenance affordable
-              </h3>
-              <p className="text-sm text-slate-300 leading-relaxed">
-                Big repairs shouldn’t force people to drive unsafe cars. At final checkout we offer{' '}
-                <strong className="text-white">Affirm, Afterpay, Zip, Sunbit, and Klarna</strong>. Eligible
-                customers can choose <strong className="text-white">Pay in 4</strong> or{' '}
-                <strong className="text-white">longer monthly plans</strong> (Sunbit 3–18 months, Affirm/Klarna
-                financing — Pay in 8–style depending on approval). You get paid upfront; the customer repays
-                the lender.
-              </p>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
-                <li className="flex items-center gap-2 rounded-xl bg-black/20 border border-white/5 px-3 py-2.5">
-                  <span className="font-black text-orange-400 text-lg leading-none">4</span>
-                  <span>Pay in 4 — Affirm, Afterpay, Zip, Klarna (typically $50–$700)</span>
-                </li>
-                <li className="flex items-center gap-2 rounded-xl bg-black/20 border border-white/5 px-3 py-2.5">
-                  <span className="font-black text-amber-400 text-lg leading-none">8+</span>
-                  <span>Longer plans — Sunbit + Affirm/Klarna monthly on larger repairs</span>
-                </li>
-              </ul>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Ask your technician about payment options on site →
-                Payment methods (or your platform PMC). Payment is taken in person on a card reader; financing is at
-                final escrow checkout.
-              </p>
-            </div>
-            <div className="lg:col-span-5 space-y-3">
-              <div className="rounded-2xl border border-white/10 bg-[#0b0c10]/80 p-5 space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Why it matters</p>
-                <p className="text-sm text-slate-300 leading-relaxed">
-                  Spreading cost helps families and workers choose preventive care now — instead of waiting
-                  until a breakdown costs more time and money.
-                </p>
-                <div className="flex items-start gap-2 text-xs text-slate-400">
-                  <MapPin className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                  <span>Serving a {LOCAL_HUB.radiusMiles}-mile radius around Justin with fully-equipped mobile service vans dispatched daily.</span>
+        <div className="space-y-5">
+          <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">How a visit works</h2>
+          <ol className="grid sm:grid-cols-2 gap-4">
+            {steps.map((s, i) => (
+              <li key={s.title} className="rounded-2xl border border-white/10 bg-[#12141c] p-6 space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/25 flex items-center justify-center">
+                    {s.icon}
+                  </span>
+                  <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">Step {i + 1}</span>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={onOpenBooking}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-              >
-                Book service — see payment options
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <h3 className="text-lg font-bold text-white">{s.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{s.body}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-4">
+            <h2 className="font-heading text-2xl font-extrabold text-white">Straight pricing</h2>
+            <dl className="divide-y divide-white/5">
+              {prices.map((p) => (
+                <div key={p.label} className="flex items-baseline justify-between gap-4 py-2.5">
+                  <dt className="text-sm text-slate-300">{p.label}</dt>
+                  <dd className="text-base font-bold text-white tabular-nums">{p.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <ul className="space-y-2 text-xs text-slate-400 leading-relaxed">
+              <li>{PARTS_PICKUP_NOTE}</li>
+              <li>{WEATHER_FEE_NOTE}</li>
+              <li className="text-emerald-300/90">{FIRST_RESPONDER_DISCOUNT_NOTE}</li>
+            </ul>
+          </div>
+
+          <div id="warranty" className="scroll-mt-24 rounded-2xl border border-orange-500/25 bg-gradient-to-br from-orange-500/[0.07] to-[#12141c] p-6 sm:p-7 space-y-4">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-6 h-6 text-orange-400" aria-hidden="true" />
+              <h2 className="font-heading text-2xl font-extrabold text-white">Our warranty</h2>
             </div>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              Parts and labor we supply are covered for <strong className="text-white">12 months or 12,000 miles</strong>,
+              whichever comes first. If something we fixed goes wrong, call us and we come back out.
+            </p>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Parts you supply yourself aren’t covered. Full details are in our{' '}
+              <SiteLink to="refunds" className="text-orange-400 hover:underline">
+                refund &amp; warranty policy
+              </SiteLink>
+              .
+            </p>
           </div>
         </div>
 
-        {/* Future plans */}
-        <div id="future" className="max-w-5xl mx-auto space-y-6">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full">
-              <Rocket className="w-3.5 h-3.5 text-orange-400" />
-              Plans for the future
-            </span>
-            <h3 className="font-heading text-2xl sm:text-3xl font-black text-white leading-tight">
-              Where we’re headed next
-            </h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              We’re building from Justin and DFW outward — stronger tools for our team, then bigger impact
-              for communities at home and around the world.
+        <div className="rounded-2xl border border-white/10 bg-[#12141c] p-6 sm:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2">
+            <h2 className="font-heading text-2xl font-extrabold text-white">Where and when</h2>
+            <p className="text-sm text-slate-400 leading-relaxed max-w-xl">
+              Every day, {BUSINESS_HOURS.label}, anywhere within {radius} miles of {LOCAL_HUB.city} — Northlake,
+              Argyle, Denton, Keller, Haslet, Roanoke and more.{' '}
+              <SiteLink to="coverage" className="text-orange-400 hover:underline">
+                See the full service area
+              </SiteLink>
+              .
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <article className="rounded-3xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-4 text-left relative overflow-hidden">
-              <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full pointer-events-none" />
-              <div className="relative space-y-3">
-                <div className="w-11 h-11 rounded-2xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-orange-400/90">Fleet roadmap</p>
-                <h4 className="font-heading text-xl font-extrabold text-white">
-                  Rentable service vans for the team
-                </h4>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  We’re working toward a fleet of rentable vans our technicians can use on demand —
-                  outfitted to carry more tools, parts, and specialty equipment for each job. That means
-                  fewer trips back for gear, faster completions, and more jobs finished the same visit.
-                </p>
-                <ul className="space-y-2 text-xs text-slate-300 pt-1">
-                  {[
-                    'Stocked vans so techs roll up ready for bigger repairs',
-                    'More capacity for audio, tint, performance, and mechanical kits',
-                    'Lower barrier for skilled techs who don’t own a full work truck yet',
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-white/10 bg-[#12141c] p-6 sm:p-7 space-y-4 text-left relative overflow-hidden">
-              <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-sky-500/10 blur-3xl rounded-full pointer-events-none" />
-              <div className="relative space-y-3">
-                <div className="w-11 h-11 rounded-2xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center text-sky-400">
-                  <Globe2 className="w-5 h-5" />
-                </div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-sky-400/90">Global vision</p>
-                <h4 className="font-heading text-xl font-extrabold text-white">
-                  Communities near home — and people worldwide
-                </h4>
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  Reliable mobility shouldn’t depend on where you live. As we grow, we want the same
-                  model — fair techs, honest shops, flexible pay, and reachable maintenance — to help
-                  families and workers in more cities, then more countries, keep their vehicles on the road.
-                </p>
-                <ul className="space-y-2 text-xs text-slate-300 pt-1">
-                  {[
-                    'Start local: deepen roots in the neighborhoods we already serve',
-                    'Expand the playbook: partner shops + mobile techs in new markets',
-                    'Benefit people worldwide with access to trustworthy, affordable care',
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </article>
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onOpenBooking}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold"
+            >
+              Book a visit <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <a
+              href={SITE_PHONE_TEL}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/15 text-slate-200 hover:border-orange-500/50 text-sm font-bold"
+            >
+              <Phone className="w-4 h-4" aria-hidden="true" /> {SITE_PHONE_DISPLAY}
+            </a>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={onOpenBooking}
-            className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white text-sm font-bold shadow-lg shadow-orange-500/25 inline-flex items-center justify-center gap-2"
-          >
-            Schedule / Call for Quote
-            <ArrowRight className="w-4 h-4" />
+        <p className="text-center text-xs text-slate-500">
+          Technician looking for work?{' '}
+          <button type="button" onClick={onOpenRecruitment} className="text-slate-300 hover:text-orange-400 underline-offset-2 hover:underline">
+            Join the team
           </button>
-          <SiteLink
-            to="services"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-white/15 text-slate-200 hover:bg-white/5 text-sm font-bold text-center"
-          >
-            Browse services
-          </SiteLink>
-          <SiteLink
-            to="join"
-            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 text-xs font-bold text-center"
-          >
-            Join as Tech
-          </SiteLink>
-          <SiteLink
-            to="wantToTeach"
-            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-violet-500/40 text-violet-300 hover:bg-violet-500/10 text-xs font-bold text-center"
-          >
-            Want to Teach
-          </SiteLink>
-          <button
-            type="button"
-            onClick={onOpenRecruitment}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-orange-500/40 text-orange-300 hover:bg-orange-500/10 text-xs font-bold"
-          >
-            Apply now
+          {' · '}
+          Garage or fleet owner?{' '}
+          <button type="button" onClick={onOpenPartnerApply} className="text-slate-300 hover:text-orange-400 underline-offset-2 hover:underline">
+            Partner with us
           </button>
-          <button
-            type="button"
-            onClick={onOpenPartnerApply}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 text-xs font-bold"
-          >
-            Partner your shop
-          </button>
-        </div>
+        </p>
       </div>
     </section>
   );

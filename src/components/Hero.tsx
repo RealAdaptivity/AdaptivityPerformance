@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, MapPin, Phone, ShieldCheck, Wrench } from 'lucide-react';
+import { ArrowRight, CheckCircle2, MapPin, Phone, ShieldCheck, Star, Wrench } from 'lucide-react';
 import { LOCAL_CITIES, LOCAL_HUB } from '../site/localSeo';
-import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
 import { lookupServiceZip } from '../services/serviceArea';
 import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import {
@@ -152,7 +152,7 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
                     <p className="mt-1 text-xs leading-relaxed text-emerald-100/80">
                       {result.distanceMiles === 0
                         ? 'That’s our home town'
-                        : `${result.distanceMiles} mi from our shop in ${LOCAL_HUB.city}`}
+                        : `${result.distanceMiles} mi from ${LOCAL_HUB.city}`}
                       {` — flat $${TRAVEL_FEE_DOLLARS} travel, same as everywhere we go.`}
                     </p>
                   </div>
@@ -191,6 +191,17 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
           </div>
 
           <ul className="lg:col-start-1 lg:row-start-2 self-start flex flex-wrap gap-2.5" aria-label="Why Adaptivity">
+            <li>
+              <a
+                href={GOOGLE_REVIEW_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200 hover:border-amber-400/60"
+              >
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" aria-hidden="true" />
+                {GOOGLE_RATING} on Google
+              </a>
+            </li>
             <li className="inline-flex items-center gap-2 rounded-full border border-white/[0.09] bg-[#171a21] px-4 py-2 text-[13px] font-semibold text-slate-200">
               <ShieldCheck className="w-4 h-4 text-brand-soft" aria-hidden="true" />
               12-month / 12,000-mile warranty

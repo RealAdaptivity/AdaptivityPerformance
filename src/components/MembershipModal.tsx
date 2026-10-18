@@ -77,10 +77,10 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
       ].join('\n')
     );
     try {
-      window.location.href = `mailto:hello@adaptivityperformance.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:owner@adaptivityperformance.com?subject=${subject}&body=${body}`;
       setIsActivated(true);
     } catch {
-      setSubmitError('Could not open email. Call or text us to enroll, or email hello@adaptivityperformance.com.');
+      setSubmitError('Could not open email. Call or text us to enroll, or email owner@adaptivityperformance.com.');
     }
   };
 
@@ -325,7 +325,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
               <form onSubmit={handleEnrollSubmit} className="bg-white/[0.02] border border-white/10 rounded-2xl p-6 space-y-4">
                 <h4 className="font-heading font-extrabold text-sm text-white">Request membership enrollment</h4>
                 <p className="text-[11px] text-slate-400 -mt-2">
-                  Opens your email to hello@adaptivityperformance.com with plan details. We activate perks after payment.
+                  Opens your email to owner@adaptivityperformance.com with plan details. We activate perks after payment.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div>

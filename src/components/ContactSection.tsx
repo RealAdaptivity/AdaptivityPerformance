@@ -107,7 +107,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
             </a>
 
             <a
-              href="mailto:service@adaptivityperformance.com"
+              href="mailto:owner@adaptivityperformance.com"
               className="flex items-start gap-4 bg-[#12141c] p-5 rounded-2xl border border-white/10 hover:border-sky-500/40 transition-colors group"
             >
               <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center flex-shrink-0">
@@ -115,7 +115,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
               </div>
               <div>
                 <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Email</div>
-                <div className="font-bold text-white group-hover:text-sky-400 transition-colors text-sm">service@adaptivityperformance.com</div>
+                <div className="font-bold text-white group-hover:text-sky-400 transition-colors text-sm">owner@adaptivityperformance.com</div>
                 <div className="text-xs text-slate-500">Replies within 1 hour</div>
               </div>
             </a>

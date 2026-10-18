@@ -88,7 +88,7 @@ export const SEOContentBlock: React.FC = () => {
           <div className="text-center space-y-2 mb-8">
             <h3 className="font-heading text-2xl font-bold text-white">Frequently Asked Questions</h3>
             <p className="text-xs text-slate-400">
-              Everything you need to know about our mobile & shop mechanic services in Denton County.
+              Everything you need to know about our mobile mechanic service in Denton County.
             </p>
           </div>
 

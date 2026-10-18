@@ -4,6 +4,7 @@ import { handleCors, jsonResponse } from '../_shared/http.ts';
 import { sendTwilioSms } from '../_shared/twilioSms.ts';
 import { sendEmail } from '../_shared/sendEmail.ts';
 import {
+  BUSINESS,
   buildReceiptEmailHtml,
   buildReceiptEmailText,
   buildReceiptSms,
@@ -128,7 +129,8 @@ Deno.serve(async (req: Request) => {
       if (!email) {
         result.email = { status: 'failed', detail: 'No email address for this customer' };
       } else {
-        const r = await sendEmail({ to: email, subject, html: buildReceiptEmailHtml(receipt), text: emailText });
+        // Sent from receipts@; a customer who hits Reply reaches the owner.
+        const r = await sendEmail({ to: email, subject, html: buildReceiptEmailHtml(receipt), text: emailText, replyTo: BUSINESS.email });
         result.email = r.sent
           ? { status: 'sent', to: email }
           : r.skipped

@@ -39,7 +39,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
             <span className="truncate text-orange-500">PERFORMANCE</span>
           </span>
           <span className="text-[10px] tracking-widest text-slate-400 uppercase font-semibold hidden sm:block">
-            Mobile & Shop Automotive Specialist
+            Mobile Auto Repair · Justin, TX
           </span>
         </span>
       ) : null}

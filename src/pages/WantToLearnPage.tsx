@@ -29,7 +29,7 @@ const PATH = [
   {
     n: '03',
     title: 'Build your kit & confidence',
-    body: 'We help you understand which tools you need for your trade and how mobile / shop jobs actually run on Adaptivity.',
+    body: 'We help you understand which tools you need for your trade and how mobile jobs actually run on Adaptivity.',
   },
   {
     n: '04',
@@ -68,7 +68,7 @@ export const WantToLearnPage: React.FC<Props> = ({ onOpenRecruitment }) => {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
             <a
-              href="mailto:service@adaptivityperformance.com?subject=Want%20to%20Learn%20%E2%80%94%20Training%20interest&body=Name%3A%0APhone%3A%0ASchool%20%2F%20status%20(in%20school%2C%20career%20change%2C%20etc.)%3A%0ATrade%20interest%3A%0ANotes%3A%0A"
+              href="mailto:owner@adaptivityperformance.com?subject=Want%20to%20Learn%20%E2%80%94%20Training%20interest&body=Name%3A%0APhone%3A%0ASchool%20%2F%20status%20(in%20school%2C%20career%20change%2C%20etc.)%3A%0ATrade%20interest%3A%0ANotes%3A%0A"
               className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
             >
               Ask about training
@@ -216,7 +216,7 @@ export const WantToLearnPage: React.FC<Props> = ({ onOpenRecruitment }) => {
                 </p>
               </div>
               <a
-                href="mailto:service@adaptivityperformance.com?subject=Want%20to%20Learn%20%E2%80%94%20Training%20interest&body=Name%3A%0APhone%3A%0ASchool%20%2F%20status%3A%0ATrade%20interest%3A%0A"
+                href="mailto:owner@adaptivityperformance.com?subject=Want%20to%20Learn%20%E2%80%94%20Training%20interest&body=Name%3A%0APhone%3A%0ASchool%20%2F%20status%3A%0ATrade%20interest%3A%0A"
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-sm inline-flex items-center justify-center gap-2"
               >
                 Get training pricing
