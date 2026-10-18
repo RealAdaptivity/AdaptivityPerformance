@@ -16,6 +16,7 @@ import { openInvoicePrintWindow } from '../services/receiptPdf';
 import { openDeviceEmail, openDeviceSms, sendReceipt } from '../services/jobPayments';
 import { buildReceiptEmailText, buildReceiptSms, receiptSubject } from '../services/receiptMessage';
 import { LABOR_RATE_CENTS, fetchDefaultLaborRateCents } from '../services/laborRate';
+import { isEuropeanVehicle, laborRateCentsForVehicle } from '../services/europeanRate';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
 import { lookupVin } from '../services/vinLookup';
 import { isVinShaped, normalizeVin, vehicleLine } from '../services/vinDecode';
@@ -124,9 +125,12 @@ export const ReceiptsAdmin: React.FC<{
   const quote = quotes.find((q) => q.id === quoteId) ?? null;
   const methodInfo = RECEIPT_METHODS.find((m) => m.id === method)!;
   const walkLines = lines.filter((l) => l.title.trim());
+  /* European vehicles are billed at their own hourly rate. */
+  const walkRateCents = laborRateCentsForVehicle(wVehicle, rateCents);
+  const walkEuropean = isEuropeanVehicle(wVehicle);
   const walkTotals = useMemo(
-    () => totalsFor(lines.filter((l) => l.title.trim()), taxMode, rateCents, partsPickup),
-    [lines, taxMode, rateCents, partsPickup]
+    () => totalsFor(lines.filter((l) => l.title.trim()), taxMode, walkRateCents, partsPickup),
+    [lines, taxMode, walkRateCents, partsPickup]
   );
   const wVinNorm = normalizeVin(wVin);
   const wVinOk = !wVinNorm || isVinShaped(wVinNorm);
@@ -216,7 +220,7 @@ export const ReceiptsAdmin: React.FC<{
                 lineItems: lines,
                 taxMode,
                 partsPickup,
-                laborRateCents: rateCents,
+                laborRateCents: walkRateCents,
               },
               payment
             );
@@ -456,7 +460,7 @@ export const ReceiptsAdmin: React.FC<{
                           aria-label={`Line ${i + 1} labor`}
                           className={inputCls}
                           disabled={Boolean(line.hours && line.hours > 0)}
-                          value={line.hours && line.hours > 0 ? (lineLaborCents(line, rateCents) / 100).toFixed(2) : line.laborDollars || ''}
+                          value={line.hours && line.hours > 0 ? (lineLaborCents(line, walkRateCents) / 100).toFixed(2) : line.laborDollars || ''}
                           onChange={(e) => updateLine(i, { laborDollars: Number(e.target.value) || 0 })}
                         />
                       </div>
@@ -476,7 +480,10 @@ export const ReceiptsAdmin: React.FC<{
                     </div>
                   </div>
                 ))}
-                <p className="text-[10px] text-slate-500">Hours are charged at {money(rateCents)}/hr, the shop rate.</p>
+                <p className="text-[10px] text-slate-500">
+                  Hours are charged at {money(walkRateCents)}/hr
+                  {walkEuropean ? ', the European rate.' : ', the shop rate.'}
+                </p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3">
