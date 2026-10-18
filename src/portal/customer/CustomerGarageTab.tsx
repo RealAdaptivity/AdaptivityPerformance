@@ -1,22 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
-import { vehicleLabel, type GarageVehicle } from './garageStorage';
+import { fetchGarageVehicles, vehicleLabel, type GarageVehicle } from './garageStorage';
 
 type Props = { onBookVehicle: (vehicleId: string) => void; customerId: string };
-
-function mapRow(row: Record<string, unknown>): GarageVehicle {
-  return {
-    id: row.id as string,
-    year: (row.year as string) || '',
-    make: row.make as string,
-    model: row.model as string,
-    vin: (row.vin as string) || '',
-    mileage: (row.mileage as string) || '—',
-    healthScore: typeof row.health_score === 'number' ? row.health_score : 75,
-    healthStatus: (row.health_status as GarageVehicle['healthStatus']) || 'good',
-    healthLabel: (row.health_label as string) || 'On file',
-  };
-}
 
 export const CustomerGarageTab: React.FC<Props> = ({ onBookVehicle, customerId }) => {
   const [vehicles, setVehicles] = useState<GarageVehicle[]>([]);
@@ -24,21 +10,16 @@ export const CustomerGarageTab: React.FC<Props> = ({ onBookVehicle, customerId }
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState({ year: '2020', make: '', model: '', vin: '', mileage: '' });
+  const [draft, setDraft] = useState({ year: '', make: '', model: '', vin: '', mileage: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const { data, error: qErr } = await supabase
-      .from('vehicles')
-      .select('*')
-      .eq('owner_id', customerId)
-      .order('created_at', { ascending: false });
-    if (qErr) {
-      setError(qErr.message);
+    try {
+      setVehicles(await fetchGarageVehicles(customerId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load your garage');
       setVehicles([]);
-    } else {
-      setVehicles((data || []).map((r) => mapRow(r as Record<string, unknown>)));
     }
     setLoading(false);
   }, [customerId]);
@@ -48,19 +29,19 @@ export const CustomerGarageTab: React.FC<Props> = ({ onBookVehicle, customerId }
   }, [load]);
 
   const handleAdd = async () => {
-    if (!draft.make.trim() || !draft.model.trim()) return;
+    if (!/^\d{4}$/.test(draft.year.trim()) || !draft.make.trim() || !draft.model.trim()) {
+      setError('Enter the year, make and model.');
+      return;
+    }
     setSaving(true);
     setError(null);
     const { error: insErr } = await supabase.from('vehicles').insert({
       owner_id: customerId,
-      year: draft.year,
+      year: draft.year.trim(),
       make: draft.make.trim(),
       model: draft.model.trim(),
       vin: draft.vin.trim() || null,
       mileage: draft.mileage.trim() || null,
-      health_status: 'good',
-      health_label: 'Added — schedule inspection for full score',
-      health_score: 75,
     });
     setSaving(false);
     if (insErr) {
@@ -68,7 +49,7 @@ export const CustomerGarageTab: React.FC<Props> = ({ onBookVehicle, customerId }
       return;
     }
     setShowAdd(false);
-    setDraft({ year: '2020', make: '', model: '', vin: '', mileage: '' });
+    setDraft({ year: '', make: '', model: '', vin: '', mileage: '' });
     await load();
   };
 
@@ -101,13 +82,14 @@ export const CustomerGarageTab: React.FC<Props> = ({ onBookVehicle, customerId }
             <div>
               <h3 className="font-bold text-white">{vehicleLabel(v)}</h3>
               <p className="text-[11px] text-slate-500 font-mono">
-                VIN {v.vin || '—'} · {v.mileage}
+                VIN {v.vin || '—'}
+                {v.mileage ? ` · ${v.mileage} mi` : ''}
               </p>
             </div>
             <div className="text-right">
-              <span className={`text-xs font-bold ${statusColor(v.healthStatus)}`}>
-                {v.healthScore}/100
-              </span>
+              {v.healthScore != null && (
+                <span className={`text-xs font-bold ${statusColor(v.healthStatus)}`}>{v.healthScore}/100</span>
+              )}
               <button
                 type="button"
                 onClick={() => void handleRemove(v.id)}
@@ -117,7 +99,7 @@ export const CustomerGarageTab: React.FC<Props> = ({ onBookVehicle, customerId }
               </button>
             </div>
           </div>
-          <p className="text-xs text-slate-400">{v.healthLabel}</p>
+          {v.healthLabel && <p className="text-xs text-slate-400">{v.healthLabel}</p>}
           <button
             type="button"
             onClick={() => onBookVehicle(v.id)}

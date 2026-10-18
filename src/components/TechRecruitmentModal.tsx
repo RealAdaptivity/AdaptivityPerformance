@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { X, Wrench, DollarSign, Truck, CheckCircle2, Send, Award, Compass, Loader2, Layers, User } from 'lucide-react';
+import { LABOR_RATE_PER_HOUR_DOLLARS } from '../services/serviceCatalog';
+import { TECH_LABOR_SHARE_PERCENT } from '../services/closeOut';
+
+/** What a tech keeps per billed labor hour at the shop rate. */
+const TECH_HOURLY_DOLLARS = (LABOR_RATE_PER_HOUR_DOLLARS * TECH_LABOR_SHARE_PERCENT) / 100;
+
 import {
   TECH_INSURANCE_RECOMMENDATION,
   TECH_LIABILITY_ACK_LABEL,
@@ -543,7 +549,7 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                           <span>70/30 Revenue Split + 100% Tips</span>
                           <span>Mechanic Keeps 70%</span>
                         </div>
-                        <p className="text-[11px] text-slate-300">Mechanics keep 70% of total labor billed (30% platform). Technicians average $65.00 – $95.00+/hr on mobile repair jobs in Justin & Northlake.</p>
+                        <p className="text-[11px] text-slate-300">Mechanics keep {TECH_LABOR_SHARE_PERCENT}% of labor billed ({100 - TECH_LABOR_SHARE_PERCENT}% platform) — ${TECH_HOURLY_DOLLARS} for every hour billed at our ${LABOR_RATE_PER_HOUR_DOLLARS}/hr rate.</p>
                       </div>
 
                       <div

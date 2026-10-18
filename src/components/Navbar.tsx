@@ -6,8 +6,6 @@ import {
   Clock,
   ShieldCheck,
   Truck,
-  Car,
-  FileCheck,
   UserPlus,
   Building2,
   LogIn,
@@ -26,8 +24,6 @@ import { BrandLogo } from './BrandLogo';
 interface NavbarProps {
   onOpenBooking: () => void;
   onOpenTracker: () => void;
-  onOpenGarage: () => void;
-  onOpenInspection: () => void;
   onOpenRecruitment: () => void;
   onOpenPartnerApply: () => void;
   onOpenMembership: () => void;
@@ -45,8 +41,6 @@ function MenuSection({ label, children }: { label: string; children: React.React
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenBooking,
   onOpenTracker,
-  onOpenGarage,
-  onOpenInspection,
   onOpenRecruitment,
   onOpenPartnerApply,
   onOpenMembership,
@@ -273,26 +267,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <SiteLink to="faq" onNavigate={close} className={itemClass}>
                       FAQ
                     </SiteLink>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenGarage();
-                        close();
-                      }}
-                      className={`${itemClass} text-amber-300`}
-                    >
-                      <Car className="w-4 h-4 text-orange-400" /> My Garage
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenInspection();
-                        close();
-                      }}
-                      className={`${itemClass} text-blue-300`}
-                    >
-                      <FileCheck className="w-4 h-4 text-blue-400" /> DVI Report
-                    </button>
                   </div>
                 )}
 

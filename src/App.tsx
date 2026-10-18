@@ -20,14 +20,11 @@ const PortalApp = lazy(() => import('./portal/PortalApp').then((m) => ({ default
 // still opens instantly.
 const RepairTrackerDemo = lazy(() => import('./components/RepairTrackerDemo').then((m) => ({ default: m.RepairTrackerDemo })));
 const BookingModal = lazy(() => import('./components/BookingModal').then((m) => ({ default: m.BookingModal })));
-const CustomerGarageModal = lazy(() => import('./components/CustomerGarageModal').then((m) => ({ default: m.CustomerGarageModal })));
-const InspectionReportModal = lazy(() => import('./components/InspectionReportModal').then((m) => ({ default: m.InspectionReportModal })));
 const TechRecruitmentModal = lazy(() => import('./components/TechRecruitmentModal').then((m) => ({ default: m.TechRecruitmentModal })));
 const PartnerApplyModal = lazy(() => import('./components/PartnerApplyModal').then((m) => ({ default: m.PartnerApplyModal })));
 const MembershipModal = lazy(() => import('./components/MembershipModal').then((m) => ({ default: m.MembershipModal })));
 const WarrantyModal = lazy(() => import('./components/WarrantyModal').then((m) => ({ default: m.WarrantyModal })));
 const ReferralModal = lazy(() => import('./components/ReferralModal').then((m) => ({ default: m.ReferralModal })));
-const AIMechanicChatbot = lazy(() => import('./components/AIMechanicChatbot').then((m) => ({ default: m.AIMechanicChatbot })));
 const MarketingPage = lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m.MarketingPage })));
 const ReferralLandingPage = lazy(() => import('./pages/ReferralLandingPage').then((m) => ({ default: m.ReferralLandingPage })));
 import { SERVICE_CATALOG } from './services/serviceCatalog';
@@ -88,8 +85,6 @@ function MainAppContent() {
 
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
-  const [isGarageOpen, setIsGarageOpen] = useState(false);
-  const [isInspectionOpen, setIsInspectionOpen] = useState(false);
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
   const [isPartnerApplyOpen, setIsPartnerApplyOpen] = useState(false);
   const [isMembershipOpen, setIsMembershipOpen] = useState(false);
@@ -146,14 +141,12 @@ function MainAppContent() {
   }, [page]);
 
   /**
-   * Hold the chat widget back until the page is idle, and warm the booking chunk
-   * at the same time so the primary CTA never waits on a network round trip.
+   * Warm the booking chunk once the page is idle, so the primary CTA never
+   * waits on a network round trip.
    */
-  const [deferredWidgetsReady, setDeferredWidgetsReady] = useState(false);
   useEffect(() => {
     const onIdle = () => {
       void import('./components/BookingModal');
-      setDeferredWidgetsReady(true);
     };
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(onIdle, { timeout: 3000 });
@@ -210,36 +203,9 @@ function MainAppContent() {
     setIsBookingOpen(true);
   };
 
-  const handleBookFromAIChat = (serviceName: string, estimatedCost?: number) => {
-    setEstimateDataForBooking({
-      services: [serviceName],
-      totalEstimate: estimatedCost || 180,
-      locationType: 'mobile',
-    });
-    setIsBookingOpen(true);
-  };
-
   const handleOpenMembershipModal = (planId?: 'basic' | 'vip' | 'fleet') => {
     if (planId) setSelectedMembershipPlan(planId);
     setIsMembershipOpen(true);
-  };
-
-  const handleBookFromGarage = (serviceName: string, vehicleInfo: string) => {
-    setEstimateDataForBooking({
-      services: [serviceName],
-      vehicle: vehicleInfo,
-      locationType: 'mobile',
-    });
-    setIsBookingOpen(true);
-  };
-
-  const handleApproveDVIAndBook = (approvedServices: string[], totalCost: number) => {
-    setEstimateDataForBooking({
-      services: approvedServices,
-      totalEstimate: totalCost,
-      locationType: 'mobile',
-    });
-    setIsBookingOpen(true);
   };
 
   const handleBookMobileZip = (_zip: string) => {
@@ -293,8 +259,6 @@ function MainAppContent() {
       <Navbar
         onOpenBooking={() => openBooking({ source: 'navbar' })}
         onOpenTracker={() => setIsTrackerOpen(true)}
-        onOpenGarage={() => setIsGarageOpen(true)}
-        onOpenInspection={() => setIsInspectionOpen(true)}
         onOpenRecruitment={() => setIsRecruitmentOpen(true)}
         onOpenPartnerApply={() => setIsPartnerApplyOpen(true)}
         onOpenMembership={() => {
@@ -371,23 +335,6 @@ function MainAppContent() {
         />
         )}
 
-        {isGarageOpen && (
-        <CustomerGarageModal
-          isOpen={isGarageOpen}
-          onClose={() => setIsGarageOpen(false)}
-          onBookService={handleBookFromGarage}
-          onOpenDVIReport={() => setIsInspectionOpen(true)}
-        />
-        )}
-
-        {isInspectionOpen && (
-        <InspectionReportModal
-          isOpen={isInspectionOpen}
-          onClose={() => setIsInspectionOpen(false)}
-          onApproveAndBook={handleApproveDVIAndBook}
-        />
-        )}
-
         {isRecruitmentOpen && (
         <TechRecruitmentModal
           isOpen={isRecruitmentOpen}
@@ -411,12 +358,6 @@ function MainAppContent() {
         )}
 
       </Suspense>
-
-      {deferredWidgetsReady && (
-        <Suspense fallback={null}>
-          <AIMechanicChatbot onBookService={handleBookFromAIChat} />
-        </Suspense>
-      )}
     </div>
   );
 }
