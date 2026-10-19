@@ -141,7 +141,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
           </ol>
         </div>
 
-        <div className="space-y-5">
+        <div id="our-work" className="space-y-5 scroll-mt-24">
           <div className="space-y-2">
             <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">Our work</h2>
             <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">

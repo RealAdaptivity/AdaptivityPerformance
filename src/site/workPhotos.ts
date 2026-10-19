@@ -34,6 +34,33 @@ export type WorkJob = {
  *  photo goes in. */
 export const WORK_JOBS: WorkJob[] = [
   {
+    slug: 'honda-crv-suspension-diagnostic',
+    title: 'Suspension diagnostics on a Honda CR-V',
+    summary: 'Checked in a business parking lot, on a rainy day.',
+    photos: [
+      {
+        slug: 'crv-hood-up',
+        alt: 'A blue Honda CR-V with the hood up in a business parking lot on a wet, overcast day, a technician kneeling at the front wheel. The license plate is blurred.',
+        caption: 'Hood up in the parking lot, rain and all.',
+      },
+      {
+        slug: 'crv-wheel-well',
+        alt: 'An Adaptivity technician crouched in the front wheel well of the CR-V, with the car up on a jack stand',
+        caption: 'Checking the front suspension from the wheel well.',
+      },
+      {
+        slug: 'crv-bushing',
+        alt: 'Close-up of a rubber suspension bushing in its mount under the CR-V',
+        caption: 'A suspension bushing, up close.',
+      },
+      {
+        slug: 'crv-steering-linkage',
+        alt: 'Close-up under the CR-V of the steering linkage, with its rubber boot and tie rod end',
+        caption: 'Inspecting the steering linkage and its boot.',
+      },
+    ],
+  },
+  {
     slug: 'semi-fuel-leak-diagnostic',
     // A non-breaking hyphen keeps "18-wheeler" on one line on a phone.
     title: 'Fuel leak diagnostic on a diesel 18\u2011wheeler',

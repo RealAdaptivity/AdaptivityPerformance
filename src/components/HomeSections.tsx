@@ -30,7 +30,7 @@ import {
   type BookingPrefill,
 } from '../site/homeContent';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
-import { WorkPhotoGallery } from './WorkPhotoGallery';
+import { WorkJobCovers } from './WorkPhotoGallery';
 import { CUSTOMER_APP_LIVE } from '../config/customerAppLinks';
 
 type OnBook = (prefill: BookingPrefill, source: string) => void;
@@ -204,8 +204,15 @@ export const RecentWork: React.FC = () => (
       and no shop. No stock photos here.
     </p>
     <div className="mt-6">
-      <WorkPhotoGallery />
+      <WorkJobCovers />
     </div>
+    <SiteLink
+      to="about"
+      hash="our-work"
+      className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand-soft hover:text-white"
+    >
+      See every photo, job by job <ArrowRight className="w-4 h-4" aria-hidden="true" />
+    </SiteLink>
   </section>
 );
 
