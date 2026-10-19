@@ -188,6 +188,10 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [showReferral, setShowReferral] = useState(false);
   const [agreed, setAgreed] = useState(false); // consent: never pre-checked
   const [bookingRef, setBookingRef] = useState('');
+  /** The server found this customer's earlier booking of the same vehicle
+   *  and returned it instead of making a second one. */
+  const [alreadyBooked, setAlreadyBooked] = useState(false);
+  const [confirmationEmailed, setConfirmationEmailed] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [partners, setPartners] = useState<PartnerLocation[]>([]);
@@ -262,6 +266,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       setErrors({});
       setSubmitError(null);
       setBookingRef('');
+      setAlreadyBooked(false);
+      setConfirmationEmailed(false);
       setAgreed(false);
       setAccountPassword('');
       setAccountPasswordConfirm('');
@@ -484,6 +490,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       });
 
       setBookingRef(booking.bookingReference);
+      setAlreadyBooked(booking.alreadyBooked === true);
+      setConfirmationEmailed(booking.emailSent === true);
       onBookingSubmitted?.({
         bookingReference: booking.bookingReference,
         quotedAmountDollars: booking.quotedAmountDollars,
@@ -1473,6 +1481,22 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   <p className="mt-2.5 text-[15px] text-slate-400">
                     {whenLabel} · {vehicle}
                   </p>
+                  {alreadyBooked && (
+                    <p
+                      role="status"
+                      className="mt-3 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100"
+                    >
+                      {phoneBooking
+                        ? 'This caller already booked this vehicle in the last hour, so no second booking was made. This is their booking.'
+                        : 'You already booked this vehicle a few minutes ago, so we didn’t make a second booking. This is your booking.'}{' '}
+                      To change it, call {SITE_PHONE_DISPLAY}.
+                    </p>
+                  )}
+                  {confirmationEmailed && !alreadyBooked && (
+                    <p className="mt-3 flex items-center gap-2 text-sm text-emerald-300">
+                      <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> Confirmation emailed to {email.trim()}.
+                    </p>
+                  )}
                 </div>
                 {phoneBooking ? (
                   <div className="space-y-4">
