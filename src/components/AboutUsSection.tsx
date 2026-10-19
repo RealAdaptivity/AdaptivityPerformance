@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   MapPin,
   Phone,
+  Truck,
   ReceiptText,
   ShieldCheck,
   Star,
@@ -48,6 +49,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
     { icon: <BadgeCheck className="w-4 h-4 text-orange-400" />, label: 'ASE-certified technicians' },
     { icon: <ShieldCheck className="w-4 h-4 text-orange-400" />, label: '12-month / 12,000-mile warranty' },
     { icon: <MapPin className="w-4 h-4 text-orange-400" />, label: `Within ${radius} miles of ${LOCAL_HUB.city}` },
+    { icon: <Truck className="w-4 h-4 text-orange-400" />, label: 'Cars, diesels and 18\u2011wheelers' },
   ];
 
   const steps = [

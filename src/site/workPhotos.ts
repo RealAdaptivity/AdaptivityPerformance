@@ -34,6 +34,19 @@ export type WorkJob = {
  *  photo goes in. */
 export const WORK_JOBS: WorkJob[] = [
   {
+    slug: 'semi-fuel-leak-diagnostic',
+    // A non-breaking hyphen keeps "18-wheeler" on one line on a phone.
+    title: 'Fuel leak diagnostic on a diesel 18\u2011wheeler',
+    summary: 'We work on diesels, semis included. This leak was traced on site.',
+    photos: [
+      {
+        slug: 'semi-fuel-leak',
+        alt: 'The fuel system on a diesel semi truck, with a red push-lock primer pump and a yellow arrow drawn on the photo pointing at the leak beside it',
+        caption: 'The arrow marks the leak, next to the fuel primer pump.',
+      },
+    ],
+  },
+  {
     slug: 'thunderbird-bond-battery-test',
     title: 'Battery test on a 2003 Thunderbird James Bond Edition',
     summary: 'Battery tested and charged where the car was parked.',

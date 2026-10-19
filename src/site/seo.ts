@@ -269,7 +269,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you work on diesel trucks?',
-    a: 'Absolutely. We service diesel-powered trucks including Ford Power Stroke, GM Duramax, and RAM Cummins platforms. Our technicians are experienced with DPF systems, EGR components, DEF systems, and high-pressure fuel systems. A heavy-duty labor multiplier applies for diesel-specific work — your tech will quote this before beginning any work.',
+    a: 'Yes, from diesel pickups to 18-wheelers. We service Ford Power Stroke, GM Duramax and RAM Cummins pickups as well as semi trucks, on site like every other job. Our technicians work on DPF, EGR and DEF systems, high-pressure fuel systems and fuel leaks. Your tech quotes the price before any work starts.',
   },
   {
     q: 'Do you service European and luxury vehicles (BMW, Mercedes, Audi, Porsche, Land Rover)?',
