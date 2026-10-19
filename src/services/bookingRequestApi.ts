@@ -9,6 +9,12 @@ export type BookingRequestResult = {
   quotedAmountDollars: number;
   quoteMode: 'diagnostic' | 'direct';
   message: string;
+  /** True when this is the customer's earlier booking of the same vehicle,
+   *  handed back instead of making a second one. */
+  alreadyBooked?: boolean;
+  /** Whether the confirmation text / email reached the customer. */
+  confirmationSent?: boolean;
+  emailSent?: boolean;
 };
 
 export async function createBookingRequest(params: {

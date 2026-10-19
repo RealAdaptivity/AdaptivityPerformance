@@ -3,8 +3,15 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/http.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
 import { TRAVEL_FEE_DOLLARS, computeQuoteFromServices } from '../_shared/servicePricing.ts';
-import { buildBookingConfirmationSms } from '../_shared/bookingConfirmation.ts';
+import {
+  buildBookingConfirmationEmail,
+  buildBookingConfirmationSms,
+  type BookingConfirmationInput,
+} from '../_shared/bookingConfirmation.ts';
 import { sendTwilioSms } from '../_shared/twilioSms.ts';
+import { sendEmail } from '../_shared/sendEmail.ts';
+import { BUSINESS } from '../_shared/receiptMessage.ts';
+import { REPEAT_BOOKING_WINDOW_MINUTES, findRepeatBooking } from '../_shared/repeatBooking.ts';
 import {
   buildNewJobAlertSms,
   buildNewJobPush,
@@ -184,6 +191,35 @@ Deno.serve(async (req) => {
           .slice(0, 8)
       : [];
 
+    /* The same customer booking the same vehicle again within the hour gets
+       their first booking back instead of a second one on the board. Nothing
+       is sent again: the confirmation for that booking already went out. */
+    const { data: recentRows } = await supabase
+      .from('bookings')
+      .select('id, reference_code, customer_name, customer_phone, vehicle_description, status, created_at, total_estimate')
+      .gte('created_at', new Date(Date.now() - REPEAT_BOOKING_WINDOW_MINUTES * 60_000).toISOString())
+      .not('status', 'in', '(CANCELED,COMPLETED)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    const repeat = findRepeatBooking(
+      { name: customerName, phone: customerPhone, vehicle: vehicleDescriptionFinal },
+      recentRows ?? []
+    );
+    if (repeat) {
+      console.warn('[create-booking-request] repeat of', repeat.reference_code, '— no new booking made');
+      const earlier = (recentRows ?? []).find((r) => r.id === repeat.id);
+      return jsonResponse({
+        bookingReference: repeat.reference_code,
+        bookingId: repeat.id,
+        quotedAmountDollars: Number(earlier?.total_estimate ?? quotedDollars),
+        quoteMode: quote.mode,
+        confirmationSent: false,
+        emailSent: false,
+        alreadyBooked: true,
+        message: `This vehicle is already booked under ${repeat.reference_code}, so we didn't make a second booking. Call us to change it.`,
+      });
+    }
+
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -267,41 +303,51 @@ Deno.serve(async (req) => {
        untexted is a far better outcome than a lost booking. sendTwilioSms
        no-ops when the TWILIO_* secrets are unset, which is the state today, so
        this stays silent until those are added. */
-    let confirmation: { sent: boolean; skipped?: string; error?: string } = {
-      sent: false,
-      skipped: 'not attempted',
+    type SendResult = { sent: boolean; skipped?: string; error?: string };
+    const confirmationInput: BookingConfirmationInput = {
+      referenceCode: booking.reference_code,
+      services: normalizedServices,
+      quotedDollars,
+      quoteMode: quote.mode,
+      travelDollars: locationType === 'shop' ? 0 : TRAVEL_FEE_DOLLARS,
+      vehicleDescription: vehicleDescriptionFinal,
+      preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
+      preferredTimeWindow: typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,
+      siteUrl: Deno.env.get('ADAPTIVITY_SITE_URL')?.trim() || 'https://adaptivityperformance.com',
     };
-    try {
-      confirmation = await Promise.race([
-        sendTwilioSms(
-          customerPhone.trim(),
-          buildBookingConfirmationSms({
-            referenceCode: booking.reference_code,
-            services: normalizedServices,
-            quotedDollars,
-            quoteMode: quote.mode,
-            travelDollars: locationType === 'shop' ? 0 : TRAVEL_FEE_DOLLARS,
-            vehicleDescription: vehicleDescriptionFinal,
-            preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
-            preferredTimeWindow:
-              typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,
-            siteUrl: Deno.env.get('ADAPTIVITY_SITE_URL')?.trim() || 'https://adaptivityperformance.com',
-          })
-        ),
-        new Promise<{ sent: boolean; error: string }>((resolve) =>
-          setTimeout(() => resolve({ sent: false, error: 'Twilio timed out' }), 5000)
+    const bounded = (job: Promise<SendResult>, what: string): Promise<SendResult> =>
+      Promise.race([
+        job.catch((e) => ({ sent: false, error: e instanceof Error ? e.message : `${what} failed` })),
+        new Promise<SendResult>((resolve) =>
+          setTimeout(() => resolve({ sent: false, error: `${what} timed out` }), 5000)
         ),
       ]);
-    } catch (smsErr) {
-      confirmation = {
-        sent: false,
-        error: smsErr instanceof Error ? smsErr.message : 'Confirmation SMS failed',
-      };
-    }
-    if (!confirmation.sent) {
+    /* The text and the email go out side by side. The email no-ops until the
+       RESEND_API_KEY and RECEIPT_FROM_EMAIL secrets are set, like the text
+       until the TWILIO_* ones are; replies go to the owner's inbox. */
+    const [confirmation, emailConfirmation] = await Promise.all([
+      bounded(sendTwilioSms(customerPhone.trim(), buildBookingConfirmationSms(confirmationInput)), 'Confirmation text'),
+      email
+        ? bounded(
+            (async () => {
+              const message = buildBookingConfirmationEmail({
+                ...confirmationInput,
+                customerName: customerName.trim(),
+                businessPhone: '(940) 304-0620',
+                businessFooter: `${BUSINESS.legalName} · ${BUSINESS.address}`,
+              });
+              return await sendEmail({ to: email, ...message, replyTo: BUSINESS.email });
+            })(),
+            'Confirmation email'
+          )
+        : Promise.resolve<SendResult>({ sent: false, skipped: 'no email address' }),
+    ]);
+    if (!confirmation.sent && !emailConfirmation.sent) {
       console.warn(
-        '[create-booking-request] confirmation not sent:',
-        confirmation.skipped || confirmation.error
+        '[create-booking-request] no confirmation reached the customer:',
+        confirmation.skipped || confirmation.error,
+        '/',
+        emailConfirmation.skipped || emailConfirmation.error
       );
     }
 
@@ -392,6 +438,7 @@ Deno.serve(async (req) => {
       quotedAmountDollars: quotedDollars,
       quoteMode: quote.mode,
       confirmationSent: confirmation.sent,
+      emailSent: emailConfirmation.sent,
       message:
         `Request received. Nothing is charged online — your technician takes payment in person by card, tap or chip when the work is done.`,
     });

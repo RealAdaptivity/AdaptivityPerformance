@@ -610,6 +610,8 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   const [cancelReason, setCancelReason] = useState<string>('customer_request');
   const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
   const [payment, setPayment] = useState<JobPaymentSummary | null>(null);
+  /** The payment lookup has come back, so a null payment means none exists. */
+  const [paymentChecked, setPaymentChecked] = useState(false);
   const [invoiceBusy, setInvoiceBusy] = useState<'print' | 'send' | null>(null);
   const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
 
@@ -648,11 +650,14 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   useEffect(() => {
     let cancelled = false;
     setPayment(null);
+    setPaymentChecked(false);
     // booking.id is the reference code; job_payments is keyed by the row id.
     if (!booking.supabaseId) return;
     void fetchJobPaymentSummary(booking.supabaseId)
       .then((p) => {
-        if (!cancelled) setPayment(p);
+        if (cancelled) return;
+        setPayment(p);
+        setPaymentChecked(true);
       })
       .catch(() => undefined);
     return () => {
@@ -669,6 +674,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     Boolean(booking.claimedBy) &&
     booking.status !== 'COMPLETED' &&
     booking.status !== 'CANCELED';
+
+  /* Before Completed required a close-out, Dispatch could set it by hand and
+     leave a job with no payment, receipt or tech pay on file. */
+  const completedWithoutCloseOut = booking.status === 'COMPLETED' && paymentChecked && !payment;
 
   const age = unclaimedAgeMinutes(booking);
 
@@ -857,6 +866,17 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         )}
       </div>
 
+      {completedWithoutCloseOut && (
+        <div role="alert" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 space-y-1">
+          <p className="text-xs font-bold text-amber-200">Completed, but never closed out</p>
+          <p className="text-[11px] leading-relaxed text-amber-100/90">
+            There’s no payment, receipt or tech pay on file for this job. If the work was done, set the status back to
+            On site{booking.claimedBy ? '' : ', assign the tech who did it,'} and have the tech close it out in the tech
+            app. If it never happened, cancel it.
+          </p>
+        </div>
+      )}
+
       {canReleaseToPool && (
         <div className="space-y-2">
           <label className="block space-y-1">
@@ -899,11 +919,19 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           }}
           className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
         >
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s.replace('_', ' ')}
-            </option>
-          ))}
+          {STATUS_OPTIONS.map((s) =>
+            /* Completed is set by closing the job out, which records the
+               payment, receipt and tech pay; the database refuses it otherwise. */
+            s === 'COMPLETED' && booking.status !== 'COMPLETED' ? (
+              <option key={s} value={s} disabled>
+                COMPLETED (close out in the tech app)
+              </option>
+            ) : (
+              <option key={s} value={s}>
+                {s.replace('_', ' ')}
+              </option>
+            )
+          )}
         </select>
       </label>
 

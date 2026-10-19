@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildBookingConfirmationEmail,
   buildBookingConfirmationSms,
   formatPreferredDate,
 } from '../supabase/functions/_shared/bookingConfirmation.ts';
@@ -137,4 +138,52 @@ test('a mobile visit names the travel fee next to the diagnostic; a drop-off doe
   assert.match(buildBookingConfirmationSms({ ...base, travelDollars: 20 }), /\$100 diagnostic \+ \$20 travel;/);
   assert.doesNotMatch(buildBookingConfirmationSms({ ...base, travelDollars: 0 }), /travel/);
   assert.doesNotMatch(buildBookingConfirmationSms(base), /travel/);
+});
+
+const emailBase = {
+  referenceCode: 'AP-6Z2XDPTF',
+  services: ['Mobile Diagnostic Visit', 'Battery / Charging System'],
+  quotedDollars: 100,
+  quoteMode: 'diagnostic' as const,
+  travelDollars: 20,
+  vehicleDescription: '2015 Ford Explorer',
+  preferredDate: '2026-10-02',
+  preferredTimeWindow: 'Morning (8–11am)',
+  siteUrl: 'https://adaptivityperformance.com/',
+  customerName: 'Arsenio Washington',
+  businessPhone: '(940) 304-0620',
+  businessFooter: 'RealAdaptivity LLC DBA AdaptivityPerformance · 410 FM 156, Justin, TX 76247',
+};
+
+test('the confirmation email states the booking, the cost and that nothing is charged online', () => {
+  const { subject, text, html } = buildBookingConfirmationEmail(emailBase);
+  assert.equal(subject, 'Booking received — AP-6Z2XDPTF');
+  for (const body of [text, html]) {
+    assert.match(body, /AP-6Z2XDPTF/);
+    assert.match(body, /2015 Ford Explorer/);
+    assert.match(body, /Mobile Diagnostic Visit, Battery \/ Charging System/);
+    assert.match(body, /Fri Oct 2, Morning \(8–11am\)/, 'the day the customer picked, not the day before');
+    assert.match(body, /\$100 diagnostic \+ \$20 travel/);
+    assert.match(body, /Nothing is charged online/);
+    assert.match(body, /\(940\) 304-0620/);
+  }
+  assert.match(text, /^Hi Arsenio,/);
+  assert.match(html, /href="tel:9403040620"/);
+  assert.doesNotMatch(html, /adaptivityperformance\.com\/\//, 'trailing slash not doubled');
+});
+
+test('the confirmation email asks to set a time when none was picked', () => {
+  const { text } = buildBookingConfirmationEmail({ ...emailBase, preferredDate: null, preferredTimeWindow: null });
+  assert.match(text, /When: We’ll call or text you to set a time/);
+});
+
+test('the confirmation email escapes what the customer typed', () => {
+  const { html } = buildBookingConfirmationEmail({
+    ...emailBase,
+    customerName: '<script>x</script> Ham',
+    vehicleDescription: '2003 "Bond" <b>Thunderbird</b>',
+  });
+  assert.doesNotMatch(html, /<script>|<b>Thunderbird/);
+  assert.match(html, /&lt;b&gt;Thunderbird&lt;\/b&gt;/);
+  assert.match(html, /&quot;Bond&quot;/);
 });

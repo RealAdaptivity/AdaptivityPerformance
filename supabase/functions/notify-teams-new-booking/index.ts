@@ -37,12 +37,13 @@ type BookingRecord = {
   customer_phone: string | null;
   customer_address: string;
   vehicle_description: string | null;
-  services: string | null;
+  /** text[] in the database; a DB webhook could send it either way. */
+  services: string[] | string | null;
   preferred_date: string | null;
   preferred_time_window: string | null;
   customer_notes: string | null;
   location_type: string | null;
-  total_estimate: number | null;
+  total_estimate: number | string | null;
   created_at: string;
 };
 
@@ -77,12 +78,18 @@ function buildTeamsCard(booking: BookingRecord): object {
   const phone = booking.customer_phone || 'No phone';
   const address = booking.customer_address || 'No address';
   const vehicle = booking.vehicle_description || 'Vehicle not specified';
-  const services = booking.services || 'Services not specified';
+  /* services is an array: an Adaptive Card fact must be a string. */
+  const services =
+    (Array.isArray(booking.services) ? booking.services.filter(Boolean).join(', ') : booking.services) ||
+    'Services not specified';
   const date = formatDate(booking.preferred_date);
   const window = formatTimeWindow(booking.preferred_time_window);
   const notes = booking.customer_notes || '';
-  const locType = booking.location_type === 'residential' ? '🏠 Residential' : booking.location_type === 'commercial' ? '🏢 Commercial' : '📍 Roadside';
-  const estimate = booking.total_estimate ? `$${booking.total_estimate.toFixed(2)}` : null;
+  /* Bookings are 'mobile' or 'shop'. This used to check for 'residential' and
+     'commercial', which no booking has, so every visit read "Roadside". */
+  const locType = booking.location_type === 'shop' ? '🏪 Shop drop-off' : '🚐 Mobile visit';
+  const estimateDollars = Number(booking.total_estimate ?? 0);
+  const estimate = estimateDollars > 0 ? `$${estimateDollars.toFixed(2)}` : null;
 
   return {
     type: 'message',
@@ -143,7 +150,7 @@ function buildTeamsCard(booking: BookingRecord): object {
                 { title: '📞 Phone', value: phone },
                 { title: '🚗 Vehicle', value: vehicle },
                 { title: '🔧 Service', value: services },
-                { title: '📍 Address', value: `${address} ${locType}` },
+                { title: '📍 Address', value: `${address} · ${locType}` },
                 { title: '📆 Date', value: `${date} · ${window}` },
                 ...(estimate ? [{ title: '💰 Estimate', value: estimate }] : []),
                 ...(notes ? [{ title: '📝 Notes', value: notes }] : []),

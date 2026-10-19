@@ -79,6 +79,7 @@ export const CustomerBookTab: React.FC<Props> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [bookingRef, setBookingRef] = useState('');
+  const [alreadyBooked, setAlreadyBooked] = useState(false);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
   const vehicleDescription = vehicle ? vehicleLabel(vehicle) : typedVehicle.trim();
@@ -140,6 +141,7 @@ export const CustomerBookTab: React.FC<Props> = ({
         preferredMechanicId: prefill?.preferredMechanicId || undefined,
       });
       setBookingRef(booking.bookingReference);
+      setAlreadyBooked(booking.alreadyBooked === true);
       setStep('done');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Could not start booking');
@@ -151,8 +153,14 @@ export const CustomerBookTab: React.FC<Props> = ({
   if (step === 'done') {
     return (
       <div className="bg-[#12141c] border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3">
-        <p className="text-emerald-400 font-bold">Request received — nothing charged</p>
-        <p className="text-xs text-slate-400">Your technician takes payment in person when the work is done.</p>
+        <p className="text-emerald-400 font-bold">
+          {alreadyBooked ? 'You already booked this vehicle' : 'Request received — nothing charged'}
+        </p>
+        <p className="text-xs text-slate-400">
+          {alreadyBooked
+            ? 'We didn’t make a second booking. This is the one you made a few minutes ago.'
+            : 'Your technician takes payment in person when the work is done.'}
+        </p>
         <p className="font-mono text-orange-400 text-lg">{bookingRef}</p>
         <button type="button" onClick={onGoTrack} className="w-full py-3 bg-orange-500 rounded-xl text-xs font-bold text-white">
           Track this job →
