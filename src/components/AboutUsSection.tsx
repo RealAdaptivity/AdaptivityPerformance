@@ -143,7 +143,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
           <div className="space-y-2">
             <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">Our work</h2>
             <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">
-              Photos our technicians took on a recent job, done start to finish in the customer’s driveway.
+              Photos our technicians took on recent jobs, each done in the customer’s driveway.
             </p>
           </div>
           <WorkPhotoGallery wideWidthPx={185} />

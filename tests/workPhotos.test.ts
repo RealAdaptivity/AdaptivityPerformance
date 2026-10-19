@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import {
+  WORK_JOBS,
   WORK_PHOTOS,
   WORK_PHOTO_WIDTHS,
   workPhotoSrc,
@@ -39,6 +40,17 @@ test('every photo is described for screen readers and captioned', () => {
     assert.ok(p.alt.trim().length >= 30, `${p.slug} alt text is too short`);
     assert.ok(p.caption.trim().length > 0, `${p.slug} has no caption`);
   }
+});
+
+test('every job has a title, a summary and at least one photo', () => {
+  const jobs = new Set<string>();
+  for (const j of WORK_JOBS) {
+    assert.ok(!jobs.has(j.slug), `${j.slug} listed twice`);
+    jobs.add(j.slug);
+    assert.ok(j.title.trim() && j.summary.trim(), `${j.slug} needs a title and a summary`);
+    assert.ok(j.photos.length > 0, `${j.slug} has no photos`);
+  }
+  assert.equal(WORK_PHOTOS.length, WORK_JOBS.reduce((n, j) => n + j.photos.length, 0));
 });
 
 test('photo paths follow the base path', () => {
