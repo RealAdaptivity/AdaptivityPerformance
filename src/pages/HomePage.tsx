@@ -6,6 +6,7 @@ import {
   HowItWorks,
   MoreLinks,
   PriceBand,
+  RecentWork,
   ServicesGrid,
   TrustBand,
 } from '../components/HomeSections';
@@ -33,6 +34,7 @@ export const HomePage: React.FC<Props> = ({ onBook }) => (
     <PriceBand />
     <ServicesGrid onBook={onBook} />
     <HowItWorks />
+    <RecentWork />
     <CoverageSection />
     <TrustBand />
     <MoreLinks />

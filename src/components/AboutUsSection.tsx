@@ -23,6 +23,7 @@ import {
   WEATHER_FEE_NOTE,
 } from '../services/serviceCatalog';
 import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/europeanRate';
+import { WorkPhotoGallery } from './WorkPhotoGallery';
 
 interface AboutUsSectionProps {
   onOpenBooking: () => void;
@@ -136,6 +137,16 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
               </li>
             ))}
           </ol>
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">Our work</h2>
+            <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">
+              Photos our technicians took on a recent job, done start to finish in the customer’s driveway.
+            </p>
+          </div>
+          <WorkPhotoGallery wideWidthPx={185} />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4">

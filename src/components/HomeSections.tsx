@@ -30,6 +30,7 @@ import {
   type BookingPrefill,
 } from '../site/homeContent';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { WorkPhotoGallery } from './WorkPhotoGallery';
 import { CUSTOMER_APP_LIVE } from '../config/customerAppLinks';
 
 type OnBook = (prefill: BookingPrefill, source: string) => void;
@@ -187,6 +188,23 @@ export const HowItWorks: React.FC = () => (
           </p>
         </li>
       </ol>
+    </div>
+  </section>
+);
+
+/** Real photos from a real job, right after the steps: this is what "fixed
+ *  where it sits" looks like. */
+export const RecentWork: React.FC = () => (
+  <section id="work" aria-labelledby="work-heading" className="container mx-auto max-w-7xl px-4 sm:px-6 pt-14 lg:pt-16 scroll-mt-24">
+    <h2 id="work-heading" className={`${sectionHeading} text-3xl sm:text-[38px] leading-[1.1]`}>
+      Real jobs, real driveways
+    </h2>
+    <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-400">
+      Photos our technicians took on the job. This one took the front of the engine apart in the
+      customer’s driveway, with no tow and no shop. No stock photos here.
+    </p>
+    <div className="mt-6">
+      <WorkPhotoGallery />
     </div>
   </section>
 );
