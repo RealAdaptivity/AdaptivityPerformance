@@ -67,7 +67,7 @@ test('the homepage shows the newest jobs and keeps the pinned one, in list order
 
   const shown = homepageJobs();
   assert.ok(shown.length <= HOMEPAGE_JOBS_SHOWN);
-  assert.ok(shown.some((j) => j.slug === 'engine-front-teardown'), 'the team photo stays on the homepage');
+  assert.ok(shown.some((j) => j.slug === 'explorer-sport-timing-water-pump'), 'the team photo stays on the homepage');
   assert.equal(shown[0].slug, WORK_JOBS[0].slug, 'the newest job leads');
 });
 

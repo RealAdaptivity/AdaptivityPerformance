@@ -7,7 +7,7 @@ import {
   TRAVEL_FEE_DOLLARS,
   WEATHER_FEE_DOLLARS,
 } from '../services/serviceCatalog';
-import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/europeanRate';
+import { DIESEL_LABOR_RATE_PER_HOUR_DOLLARS, EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/vehicleLaborRate';
 
 export const SITE_ORIGIN = 'https://adaptivityperformance.com';
 /** Grasshopper business line — single source of truth for public contact. */
@@ -235,7 +235,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'What is your hourly labor rate for auto repairs?',
-    a: `Labor is $${LABOR_RATE_PER_HOUR_DOLLARS} per hour, and $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS} per hour on European vehicles (BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Volvo, Mini, Jaguar, Land Rover and other European makes), which need manufacturer-specific fluids, coding and parts. Your tech tells you the hours and the price before any work begins.`,
+    a: `Labor is $${LABOR_RATE_PER_HOUR_DOLLARS} per hour. It is $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS} per hour on European vehicles (BMW, Mercedes-Benz, Audi, Volkswagen, Porsche, Volvo, Mini, Jaguar, Land Rover and other European makes), which need manufacturer-specific fluids, coding and parts, and $${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS} per hour on diesels, from pickups to 18-wheelers. Your tech tells you the hours and the price before any work begins.`,
   },
   {
     q: 'Is there a charge for picking up parts?',
@@ -269,7 +269,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'Do you work on diesel trucks?',
-    a: 'Yes, from diesel pickups to 18-wheelers. We service Ford Power Stroke, GM Duramax and RAM Cummins pickups as well as semi trucks, on site like every other job. Our technicians work on DPF, EGR and DEF systems, high-pressure fuel systems and fuel leaks. Your tech quotes the price before any work starts.',
+    a: `Yes, from diesel pickups to 18-wheelers. We service Ford Power Stroke, GM Duramax and RAM Cummins pickups as well as semi trucks, on site like every other job. Our technicians work on DPF, EGR and DEF systems, high-pressure fuel systems and fuel leaks. Labor on diesels is $${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS} per hour, and your tech quotes the hours and the price before any work starts.`,
   },
   {
     q: 'Do you service European and luxury vehicles (BMW, Mercedes, Audi, Porsche, Land Rover)?',

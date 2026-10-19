@@ -23,7 +23,7 @@ import {
   TRAVEL_FEE_DOLLARS,
   WEATHER_FEE_NOTE,
 } from '../services/serviceCatalog';
-import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/europeanRate';
+import { DIESEL_LABOR_RATE_PER_HOUR_DOLLARS, EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/vehicleLaborRate';
 import { WorkPhotoGallery } from './WorkPhotoGallery';
 
 interface AboutUsSectionProps {
@@ -80,6 +80,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
     { label: `Travel, anywhere within ${radius} miles`, value: `$${TRAVEL_FEE_DOLLARS} flat` },
     { label: 'Labor', value: `$${LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
     { label: 'Labor on European vehicles', value: `$${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
+    { label: 'Labor on diesels and 18\u2011wheelers', value: `$${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
   ];
 
   return (

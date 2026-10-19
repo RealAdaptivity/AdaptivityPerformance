@@ -132,20 +132,20 @@ export const WORK_JOBS: WorkJob[] = [
     ],
   },
   {
-    slug: 'engine-front-teardown',
+    slug: 'explorer-sport-timing-water-pump',
     // The photo of two of our techs at work: kept on the homepage.
     pinnedToHomepage: true,
-    title: 'Engine front teardown in the driveway',
-    summary: 'The front of the engine came apart and went back together without the car leaving the driveway.',
+    title: 'Timing, cam phasers, solenoids and water pump on a 2015 Ford Explorer Sport',
+    summary: 'The front of the engine came apart and went back together without the Explorer leaving the driveway.',
     photos: [
       {
         slug: 'techs-cleaning-covers',
-        alt: 'Two Adaptivity technicians in a customer’s driveway, one wiping down an engine timing cover on a spare tire and one cleaning a valve cover, with the SUV on jack stands beside them',
+        alt: 'Two Adaptivity technicians in a customer’s driveway, one wiping down the timing cover on a spare tire and one cleaning a valve cover, with the Ford Explorer Sport on jack stands beside them',
         caption: 'Cleaning the timing cover and valve cover before they go back on.',
       },
       {
         slug: 'timing-chains',
-        alt: 'Close-up of an engine with the front cover off, showing the timing chains, cam phasers and guides',
+        alt: 'Close-up of the Explorer’s engine with the front cover off, showing the timing chains, cam phasers and guides',
         caption: 'Front cover off: timing chains, guides and cam phasers.',
       },
       {

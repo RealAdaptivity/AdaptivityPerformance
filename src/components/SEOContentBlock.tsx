@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { LABOR_RATE_LABEL } from '../services/laborRate';
-import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/europeanRate';
+import { DIESEL_LABOR_RATE_PER_HOUR_DOLLARS, EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/vehicleLaborRate';
 import { ChevronDown, MapPin, CheckCircle2 } from 'lucide-react';
 import { SITE_FAQS, SITE_PHONE_DISPLAY } from '../site/seo';
 
@@ -63,7 +63,7 @@ export const SEOContentBlock: React.FC = () => {
               Bigger jobs come to you too: truck lift kits, custom exhaust installs, suspension work
               and engine replacements are done on site by the same mobile techs. We charge a{' '}
               <strong className="text-white">{LABOR_RATE_LABEL} labor rate</strong> (${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr on
-              European vehicles) with zero hidden fees and
+              European vehicles, ${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr on diesels) with zero hidden fees and
               back every job with a 12-month warranty. Call{' '}
               <strong className="text-orange-400 font-bold">{SITE_PHONE_DISPLAY}</strong> today.
             </p>
