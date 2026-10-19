@@ -30,8 +30,31 @@ export type WorkJob = {
   photos: WorkPhoto[];
 };
 
-/** Newest first. A customer's license plate is blurred before a photo goes in. */
+/** Most recently added first. A customer's license plate is blurred before a
+ *  photo goes in. */
 export const WORK_JOBS: WorkJob[] = [
+  {
+    slug: 'thunderbird-bond-battery-test',
+    title: 'Battery test on a 2003 Thunderbird James Bond Edition',
+    summary: 'Battery tested and charged where the car was parked.',
+    photos: [
+      {
+        slug: 'thunderbird-battery-test',
+        alt: 'A Viking battery tester reading 12.77 volts, clipped to a Super Start Platinum AGM battery',
+        caption: 'The tester reads 12.77 V on the AGM battery.',
+      },
+      {
+        slug: 'thunderbird-battery-charger',
+        alt: 'A battery charger connected to the battery in the trunk of the Thunderbird, beside the spare wheel well',
+        caption: 'Charging the battery, which sits in the trunk on this car.',
+      },
+      {
+        slug: 'thunderbird-engine-bay',
+        alt: 'Engine bay of the 2003 Ford Thunderbird with the hood up, showing the V8, intake and throttle body',
+        caption: 'Under the hood of the Bond Edition Thunderbird.',
+      },
+    ],
+  },
   {
     slug: 'range-rover-overfinch-air-struts',
     title: 'Air strut job on a one-of-one Range Rover Overfinch',

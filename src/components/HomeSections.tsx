@@ -200,8 +200,8 @@ export const RecentWork: React.FC = () => (
       Real jobs, real driveways
     </h2>
     <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-400">
-      Photos our technicians took on real jobs, every one done in the customer’s driveway, with no
-      tow and no shop. No stock photos here.
+      Photos our technicians took on real jobs, every one done where the car was parked, with no tow
+      and no shop. No stock photos here.
     </p>
     <div className="mt-6">
       <WorkPhotoGallery />
