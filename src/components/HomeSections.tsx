@@ -30,6 +30,7 @@ import {
   type BookingPrefill,
 } from '../site/homeContent';
 import { StoreBadgeLinks } from './StoreBadgeLinks';
+import { WorkJobCovers } from './WorkPhotoGallery';
 import { CUSTOMER_APP_LIVE } from '../config/customerAppLinks';
 
 type OnBook = (prefill: BookingPrefill, source: string) => void;
@@ -188,6 +189,30 @@ export const HowItWorks: React.FC = () => (
         </li>
       </ol>
     </div>
+  </section>
+);
+
+/** Real photos from a real job, right after the steps: this is what "fixed
+ *  where it sits" looks like. */
+export const RecentWork: React.FC = () => (
+  <section id="work" aria-labelledby="work-heading" className="container mx-auto max-w-7xl px-4 sm:px-6 pt-14 lg:pt-16 scroll-mt-24">
+    <h2 id="work-heading" className={`${sectionHeading} text-3xl sm:text-[38px] leading-[1.1]`}>
+      Real jobs, real driveways
+    </h2>
+    <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-400">
+      Photos our technicians took on real jobs, every one done where the car was parked, with no tow
+      and no shop. No stock photos here.
+    </p>
+    <div className="mt-6">
+      <WorkJobCovers />
+    </div>
+    <SiteLink
+      to="about"
+      hash="our-work"
+      className="mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-bold text-brand-soft hover:text-white"
+    >
+      See every photo, job by job <ArrowRight className="w-4 h-4" aria-hidden="true" />
+    </SiteLink>
   </section>
 );
 

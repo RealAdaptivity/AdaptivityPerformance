@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Mail, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import type { DispatchBooking } from '../../services/techDispatch';
 import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS, WEATHER_FEE_DOLLARS } from '../../services/serviceCatalog';
-import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS, isEuropeanVehicle } from '../../services/europeanRate';
+import {
+  DIESEL_LABOR_RATE_PER_HOUR_DOLLARS,
+  EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS,
+  laborRateKindForVehicle,
+} from '../../services/vehicleLaborRate';
 import {
   closeOutProblem,
   computeCloseOut,
@@ -256,9 +260,11 @@ export const TechPayScreen: React.FC<{
               <p className="text-[13px] text-zinc-600">
                 {job.customer} · {job.vehicle}
               </p>
-              {mode === 'charge' && isEuropeanVehicle(job.vehicle) && (
+              {mode === 'charge' && laborRateKindForVehicle(job.vehicle) !== 'shop' && (
                 <p className="mt-1 text-[12px] font-semibold text-amber-700">
-                  European vehicle: bill labor at ${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr.
+                  {laborRateKindForVehicle(job.vehicle) === 'diesel'
+                    ? `Diesel: bill labor at $${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr.`
+                    : `European vehicle: bill labor at $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr.`}
                 </p>
               )}
             </div>

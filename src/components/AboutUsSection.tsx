@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   MapPin,
   Phone,
+  Truck,
   ReceiptText,
   ShieldCheck,
   Star,
@@ -22,7 +23,8 @@ import {
   TRAVEL_FEE_DOLLARS,
   WEATHER_FEE_NOTE,
 } from '../services/serviceCatalog';
-import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/europeanRate';
+import { DIESEL_LABOR_RATE_PER_HOUR_DOLLARS, EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS } from '../services/vehicleLaborRate';
+import { WorkPhotoGallery } from './WorkPhotoGallery';
 
 interface AboutUsSectionProps {
   onOpenBooking: () => void;
@@ -47,6 +49,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
     { icon: <BadgeCheck className="w-4 h-4 text-orange-400" />, label: 'ASE-certified technicians' },
     { icon: <ShieldCheck className="w-4 h-4 text-orange-400" />, label: '12-month / 12,000-mile warranty' },
     { icon: <MapPin className="w-4 h-4 text-orange-400" />, label: `Within ${radius} miles of ${LOCAL_HUB.city}` },
+    { icon: <Truck className="w-4 h-4 text-orange-400" />, label: 'Cars, diesels and 18\u2011wheelers' },
   ];
 
   const steps = [
@@ -77,6 +80,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
     { label: `Travel, anywhere within ${radius} miles`, value: `$${TRAVEL_FEE_DOLLARS} flat` },
     { label: 'Labor', value: `$${LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
     { label: 'Labor on European vehicles', value: `$${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
+    { label: 'Labor on diesels and 18\u2011wheelers', value: `$${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr` },
   ];
 
   return (
@@ -136,6 +140,16 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
               </li>
             ))}
           </ol>
+        </div>
+
+        <div id="our-work" className="space-y-5 scroll-mt-24">
+          <div className="space-y-2">
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-white">Our work</h2>
+            <p className="text-sm text-slate-400 leading-relaxed max-w-2xl">
+              Photos our technicians took on recent jobs, each done where the car was parked.
+            </p>
+          </div>
+          <WorkPhotoGallery wideWidthPx={185} />
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4">

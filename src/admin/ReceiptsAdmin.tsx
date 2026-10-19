@@ -16,7 +16,7 @@ import { openInvoicePrintWindow } from '../services/receiptPdf';
 import { openDeviceEmail, openDeviceSms, sendReceipt } from '../services/jobPayments';
 import { buildReceiptEmailText, buildReceiptSms, receiptSubject } from '../services/receiptMessage';
 import { LABOR_RATE_CENTS, fetchDefaultLaborRateCents } from '../services/laborRate';
-import { isEuropeanVehicle, laborRateCentsForVehicle } from '../services/europeanRate';
+import { laborRateCentsForVehicle, laborRateKindForVehicle } from '../services/vehicleLaborRate';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
 import { lookupVin } from '../services/vinLookup';
 import { isVinShaped, normalizeVin, vehicleLine } from '../services/vinDecode';
@@ -127,7 +127,7 @@ export const ReceiptsAdmin: React.FC<{
   const walkLines = lines.filter((l) => l.title.trim());
   /* European vehicles are billed at their own hourly rate. */
   const walkRateCents = laborRateCentsForVehicle(wVehicle, rateCents);
-  const walkEuropean = isEuropeanVehicle(wVehicle);
+  const walkRateKind = laborRateKindForVehicle(wVehicle);
   const walkTotals = useMemo(
     () => totalsFor(lines.filter((l) => l.title.trim()), taxMode, walkRateCents, partsPickup),
     [lines, taxMode, walkRateCents, partsPickup]
@@ -482,7 +482,7 @@ export const ReceiptsAdmin: React.FC<{
                 ))}
                 <p className="text-[10px] text-slate-500">
                   Hours are charged at {money(walkRateCents)}/hr
-                  {walkEuropean ? ', the European rate.' : ', the shop rate.'}
+                  {walkRateKind === 'diesel' ? ', the diesel rate.' : walkRateKind === 'european' ? ', the European rate.' : ', the shop rate.'}
                 </p>
               </div>
 

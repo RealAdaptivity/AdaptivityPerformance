@@ -14,7 +14,7 @@ import {
 import { openQuotePrintWindow } from '../services/quotePdf';
 import { receiptNumbersByQuote } from '../services/receipts';
 import { lookupVin, type VinSummary } from '../services/vinLookup';
-import { EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS, isEuropeanVehicle, laborRateCentsForVehicle } from '../services/europeanRate';
+import { laborRateCentsForVehicle, vehicleLaborRateLabel } from '../services/vehicleLaborRate';
 import { isVinShaped, normalizeVin, vehicleLine } from '../services/vinDecode';
 import { SALES_TAX_LABEL, TAX_MODE_LABELS, type TaxMode } from '../services/salesTax';
 import {
@@ -116,9 +116,9 @@ export const QuotesAdmin: React.FC<{
 
   const vinReady = isVinShaped(normalizeVin(vin));
 
-  /* European vehicles are billed at their own rate: the decoded or typed
-     vehicle picks it, unless the rate was set by hand for this quote. */
-  const european = isEuropeanVehicle(vehicle);
+  /* Diesels and European vehicles are billed at their own rate: the decoded
+     or typed vehicle picks it, unless the rate was set by hand for this quote. */
+  const rateLabel = vehicleLaborRateLabel(vehicle);
   useEffect(() => {
     if (!rateTouched) setRateDollars(laborRateCentsForVehicle(vehicle, shopRateCents) / 100);
   }, [vehicle, shopRateCents, rateTouched]);
@@ -486,9 +486,10 @@ export const QuotesAdmin: React.FC<{
                 }}
               />
               <p className="text-[10px] text-slate-500 mt-1">
-                {european && (
+                {rateLabel && (
                   <span className="block text-amber-300 font-semibold">
-                    European vehicle — ${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr{rateTouched ? ' (rate set by hand)' : ''}
+                    {rateLabel}
+                    {rateTouched ? ' (rate set by hand)' : ''}
                   </span>
                 )}
                 Applies to every line with hours. Saved on the quote, so a reprint

@@ -130,13 +130,19 @@ function MainAppContent() {
     if (target) navigateSite(target, { replace: true, hash: hash === 'future' ? 'future' : undefined });
   }, []);
 
-  // Scroll to in-page hash after route change (e.g. /about#future)
+  // Scroll to in-page hash after route change (e.g. /about#our-work). The page
+  // is a lazy chunk, so the target may not exist yet: keep looking briefly.
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, '');
     if (!hash) return;
-    const t = window.setTimeout(() => {
-      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth' });
-    }, 80);
+    let tries = 0;
+    let t = 0;
+    const scrollWhenReady = () => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      else if (++tries < 25) t = window.setTimeout(scrollWhenReady, 100);
+    };
+    t = window.setTimeout(scrollWhenReady, 80);
     return () => window.clearTimeout(t);
   }, [page]);
 
