@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   WORK_JOBS,
+  homepageJobs,
   WORK_PHOTO_ASPECT,
   workPhotoSrc,
   workPhotoSrcSet,
@@ -81,14 +82,11 @@ export const WorkPhotoGallery: React.FC<{
   </div>
 );
 
-/** How many jobs the homepage shows: one row on desktop. */
-const COVERS_SHOWN = 5;
-
-/** One photo per job, newest first, in a single row, for the homepage: enough
- *  to show the range of work without pushing the booking button further down. */
+/** One photo per job in a single row, for the homepage: enough to show the
+ *  range of work without pushing the booking button further down. */
 export const WorkJobCovers: React.FC = () => (
   <PhotoRow label="Recent jobs">
-    {WORK_JOBS.slice(0, COVERS_SHOWN).map((job) => (
+    {homepageJobs().map((job) => (
       <PhotoTile key={job.slug} photo={job.photos[0]} wideWidthPx={240}>
         <span className="block text-[14px] font-semibold leading-snug text-white">{job.title}</span>
         <span className={`${captionClass} mt-0.5`}>{job.summary}</span>

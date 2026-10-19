@@ -2,7 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import {
+  HOMEPAGE_JOBS_SHOWN,
   WORK_JOBS,
+  homepageJobs,
+  type WorkJob,
   WORK_PHOTOS,
   WORK_PHOTO_WIDTHS,
   workPhotoSrc,
@@ -51,6 +54,21 @@ test('every job has a title, a summary and at least one photo', () => {
     assert.ok(j.photos.length > 0, `${j.slug} has no photos`);
   }
   assert.equal(WORK_PHOTOS.length, WORK_JOBS.reduce((n, j) => n + j.photos.length, 0));
+});
+
+test('the homepage shows the newest jobs and keeps the pinned one, in list order', () => {
+  const job = (slug: string, pinnedToHomepage = false): WorkJob => ({
+    slug, title: slug, summary: slug, photos: [{ slug, alt: slug, caption: slug }], pinnedToHomepage,
+  });
+  const jobs = ['f', 'e', 'd', 'c', 'b'].map((s) => job(s)).concat(job('team', true));
+  assert.deepEqual(homepageJobs(jobs, 5).map((j) => j.slug), ['f', 'e', 'd', 'c', 'team']);
+  assert.deepEqual(homepageJobs(jobs.slice(0, 3), 5).map((j) => j.slug), ['f', 'e', 'd']);
+  assert.deepEqual(homepageJobs([job('a', true), job('b')], 1).map((j) => j.slug), ['a']);
+
+  const shown = homepageJobs();
+  assert.ok(shown.length <= HOMEPAGE_JOBS_SHOWN);
+  assert.ok(shown.some((j) => j.slug === 'engine-front-teardown'), 'the team photo stays on the homepage');
+  assert.equal(shown[0].slug, WORK_JOBS[0].slug, 'the newest job leads');
 });
 
 test('photo paths follow the base path', () => {
