@@ -1,4 +1,62 @@
-/** Optional analytics — set VITE_PLAUSIBLE_DOMAIN and/or VITE_GA4_MEASUREMENT_ID. */
+/** Analytics, only with consent.
+ *
+ *  Google Analytics sets cookies, so it loads only once the visitor taps
+ *  Accept on the cookie bar; Decline means it never loads. The GA4 tag lives
+ *  in index.html (loadGoogleAnalytics). Plausible sets no cookies and loads
+ *  when VITE_PLAUSIBLE_DOMAIN is set. */
+
+export const CONSENT_KEY = 'adaptivity_cookie_consent';
+
+export type ConsentChoice = 'accepted' | 'declined';
+
+export function storedConsent(): ConsentChoice | null {
+  try {
+    const v = localStorage.getItem(CONSENT_KEY);
+    return v === 'accepted' || v === 'declined' ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+declare global {
+  interface Window {
+    plausible?: (event: string, opts?: { props?: EventProps }) => void;
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
+    /** Defined in index.html. */
+    loadGoogleAnalytics?: () => void;
+  }
+}
+
+/** A second GA4 property from the environment, held to the same consent. */
+function loadEnvGoogleAnalytics() {
+  const gaId = (import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined)?.trim();
+  if (!gaId || window.gtag) return;
+  window.dataLayer = window.dataLayer || [];
+  // gtag.js reads Arguments objects off the data layer, not arrays.
+  window.gtag = function gtag() {
+    window.dataLayer!.push(arguments);
+  };
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
+  document.head.appendChild(s);
+  window.gtag('js', new Date());
+  window.gtag('config', gaId);
+}
+
+/** Record the visitor's choice; Accept starts Google Analytics now. */
+export function setConsent(choice: ConsentChoice) {
+  try {
+    localStorage.setItem(CONSENT_KEY, choice);
+  } catch {
+    /* private mode: the choice lasts for this page view only */
+  }
+  if (choice === 'accepted') {
+    window.loadGoogleAnalytics?.();
+    loadEnvGoogleAnalytics();
+  }
+}
 
 export function initSiteAnalytics() {
   if (typeof document === 'undefined') return;
@@ -12,32 +70,10 @@ export function initSiteAnalytics() {
     document.head.appendChild(s);
   }
 
-  const gaId = (import.meta.env.VITE_GA4_MEASUREMENT_ID as string | undefined)?.trim();
-  if (gaId) {
-    const gtagSrc = document.createElement('script');
-    gtagSrc.async = true;
-    gtagSrc.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`;
-    document.head.appendChild(gtagSrc);
-
-    const inline = document.createElement('script');
-    inline.text = `
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', ${JSON.stringify(gaId)});
-    `;
-    document.head.appendChild(inline);
-  }
+  if (storedConsent() === 'accepted') loadEnvGoogleAnalytics();
 }
 
 type EventProps = Record<string, string | number | boolean>;
-
-declare global {
-  interface Window {
-    plausible?: (event: string, opts?: { props?: EventProps }) => void;
-    gtag?: (...args: unknown[]) => void;
-  }
-}
 
 /**
  * Fire a conversion event to whichever analytics provider is configured.

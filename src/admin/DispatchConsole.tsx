@@ -21,10 +21,12 @@ import { VinLookupPanel } from './VinLookupPanel';
 import { BookingModal } from '../components/BookingModal';
 import {
   fetchJobPaymentSummary,
+  needsPaymentConfirmation,
   paymentMethodLabel,
   sendReceipt,
   type JobPaymentSummary,
 } from '../services/jobPayments';
+import { ConfirmManualPayment } from './ConfirmManualPayment';
 import { loadInvoice } from '../services/invoiceData';
 import { openInvoicePrintWindow } from '../services/receiptPdf';
 import { AddTechnicianForm } from './AddTechnicianForm';
@@ -607,11 +609,20 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
   onReleaseToPool,
 }) => {
   const mechanicId = booking.claimedBy?.id ?? '';
-  const [cancelReason, setCancelReason] = useState<string>('customer_request');
+  /* No default: a preset reason ended up on every cancellation, so the
+     reasons said nothing. Canceling now waits until one is picked. */
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  useEffect(() => {
+    setCancelReason('');
+    setCancelError(null);
+  }, [booking.id]);
   const [autoAssignMsg, setAutoAssignMsg] = useState<string | null>(null);
   const [payment, setPayment] = useState<JobPaymentSummary | null>(null);
   /** The payment lookup has come back, so a null payment means none exists. */
   const [paymentChecked, setPaymentChecked] = useState(false);
+  /** Bumped after confirming a cash or Zelle payment, to load it again. */
+  const [paymentVersion, setPaymentVersion] = useState(0);
   const [invoiceBusy, setInvoiceBusy] = useState<'print' | 'send' | null>(null);
   const [invoiceMsg, setInvoiceMsg] = useState<string | null>(null);
 
@@ -663,7 +674,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [booking.supabaseId, booking.status, booking.paymentStatus]);
+  }, [booking.supabaseId, booking.status, booking.paymentStatus, paymentVersion]);
 
   /* Was gated on booking.paymentIntentId — a Stripe payment intent. Stripe is
      gone and nothing takes a card, so that field is null on every booking made
@@ -841,6 +852,24 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             {payment.refundedCents > 0 && (
               <p className="text-xs text-amber-300">Refunded in Square: {formatMoney(payment.refundedCents)}</p>
             )}
+            {payment.confirmedAt && (
+              <p className="text-[11px] text-emerald-300">
+                Confirmed {payment.method === 'zelle' ? `Zelle${payment.zelleConfirmation ? ` · conf. ${payment.zelleConfirmation}` : ''}` : 'cash'}
+                {payment.method === 'cash' && payment.cashReceivedCents != null ? ` · ${formatMoney(payment.cashReceivedCents)} received` : ''}
+                {' · '}
+                {new Date(payment.confirmedAt).toLocaleDateString('en-US', { dateStyle: 'medium' })}
+              </p>
+            )}
+            {needsPaymentConfirmation(payment) && booking.supabaseId && payment.method !== 'card' && (
+              <ConfirmManualPayment
+                key={booking.supabaseId}
+                bookingId={booking.supabaseId}
+                dueCents={payment.totalCents - payment.refundedCents}
+                recordedMethod={payment.method}
+                tech={booking.claimedBy ? { id: booking.claimedBy.id, name: booking.claimedBy.name } : null}
+                onConfirmed={() => setPaymentVersion((v) => v + 1)}
+              />
+            )}
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="button"
@@ -877,31 +906,42 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </div>
       )}
 
+      {/* Releasing hands the job back to the pool; it is not a cancellation,
+          so it records no cancel reason. */}
       {canReleaseToPool && (
         <div className="space-y-2">
-          <label className="block space-y-1">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Reason for releasing</span>
-            <select
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-              className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
-            >
-              {CANCEL_REASON_PRESETS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </label>
           <button
             type="button"
             disabled={saving}
-            onClick={() => void onReleaseToPool(booking.id, cancelReason)}
+            onClick={() => void onReleaseToPool(booking.id)}
             className="w-full text-xs font-bold text-red-300 border border-red-500/30 rounded-lg py-2 hover:bg-red-500/10 disabled:opacity-50"
           >
             Release back to the open pool
           </button>
         </div>
+      )}
+
+      {booking.status !== 'CANCELED' && booking.status !== 'COMPLETED' && (
+        <label className="block space-y-1">
+          <span className="text-[10px] uppercase font-bold text-slate-500">
+            Cancel reason (pick one before canceling)
+          </span>
+          <select
+            value={cancelReason}
+            onChange={(e) => {
+              setCancelReason(e.target.value);
+              setCancelError(null);
+            }}
+            className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="">Pick a reason…</option>
+            {CANCEL_REASON_PRESETS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+        </label>
       )}
 
       <label className="block space-y-1">
@@ -912,6 +952,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           onChange={(e) => {
             const next = e.target.value as JobStatus;
             if (next === 'CANCELED') {
+              if (!cancelReason) {
+                setCancelError('Pick why it’s being canceled first, then choose CANCELED.');
+                return;
+              }
               void onPatch(booking.id, { status: next, cancelReason });
             } else {
               void onPatch(booking.id, { status: next });
@@ -935,23 +979,10 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         </select>
       </label>
 
-      {booking.status !== 'CANCELED' && !canReleaseToPool && (
-        <label className="block space-y-1">
-          <span className="text-[10px] uppercase font-bold text-slate-500">
-            Cancel reason (if canceling via status)
-          </span>
-          <select
-            value={cancelReason}
-            onChange={(e) => setCancelReason(e.target.value)}
-            className="w-full bg-[#0b0c10] border border-white/10 rounded-lg px-3 py-2 text-sm"
-          >
-            {CANCEL_REASON_PRESETS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </label>
+      {cancelError && (
+        <p role="alert" className="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+          {cancelError}
+        </p>
       )}
 
       <label className="block space-y-1">

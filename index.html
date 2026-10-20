@@ -7,13 +7,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" />
-    <!-- Google Analytics 4 (GA4) — Measurement ID: G-M36H0GHK15 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M36H0GHK15"></script>
+    <!-- Google Analytics 4 (GA4), Measurement ID G-M36H0GHK15. It loads only
+         after the visitor taps Accept on the cookie bar (src/site/analytics.ts
+         calls loadGoogleAnalytics then), or straight away when they accepted
+         on an earlier visit. Decline means it never loads. -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-M36H0GHK15');
+      window.loadGoogleAnalytics = function () {
+        if (window.gtag) return;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { window.dataLayer.push(arguments); };
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-M36H0GHK15';
+        document.head.appendChild(s);
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-M36H0GHK15');
+      };
+      try {
+        if (localStorage.getItem('adaptivity_cookie_consent') === 'accepted') window.loadGoogleAnalytics();
+      } catch (e) {}
     </script>
 
     <!-- Tab icons cut from the real logo (logo.png), cropped tight so the mark

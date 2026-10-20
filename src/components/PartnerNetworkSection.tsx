@@ -41,7 +41,7 @@ export const PartnerNetworkSection: React.FC<PartnerNetworkSectionProps> = ({
           {[
             {
               title: 'More booked jobs',
-              body: 'Customers choose your location for drop-off, lifts, and heavier work.',
+              body: 'Customers who would rather drop their vehicle off can book your location.',
             },
             {
               title: 'We handle the front door',

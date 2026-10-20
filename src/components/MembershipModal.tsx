@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BUSINESS_HOURS } from '../site/seo';
+import { BUSINESS_HOURS, SITE_PHONE_DISPLAY } from '../site/seo';
+import { submitMembershipRequest } from '../services/inbox';
 import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import { X, ShieldCheck, Check, Sparkles, Sliders, Zap } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
   const [vehicleInfo, setVehicleInfo] = useState('');
   const [isActivated, setIsActivated] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,32 +57,30 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
   const planAnnualCost = currentPriceObj.annual;
   const netAnnualSavings = Math.max(50, Math.round(totalGrossSavings - planAnnualCost));
 
-  const handleEnrollSubmit = (e: React.FormEvent) => {
+  /* Saved straight to the admin Inbox (and the Telegram alert). It used to
+     open the customer's email app, and the request was lost whenever they
+     closed it without pressing send. */
+  const handleEnrollSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setSubmitError(null);
-    const planLabel = selectedPlan.toUpperCase();
-    const cycleLabel = billingCycle === 'annual' ? 'annual' : 'monthly';
-    const subject = encodeURIComponent(`Adaptivity Shield enrollment — ${planLabel} (${cycleLabel})`);
-    const body = encodeURIComponent(
-      [
-        'New Adaptivity Shield membership request',
-        '',
-        `Plan: ${planLabel}`,
-        `Billing: ${cycleLabel} ($${priceDisplay})`,
-        `Name: ${memberName.trim()}`,
-        `Phone: ${memberPhone.trim()}`,
-        `Email: ${memberEmail.trim()}`,
-        `Vehicle: ${vehicleInfo.trim()}`,
-        `Estimated visits/year: ${annualVisits}`,
-        '',
-        'Please follow up to arrange payment and activate member perks.',
-      ].join('\n')
-    );
+    setSubmitting(true);
     try {
-      window.location.href = `mailto:owner@adaptivityperformance.com?subject=${subject}&body=${body}`;
+      await submitMembershipRequest({
+        fullName: memberName,
+        phone: memberPhone,
+        email: memberEmail,
+        vehicle: vehicleInfo,
+        plan: selectedPlan.toUpperCase(),
+        billing: billingCycle === 'annual' ? 'yearly' : 'monthly',
+        priceDollars: priceDisplay,
+        visitsPerYear: annualVisits,
+      });
       setIsActivated(true);
     } catch {
-      setSubmitError('Could not open email. Call or text us to enroll, or email owner@adaptivityperformance.com.');
+      setSubmitError(`Could not send your request. Call or text us at ${SITE_PHONE_DISPLAY} to join.`);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -122,19 +122,19 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
               <div className="w-16 h-16 bg-amber-500/20 border border-amber-500/40 rounded-full flex items-center justify-center mx-auto text-amber-400 animate-bounce">
                 <ShieldCheck className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-heading font-black text-white">Enrollment request sent</h3>
+              <h3 className="text-2xl font-heading font-black text-white">Request received</h3>
               <p className="text-sm text-slate-300 max-w-md mx-auto">
-                Thanks <strong>{memberName}</strong>. We received your interest in the{' '}
-                <strong>{selectedPlan.toUpperCase()}</strong> plan for <strong>{vehicleInfo}</strong>.
-                Complete the email draft (or call us) and we will arrange payment to activate
-                member perks on <strong>{memberPhone}</strong>. Online self-checkout is coming next.
+                Thanks <strong>{memberName}</strong>. We have your request for the{' '}
+                <strong>{selectedPlan.toUpperCase()}</strong> plan for <strong>{vehicleInfo}</strong>. We’ll
+                contact you at <strong>{memberPhone}</strong> to take payment, and your member pricing starts once
+                it’s set up. Nothing has been charged.
               </p>
               <div className="pt-4">
                 <button
                   onClick={onClose}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold text-xs shadow-lg shadow-orange-500/20"
                 >
-                  Return to Site & Use Member Perks
+                  Back to the site
                 </button>
               </div>
             </div>
@@ -390,10 +390,11 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
 
                   <button
                     type="submit"
-                    className="px-7 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-xs shadow-lg shadow-amber-500/25 flex items-center space-x-2"
+                    disabled={submitting}
+                    className="disabled:opacity-60 px-7 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-xs shadow-lg shadow-amber-500/25 flex items-center space-x-2"
                   >
                     <Zap className="w-4 h-4 fill-white" />
-                    <span>Request Adaptivity Shield enrollment</span>
+                    <span>{submitting ? 'Sending…' : 'Request Adaptivity Shield enrollment'}</span>
                   </button>
                 </div>
               </form>

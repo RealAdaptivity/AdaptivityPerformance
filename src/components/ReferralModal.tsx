@@ -88,7 +88,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose })
               Share Adaptivity &amp; earn credit
             </h3>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Your neighbor gets $25 off their first driveway visit. When their job completes, $25 lands on
+              When a friend books with your code and their first job is done, you each get $25 credit on
               your account.
             </p>
           </div>
@@ -112,7 +112,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose })
             <p className="text-sm font-bold text-white">Sign in to get your code</p>
             <p className="text-xs text-slate-400 leading-relaxed">
               Referral credit has to be tied to an account — that is the only way we can put the $25 on
-              your balance when your neighbor&rsquo;s job completes.
+              your balance when your friend&rsquo;s job is done.
             </p>
             <a
               href="/login"
@@ -184,7 +184,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({ isOpen, onClose })
               onClick={() =>
                 share('native', () =>
                   shareAdaptivity({
-                    title: 'Adaptivity Performance — $25 off mobile repair',
+                    title: 'Adaptivity Performance — $25 credit on mobile repair',
                     text: SHARE_TEXT,
                     url: referralLink,
                   })

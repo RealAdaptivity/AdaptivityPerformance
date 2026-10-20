@@ -3,12 +3,12 @@ import {
   fetchBookingStatusCounts,
   fetchCancelNoShowReasonCounts,
   fetchCollectedByMethod,
+  fetchReceiptsByMethod,
   type CollectedByMethod,
-  fetchPnLPaymentSums,
   type BookingStatusCounts,
-  type PaymentStatusSums,
   type ReasonCounts,
 } from '../services/adminAnalytics';
+import { summarizeMoneyIn, type ReceiptsByMethod } from '../services/moneyIn';
 import {
   export1099Csv,
   exportPartnerReportCsv,
@@ -16,6 +16,7 @@ import {
   type FraudFlag,
 } from '../services/adminOpsExtras';
 import { fetchDispatchTechs } from '../services/adminApi';
+import { countUnconfirmedManualPayments } from '../services/jobPayments';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -47,8 +48,13 @@ function ReasonTable({ title, counts }: { title: string; counts: Record<string, 
 }
 
 export const PnLDashboard: React.FC = () => {
-  const [payments, setPayments] = useState<PaymentStatusSums | null>(null);
+  /* The top used to read the Stripe-era payments table, which nothing has
+     written to since card payments moved to Square in person; it showed $0.
+     Money in now comes from jobs closed in the tech app plus receipts written
+     here for walk-ins and quotes. */
   const [collected, setCollected] = useState<CollectedByMethod | null>(null);
+  const [receipts, setReceipts] = useState<ReceiptsByMethod | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState(0);
   const [statuses, setStatuses] = useState<BookingStatusCounts>({});
   const [reasons, setReasons] = useState<ReasonCounts | null>(null);
   const [fraud, setFraud] = useState<FraudFlag[]>([]);
@@ -60,15 +66,17 @@ export const PnLDashboard: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const [p, s, r, f, c] = await Promise.all([
-        fetchPnLPaymentSums(30),
+      const [s, r, f, c, rc, u] = await Promise.all([
         fetchBookingStatusCounts(30),
         fetchCancelNoShowReasonCounts(90),
         fetchFraudFlags().catch(() => [] as FraudFlag[]),
         fetchCollectedByMethod(30).catch(() => null),
+        fetchReceiptsByMethod(30).catch(() => null),
+        countUnconfirmedManualPayments(),
       ]);
+      setUnconfirmed(u);
       setCollected(c);
-      setPayments(p);
+      setReceipts(rc);
       setStatuses(s);
       setReasons(r);
       setFraud(f);
@@ -102,14 +110,40 @@ export const PnLDashboard: React.FC = () => {
       </p>
     );
   }
-  if (!payments) return null;
-
+  const money30 = summarizeMoneyIn(collected, receipts);
   const statusEntries = Object.entries(statuses).sort((a, b) => b[1] - a[1]);
 
   const methodName: Record<string, string> = { card: 'Card (Square)', cash: 'Cash', zelle: 'Zelle', in_person: 'In person, method not recorded' };
+  const receiptMethodName: Record<string, string> = { card: 'Card', cash: 'Cash', zelle: 'Zelle', check: 'Check', other: 'Other' };
 
   return (
     <div className="space-y-4">
+      <p className="text-xs text-slate-400">
+        Last 30 days. Money in is jobs closed in the tech app plus walk-in and quote receipts, less refunds. Cancel and
+        no-show reasons cover the last 90 days.
+      </p>
+
+      {unconfirmed > 0 && (
+        <p className="text-xs text-amber-200 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+          {unconfirmed} cash or in-person payment{unconfirmed === 1 ? '' : 's'} not confirmed yet. Open the job in
+          Dispatch and confirm how it was paid.
+        </p>
+      )}
+
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Money in', value: money(money30.totalInCents), tone: 'text-emerald-400' },
+          { label: 'Walk-in & quote receipts', value: money(money30.receiptsCents), tone: 'text-emerald-300' },
+          { label: 'Paid to techs', value: money(money30.techPayoutCents), tone: 'text-sky-300' },
+          { label: 'Kept, before expenses', value: money(money30.keptCents), tone: 'text-orange-400' },
+        ].map((card) => (
+          <div key={card.label} className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-1">
+            <p className="text-[10px] uppercase font-bold text-slate-500">{card.label}</p>
+            <p className={`text-xl font-extrabold tabular-nums ${card.tone}`}>{card.value}</p>
+          </div>
+        ))}
+      </div>
+
       {collected && (
         <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-2">
           <p className="text-[10px] uppercase font-bold text-slate-500">
@@ -149,35 +183,42 @@ export const PnLDashboard: React.FC = () => {
         </div>
       )}
 
-      <p className="text-xs text-slate-400">
-        Last 30 days payments · platform ~30% / tech ~70% estimated from succeeded volume. Cancel /
-        no-show reasons use last 90 days.
-      </p>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Succeeded / captured', value: money(payments.succeededCents), tone: 'text-emerald-400' },
-          { label: 'Refunded', value: money(payments.refundedCents), tone: 'text-red-300' },
-          {
-            label: 'Platform est. (30%)',
-            value: money(payments.platformEstimateCents),
-            tone: 'text-orange-400',
-          },
-          { label: 'Tech est. (70%)', value: money(payments.techEstimateCents), tone: 'text-sky-300' },
-        ].map((card) => (
-          <div
-            key={card.label}
-            className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-1"
-          >
-            <p className="text-[10px] uppercase font-bold text-slate-500">{card.label}</p>
-            <p className={`text-xl font-extrabold ${card.tone}`}>{card.value}</p>
-          </div>
-        ))}
+      <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4 space-y-2">
+        <p className="text-[10px] uppercase font-bold text-slate-500">
+          Walk-in &amp; quote receipts · last 30 days · by payment method
+        </p>
+        {!receipts || receipts.rows.length === 0 ? (
+          <p className="text-xs text-slate-500">No receipts written in the last 30 days.</p>
+        ) : (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-[10px] uppercase text-slate-500">
+                <th className="text-left font-bold py-1">Method</th>
+                <th className="text-right font-bold py-1">Receipts</th>
+                <th className="text-right font-bold py-1">Collected</th>
+              </tr>
+            </thead>
+            <tbody>
+              {receipts.rows.map((r) => (
+                <tr key={r.method} className="border-t border-white/5">
+                  <td className="py-1.5 text-slate-200">{receiptMethodName[r.method]}</td>
+                  <td className="py-1.5 text-right tabular-nums text-slate-300">{r.count}</td>
+                  <td className="py-1.5 text-right tabular-nums text-slate-200">{money(r.cents)}</td>
+                </tr>
+              ))}
+              <tr className="border-t border-white/10 font-bold">
+                <td className="py-1.5 text-white">Total</td>
+                <td className="py-1.5 text-right tabular-nums text-white">{receipts.rows.reduce((n, r) => n + r.count, 0)}</td>
+                <td className="py-1.5 text-right tabular-nums text-white">{money(receipts.totalCents)}</td>
+              </tr>
+            </tbody>
+          </table>
+        )}
       </div>
 
       <div className="rounded-2xl border border-white/10 bg-[#12141c] p-4">
         <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">
-          Bookings by status (30d) · {payments.paymentCount} payment rows
+          Bookings by status (30d)
         </p>
         {statusEntries.length === 0 ? (
           <p className="text-xs text-slate-600">No bookings in window</p>

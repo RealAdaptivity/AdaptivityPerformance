@@ -3,6 +3,7 @@ import {
   BadgeDollarSign,
   Building2,
   FileText,
+  Inbox,
   ReceiptText,
   LineChart,
   Loader2,
@@ -37,8 +38,10 @@ import { QuotesAdmin } from './QuotesAdmin';
 import { AdminsAdmin } from './AdminsAdmin';
 import { ResearchAdmin } from './ResearchAdmin';
 import { ReceiptsAdmin } from './ReceiptsAdmin';
+import { InboxAdmin } from './InboxAdmin';
+import { countNewInquiries } from '../services/inbox';
 
-type AdminTab = 'dispatch' | 'quotes' | 'receipts' | 'research' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth' | 'admins';
+type AdminTab = 'dispatch' | 'inbox' | 'quotes' | 'receipts' | 'research' | 'techs' | 'partners' | 'agreements' | 'pnl' | 'expenses' | 'growth' | 'admins';
 
 export const AdminApp: React.FC = () => {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
@@ -50,6 +53,18 @@ export const AdminApp: React.FC = () => {
   /* A quote's "Paid → receipt" button opens the Receipts tab on that quote. */
   const [receiptQuoteId, setReceiptQuoteId] = useState<string | null>(null);
   const clearReceiptQuote = useCallback(() => setReceiptQuoteId(null), []);
+  /* Messages waiting on a reply, shown on the Inbox tab. */
+  const [inboxNew, setInboxNew] = useState(0);
+  const refreshInboxCount = useCallback(() => {
+    void countNewInquiries().then(setInboxNew);
+  }, []);
+  const isAdmin = isAdminProfile(profile);
+  useEffect(() => {
+    if (!isAdmin) return;
+    refreshInboxCount();
+    const t = window.setInterval(refreshInboxCount, 60_000);
+    return () => window.clearInterval(t);
+  }, [isAdmin, refreshInboxCount]);
 
   const refreshProfile = useCallback(async () => {
     const next = await fetchAdminProfile();
@@ -141,6 +156,12 @@ export const AdminApp: React.FC = () => {
 
   const tabs: { id: AdminTab; label: string; icon?: React.ReactNode; activeClass: string }[] = [
     { id: 'dispatch', label: 'Dispatch', activeClass: 'bg-orange-500 text-white' },
+    {
+      id: 'inbox',
+      label: inboxNew > 0 ? `Inbox (${inboxNew})` : 'Inbox',
+      icon: <Inbox className="w-3 h-3" />,
+      activeClass: 'bg-orange-600 text-white',
+    },
     {
       id: 'quotes',
       label: 'Quotes',
@@ -276,6 +297,8 @@ export const AdminApp: React.FC = () => {
       </header>
       {adminTab === 'dispatch' ? (
         <DispatchConsole />
+      ) : adminTab === 'inbox' ? (
+        <InboxAdmin adminId={profile.id} onChanged={refreshInboxCount} />
       ) : adminTab === 'techs' ? (
         <div className="max-w-3xl mx-auto w-full px-4 py-6">
           <h1 className="text-lg font-extrabold text-white mb-1">Technicians</h1>
