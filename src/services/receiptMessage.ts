@@ -35,8 +35,13 @@ export type ReceiptInput = {
   diagnosticCents: number;
   travelCents: number;
   weatherCents: number;
-  /** First responder discount off labor; shown as a negative line. */
+  /** Everything taken off labor (member or first responder percentage plus
+   *  any credit used); shown as negative lines. */
   discountCents?: number;
+  /** Closed as a member, so the percentage is the member's 10%. */
+  member?: boolean;
+  /** Referral credit used, part of discountCents. */
+  creditCents?: number;
   /** Parts pickup fee (10% of parts), when the tech went to get them. */
   partsPickupCents?: number;
   taxCents: number;
@@ -149,7 +154,15 @@ export function receiptRows(r: ReceiptInput): Row[] {
   if (r.travelCents > 0) rows.push({ label: 'Travel', cents: r.travelCents });
   if ((r.partsPickupCents ?? 0) > 0) rows.push({ label: 'Parts pickup (10% of parts)', cents: r.partsPickupCents ?? 0 });
   if (r.weatherCents > 0) rows.push({ label: 'Severe weather fee', cents: r.weatherCents });
-  if ((r.discountCents ?? 0) > 0) rows.push({ label: 'First responder discount (5% off labor)', cents: -(r.discountCents ?? 0) });
+  const creditCents = Math.min(Math.max(0, r.creditCents ?? 0), r.discountCents ?? 0);
+  const percentCents = (r.discountCents ?? 0) - creditCents;
+  if (percentCents > 0) {
+    rows.push({
+      label: r.member ? 'Member discount (10% off labor)' : 'First responder discount (5% off labor)',
+      cents: -percentCents,
+    });
+  }
+  if (creditCents > 0) rows.push({ label: 'Referral credit', cents: -creditCents });
   if (r.taxCents > 0) rows.push({ label: taxLabel(r), cents: r.taxCents, isTax: true });
   return rows;
 }

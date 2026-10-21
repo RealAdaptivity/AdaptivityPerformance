@@ -50,7 +50,7 @@ export async function loadInvoice(bookingId: string): Promise<InvoiceDoc | null>
     supabase
       .from('job_payments')
       .select(
-        'kind, line_items, diagnostic_cents, travel_cents, weather_cents, discount_cents, parts_pickup_cents, tax_cents, tax_mode, total_cents, signer_name, tech_notes, created_at, payment_method, card_brand, card_last4, square_payment_id, refunded_cents, receipt_number, zelle_confirmation'
+        'kind, line_items, diagnostic_cents, travel_cents, weather_cents, discount_cents, member, credit_cents, parts_pickup_cents, tax_cents, tax_mode, total_cents, signer_name, tech_notes, created_at, payment_method, card_brand, card_last4, square_payment_id, refunded_cents, receipt_number, zelle_confirmation'
       )
       .eq('booking_id', bookingId)
       .maybeSingle(),
@@ -81,6 +81,8 @@ export async function loadInvoice(bookingId: string): Promise<InvoiceDoc | null>
       travelCents: Number(paid.travel_cents) || 0,
       weatherCents: Number(paid.weather_cents) || 0,
       discountCents: Number(paid.discount_cents) || 0,
+      member: paid.member === true,
+      creditCents: Number(paid.credit_cents) || 0,
       partsPickupCents: Number(paid.parts_pickup_cents) || 0,
       taxCents: Number(paid.tax_cents) || 0,
       taxMode: paid.tax_mode === 'total' || paid.tax_mode === 'none' ? paid.tax_mode : 'parts',

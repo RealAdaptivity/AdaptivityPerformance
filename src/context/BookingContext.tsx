@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import type { VehicleClass } from '../services/vehicleLaborRate';
 /**
  * `bookingsApi` is loaded on demand rather than imported. It pulls in the
  * Supabase client — 200 KB — and this provider wraps the whole site, so a
@@ -26,6 +27,8 @@ export interface Booking {
   customerAddress: string;
   zipCode: string;
   vehicle: string;
+  /** Regular / European / Diesel, as picked when booking; null on older bookings. */
+  vehicleClass?: VehicleClass | null;
   vin?: string;
   services: string[];
   totalEstimate: number;

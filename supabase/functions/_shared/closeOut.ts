@@ -18,6 +18,9 @@ export const TECH_LABOR_SHARE_PERCENT = 70;
 /** First responder discount, in percent of labor (veterans, police,
  *  firefighters, EMTs and paramedics). Repairs only; never with a membership. */
 export const FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT = 5;
+/** Member discount, in percent of labor, on every repair a member has done.
+ *  Replaces the first responder discount (one discount per visit). */
+export const MEMBER_LABOR_DISCOUNT_PERCENT = 10;
 /** Parts pickup fee, in percent of the parts on the repair: the trip to get
  *  them, whether the tech or the company bought them. Repairs only; never on
  *  customer-supplied parts, which are not on the ticket. */
@@ -39,11 +42,19 @@ export type CloseOut = {
   /** The severe weather fee, when the tech worked in rain or severe weather. */
   weatherCents: number;
   laborCents: number;
-  /** First responder discount, taken off labor. 0 when it does not apply. */
+  /** Everything taken off labor: the member or first responder percentage
+   *  plus any account credit used. 0 when nothing applies. Like labor, it
+   *  comes out of the tech's share too ("any discounts go towards labor"). */
   discountCents: number;
+  /** The member or first responder part of discountCents. */
+  percentDiscountCents: number;
+  /** Account credit (referral credit) used on this job, the rest of
+   *  discountCents. Never more than the labor left after the percentage. */
+  creditCents: number;
   /** Parts pickup fee (10% of parts). 0 when there are no parts or it is off. */
   partsPickupCents: number;
   firstResponder: boolean;
+  member: boolean;
   partsCents: number;
   taxCents: number;
   totalCents: number;
@@ -87,6 +98,13 @@ export function computeCloseOut(input: {
   taxMode: TaxMode;
   partsBy: PartsBy;
   firstResponder?: boolean;
+  /** The customer has a membership: 10% off labor, instead of the first
+   *  responder discount. (Waiving travel and weather is the caller's: it
+   *  passes 0 for those.) */
+  member?: boolean;
+  /** Account credit available to use, in cents. Only what fits in the labor
+   *  left after the percentage is used. */
+  creditCents?: number;
   /** The tech went to get the parts (bought by the tech or the company). */
   partsPickup?: boolean;
 }): CloseOut {
@@ -106,11 +124,20 @@ export function computeCloseOut(input: {
   const weatherCents = noShow ? 0 : Math.max(0, Math.round(input.weatherCents));
   const laborCents = lines.reduce((s, l) => s + l.laborCents, 0);
   const partsCents = lines.reduce((s, l) => s + l.partsCents, 0);
-  // Half up to the cent in integers, as record_job_payment does it.
-  const firstResponder = input.kind === 'charge' && Boolean(input.firstResponder);
-  const discountCents = firstResponder
-    ? Math.floor((laborCents * FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT + 50) / 100)
-    : 0;
+  // Half up to the cent in integers, as record_job_payment does it. One
+  // percentage per visit: a member never also gets the first responder one.
+  const member = input.kind === 'charge' && Boolean(input.member);
+  const firstResponder = input.kind === 'charge' && !member && Boolean(input.firstResponder);
+  const percentDiscountCents = member
+    ? Math.floor((laborCents * MEMBER_LABOR_DISCOUNT_PERCENT + 50) / 100)
+    : firstResponder
+      ? Math.floor((laborCents * FIRST_RESPONDER_LABOR_DISCOUNT_PERCENT + 50) / 100)
+      : 0;
+  const creditCents =
+    input.kind === 'charge'
+      ? Math.min(Math.max(0, Math.floor(Number(input.creditCents) || 0)), laborCents - percentDiscountCents)
+      : 0;
+  const discountCents = percentDiscountCents + creditCents;
   const partsPickupCents =
     input.kind === 'charge' && input.partsPickup ? Math.floor((partsCents * PARTS_PICKUP_PERCENT + 50) / 100) : 0;
   const beforeTax =
@@ -138,8 +165,11 @@ export function computeCloseOut(input: {
     laborCents,
     partsCents,
     discountCents,
+    percentDiscountCents,
+    creditCents,
     partsPickupCents,
     firstResponder,
+    member,
     taxCents,
     totalCents: beforeTax + taxCents,
     techPayoutCents,

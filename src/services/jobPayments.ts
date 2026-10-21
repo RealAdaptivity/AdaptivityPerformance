@@ -44,6 +44,10 @@ export function closeOutPayload(closeOut: CloseOut, opts: CloseOutOptions) {
     weather_cents: closeOut.weatherCents,
     // The database works out the discount itself from the labor lines.
     first_responder: closeOut.firstResponder,
+    member: closeOut.member,
+    // The credit shown to the customer; the database checks it against
+    // their balance and uses it up.
+    credit_cents: closeOut.creditCents,
     // Likewise the parts pickup fee: the flag only, the amount is the server's.
     parts_pickup: closeOut.partsPickupCents > 0,
     tax_mode: opts.taxMode,
@@ -53,6 +57,15 @@ export function closeOutPayload(closeOut: CloseOut, opts: CloseOutOptions) {
     tech_notes: opts.techNotes ?? null,
     ...(opts.paymentMethod ? { payment_method: opts.paymentMethod } : {}),
   };
+}
+
+/** Account credit (referral credit) the job's customer has, in cents, for
+ *  the close-out screen. 0 for a guest, or when it can't be checked. */
+export async function fetchJobCreditCents(bookingId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('job_credit_balance_cents', { p_booking_id: bookingId });
+  if (error) return 0;
+  const n = Number(data);
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
 }
 
 export async function recordJobPayment(

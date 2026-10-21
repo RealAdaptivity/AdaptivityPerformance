@@ -11,6 +11,7 @@ import {
   closeOutProblem,
   computeCloseOut,
   formatCents,
+  MEMBER_LABOR_DISCOUNT_PERCENT,
   PARTS_PICKUP_PERCENT,
   type LineDraft,
   type PartsBy,
@@ -18,6 +19,7 @@ import {
 } from '../../services/closeOut';
 import {
   closeOutPayload,
+  fetchJobCreditCents,
   openDeviceEmail,
   openDeviceSms,
   recordJobPayment,
@@ -80,6 +82,18 @@ export const TechPayScreen: React.FC<{
    *  from; 'manual' falls back to sliding without a Square record. */
   const [chargedInSquare, setChargedInSquare] = useState<'no' | 'find' | 'manual'>('no');
   const exportRef = useRef<(() => Promise<Blob | null>) | null>(null);
+  /** Referral credit the customer has; it comes off labor automatically. */
+  const [availableCreditCents, setAvailableCreditCents] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetchJobCreditCents(job.id).then((c) => {
+      if (!cancelled) setAvailableCreditCents(c);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [job.id]);
 
   const closeOut = useMemo(
     () =>
@@ -93,11 +107,15 @@ export const TechPayScreen: React.FC<{
         weatherCents: weather && !shop && !member ? WEATHER_FEE_DOLLARS * 100 : 0,
         taxMode,
         partsBy,
-        // One discount per visit: never on top of a membership.
+        // Members get 10% off labor; one percentage per visit, so never on
+        // top of the first responder discount.
+        member,
         firstResponder: firstResponder && !member,
+        // Referral credit comes off labor, as much as fits.
+        creditCents: availableCreditCents,
         partsPickup,
       }),
-    [mode, lines, diagnosticFeeCents, shop, member, weather, firstResponder, partsPickup, taxMode, partsBy]
+    [mode, lines, diagnosticFeeCents, shop, member, weather, firstResponder, availableCreditCents, partsPickup, taxMode, partsBy]
   );
   const problem = closeOutProblem(closeOut, signed && signerName.trim().length > 1);
 
@@ -260,9 +278,9 @@ export const TechPayScreen: React.FC<{
               <p className="text-[13px] text-zinc-600">
                 {job.customer} · {job.vehicle}
               </p>
-              {mode === 'charge' && laborRateKindForVehicle(job.vehicle) !== 'shop' && (
+              {mode === 'charge' && laborRateKindForVehicle(job.vehicle, job.vehicleClass) !== 'shop' && (
                 <p className="mt-1 text-[12px] font-semibold text-amber-700">
-                  {laborRateKindForVehicle(job.vehicle) === 'diesel'
+                  {laborRateKindForVehicle(job.vehicle, job.vehicleClass) === 'diesel'
                     ? `Diesel: bill labor at $${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr.`
                     : `European vehicle: bill labor at $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr.`}
                 </p>
@@ -325,10 +343,20 @@ export const TechPayScreen: React.FC<{
             </button>
           )}
 
-          {closeOut.discountCents > 0 && (
+          {closeOut.percentDiscountCents > 0 && (
             <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
-              <p className="text-[15px] font-semibold">First responder discount (5% off labor)</p>
-              <span className="shrink-0 whitespace-nowrap font-heading font-semibold text-emerald-700">−{formatCents(closeOut.discountCents)}</span>
+              <p className="text-[15px] font-semibold">
+                {closeOut.member
+                  ? `Member discount (${MEMBER_LABOR_DISCOUNT_PERCENT}% off labor)`
+                  : 'First responder discount (5% off labor)'}
+              </p>
+              <span className="shrink-0 whitespace-nowrap font-heading font-semibold text-emerald-700">−{formatCents(closeOut.percentDiscountCents)}</span>
+            </div>
+          )}
+          {closeOut.creditCents > 0 && (
+            <div className="flex items-center justify-between gap-3 border-b border-dashed border-zinc-300 py-3">
+              <p className="text-[15px] font-semibold">Referral credit</p>
+              <span className="shrink-0 whitespace-nowrap font-heading font-semibold text-emerald-700">−{formatCents(closeOut.creditCents)}</span>
             </div>
           )}
           {!shop && (
@@ -375,11 +403,21 @@ export const TechPayScreen: React.FC<{
         </div>
 
         <p className={capClass}>Settings for this job</p>
-        {!shop && (
-          <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4`}>
-            <span className="text-[15px]">Member — waive travel &amp; weather fees</span>
-            <input type="checkbox" checked={member} onChange={(e) => setMember(e.target.checked)} className="h-6 w-6 accent-brand" />
-          </label>
+        <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4 py-2.5`}>
+          <span>
+            <span className="block text-[15px]">Member · −{MEMBER_LABOR_DISCOUNT_PERCENT}% labor</span>
+            <span className="block text-xs text-slate-400">
+              {shop ? 'On every repair' : 'On every repair, and no travel or weather fee'}
+            </span>
+          </span>
+          <input type="checkbox" checked={member} onChange={(e) => setMember(e.target.checked)} className="h-6 w-6 shrink-0 accent-brand" />
+        </label>
+        {availableCreditCents > 0 && closeOut.creditCents < availableCreditCents && (
+          <p className="px-1 text-xs leading-relaxed text-emerald-300">
+            {closeOut.creditCents > 0
+              ? `${formatCents(availableCreditCents - closeOut.creditCents)} of the customer’s referral credit is left for their next repair.`
+              : `The customer has ${formatCents(availableCreditCents)} of referral credit. It comes off labor, so it’s used on a visit with labor on it.`}
+          </p>
         )}
         {!shop && !member && (
           <label className={`${cardClass} flex min-h-[52px] items-center justify-between gap-3 px-4 py-2.5`}>

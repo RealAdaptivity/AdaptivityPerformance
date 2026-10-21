@@ -1,4 +1,5 @@
 import type { Booking, JobStatus, TechProfile } from '../context/BookingContext';
+import { parseVehicleClass } from './vehicleLaborRate';
 
 export type BookingRow = {
   id: string;
@@ -8,6 +9,7 @@ export type BookingRow = {
   customer_address: string;
   zip_code: string | null;
   vehicle_description: string;
+  vehicle_class?: string | null;
   vin: string | null;
   services: string[] | unknown;
   total_estimate: number;
@@ -72,6 +74,7 @@ export function rowToBooking(row: BookingRow): Booking {
     customerAddress: row.customer_address,
     zipCode: row.zip_code || '',
     vehicle: row.vehicle_description,
+    vehicleClass: parseVehicleClass(row.vehicle_class),
     vin: row.vin || undefined,
     services,
     totalEstimate: Number(row.total_estimate),

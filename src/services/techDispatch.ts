@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { parseVehicleClass, type VehicleClass } from './vehicleLaborRate';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
 
 export type DispatchBooking = {
@@ -8,6 +9,8 @@ export type DispatchBooking = {
   phone: string;
   address: string;
   vehicle: string;
+  /** Regular / European / Diesel, as the customer picked when booking. */
+  vehicleClass: VehicleClass | null;
   services: string[];
   total: number;
   status: string;
@@ -40,6 +43,7 @@ function mapRow(row: Record<string, unknown>): DispatchBooking {
     phone: row.customer_phone as string,
     address: row.customer_address as string,
     vehicle: row.vehicle_description as string,
+    vehicleClass: parseVehicleClass(row.vehicle_class),
     services,
     total: Number(row.total_estimate),
     status: row.status as string,

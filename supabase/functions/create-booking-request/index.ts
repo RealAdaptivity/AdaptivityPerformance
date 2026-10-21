@@ -67,6 +67,7 @@ Deno.serve(async (req) => {
       preferredTimeWindow,
       customerNotes,
       referralCode,
+      vehicleClass,
       preferredMechanicId: preferredMechanicIdRaw,
     } = body;
     /* An admin booking a visit for a caller from the dispatch board. */
@@ -237,6 +238,8 @@ Deno.serve(async (req) => {
         vehicle_model: str(vehicleModel, 60),
         vehicle_trim: str(vehicleTrim, 60),
         vehicle_engine: str(vehicleEngine, 60),
+        /* Regular, European or Diesel, as picked on the form; anything else is dropped. */
+        vehicle_class: ['regular', 'european', 'diesel'].includes(vehicleClass) ? vehicleClass : null,
         issue_description: str(issueDescription, 2000),
         media_paths: safeMediaPaths,
         vin: str(vin, 17)?.toUpperCase() ?? null,

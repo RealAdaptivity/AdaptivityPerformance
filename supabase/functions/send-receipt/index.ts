@@ -84,6 +84,8 @@ Deno.serve(async (req: Request) => {
       travelCents: payment.travel_cents,
       weatherCents: payment.weather_cents ?? 0,
       discountCents: payment.discount_cents ?? 0,
+      member: payment.member === true,
+      creditCents: payment.credit_cents ?? 0,
       partsPickupCents: payment.parts_pickup_cents ?? 0,
       taxCents: payment.tax_cents,
       taxMode: payment.tax_mode,

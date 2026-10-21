@@ -11,6 +11,7 @@ const ADMIN_BOOKING_SELECT = `
   customer_address,
   zip_code,
   vehicle_description,
+  vehicle_class,
   vin,
   services,
   total_estimate,

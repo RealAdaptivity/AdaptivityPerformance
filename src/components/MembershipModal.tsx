@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BUSINESS_HOURS, SITE_PHONE_DISPLAY } from '../site/seo';
 import { submitMembershipRequest } from '../services/inbox';
-import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
+import { MEMBER_LABOR_DISCOUNT_PERCENT, TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import { X, ShieldCheck, Check, Sparkles, Sliders, Zap } from 'lucide-react';
 
 interface MembershipModalProps {
@@ -40,9 +40,9 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
 
   // Pricing definitions
   const pricing = {
-    basic: { monthly: 19, annual: 199, laborDiscount: 0.10, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 0 },
-    vip: { monthly: 39, annual: 399, laborDiscount: 0.15, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 2 },
-    fleet: { monthly: 89, annual: 899, laborDiscount: 0.20, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 4 },
+    basic: { monthly: 19, annual: 199, laborDiscount: MEMBER_LABOR_DISCOUNT_PERCENT / 100, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 0 },
+    vip: { monthly: 39, annual: 399, laborDiscount: MEMBER_LABOR_DISCOUNT_PERCENT / 100, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 2 },
+    fleet: { monthly: 89, annual: 899, laborDiscount: MEMBER_LABOR_DISCOUNT_PERCENT / 100, travelSaved: TRAVEL_FEE_DOLLARS, oilChangesIncluded: 4 },
   };
 
   const currentPriceObj = pricing[selectedPlan];
@@ -195,7 +195,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                     <p className="text-xs text-slate-300">Essential protection for single vehicle owners needing zero travel fees.</p>
                     <ul className="space-y-2 text-xs text-slate-300 pt-2">
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel & Weather Fees</li>
-                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 10% Off All Repairs & Labor</li>
+                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> {MEMBER_LABOR_DISCOUNT_PERCENT}% Off Labor on Every Repair</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 1 Free Annual Digital Inspection</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Priority Phone Support · {BUSINESS_HOURS.label} Daily</li>
                     </ul>
@@ -230,10 +230,10 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                       </h4>
                       <span className="text-xs text-amber-300 font-mono">${pricing.vip.annual}/yr</span>
                     </div>
-                    <p className="text-xs text-slate-300">Complete peace of mind with 2 free oil changes, 15% discounts & towing.</p>
+                    <p className="text-xs text-slate-300">Complete peace of mind with 2 free oil changes, {MEMBER_LABOR_DISCOUNT_PERCENT}% off labor & towing.</p>
                     <ul className="space-y-2 text-xs text-slate-300 pt-2">
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> $0 Travel & Weather Fees</li>
-                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 15% Off All Repairs & Upgrades</li>
+                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> {MEMBER_LABOR_DISCOUNT_PERCENT}% Off Labor on Every Repair</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-amber-400 font-bold" /> 2 Free Synthetic Oil Changes/Yr</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Unlimited Free Digital Inspections</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 25-Mile Free Towing Allowance</li>
@@ -266,7 +266,7 @@ export const MembershipModal: React.FC<MembershipModalProps> = ({
                     <p className="text-xs text-slate-300">Commercial & multi-vehicle coverage for local businesses up to 5 vehicles.</p>
                     <ul className="space-y-2 text-xs text-slate-300 pt-2">
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Covers Up to 5 Vehicles</li>
-                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 20% Off All Labor Costs</li>
+                      <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> {MEMBER_LABOR_DISCOUNT_PERCENT}% Off Labor on Every Repair</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> 4 Free Synthetic Oil Services</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Quarterly Fleet Inspections</li>
                       <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-400" /> Dedicated Account Manager</li>

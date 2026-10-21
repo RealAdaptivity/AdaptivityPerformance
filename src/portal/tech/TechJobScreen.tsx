@@ -6,6 +6,7 @@ import { signedMediaUrls } from '../../services/bookingMediaApi';
 import { JOB_STAGES, jobStage, whenLabel } from '../../services/techBoard';
 import { todayISODate } from '../../services/scheduleWindows';
 import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../../services/serviceCatalog';
+import { vehicleLaborRateLabel } from '../../services/vehicleLaborRate';
 import { JobChatPanel } from '../../components/JobChatPanel';
 import { capClass, cardClass, directionsUrl, primaryService } from './techUi';
 import type { TechJobsApi } from './useTechJobs';
@@ -88,6 +89,9 @@ export const TechJobScreen: React.FC<{
           <div>
             <p className="font-heading text-xl font-bold leading-tight">{job.vehicle}</p>
             {job.vin && <p className="font-heading text-sm tracking-[0.06em] text-slate-400">VIN {job.vin}</p>}
+            {vehicleLaborRateLabel(job.vehicle, job.vehicleClass) && (
+              <p className="mt-1 text-sm font-semibold text-amber-300">{vehicleLaborRateLabel(job.vehicle, job.vehicleClass)} labor</p>
+            )}
           </div>
           {job.issueDescription && (
             <div className="rounded-xl bg-[#0b0c10] px-3.5 py-3">
