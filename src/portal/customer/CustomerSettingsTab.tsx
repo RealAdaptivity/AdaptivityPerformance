@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
 import { supabase } from '../../services/supabaseClient';
 import { ensureReferralCode, getCreditBalance } from '../../services/referrals';
+import { assertUsablePassword } from '../../services/passwordCheck';
 import { SITE_ORIGIN, shareAdaptivity } from '../../site/seo';
 
 type Props = {
@@ -69,12 +70,9 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
       setPwError('New password and confirmation do not match.');
       return;
     }
-    if (newPassword.length < 6) {
-      setPwError('New password must be at least 6 characters.');
-      return;
-    }
     setPwBusy(true);
     try {
+      await assertUsablePassword(newPassword);
       const { error: reauthError } = await supabase.auth.signInWithPassword({
         email: profile.email,
         password: currentPassword,
@@ -98,7 +96,7 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
     setReferralMsg(null);
     const result = await shareAdaptivity({
       title: 'Adaptivity Performance',
-      text: `Use my Adaptivity referral link ${SITE_ORIGIN}/r/${referralCode} — we both get $25 credit after your first completed job.`,
+      text: `Use my Adaptivity referral link ${SITE_ORIGIN}/r/${referralCode} — we both get $25 credit when your first job is done.`,
       url: `${SITE_ORIGIN}/r/${referralCode}`,
     });
     setReferralMsg(
@@ -151,7 +149,7 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
       <div className="space-y-3 border-t border-white/10 pt-4">
         <p className="text-xs font-bold text-slate-300">Refer a friend — $25 / $25</p>
         <p className="text-[11px] text-slate-500 leading-relaxed">
-          Share your code. When a friend books with it, you both earn $25 credit after their completed job.
+          Share your code. When a friend books with it and their first job is done, you both get $25 credit.
         </p>
         {referralCode ? (
           <>

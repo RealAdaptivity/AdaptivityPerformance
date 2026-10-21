@@ -3,6 +3,7 @@ import { Lock } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { linkApprovedTechApplication } from '../services/techApplications';
 import { ensureTechProfile } from './portalAuth';
+import { assertUsablePassword } from '../services/passwordCheck';
 
 type Props = {
   email?: string | null;
@@ -19,16 +20,13 @@ export const TechSetPassword: React.FC<Props> = ({ email, onDone }) => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
     if (password !== confirm) {
       setError('Passwords do not match.');
       return;
     }
     setLoading(true);
     try {
+      await assertUsablePassword(password);
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
       try {

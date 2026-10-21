@@ -259,7 +259,7 @@ export const SITE_FAQS = [
   },
   {
     q: 'What happens if I need to cancel or reschedule my appointment?',
-    a: 'Cancellations made more than 2 hours before the scheduled appointment window are fully refunded with no penalty. Cancellations within 2 hours of the appointment are billed the $100 diagnostic as a late cancellation fee. Same-day no-shows without notice are billed the same. Rescheduling more than 2 hours in advance is always free.',
+    a: 'Nothing is charged when you book, so canceling or rescheduling more than 2 hours before your appointment window costs nothing. Cancellations within 2 hours of the appointment are billed the $100 diagnostic as a late cancellation fee, and so are no-shows without notice.',
   },
 
   // SERVICES

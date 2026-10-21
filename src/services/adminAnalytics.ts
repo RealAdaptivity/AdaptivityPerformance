@@ -1,22 +1,11 @@
 import { supabase } from './supabaseClient';
-
-const PLATFORM_SHARE = 0.3;
-const TECH_SHARE = 0.7;
+import { groupReceiptsByMethod, texasDateDaysAgo, type ReceiptRow, type ReceiptsByMethod } from './moneyIn';
 
 function daysAgoIso(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
   return d.toISOString();
 }
-
-export type PaymentStatusSums = {
-  succeededCents: number;
-  refundedCents: number;
-  otherCents: number;
-  platformEstimateCents: number;
-  techEstimateCents: number;
-  paymentCount: number;
-};
 
 export type BookingStatusCounts = Record<string, number>;
 
@@ -45,42 +34,6 @@ function emptyReasonCounts(): ReasonCounts {
 function bump(map: Record<string, number>, key: string) {
   const k = key.trim() || 'unknown';
   map[k] = (map[k] || 0) + 1;
-}
-
-/** Last 30 days: payment totals by status + 30/70 split estimate from succeeded/captured. */
-export async function fetchPnLPaymentSums(days = 30): Promise<PaymentStatusSums> {
-  const since = daysAgoIso(days);
-  const { data, error } = await supabase
-    .from('payments')
-    .select('amount_cents, status')
-    .eq('is_test', false)
-    .gte('created_at', since)
-    .limit(5000);
-  if (error) throw new Error(error.message);
-
-  let succeededCents = 0;
-  let refundedCents = 0;
-  let otherCents = 0;
-  for (const row of data || []) {
-    const cents = Number(row.amount_cents) || 0;
-    const status = String(row.status || '').toLowerCase();
-    if (status === 'succeeded' || status === 'captured' || status === 'partially_refunded') {
-      succeededCents += cents;
-    } else if (status === 'refunded') {
-      refundedCents += cents;
-    } else {
-      otherCents += cents;
-    }
-  }
-
-  return {
-    succeededCents,
-    refundedCents,
-    otherCents,
-    platformEstimateCents: Math.round(succeededCents * PLATFORM_SHARE),
-    techEstimateCents: Math.round(succeededCents * TECH_SHARE),
-    paymentCount: (data || []).length,
-  };
 }
 
 /** Booking counts by status (all time or optional recent window). */
@@ -320,4 +273,16 @@ export async function fetchCollectedByMethod(days = 30): Promise<CollectedByMeth
     refundedCents,
     techPayoutCents,
   };
+}
+
+/** Receipts written in the admin console (walk-ins and accepted quotes),
+ *  by how they were paid, for the days up to today (Texas dates). */
+export async function fetchReceiptsByMethod(days = 30): Promise<ReceiptsByMethod> {
+  const { data, error } = await supabase
+    .from('receipts')
+    .select('payment_method, total_cents')
+    .gte('paid_on', texasDateDaysAgo(days))
+    .limit(5000);
+  if (error) throw new Error(error.message);
+  return groupReceiptsByMethod((data ?? []) as ReceiptRow[]);
 }

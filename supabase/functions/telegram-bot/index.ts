@@ -4,13 +4,15 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 /**
  * telegram-bot
  *
- * Sends a Telegram message to the team whenever a new booking is created.
+ * Sends a Telegram message to the team whenever a new booking is created, and
+ * whenever someone sends a message or a membership request from the website.
  *
  * Three kinds of caller, each authenticated differently (verify_jwt is off):
  *
- *  1. The database. An AFTER INSERT trigger on public.bookings
- *     (bookings_notify_telegram) posts { action: 'notify', booking_id } with
- *     the x-internal-key header from public.telegram_bot_config.
+ *  1. The database. AFTER INSERT triggers post with the x-internal-key header
+ *     from public.telegram_bot_config: bookings_notify_telegram sends
+ *     { action: 'notify', booking_id }, contact_inquiries_notify_telegram
+ *     sends { action: 'contact', inquiry_id }.
  *  2. Telegram itself. The bot's webhook points here and every update carries
  *     X-Telegram-Bot-Api-Secret-Token, checked against webhook_secret.
  *  3. An admin running { action: 'setup' | 'test' } with the same internal key.
@@ -209,6 +211,44 @@ async function broadcast(message: Record<string, unknown>) {
   return { chats: ids.length, sent: results.filter(Boolean).length };
 }
 
+type Inquiry = {
+  id: string;
+  topic: string | null;
+  full_name: string;
+  phone: string | null;
+  email: string | null;
+  vehicle: string | null;
+  issue_description: string;
+  sms_consent: boolean | null;
+  created_at: string;
+};
+
+function buildInquiryMessage(q: Inquiry) {
+  const received = new Date(q.created_at).toLocaleString('en-US', {
+    timeZone: TZ,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+  const membership = q.topic === 'membership';
+  const lines: string[] = [
+    `${membership ? '⭐ <b>Membership request</b>' : '📨 <b>New message from the website</b>'}`,
+    `<i>${esc(received)}</i>`,
+    '',
+    `👤 <b>${esc(q.full_name)}</b>`,
+  ];
+  if (q.phone) lines.push(`📞 ${esc(formatPhone(q.phone))}${q.sms_consent === false ? ' (call, do not text)' : ''}`);
+  if (q.email) lines.push(`✉️ ${esc(q.email)}`);
+  if (q.vehicle) lines.push(`🚗 ${esc(q.vehicle)}`);
+  lines.push('', `💬 ${esc(clip(q.issue_description.trim(), 1500))}`);
+  return {
+    text: clip(lines.join('\n'), 4000),
+    reply_markup: { inline_keyboard: [[{ text: '📥 Open inbox', url: `${SITE}/admin` }]] },
+  };
+}
+
 async function loadBooking(id?: string): Promise<Booking | null> {
   let q = supabase.from('bookings').select(BOOKING_COLUMNS);
   q = id ? q.eq('id', id) : q.order('created_at', { ascending: false }).limit(1);
@@ -226,6 +266,17 @@ async function handleInternal(body: any, cfg: Config) {
       const booking = await loadBooking(body.booking_id);
       if (!booking) return json({ error: 'booking not found' }, 404);
       return json({ ok: true, ...(await broadcast(buildMessage(booking))) });
+    }
+    case 'contact': {
+      if (typeof body.inquiry_id !== 'string') return json({ error: 'inquiry_id required' }, 400);
+      const { data: inquiry, error } = await supabase
+        .from('contact_inquiries')
+        .select('id, topic, full_name, phone, email, vehicle, issue_description, sms_consent, created_at')
+        .eq('id', body.inquiry_id)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!inquiry) return json({ error: 'inquiry not found' }, 404);
+      return json({ ok: true, ...(await broadcast(buildInquiryMessage(inquiry as Inquiry))) });
     }
     case 'test': {
       const booking = await loadBooking();

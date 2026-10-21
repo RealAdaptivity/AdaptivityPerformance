@@ -1351,7 +1351,12 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       autoCapitalize="characters"
                       className={`${inputClass(false)} font-heading tracking-[0.06em]`}
                       placeholder="Friend’s code"
+                      aria-describedby="bk-referral-note"
                     />
+                    <p id="bk-referral-note" className="mt-1.5 text-xs text-slate-400">
+                      You both get $25 credit when your first job is done. Create an account after you book so yours
+                      has somewhere to go.
+                    </p>
                   </div>
                 ) : (
                   <button

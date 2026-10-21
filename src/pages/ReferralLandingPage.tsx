@@ -64,7 +64,8 @@ export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
         </h1>
         <p className="text-slate-400 text-sm leading-relaxed">
           Book a mobile visit with this code and you both earn <strong className="text-white">$25 credit</strong>{' '}
-          after the job is completed. $100 diagnostic · labor + parts priced on site.
+          when your first job is done. Sign in, or create an account when you book, so yours lands on your account.
+          $100 diagnostic · labor + parts priced on site.
         </p>
         {valid === false && code && (
           <p className="text-xs text-amber-300">

@@ -122,6 +122,10 @@ export type JobPaymentSummary = {
   kind: 'charge' | 'diagnostic_only' | 'no_show';
   /** Given back through Square since (square-webhook keeps it current). */
   refundedCents: number;
+  /** When an admin confirmed a cash or Zelle payment; null until then. */
+  confirmedAt: string | null;
+  zelleConfirmation: string | null;
+  cashReceivedCents: number | null;
 };
 
 /** How a closed job was paid, for the admin dashboard. Null when no payment
@@ -129,7 +133,9 @@ export type JobPaymentSummary = {
 export async function fetchJobPaymentSummary(bookingId: string): Promise<JobPaymentSummary | null> {
   const { data, error } = await supabase
     .from('job_payments')
-    .select('payment_method, card_brand, card_last4, total_cents, created_at, kind, refunded_cents')
+    .select(
+      'payment_method, card_brand, card_last4, total_cents, created_at, kind, refunded_cents, payment_confirmed_at, zelle_confirmation, cash_received_cents'
+    )
     .eq('booking_id', bookingId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -143,7 +149,48 @@ export async function fetchJobPaymentSummary(bookingId: string): Promise<JobPaym
     recordedAt: String(data.created_at ?? ''),
     kind: data.kind === 'diagnostic_only' || data.kind === 'no_show' ? data.kind : 'charge',
     refundedCents: Number(data.refunded_cents ?? 0),
+    confirmedAt: (data.payment_confirmed_at as string | null) ?? null,
+    zelleConfirmation: (data.zelle_confirmation as string | null) ?? null,
+    cashReceivedCents: data.cash_received_cents == null ? null : Number(data.cash_received_cents),
   };
+}
+
+/** Whether a closed job still needs an admin to confirm how it was paid:
+ *  anything not taken by card through Square, once, unless it was a no-show. */
+export function needsPaymentConfirmation(p: Pick<JobPaymentSummary, 'method' | 'kind' | 'confirmedAt'> | null): boolean {
+  return !!p && p.kind !== 'no_show' && p.method !== 'card' && !p.confirmedAt;
+}
+
+/** An admin records that a closed job was paid in cash or by Zelle
+ *  (admin_confirm_manual_payment checks the amounts and keeps an audit row). */
+export async function confirmManualPayment(
+  bookingId: string,
+  details:
+    | { method: 'cash'; cashReceivedCents: number; receivedBy?: string | null }
+    | { method: 'zelle'; zelleConfirmation: string; zelleSenderName?: string; receivedBy?: string | null }
+): Promise<void> {
+  const p_details: Record<string, unknown> = { payment_method: details.method };
+  if (details.receivedBy) p_details.received_by = details.receivedBy;
+  if (details.method === 'cash') {
+    p_details.cash_received_cents = Math.round(details.cashReceivedCents);
+  } else {
+    p_details.zelle_confirmation = details.zelleConfirmation.trim();
+    if (details.zelleSenderName?.trim()) p_details.zelle_sender_name = details.zelleSenderName.trim();
+  }
+  const { error } = await supabase.rpc('admin_confirm_manual_payment', { p_booking_id: bookingId, p_details });
+  if (error) throw new Error(error.message);
+}
+
+/** How many closed jobs still need cash or Zelle confirmed, for the P&L. */
+export async function countUnconfirmedManualPayments(): Promise<number> {
+  const { count, error } = await supabase
+    .from('job_payments')
+    .select('booking_id', { count: 'exact', head: true })
+    .neq('kind', 'no_show')
+    .neq('payment_method', 'card')
+    .is('payment_confirmed_at', null);
+  if (error) return 0;
+  return count ?? 0;
 }
 
 /** "Card · Visa ••1234", "Zelle", "Cash" or "In person". */

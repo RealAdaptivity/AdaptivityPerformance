@@ -104,7 +104,8 @@ export function subscribeBookingReference(reference: string, onChange: () => voi
 export async function cancelCustomerBooking(referenceCode: string) {
   const { error } = await supabase
     .from('bookings')
-    .update({ status: 'CANCELED', updated_at: new Date().toISOString() })
+    // The customer canceled it themselves.
+    .update({ status: 'CANCELED', cancel_reason: 'customer_request', updated_at: new Date().toISOString() })
     .ilike('reference_code', referenceCode.trim());
   if (error) throw error;
   return { ok: true };

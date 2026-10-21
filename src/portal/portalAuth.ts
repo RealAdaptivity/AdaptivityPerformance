@@ -1,4 +1,5 @@
 import { supabase } from '../services/supabaseClient';
+import { assertUsablePassword } from '../services/passwordCheck';
 
 export type PortalRole = 'customer' | 'tech';
 
@@ -62,6 +63,7 @@ export async function signUpPortal(
       'Technician accounts are approval-only. Apply via Join as Tech, then sign in on the Technician tab.'
     );
   }
+  await assertUsablePassword(password);
 
   return supabase.auth.signUp({
     email: email.trim(),

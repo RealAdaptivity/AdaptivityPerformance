@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from 'react';
-
-const CONSENT_KEY = 'adaptivity_cookie_consent';
+import { setConsent, storedConsent } from '../site/analytics';
 
 export const CookieConsentBanner: React.FC = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(CONSENT_KEY);
-    if (!stored) {
+    if (!storedConsent()) {
       // Small delay so it doesn't flash immediately on page load
       const timer = setTimeout(() => setVisible(true), 1800);
       return () => clearTimeout(timer);
     }
   }, []);
 
+  /* Google Analytics starts on Accept and never loads on Decline. */
   const accept = () => {
-    localStorage.setItem(CONSENT_KEY, 'accepted');
+    setConsent('accepted');
     setVisible(false);
   };
 
   const decline = () => {
-    localStorage.setItem(CONSENT_KEY, 'declined');
+    setConsent('declined');
     setVisible(false);
   };
 
