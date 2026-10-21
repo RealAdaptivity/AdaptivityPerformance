@@ -28,6 +28,7 @@ import {
   type JobPaymentSummary,
 } from '../services/jobPayments';
 import { ConfirmManualPayment } from './ConfirmManualPayment';
+import { CustomerIssue } from './CustomerIssue';
 import { loadInvoice } from '../services/invoiceData';
 import { openInvoicePrintWindow } from '../services/receiptPdf';
 import { AddTechnicianForm } from './AddTechnicianForm';
@@ -552,6 +553,9 @@ const JobCard: React.FC<{
       <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed break-words">
         {booking.vehicle}
       </p>
+      {booking.issueDescription && (
+        <p className="text-[11px] text-slate-200 mt-1 leading-snug line-clamp-2 break-words">“{booking.issueDescription}”</p>
+      )}
       <p className="text-[11px] text-slate-500">
         {zip?.city || booking.zipCode || 'Location unknown'} · {Math.round(booking.distanceMiles)} mi ·{' '}
         ${booking.totalEstimate.toFixed(2)}
@@ -803,6 +807,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             {vehicleLaborRateLabel(booking.vehicle, booking.vehicleClass)} labor
           </p>
         )}
+        <CustomerIssue issue={booking.issueDescription} mediaPaths={booking.mediaPaths} />
         {booking.bookingSource === 'phone' && (
           <p className="flex items-center gap-2 text-[11px] text-sky-300">
             <PhoneCall className="w-3.5 h-3.5" />
