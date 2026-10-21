@@ -92,18 +92,51 @@ export function isDieselVehicle(vehicle: string | null | undefined): boolean {
 
 export type VehicleLaborRateKind = 'diesel' | 'european' | 'shop';
 
+/** What the customer picks on the booking form ("Vehicle type"). Saved on
+ *  the booking as vehicle_class. */
+export type VehicleClass = 'regular' | 'european' | 'diesel';
+
+export const VEHICLE_CLASSES: readonly VehicleClass[] = ['regular', 'european', 'diesel'];
+
+export function parseVehicleClass(v: unknown): VehicleClass | null {
+  return typeof v === 'string' && (VEHICLE_CLASSES as readonly string[]).includes(v) ? (v as VehicleClass) : null;
+}
+
+const KIND_RANK: Record<VehicleLaborRateKind, number> = { shop: 0, european: 1, diesel: 2 };
+const CLASS_KIND: Record<VehicleClass, VehicleLaborRateKind> = { regular: 'shop', european: 'european', diesel: 'diesel' };
+
 /** Which rate a vehicle is billed at. A diesel is billed as a diesel even
- *  when it is European (a Volvo semi, a VW TDI): the higher rate wins. */
-export function laborRateKindForVehicle(vehicle: string | null | undefined): VehicleLaborRateKind {
-  if (isDieselVehicle(vehicle)) return 'diesel';
-  if (isEuropeanVehicle(vehicle)) return 'european';
-  return 'shop';
+ *  when it is European (a Volvo semi, a VW TDI): the higher rate wins. The
+ *  same goes for what the customer picked on the booking form: picking
+ *  Diesel bills as a diesel, but picking Regular on a Powerstroke does not
+ *  make it one. */
+export function laborRateKindForVehicle(
+  vehicle: string | null | undefined,
+  chosen?: VehicleClass | null
+): VehicleLaborRateKind {
+  const detected: VehicleLaborRateKind = isDieselVehicle(vehicle)
+    ? 'diesel'
+    : isEuropeanVehicle(vehicle)
+      ? 'european'
+      : 'shop';
+  const picked = chosen ? CLASS_KIND[chosen] : 'shop';
+  return KIND_RANK[picked] > KIND_RANK[detected] ? picked : detected;
+}
+
+/** The vehicle type the booking form starts on for what's been typed so far. */
+export function suggestedVehicleClass(vehicle: string | null | undefined): VehicleClass {
+  const kind = laborRateKindForVehicle(vehicle);
+  return kind === 'shop' ? 'regular' : kind;
 }
 
 /** The hourly rate for a vehicle, in cents: the diesel or European rate when
  *  it applies, otherwise the shop rate passed in. */
-export function laborRateCentsForVehicle(vehicle: string | null | undefined, shopRateCents: number): number {
-  switch (laborRateKindForVehicle(vehicle)) {
+export function laborRateCentsForVehicle(
+  vehicle: string | null | undefined,
+  shopRateCents: number,
+  chosen?: VehicleClass | null
+): number {
+  switch (laborRateKindForVehicle(vehicle, chosen)) {
     case 'diesel':
       return DIESEL_LABOR_RATE_PER_HOUR_DOLLARS * 100;
     case 'european':
@@ -114,8 +147,8 @@ export function laborRateCentsForVehicle(vehicle: string | null | undefined, sho
 }
 
 /** "Diesel — $200/hr", "European vehicle — $175/hr", or null at the shop rate. */
-export function vehicleLaborRateLabel(vehicle: string | null | undefined): string | null {
-  switch (laborRateKindForVehicle(vehicle)) {
+export function vehicleLaborRateLabel(vehicle: string | null | undefined, chosen?: VehicleClass | null): string | null {
+  switch (laborRateKindForVehicle(vehicle, chosen)) {
     case 'diesel':
       return `Diesel — $${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr`;
     case 'european':

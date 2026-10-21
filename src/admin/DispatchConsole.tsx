@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { vehicleLaborRateLabel } from '../services/vehicleLaborRate';
 import {
   AlertCircle,
   CreditCard,
@@ -797,6 +798,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <Truck className="w-3.5 h-3.5" />
           {booking.vehicle}
         </p>
+        {vehicleLaborRateLabel(booking.vehicle, booking.vehicleClass) && (
+          <p className="text-[11px] font-semibold text-amber-300">
+            {vehicleLaborRateLabel(booking.vehicle, booking.vehicleClass)} labor
+          </p>
+        )}
         {booking.bookingSource === 'phone' && (
           <p className="flex items-center gap-2 text-[11px] text-sky-300">
             <PhoneCall className="w-3.5 h-3.5" />

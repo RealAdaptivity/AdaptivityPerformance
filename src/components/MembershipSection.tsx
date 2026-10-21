@@ -1,6 +1,6 @@
 import React from 'react';
 import { BUSINESS_HOURS } from '../site/seo';
-import { TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
+import { MEMBER_LABOR_DISCOUNT_PERCENT, TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
 import { ShieldCheck, Check, Sparkles, ArrowRight } from 'lucide-react';
 
 interface MembershipSectionProps {
@@ -29,7 +29,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
           </h2>
 
           <p className="text-sm text-slate-300">
-            Join the **Adaptivity Shield** care plan for zero dispatch fees, free synthetic oil changes, 15% labor discounts, and priority mobile response across Justin & Northlake.
+            Join the **Adaptivity Shield** care plan for zero dispatch fees, free synthetic oil changes, {MEMBER_LABOR_DISCOUNT_PERCENT}% off labor on every repair, and priority mobile response across Justin & Northlake.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
               <p className="text-xs text-slate-300">Ideal for single-vehicle drivers seeking guaranteed $0 travel charges.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Weather Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>10% Off</strong> All Labor & Diagnostics</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>{MEMBER_LABOR_DISCOUNT_PERCENT}% Off</strong> Labor on Every Repair</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 1 Free Annual Digital Inspection (DVI)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Priority Hotline · {BUSINESS_HOURS.label} Daily</li>
               </ul>
@@ -84,7 +84,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
               <p className="text-xs text-slate-300">Complete vehicle protection with 2 free synthetic oil services & towing allowance.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>$0 Travel & Weather Fees</strong> (${TRAVEL_FEE_DOLLARS} value/visit)</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>15% Off</strong> All Repair Labor & Upgrades</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>{MEMBER_LABOR_DISCOUNT_PERCENT}% Off</strong> Labor on Every Repair</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-amber-400 font-bold" /> <strong>2 Free Synthetic Oil Changes/Yr</strong> ($190 value)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited Free Digital Inspections (DVI)</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 25-Mile Roadside Towing Allowance</li>
@@ -114,7 +114,7 @@ export const MembershipSection: React.FC<MembershipSectionProps> = ({ onOpenMemb
               <p className="text-xs text-slate-300">Commercial fleet care for local business work vans & trucks up to 5 vehicles.</p>
               <ul className="space-y-2.5 text-xs text-slate-300 pt-2 border-t border-white/5">
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>Up to 5 Fleet Vehicles Covered</strong></li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>20% Off</strong> All Repairs & Service Labor</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> <strong>{MEMBER_LABOR_DISCOUNT_PERCENT}% Off</strong> Labor on Every Repair</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 4 Free Synthetic Oil Changes/Yr</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Quarterly Multi-Point Fleet Inspections</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Dedicated Account Manager</li>

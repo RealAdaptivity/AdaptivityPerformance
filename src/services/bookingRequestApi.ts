@@ -32,6 +32,8 @@ export async function createBookingRequest(params: {
   vehicleModel?: string;
   vehicleTrim?: string;
   vehicleEngine?: string;
+  /** Regular, European or Diesel, as picked on the form (sets the labor rate). */
+  vehicleClass?: 'regular' | 'european' | 'diesel';
   /** What the customer says is wrong. Separate from customerNotes, which is
    *  parking and access detail. */
   issueDescription?: string;

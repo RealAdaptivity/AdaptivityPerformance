@@ -89,6 +89,19 @@ test('a weather fee gets its own receipt line after travel', () => {
   assert.deepEqual(labels.slice(-3), ['Travel', 'Severe weather fee', 'Sales tax 8.25% on parts']);
 });
 
+test('a member discount and referral credit show as their own negative lines', () => {
+  const rows = receiptRows({ ...base, discountCents: 4750, member: true, creditCents: 2500 });
+  const member = rows.find((r) => r.label === 'Member discount (10% off labor)');
+  const credit = rows.find((r) => r.label === 'Referral credit');
+  assert.equal(member?.cents, -2250);
+  assert.equal(credit?.cents, -2500);
+  assert.equal(rows.some((r) => /First responder/.test(r.label)), false);
+  // Credit alone, with no percentage.
+  const only = receiptRows({ ...base, discountCents: 2500, creditCents: 2500 });
+  assert.deepEqual(only.filter((r) => r.cents < 0).map((r) => r.label), ['Referral credit']);
+  assert.match(buildReceiptSms({ ...base, discountCents: 2500, creditCents: 2500 }), /Referral credit -\$25\.00/);
+});
+
 test('a first responder discount is a negative line after the repairs', () => {
   const rows = receiptRows({ ...base, discountCents: 900 });
   const i = rows.findIndex((r) => r.label === 'First responder discount (5% off labor)');

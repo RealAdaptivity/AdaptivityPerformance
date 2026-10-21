@@ -92,3 +92,25 @@ test('the hint names the rate, or nothing at the shop rate', () => {
   assert.equal(vehicleLaborRateLabel('2017 Porsche Macan'), 'European vehicle — $175/hr');
   assert.equal(vehicleLaborRateLabel('2009 Honda Accord'), null);
 });
+
+test('the vehicle type picked when booking: the higher rate wins', async () => {
+  const { laborRateKindForVehicle, laborRateCentsForVehicle, parseVehicleClass, suggestedVehicleClass } = await import(
+    '../src/services/vehicleLaborRate.ts'
+  );
+  // Picking Diesel or European on a vehicle we can't tell from its name.
+  assert.equal(laborRateKindForVehicle('2019 Ford F-250', 'diesel'), 'diesel');
+  assert.equal(laborRateCentsForVehicle('2019 Ford F-250', 15000, 'diesel'), 20000);
+  assert.equal(laborRateKindForVehicle('2014 Saturn Astra', 'european'), 'european');
+  // Picking Regular never lowers a diesel or a European make.
+  assert.equal(laborRateKindForVehicle('2018 F-250 Powerstroke', 'regular'), 'diesel');
+  assert.equal(laborRateKindForVehicle('2013 BMW 535i', 'regular'), 'european');
+  // Any diesel is $200, European ones included.
+  assert.equal(laborRateKindForVehicle('2013 BMW 535i', 'diesel'), 'diesel');
+  assert.equal(laborRateKindForVehicle('2012 Honda Civic', 'regular'), 'shop');
+  assert.equal(laborRateKindForVehicle('2012 Honda Civic', null), 'shop');
+  assert.equal(parseVehicleClass('diesel'), 'diesel');
+  assert.equal(parseVehicleClass('semi'), null);
+  assert.equal(suggestedVehicleClass('2016 Ram 2500 Cummins'), 'diesel');
+  assert.equal(suggestedVehicleClass('2016 Audi Q5'), 'european');
+  assert.equal(suggestedVehicleClass('2016 Toyota Camry'), 'regular');
+});

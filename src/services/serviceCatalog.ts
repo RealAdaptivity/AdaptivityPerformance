@@ -72,6 +72,11 @@ export const WEATHER_FEE_NOTE = `Working in rain or severe weather adds a $${WEA
  *  record_job_payment charge it; tests/closeOut.test.ts keeps all three equal. */
 export const FIRST_RESPONDER_DISCOUNT_PERCENT = 5;
 
+/** Member discount, in percent of labor, on every repair a member has done.
+ *  MEMBER_LABOR_DISCOUNT_PERCENT in closeOut.ts and record_job_payment take
+ *  it; tests/closeOut.test.ts keeps them equal. */
+export const MEMBER_LABOR_DISCOUNT_PERCENT = 10;
+
 /** Shop labor rate in dollars per hour: what the site advertises and what
  *  quotes start at (laborRate.ts builds LABOR_RATE_CENTS from it). Here so
  *  the import-free site copy (seo.ts) can quote it too. */

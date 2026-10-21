@@ -307,3 +307,80 @@ test('the site advertises the labor rate quotes start at, and nowhere says $125/
   const stale = walk('src').filter((f) => /\$125\s*(\/|per)\s*(hr|hour)/i.test(readFileSync(f, 'utf8')));
   assert.deepEqual(stale, []);
 });
+
+const latestRecordJobPaymentSql = () => {
+  const file = readdirSync('supabase/migrations')
+    .sort()
+    .filter((f) => readFileSync(`supabase/migrations/${f}`, 'utf8').includes('function public.record_job_payment'))
+    .pop();
+  return readFileSync(`supabase/migrations/${file}`, 'utf8');
+};
+
+test('members get 10% off labor, never with the first responder discount, shared like labor', async () => {
+  const { MEMBER_LABOR_DISCOUNT_PERCENT } = await import('../src/services/closeOut.ts');
+  assert.equal(MEMBER_LABOR_DISCOUNT_PERCENT, 10);
+  const base = {
+    kind: 'charge' as const,
+    lines: [{ title: 'Front pads & rotors', labor: '225', parts: '180' }],
+    diagnosticCents: 10000,
+    // Members never pay travel or weather; the caller passes 0 for both.
+    travelCents: 0,
+    weatherCents: 0,
+    taxMode: 'parts' as const,
+    partsBy: 'company' as const,
+  };
+  const m = computeCloseOut({ ...base, member: true, firstResponder: true });
+  assert.equal(m.member, true);
+  assert.equal(m.firstResponder, false, 'one discount per visit');
+  assert.equal(m.percentDiscountCents, 2250);
+  assert.equal(m.discountCents, 2250);
+  assert.equal(m.creditCents, 0);
+  assert.equal(m.totalCents, 10000 + 22500 + 18000 - 2250 + taxOn(18000));
+  assert.equal(m.techPayoutCents, Math.floor(((10000 + 22500 - 2250) * 70 + 50) / 100));
+  // Rounds half up to the cent: 10% of $0.05 is half a cent.
+  assert.equal(computeCloseOut({ ...base, lines: [{ title: 'x', labor: '0.05', parts: '' }], member: true }).discountCents, 1);
+  // Not on a diagnostic-only visit (no labor) or a no-show.
+  assert.equal(computeCloseOut({ ...base, kind: 'diagnostic_only', member: true }).discountCents, 0);
+  assert.equal(computeCloseOut({ ...base, kind: 'no_show', member: true }).member, false);
+});
+
+test('account credit comes off the labor left after the percentage, and out of the tech share', () => {
+  const base = {
+    kind: 'charge' as const,
+    lines: [{ title: 'Battery', labor: '100', parts: '200' }],
+    diagnosticCents: 10000,
+    travelCents: 2000,
+    weatherCents: 0,
+    taxMode: 'parts' as const,
+    partsBy: 'company' as const,
+  };
+  const c = computeCloseOut({ ...base, creditCents: 2500 });
+  assert.equal(c.creditCents, 2500);
+  assert.equal(c.discountCents, 2500);
+  assert.equal(c.totalCents, 10000 + 2000 + 10000 + 20000 - 2500 + taxOn(20000));
+  assert.equal(c.techPayoutCents, Math.floor(((10000 + 10000 - 2500) * 70 + 50) / 100) + 2000);
+  // Never more than the labor: $30 of labor, 10% member discount, $50 credit → $27 used.
+  const small = computeCloseOut({ ...base, lines: [{ title: 'x', labor: '30', parts: '' }], member: true, travelCents: 0, creditCents: 5000 });
+  assert.equal(small.percentDiscountCents, 300);
+  assert.equal(small.creditCents, 2700);
+  assert.equal(small.discountCents, 3000, 'labor goes to zero, never below');
+  // No labor, no credit used: it waits for a visit with labor on it.
+  assert.equal(computeCloseOut({ ...base, kind: 'diagnostic_only', creditCents: 2500 }).creditCents, 0);
+  assert.equal(computeCloseOut({ ...base, kind: 'no_show', creditCents: 2500 }).creditCents, 0);
+  assert.equal(computeCloseOut({ ...base, creditCents: -500 }).creditCents, 0);
+  // Stacks with the first responder discount.
+  const fr = computeCloseOut({ ...base, firstResponder: true, creditCents: 2500 });
+  assert.equal(fr.discountCents, 500 + 2500);
+});
+
+test('the database takes the member discount and the credit the same way', async () => {
+  const { MEMBER_LABOR_DISCOUNT_PERCENT } = await import('../src/services/closeOut.ts');
+  const { MEMBER_LABOR_DISCOUNT_PERCENT: site } = await import('../src/services/serviceCatalog.ts');
+  assert.equal(site, MEMBER_LABOR_DISCOUNT_PERCENT, 'the membership page offers what the close-out takes');
+  const sql = latestRecordJobPaymentSql();
+  assert.match(sql, new RegExp(`v_discount := \\(v_labor_total \\* ${MEMBER_LABOR_DISCOUNT_PERCENT} \\+ 50\\) / 100;`));
+  assert.match(sql, /if v_kind = 'charge' and v_member then\s+v_first_responder := false;/);
+  assert.match(sql, /v_credit := least\(v_credit_req, v_labor_total - v_discount\);/);
+  assert.match(sql, /v_discount := v_discount \+ v_credit;/);
+  assert.match(sql, /insert into public\.customer_credits[\s\S]*-v_credit/);
+});

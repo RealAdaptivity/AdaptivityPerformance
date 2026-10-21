@@ -60,8 +60,15 @@ import {
   PARTS_PICKUP_NOTE,
   FIRST_RESPONDER_DISCOUNT_NOTE,
   getCatalogById,
+  LABOR_RATE_PER_HOUR_DOLLARS,
   matchCatalogFromLabel,
 } from '../services/serviceCatalog';
+import {
+  DIESEL_LABOR_RATE_PER_HOUR_DOLLARS,
+  EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS,
+  suggestedVehicleClass,
+  type VehicleClass,
+} from '../services/vehicleLaborRate';
 import {
   BOOKING_STEPS,
   COUNTED_STEPS,
@@ -129,6 +136,8 @@ function serviceTitle(idOrLabel: string): string {
   return getCatalogById(idOrLabel)?.title ?? idOrLabel;
 }
 
+const VEHICLE_CLASS_LABEL: Record<VehicleClass, string> = { regular: '', european: 'European', diesel: 'Diesel' };
+
 const money = (n: number) => `$${n % 1 === 0 ? n : n.toFixed(2)}`;
 
 const inputClass = (invalid: boolean) =>
@@ -174,6 +183,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   /* Captured part by part. The tech orders parts off this, so a trim and an
      engine are the difference between one visit and two. */
   const [vehicleDetails, setVehicleDetails] = useState<VehicleDetails>(EMPTY_VEHICLE);
+  /** Regular / European / Diesel. Follows what the vehicle looks like until
+   *  the customer picks one themselves. */
+  const [vehicleClassPick, setVehicleClassPick] = useState<VehicleClass | null>(null);
   const [preferredDate, setPreferredDate] = useState(todayISODate());
   const [preferredTime, setPreferredTime] = useState<string>(PREFERRED_TIME_WINDOWS[0]);
   const [showLaterDate, setShowLaterDate] = useState(false);
@@ -213,6 +225,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   const [visibleArea, setVisibleArea] = useState<{ top: number; height: number } | null>(null);
 
   const vehicle = composeVehicleDescription(vehicleDetails);
+  const vehicleClass: VehicleClass = vehicleClassPick ?? suggestedVehicleClass(vehicle);
   const days = useMemo(() => upcomingDays(new Date(), 7), []);
   const selectedPartner = useMemo(
     () => partners.find((p) => p.id === partnerLocationId) || partners[0] || null,
@@ -474,6 +487,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         vehicleModel: vehicleDetails.model.trim(),
         vehicleTrim: vehicleDetails.trim.trim() || undefined,
         vehicleEngine: vehicleDetails.engine.trim() || undefined,
+        vehicleClass,
         issueDescription: issueDescription.trim(),
         mediaPaths: uploadedPaths.length ? uploadedPaths : undefined,
         vin: normalizeVin(vehicleDetails.vin) || undefined,
@@ -1049,6 +1063,30 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   </div>
                 </div>
 
+                <div>
+                  <label htmlFor="bk-vehicle-type" className={labelClass}>
+                    Vehicle type
+                  </label>
+                  <select
+                    id="bk-vehicle-type"
+                    value={vehicleClass}
+                    onChange={(e) => setVehicleClassPick(e.target.value as VehicleClass)}
+                    aria-describedby="bk-vehicle-type-help"
+                    className={inputClass(false)}
+                  >
+                    <option value="regular">Regular</option>
+                    <option value="european">European</option>
+                    <option value="diesel">Diesel (pickups to 18-wheelers)</option>
+                  </select>
+                  <p id="bk-vehicle-type-help" className="mt-2 text-[13px] leading-relaxed text-slate-400">
+                    {vehicleClass === 'diesel'
+                      ? `Labor on any diesel is $${DIESEL_LABOR_RATE_PER_HOUR_DOLLARS}/hr, European diesels included.`
+                      : vehicleClass === 'european'
+                        ? `Labor on European vehicles is $${EUROPEAN_LABOR_RATE_PER_HOUR_DOLLARS}/hr.`
+                        : `Labor is $${LABOR_RATE_PER_HOUR_DOLLARS}/hr.`}{' '}
+                    Your tech quotes any repair before starting.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1433,7 +1471,14 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       sub: issueDescription.trim() + (mediaFiles.length ? ` · ${mediaFiles.length} file${mediaFiles.length > 1 ? 's' : ''}` : ''),
                       edit: 0,
                     },
-                    { label: 'Vehicle', value: vehicle || '—', sub: vehicleDetails.vin ? `VIN ···· ${vinTail(vehicleDetails.vin)}` : '', edit: 1 },
+                    {
+                      label: 'Vehicle',
+                      value: vehicle || '—',
+                      sub: [VEHICLE_CLASS_LABEL[vehicleClass], vehicleDetails.vin ? `VIN ···· ${vinTail(vehicleDetails.vin)}` : '']
+                        .filter(Boolean)
+                        .join(' · '),
+                      edit: 1,
+                    },
                     { label: 'When', value: whenLabel, sub: splitTimeWindow(preferredTime).hours, edit: 2 },
                     { label: serviceMode === 'shop' ? 'Drop-off' : 'Where', value: whereLabel || '—', sub: notes.trim(), edit: 3 },
                     { label: 'You', value: fullName.trim() || '—', sub: [displayPhone(phone), email.trim()].filter(Boolean).join(' · '), edit: 4 },
