@@ -15,6 +15,7 @@ import {
   fetchDueReviewAsks,
   fetchFraudFlags,
   fetchGbpDrafts,
+  fetchRecentPostIdeas,
   markReviewAskSent,
   setGbpDraftStatus,
   type FraudFlag,
@@ -43,19 +44,22 @@ export const GrowthAdmin: React.FC = () => {
     }>
   >([]);
   const [fraud, setFraud] = useState<FraudFlag[]>([]);
+  const [ideas, setIdeas] = useState<{ id: string; caption: string; closedAt: string }[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setMsg(null);
     try {
-      const [d, r, f] = await Promise.all([
+      const [d, r, f, ideaRows] = await Promise.all([
         fetchGbpDrafts(),
         fetchDueReviewAsks(),
         fetchFraudFlags(),
+        fetchRecentPostIdeas().catch(() => []),
       ]);
       setDrafts(d as typeof drafts);
       setReviewAsks(r as typeof reviewAsks);
       setFraud(f);
+      setIdeas(ideaRows);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed to load growth data');
     }
@@ -76,6 +80,15 @@ export const GrowthAdmin: React.FC = () => {
     }
   };
 
+  const copyIdea = async (caption: string) => {
+    try {
+      await navigator.clipboard.writeText(caption);
+      setMsg('Copied. Paste it into Google Business with a photo from the job.');
+    } catch {
+      setMsg('Copy failed. Select the text and copy it.');
+    }
+  };
+
   const openReviewSms = async (row: (typeof reviewAsks)[0]) => {
     const phone = (row.customer_phone || '').replace(/\D/g, '');
     const body = encodeURIComponent(reviewSmsBody(row.customer_name, row.reference_code));
@@ -92,7 +105,7 @@ export const GrowthAdmin: React.FC = () => {
   return (
     <div className="space-y-6">
       <p className="text-sm text-slate-400 leading-relaxed">
-        Growth ops — GBP drafts from completed jobs, review SMS asks (device composer until Twilio),
+        Growth ops — Google post ideas from recent jobs, review SMS asks (device composer until Twilio),
         and light fraud flags.
       </p>
       {msg && (
@@ -105,7 +118,7 @@ export const GrowthAdmin: React.FC = () => {
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-bold text-white flex items-center gap-2">
             <Newspaper className="w-4 h-4 text-violet-300" />
-            GBP post drafts
+            Google post ideas
           </p>
           <button
             type="button"
@@ -116,7 +129,28 @@ export const GrowthAdmin: React.FC = () => {
           </button>
         </div>
         {drafts.length === 0 ? (
-          <p className="text-xs text-slate-500">No drafts yet — they appear after job captures.</p>
+          ideas.length === 0 ? (
+            <p className="text-xs text-slate-500">Post ideas show up here once jobs are closed out.</p>
+          ) : (
+            <ul className="space-y-2">
+              <li className="text-[11px] text-slate-500">From your last jobs. Add a photo from the job when you post.</li>
+              {ideas.map((d) => (
+                <li key={d.id} className="rounded-xl border border-white/10 bg-[#0b0c10] p-3 space-y-2">
+                  <p className="text-[10px] uppercase font-bold text-slate-500">
+                    Closed {new Date(d.closedAt).toLocaleDateString('en-US', { timeZone: 'America/Chicago' })}
+                  </p>
+                  <p className="text-xs text-slate-300 whitespace-pre-wrap">{d.caption}</p>
+                  <button
+                    type="button"
+                    onClick={() => void copyIdea(d.caption)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-300"
+                  >
+                    <Copy className="w-3 h-3" /> Copy for GBP
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
         ) : (
           <ul className="space-y-2">
             {drafts.map((d) => (

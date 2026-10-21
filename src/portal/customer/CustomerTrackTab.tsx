@@ -78,10 +78,14 @@ export const CustomerTrackTab: React.FC = () => {
     };
   }, [trackedRef, load]);
 
+  /* 'paid_in_person' is what closing a job out records today; 'captured' is
+     from the old online-card flow and only on older jobs. */
+  const paid = booking?.paymentStatus === 'paid_in_person' || booking?.paymentStatus === 'captured';
+
   const canCancel =
     booking &&
     (booking.status === 'UNASSIGNED' || booking.status === 'EN_ROUTE') &&
-    booking.paymentStatus !== 'captured' &&
+    !paid &&
     booking.paymentStatus !== 'canceled' &&
     booking.paymentStatus !== 'refunded';
 
@@ -237,7 +241,7 @@ export const CustomerTrackTab: React.FC = () => {
             )}
 
           {(booking.quoteStatus === 'awaiting_diagnostic' || booking.status === 'ON_SITE') &&
-            booking.paymentStatus !== 'captured' && (
+            !paid && (
               <p className="text-xs text-sky-300 leading-relaxed">
                 Your tech is diagnosing on site and will agree labor + parts pricing with you before any
                 work starts. You pay the tech in person when the job is done — nothing is charged online.
@@ -245,7 +249,7 @@ export const CustomerTrackTab: React.FC = () => {
             )}
 
           {(booking.quoteLineItems.length > 0 || booking.capturedAmountCents != null) &&
-            booking.paymentStatus === 'captured' && (
+            paid && (
               <div className="space-y-2 border border-white/10 rounded-xl p-3 bg-white/[0.03]">
                 <p className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">Receipt</p>
                 <ul className="space-y-1.5">
@@ -270,7 +274,7 @@ export const CustomerTrackTab: React.FC = () => {
                 </ul>
                 {booking.quoteLineItems.length === 0 && booking.capturedAmountCents != null && (
                   <p className="text-[11px] text-slate-400">
-                    Total charged (line detail unavailable for this job).
+                    Your itemized receipt is in History.
                   </p>
                 )}
                 {booking.quoteDiagnosticFeeCents != null && booking.quoteDiagnosticFeeCents > 0 && (
@@ -282,7 +286,7 @@ export const CustomerTrackTab: React.FC = () => {
                   </p>
                 )}
                 <p className="flex justify-between text-white font-bold text-xs pt-1 border-t border-white/10">
-                  <span>Total charged</span>
+                  <span>Total paid</span>
                   <span>{dollars(booking.capturedAmountCents ?? booking.quoteTotalCents)}</span>
                 </p>
               </div>
@@ -381,12 +385,7 @@ export const CustomerTrackTab: React.FC = () => {
             </button>
           )}
 
-          {booking.quoteStatus === 'quote_approved' && (
-            <p className="text-xs text-emerald-400">Payment captured. Thanks!</p>
-          )}
-          {booking.quoteStatus === 'quote_declined' && (
-            <p className="text-xs text-slate-400">Diagnostic visit only — $100 applied.</p>
-          )}
+          {paid && <p className="text-xs text-emerald-400">Paid — thanks!</p>}
 
           {(canAddBeforePhoto || photos.length > 0) && (
             <div className="space-y-2">

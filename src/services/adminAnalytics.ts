@@ -103,66 +103,21 @@ export async function fetchPartnerPayoutReport(): Promise<PartnerPayoutRow[]> {
     .limit(8000);
   if (bookErr) throw new Error(bookErr.message);
 
+  /* What each job collected, from its close-out (less any Square refund).
+     This used to read the Stripe-era payments table, which stopped updating
+     in September. */
   const bookingIds = (bookings || []).map((b) => b.id as string);
   const paymentByBookingId = new Map<string, number>();
-  const paymentByRef = new Map<string, number>();
-
-  if (bookingIds.length > 0) {
-    // Chunk to avoid oversized .in() filters
-    const chunkSize = 200;
-    for (let i = 0; i < bookingIds.length; i += chunkSize) {
-      const chunk = bookingIds.slice(i, i + chunkSize);
-      const { data: pays, error: payErr } = await supabase
-        .from('payments')
-        .select('booking_id, booking_reference, amount_cents, status')
-        .eq('is_test', false)
-        .in('booking_id', chunk)
-        .limit(5000);
-      if (payErr) {
-        // Fallback: match by booking_reference only
-        break;
-      }
-      for (const p of pays || []) {
-        const status = String(p.status || '').toLowerCase();
-        if (status !== 'succeeded' && status !== 'captured' && status !== 'partially_refunded') {
-          continue;
-        }
-        const cents = Number(p.amount_cents) || 0;
-        if (p.booking_id) {
-          paymentByBookingId.set(
-            p.booking_id as string,
-            (paymentByBookingId.get(p.booking_id as string) || 0) + cents
-          );
-        }
-        if (p.booking_reference) {
-          paymentByRef.set(
-            p.booking_reference as string,
-            (paymentByRef.get(p.booking_reference as string) || 0) + cents
-          );
-        }
-      }
-    }
-
-    if (paymentByBookingId.size === 0) {
-      const refs = [...new Set((bookings || []).map((b) => b.reference_code as string).filter(Boolean))];
-      for (let i = 0; i < refs.length; i += chunkSize) {
-        const chunk = refs.slice(i, i + chunkSize);
-        const { data: pays } = await supabase
-          .from('payments')
-          .select('booking_reference, amount_cents, status')
-          .eq('is_test', false)
-          .in('booking_reference', chunk)
-          .limit(5000);
-        for (const p of pays || []) {
-          const status = String(p.status || '').toLowerCase();
-          if (status !== 'succeeded' && status !== 'captured' && status !== 'partially_refunded') {
-            continue;
-          }
-          const ref = p.booking_reference as string;
-          if (!ref) continue;
-          paymentByRef.set(ref, (paymentByRef.get(ref) || 0) + (Number(p.amount_cents) || 0));
-        }
-      }
+  for (let i = 0; i < bookingIds.length; i += 200) {
+    const { data: pays, error: payErr } = await supabase
+      .from('job_payments')
+      .select('booking_id, total_cents, refunded_cents, kind')
+      .in('booking_id', bookingIds.slice(i, i + 200));
+    if (payErr) throw new Error(payErr.message);
+    for (const p of pays || []) {
+      if (p.kind === 'no_show') continue;
+      const cents = Math.max(0, (Number(p.total_cents) || 0) - (Number(p.refunded_cents) || 0));
+      paymentByBookingId.set(p.booking_id as string, cents);
     }
   }
 
@@ -176,10 +131,7 @@ export async function fetchPartnerPayoutReport(): Promise<PartnerPayoutRow[]> {
     if (!pid) continue;
     const created = new Date(b.created_at as string).getTime();
     const in30 = created >= new Date(since30).getTime();
-    const cents =
-      paymentByBookingId.get(b.id as string) ||
-      paymentByRef.get(b.reference_code as string) ||
-      0;
+    const cents = paymentByBookingId.get(b.id as string) || 0;
     const cur = byPartner.get(pid) || {
       bookings30: 0,
       bookings90: 0,
