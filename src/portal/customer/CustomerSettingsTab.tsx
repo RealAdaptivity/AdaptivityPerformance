@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { PortalProfile } from '../portalAuth';
 import { supabase } from '../../services/supabaseClient';
 import { ensureReferralCode, getCreditBalance } from '../../services/referrals';
+import { assertUsablePassword } from '../../services/passwordCheck';
 import { SITE_ORIGIN, shareAdaptivity } from '../../site/seo';
 
 type Props = {
@@ -69,12 +70,9 @@ export const CustomerSettingsTab: React.FC<Props> = ({ profile, onSignOut }) => 
       setPwError('New password and confirmation do not match.');
       return;
     }
-    if (newPassword.length < 6) {
-      setPwError('New password must be at least 6 characters.');
-      return;
-    }
     setPwBusy(true);
     try {
+      await assertUsablePassword(newPassword);
       const { error: reauthError } = await supabase.auth.signInWithPassword({
         email: profile.email,
         password: currentPassword,
