@@ -11,6 +11,8 @@ export type BookingRow = {
   vehicle_description: string;
   vehicle_class?: string | null;
   vin: string | null;
+  issue_description?: string | null;
+  media_paths?: string[] | null;
   services: string[] | unknown;
   total_estimate: number;
   location_type: 'mobile' | 'shop';
@@ -76,6 +78,8 @@ export function rowToBooking(row: BookingRow): Booking {
     vehicle: row.vehicle_description,
     vehicleClass: parseVehicleClass(row.vehicle_class),
     vin: row.vin || undefined,
+    issueDescription: row.issue_description?.trim() || null,
+    mediaPaths: Array.isArray(row.media_paths) ? row.media_paths : [],
     services,
     totalEstimate: Number(row.total_estimate),
     locationType: row.location_type,

@@ -13,6 +13,8 @@ const ADMIN_BOOKING_SELECT = `
   vehicle_description,
   vehicle_class,
   vin,
+  issue_description,
+  media_paths,
   services,
   total_estimate,
   location_type,

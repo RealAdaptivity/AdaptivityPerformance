@@ -30,6 +30,10 @@ export interface Booking {
   /** Regular / European / Diesel, as picked when booking; null on older bookings. */
   vehicleClass?: VehicleClass | null;
   vin?: string;
+  /** What the customer typed about the problem when they booked. */
+  issueDescription?: string | null;
+  /** Photos and videos they attached, in the private booking-media bucket. */
+  mediaPaths?: string[];
   services: string[];
   totalEstimate: number;
   locationType: 'mobile' | 'shop';
