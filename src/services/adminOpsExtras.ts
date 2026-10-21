@@ -1,7 +1,9 @@
 import { supabase } from './supabaseClient';
-import { techCanClaimServices } from './serviceCatalog';
+import { DIAGNOSTIC_FEE_DOLLARS, techCanClaimServices } from './serviceCatalog';
 import type { Booking, JobStatus } from '../context/BookingContext';
 import { adminPatchBooking, type DispatchTech } from './adminApi';
+import { sumPayByTech, texasYear, texasYearBounds } from './moneyIn';
+import { buildPostIdea, type RecentJob } from './postIdeas';
 
 /** Unclaimed age in minutes (null if assigned / terminal). */
 export function unclaimedAgeMinutes(booking: {
@@ -57,8 +59,58 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url);
 }
 
-export function export1099Csv(techs: DispatchTech[], ytdByAcct: Map<string, number>) {
-  const year = new Date().getFullYear();
+/** What each tech earned in a calendar year (Texas time) on jobs closed in
+ *  the tech app: tech_payout_cents, by the tech on the booking. This is the
+ *  1099-NEC total; it used to be passed in empty, so every tech showed $0. */
+export async function fetchTechPayForYear(year: number): Promise<Map<string, number>> {
+  const { startIso, endIso } = texasYearBounds(year);
+  const { data: pays, error } = await supabase
+    .from('job_payments')
+    .select('booking_id, tech_payout_cents')
+    .gte('created_at', startIso)
+    .lt('created_at', endIso)
+    .gt('tech_payout_cents', 0)
+    .limit(10000);
+  if (error) throw new Error(error.message);
+  const ids = (pays ?? []).map((p) => p.booking_id as string);
+  const techByBooking = new Map<string, string | null>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data: rows, error: bErr } = await supabase
+      .from('bookings')
+      .select('id, mechanic_id')
+      .in('id', ids.slice(i, i + 200));
+    if (bErr) throw new Error(bErr.message);
+    for (const b of rows ?? []) techByBooking.set(b.id as string, (b.mechanic_id as string | null) ?? null);
+  }
+  return sumPayByTech(
+    (pays ?? []).map((p) => ({
+      techId: techByBooking.get(p.booking_id as string) ?? null,
+      cents: Number(p.tech_payout_cents) || 0,
+    }))
+  );
+}
+
+export type Tech1099 = Pick<DispatchTech, 'id' | 'name' | 'email' | 'phone'>;
+
+/** Techs paid in the year who are no longer on the tech list (terminated or
+ *  role changed) still get a 1099 line. */
+export async function techsForPay(techs: DispatchTech[], pay: Map<string, number>): Promise<Tech1099[]> {
+  const known = new Set(techs.map((t) => t.id));
+  const missing = [...pay.keys()].filter((id) => !known.has(id));
+  if (!missing.length) return techs;
+  const { data } = await supabase.from('profiles').select('id, full_name, email, phone').in('id', missing);
+  return [
+    ...techs,
+    ...(data ?? []).map((p) => ({
+      id: p.id as string,
+      name: (p.full_name as string | null) || 'Former tech',
+      email: (p.email as string | null) ?? null,
+      phone: (p.phone as string | null) ?? null,
+    })),
+  ];
+}
+
+export function export1099Csv(techs: Tech1099[], ytdByAcct: Map<string, number>, year = texasYear()) {
   const rows: string[][] = [
     ['tax_year', 'tech_name', 'email', 'phone', 'ytd_tech_share_dollars'],
   ];
@@ -142,7 +194,7 @@ export async function fetchFraudFlags(): Promise<FraudFlag[]> {
         key: `noshow:${phone}`,
         label: 'Repeat no-shows',
         severity: n >= 3 ? 'high' : 'med',
-        detail: `${phone} — ${n} no-show captures in 90d`,
+        detail: `${phone} — ${n} no-shows in 90d`,
       });
     }
   }
@@ -157,11 +209,11 @@ export async function fetchFraudFlags(): Promise<FraudFlag[]> {
     }
   }
 
+  // Refunds come from Square onto the closed job (job_payments.refunded_cents).
   const { data: refunds } = await supabase
-    .from('payments')
-    .select('booking_reference, status, amount_cents')
-    .eq('is_test', false)
-    .in('status', ['refunded', 'partially_refunded'])
+    .from('job_payments')
+    .select('booking_id')
+    .gt('refunded_cents', 0)
     .gte('created_at', since)
     .limit(500);
   if ((refunds || []).length >= 8) {
@@ -169,7 +221,7 @@ export async function fetchFraudFlags(): Promise<FraudFlag[]> {
       key: 'refunds:volume',
       label: 'Elevated refund volume',
       severity: 'med',
-      detail: `${refunds!.length} refunded/partial rows in 90d — review with your card reader provider`,
+      detail: `${refunds!.length} jobs refunded in 90d — check them in Square`,
     });
   }
 
@@ -200,6 +252,38 @@ export async function markReviewAskSent(bookingId: string) {
     .update({ review_ask_sent_at: new Date().toISOString() })
     .eq('id', bookingId);
   if (error) throw error;
+}
+
+/** Post ideas for Google Business from the last few jobs closed out. */
+export async function fetchRecentPostIdeas(limit = 5): Promise<{ id: string; caption: string; closedAt: string }[]> {
+  const { data: pays, error } = await supabase
+    .from('job_payments')
+    .select('booking_id, created_at')
+    .neq('kind', 'no_show')
+    .order('created_at', { ascending: false })
+    .limit(limit * 3);
+  if (error) throw new Error(error.message);
+  const ids = (pays ?? []).map((p) => p.booking_id as string);
+  if (!ids.length) return [];
+  const { data: rows, error: bErr } = await supabase
+    .from('bookings')
+    .select('id, customer_address, services, vehicle_description, status')
+    .in('id', ids);
+  if (bErr) throw new Error(bErr.message);
+  const byId = new Map((rows ?? []).map((b) => [b.id as string, b]));
+  const ideas: { id: string; caption: string; closedAt: string }[] = [];
+  for (const p of pays ?? []) {
+    const b = byId.get(p.booking_id as string);
+    if (!b || b.status !== 'COMPLETED') continue;
+    const job: RecentJob = {
+      address: (b.customer_address as string | null) ?? null,
+      service: Array.isArray(b.services) ? ((b.services as string[])[0] ?? null) : null,
+      vehicle: (b.vehicle_description as string | null) ?? null,
+    };
+    ideas.push({ id: b.id as string, caption: buildPostIdea(job, DIAGNOSTIC_FEE_DOLLARS), closedAt: String(p.created_at) });
+    if (ideas.length >= limit) break;
+  }
+  return ideas;
 }
 
 export async function fetchGbpDrafts() {

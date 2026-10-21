@@ -55,18 +55,6 @@ export type DispatchTech = {
   onShiftSince: string | null;
 };
 
-export type AdminPaymentRow = {
-  id: string;
-  bookingReference: string | null;
-  paymentIntentId: string;
-  amountCents: number;
-  status: string;
-  payoutStatus: string;
-  payoutError: string | null;
-  createdAt: string;
-  isTest?: boolean;
-};
-
 export async function fetchAdminBookings(): Promise<Booking[]> {
   const { data, error } = await supabase
     .from('bookings')
@@ -188,32 +176,6 @@ export async function terminateTechnician(technicianId: string, reason: string) 
     reason,
   });
 }
-
-export async function fetchAdminPayments(limit = 50): Promise<AdminPaymentRow[]> {
-  const { data, error } = await supabase
-    .from('payments')
-    .select(
-      'id, booking_reference, payment_intent_id, amount_cents, status, payout_status, payout_error, tech_transfer_cents, created_at, is_test'
-    )
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) throw new Error(error.message);
-
-  return (data || []).map((row) => ({
-    id: row.id as string,
-    bookingReference: row.booking_reference as string | null,
-    paymentIntentId: row.payment_intent_id as string,
-    amountCents: row.amount_cents as number,
-    status: row.status as string,
-    payoutStatus: row.payout_status as string,
-    payoutError: (row.payout_error as string | null) ?? null,
-    createdAt: row.created_at as string,
-    isTest: Boolean(row.is_test),
-  }));
-}
-
-/** YTD tech_transfer totals by Connect account for 1099-NEC $600 tracking. */
 
 export async function adminPatchBooking(
   referenceCode: string,

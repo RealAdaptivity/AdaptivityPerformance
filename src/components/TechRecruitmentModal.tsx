@@ -572,9 +572,12 @@ export const TechRecruitmentModal: React.FC<TechRecruitmentModalProps> = ({ isOp
                   </div>
 
                   <div className="bg-slate-950 border border-white/10 p-3.5 rounded-xl text-xs space-y-1">
-                    <strong className="text-emerald-400 font-bold block">🔒 Official Platform Checkout & Payout Terms</strong>
+                    <strong className="text-emerald-400 font-bold block">How you get paid</strong>
                     <p className="text-[11px] text-slate-300">
-                      All customer service payments are processed through Adaptivity In-App Checkout. Technicians receive 70% of total labor billed + 100% tips deposited directly to their bank account after every completed job. Cash/Zelle side-transactions are prohibited.
+                      Customers pay at the vehicle when the job is done (card or tap on Square, cash, or Zelle), and every payment is
+                      recorded when you close the job out in the tech app. You keep {TECH_LABOR_SHARE_PERCENT}% of the diagnostic and
+                      labor, plus the travel fee, the parts pickup fee and any parts you bought, in full. Tips are yours. No side deals
+                      with Adaptivity customers.
                     </p>
                   </div>
 

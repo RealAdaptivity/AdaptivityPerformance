@@ -67,3 +67,27 @@ export function summarizeMoneyIn(
 export function texasDateDaysAgo(days: number, now: Date = new Date()): string {
   return new Date(now.getTime() - days * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
 }
+
+/** The calendar year it is now in Texas. */
+export function texasYear(now: Date = new Date()): number {
+  return Number(now.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' }).slice(0, 4));
+}
+
+/** Jan 1 to Jan 1, midnight in Texas, as ISO instants (Texas is UTC-6 in
+ *  winter, so both ends fall in Central Standard Time). */
+export function texasYearBounds(year: number): { startIso: string; endIso: string } {
+  return {
+    startIso: new Date(`${year}-01-01T00:00:00-06:00`).toISOString(),
+    endIso: new Date(`${year + 1}-01-01T00:00:00-06:00`).toISOString(),
+  };
+}
+
+/** Pay totals by tech; jobs with no tech on them are left out. */
+export function sumPayByTech(rows: { techId: string | null; cents: number }[]): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.techId || !(r.cents > 0)) continue;
+    out.set(r.techId, (out.get(r.techId) ?? 0) + Math.round(r.cents));
+  }
+  return out;
+}

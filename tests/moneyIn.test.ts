@@ -41,3 +41,19 @@ test('the receipts window uses Texas dates', () => {
   assert.equal(texasDateDaysAgo(0, new Date('2026-10-20T01:00:00Z')), '2026-10-19');
   assert.equal(texasDateDaysAgo(30, new Date('2026-10-20T18:00:00Z')), '2026-09-20');
 });
+
+test('1099 totals: tech pay summed by tech, Texas calendar year', async () => {
+  const { sumPayByTech, texasYear, texasYearBounds } = await import('../src/services/moneyIn.ts');
+  const m = sumPayByTech([
+    { techId: 'a', cents: 19425 },
+    { techId: 'b', cents: 5000 },
+    { techId: 'a', cents: 10000 },
+    { techId: null, cents: 9999 },
+    { techId: 'b', cents: 0 },
+  ]);
+  assert.deepEqual([...m.entries()], [['a', 29425], ['b', 5000]]);
+  // New Year's Eve at 11 PM in Texas is already the next year in UTC.
+  assert.equal(texasYear(new Date('2027-01-01T05:00:00Z')), 2026);
+  assert.equal(texasYear(new Date('2027-01-01T06:00:00Z')), 2027);
+  assert.deepEqual(texasYearBounds(2026), { startIso: '2026-01-01T06:00:00.000Z', endIso: '2027-01-01T06:00:00.000Z' });
+});

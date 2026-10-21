@@ -69,8 +69,8 @@ export const CareersPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartnerA
               </div>
               <h3 className="font-heading text-xl font-extrabold text-white">Mobile technician</h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                Independent contractor. Claim jobs by trade, keep most of the labor + tips, Instant or
-                Standard payouts. Multi-job or standalone — and a path to become a partner later.
+                Independent contractor. Claim jobs by trade, keep 70% of the labor plus your tips, and get paid at
+                the vehicle. Multi-job or standalone — and a path to become a partner later.
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <button

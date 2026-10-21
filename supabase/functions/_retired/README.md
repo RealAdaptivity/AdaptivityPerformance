@@ -29,9 +29,14 @@ is a one-click job in the Supabase dashboard
 still deployed with `verify_jwt: false`, so until it was retired anyone could
 call it to create a booking outside the current flow.
 
-`square-webhook` belonged to an abandoned attempt to process cards on the
-website through Square. It has nothing to do with the in-person Square
-terminal, which needs no integration here.
+`square-webhook` is not retired: it is live code again
+(`supabase/functions/square-webhook`). It attaches card details to jobs paid
+by card in Square and records Square refunds on the job. It needs the
+SQUARE_WEBHOOK_SIGNATURE_KEY secret and a webhook subscription in the Square
+Developer Console.
+
+`square-config-check` was a one-off diagnostic and is retired the same way.
+All of the functions listed here can be deleted from the Supabase dashboard.
 
 ## Quote flow (superseded)
 

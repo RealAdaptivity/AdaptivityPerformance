@@ -123,7 +123,7 @@ export const PortalLogin: React.FC = () => {
             <p className="text-xs text-slate-400">
               {portalRole === 'tech'
                 ? 'Approved techs: use the password from your invite email (or Forgot password).'
-                : 'Same experience as the mobile apps — garage, booking, dispatch & payouts.'}
+                : 'Book a visit, track your tech, and keep your vehicles, receipts and referral credit in one place.'}
             </p>
           </div>
 

@@ -8,11 +8,13 @@ import {
   type BookingStatusCounts,
   type ReasonCounts,
 } from '../services/adminAnalytics';
-import { summarizeMoneyIn, type ReceiptsByMethod } from '../services/moneyIn';
+import { summarizeMoneyIn, texasYear, type ReceiptsByMethod } from '../services/moneyIn';
 import {
   export1099Csv,
   exportPartnerReportCsv,
   fetchFraudFlags,
+  fetchTechPayForYear,
+  techsForPay,
   type FraudFlag,
 } from '../services/adminOpsExtras';
 import { fetchDispatchTechs } from '../services/adminApi';
@@ -94,9 +96,10 @@ export const PnLDashboard: React.FC = () => {
   const handle1099Export = async () => {
     setExportMsg(null);
     try {
-      const techs = await fetchDispatchTechs();
-      export1099Csv(techs, new Map());
-      setExportMsg('1099 CSV downloaded');
+      const year = texasYear();
+      const [techs, pay] = await Promise.all([fetchDispatchTechs(), fetchTechPayForYear(year)]);
+      export1099Csv(await techsForPay(techs, pay), pay, year);
+      setExportMsg(`1099 CSV for ${year} downloaded: tech pay from jobs closed this year.`);
     } catch (e) {
       setExportMsg(e instanceof Error ? e.message : 'Export failed');
     }

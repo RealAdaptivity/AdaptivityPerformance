@@ -1,4 +1,5 @@
 import React from 'react';
+import { FORM_1099_NEC_THRESHOLD_DOLLARS } from '../content/taxForms';
 import { LOCAL_HUB } from '../site/localSeo';
 import {
   ArrowRight,
@@ -41,13 +42,13 @@ const STEPS = [
   },
   {
     n: '03',
-    title: 'Set up payouts',
+    title: 'Create your tech login',
     body: 'Once approved, create your tech login and you are ready to claim jobs. Customers pay you in person at the vehicle.',
   },
   {
     n: '04',
     title: 'Claim jobs & get paid',
-    body: 'Jobs matching your specialties show on the board. Claim, complete, capture — we handle customers and payments.',
+    body: 'Jobs matching your specialties show on the board. Claim one, do the work and close it out in the app — we handle customers, dispatch and receipts.',
   },
 ];
 
@@ -87,9 +88,9 @@ const REQUIREMENTS = [
       'Insurance for tools / liability is strongly recommended (not required to join)',
       'Customers are told before booking that the working tech is responsible for damage they cause',
             'IRS Form W-9 / tax ID (SSN or EIN) given to dispatch before your first claimed job',
-      'Form 1099-NEC: if you earn $600+ in a calendar year, Adaptivity files with the IRS and sends you a copy by Jan 31',
+      `Form 1099-NEC: if Adaptivity pays you $${FORM_1099_NEC_THRESHOLD_DOLLARS.toLocaleString('en-US')} or more in a calendar year, Adaptivity files with the IRS and sends you a copy by Jan 31`,
       'Professional communication with customers — you’re the face of Adaptivity on site',
-      'No side cash / Zelle for Adaptivity jobs — all payments stay in-app',
+      'No side deals with Adaptivity customers — every job is closed out in the app, whether they pay by card, cash or Zelle',
     ],
   },
 ];
@@ -307,7 +308,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
               <DollarSign className="w-5 h-5 text-emerald-400" />
               <h3 className="font-bold text-white">70% labor + 100% tips</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Revenue-share techs keep 70% of labor billed (30% to Adaptivity). Tips go fully to you. Platform handles checkout.
+                Revenue-share techs keep 70% of labor billed (30% to Adaptivity). Tips go fully to you. You take payment on site and the app records it.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-[#12141c] p-5 space-y-2 relative overflow-hidden">
@@ -324,7 +325,7 @@ export const JoinAsTechPage: React.FC<Props> = ({ onOpenRecruitment, onOpenPartn
               <MapPin className="w-5 h-5 text-amber-400" />
               <h3 className="font-bold text-white">Paid at the vehicle</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                The customer pays by card, tap or chip on site when the job is done. No payout account to set up.
+                The customer pays at the vehicle when the job is done: card or tap on Square, cash, or Zelle. No payout account to set up.
               </p>
             </div>
           </div>
