@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ExternalLink, Flame, Loader2, Search, ShieldAlert, Trash2 } from 'lucide-react';
+import { AlertTriangle, BookOpen, ExternalLink, Flame, Loader2, Search, ShieldAlert, Trash2 } from 'lucide-react';
+import { AP_DATA_URL } from '../config/apData';
 import { isVinShaped, normalizeVin } from '../services/vinDecode';
 import {
   addVehicleNote,
@@ -143,6 +144,22 @@ export const ResearchAdmin: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = true 
           wiring diagrams and labor times stay in ALLDATA / Mitchell 1 — links below each result.
         </p>
       </div>
+
+      <a
+        href={AP_DATA_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-2xl p-4 hover:bg-orange-500/15"
+      >
+        <BookOpen className="w-5 h-5 text-orange-400 shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-white">Open AP Data</span>
+          <span className="block text-[11px] text-slate-400">
+            The shop’s repair information: confirmed fixes, trouble codes, procedures, specs and the labor guide.
+          </span>
+        </span>
+        <ExternalLink className="w-4 h-4 text-slate-500 shrink-0" />
+      </a>
 
       <form
         className="bg-[#12141c] border border-white/10 rounded-2xl p-4 space-y-3"
