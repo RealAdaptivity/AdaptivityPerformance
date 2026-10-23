@@ -19,7 +19,28 @@
 -- so they are shape-checked here rather than listed, and adding one in the app
 -- does not need a migration.
 --
--- Additive only: no existing table, policy or function changes.
+-- Additive only: no existing table, policy or function changes, and no
+-- drop, revoke or delete statements. Who wrote a row and who verified a spec
+-- are protected by triggers (apdata_keep_authorship, vehicle_specs_guard_
+-- verification) rather than by revoking default grants, so the whole file is
+-- create / insert / grant and is safe to apply in one go.
+
+-- The storage policies need a brief lock on storage.objects; fail fast rather
+-- than queue behind live uploads.
+set lock_timeout = '15s';
+
+-- An edit can change what a row says, never who wrote it or when.
+create or replace function public.apdata_keep_authorship()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.created_by := old.created_by;
+  new.created_at := old.created_at;
+  return new;
+end;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Confirmed fixes
@@ -67,7 +88,6 @@ create index if not exists repair_fixes_codes_idx on public.repair_fixes using g
 create index if not exists repair_fixes_search_idx on public.repair_fixes using gin (search);
 create index if not exists repair_fixes_created_by_idx on public.repair_fixes (created_by);
 
-drop trigger if exists repair_fixes_set_updated_at on public.repair_fixes;
 create trigger repair_fixes_set_updated_at
   before update on public.repair_fixes
   for each row execute function public.set_updated_at();
@@ -102,13 +122,11 @@ create policy repair_fixes_author_delete on public.repair_fixes
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.repair_fixes from anon, authenticated;
-grant select, insert, delete on public.repair_fixes to authenticated;
--- Column grant: an edit changes what the fix says, never who wrote it or when.
-grant update (
-  model_year, make, model, engine, vin, mileage, system, dtc_codes,
-  symptom, tests_performed, root_cause, fix, parts, labor_hours
-) on public.repair_fixes to authenticated;
+create trigger repair_fixes_keep_authorship
+  before update on public.repair_fixes
+  for each row execute function public.apdata_keep_authorship();
+
+grant select, insert, update, delete on public.repair_fixes to authenticated;
 
 -- One confirmation per tech per fix. The author's own fix already counts as
 -- the first one, so the author cannot confirm it again.
@@ -150,7 +168,6 @@ create policy repair_fix_confirmations_own_delete on public.repair_fix_confirmat
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.repair_fix_confirmations from anon, authenticated;
 grant select, insert, delete on public.repair_fix_confirmations to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -200,7 +217,6 @@ create index if not exists repair_procedures_search_idx on public.repair_procedu
 create index if not exists repair_procedures_created_by_idx on public.repair_procedures (created_by);
 create index if not exists repair_procedures_updated_by_idx on public.repair_procedures (updated_by);
 
-drop trigger if exists repair_procedures_set_updated_at on public.repair_procedures;
 create trigger repair_procedures_set_updated_at
   before update on public.repair_procedures
   for each row execute function public.set_updated_at();
@@ -236,12 +252,11 @@ create policy repair_procedures_author_delete on public.repair_procedures
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.repair_procedures from anon, authenticated;
-grant select, insert, delete on public.repair_procedures to authenticated;
-grant update (
-  title, system, make, model, engine, year_from, year_to,
-  summary, tools, warnings, steps, specs, notes, updated_by
-) on public.repair_procedures to authenticated;
+create trigger repair_procedures_keep_authorship
+  before update on public.repair_procedures
+  for each row execute function public.apdata_keep_authorship();
+
+grant select, insert, update, delete on public.repair_procedures to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Vehicle specs
@@ -307,18 +322,26 @@ create policy vehicle_specs_author_delete on public.vehicle_specs
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.vehicle_specs from anon, authenticated;
-grant select, insert, delete on public.vehicle_specs to authenticated;
--- Column grant: an edit can change what the spec says, never who verified it.
-grant update (engine, category, label, value, source) on public.vehicle_specs to authenticated;
+grant select, insert, update, delete on public.vehicle_specs to authenticated;
 
--- Editing a verified spec's figure un-verifies it: the check was of the old value.
-create or replace function public.vehicle_specs_reset_verification()
+create trigger vehicle_specs_keep_authorship
+  before update on public.vehicle_specs
+  for each row execute function public.apdata_keep_authorship();
+
+-- Verification is set only by verify_vehicle_spec(), which runs as the
+-- function owner. A direct update from the app (role authenticated) keeps the
+-- old verification, and changing the figure itself clears it: the check was
+-- of the old value.
+create or replace function public.vehicle_specs_guard_verification()
 returns trigger
 language plpgsql
 set search_path = public
 as $$
 begin
+  if current_user in ('authenticated', 'anon') then
+    new.verified_by := old.verified_by;
+    new.verified_at := old.verified_at;
+  end if;
   if new.value is distinct from old.value
      or new.label is distinct from old.label
      or new.engine is distinct from old.engine then
@@ -329,12 +352,9 @@ begin
 end;
 $$;
 
-drop trigger if exists vehicle_specs_reset_verification on public.vehicle_specs;
-create trigger vehicle_specs_reset_verification
+create trigger vehicle_specs_guard_verification
   before update on public.vehicle_specs
-  for each row execute function public.vehicle_specs_reset_verification();
-
-revoke all on function public.vehicle_specs_reset_verification() from public, anon, authenticated;
+  for each row execute function public.vehicle_specs_guard_verification();
 
 create or replace function public.verify_vehicle_spec(p_spec_id uuid)
 returns void
@@ -357,7 +377,6 @@ begin
 end;
 $$;
 
-revoke all on function public.verify_vehicle_spec(uuid) from public, anon;
 grant execute on function public.verify_vehicle_spec(uuid) to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -414,7 +433,6 @@ create policy labor_times_author_delete on public.labor_times
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.labor_times from anon, authenticated;
 grant select, insert, delete on public.labor_times to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -466,7 +484,6 @@ create policy repair_files_author_delete on public.repair_files
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.repair_files from anon, authenticated;
 grant select, insert, delete on public.repair_files to authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
@@ -477,12 +494,8 @@ values (
   26214400, -- 25 MB: a phone photo or a multi-page diagram PDF
   array['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf']
 )
-on conflict (id) do update
-  set file_size_limit = excluded.file_size_limit,
-      allowed_mime_types = excluded.allowed_mime_types,
-      public = false;
+on conflict (id) do nothing;
 
-drop policy if exists "repair files staff read" on storage.objects;
 create policy "repair files staff read"
   on storage.objects for select
   to authenticated
@@ -492,7 +505,6 @@ create policy "repair files staff read"
   );
 
 -- Uploads go under the uploader's own folder, so a delete can be scoped to it.
-drop policy if exists "repair files staff upload" on storage.objects;
 create policy "repair files staff upload"
   on storage.objects for insert
   to authenticated
@@ -502,7 +514,6 @@ create policy "repair files staff upload"
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
-drop policy if exists "repair files owner delete" on storage.objects;
 create policy "repair files owner delete"
   on storage.objects for delete
   to authenticated
@@ -539,7 +550,6 @@ create unique index if not exists dtc_definitions_code_make_key
   on public.dtc_definitions (code, coalesce(lower(make), ''));
 create index if not exists dtc_definitions_created_by_idx on public.dtc_definitions (created_by);
 
-drop trigger if exists dtc_definitions_set_updated_at on public.dtc_definitions;
 create trigger dtc_definitions_set_updated_at
   before update on public.dtc_definitions
   for each row execute function public.set_updated_at();
@@ -574,6 +584,8 @@ create policy dtc_definitions_author_delete on public.dtc_definitions
     or (select public.current_user_role()) = 'admin'::public.user_role
   );
 
-revoke all on public.dtc_definitions from anon, authenticated;
-grant select, insert, delete on public.dtc_definitions to authenticated;
-grant update (code, make, title, notes) on public.dtc_definitions to authenticated;
+create trigger dtc_definitions_keep_authorship
+  before update on public.dtc_definitions
+  for each row execute function public.apdata_keep_authorship();
+
+grant select, insert, update, delete on public.dtc_definitions to authenticated;
