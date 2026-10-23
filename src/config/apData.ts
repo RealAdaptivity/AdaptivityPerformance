@@ -4,8 +4,7 @@
  * guide. It signs in with the same staff accounts and reads the AP Data tables
  * in this Supabase project (migration 20261023204924_ap_data_repair_information).
  *
- * Served by GitHub Pages from the APData repo. If that repo gets a custom
- * domain, change it here.
+ * Served by GitHub Pages from the APData repo on its own domain.
  */
-export const AP_DATA_URL = 'https://realadaptivity.github.io/APData/';
+export const AP_DATA_URL = 'https://apdatagroup.com/';
 
