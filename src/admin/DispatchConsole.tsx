@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { vehicleLaborRateLabel } from '../services/vehicleLaborRate';
 import {
   AlertCircle,
+  BookOpen,
   CreditCard,
   ExternalLink,
   FileText,
@@ -19,6 +20,7 @@ import {
 } from '../config/mapLinks';
 import { DispatchMap } from './DispatchMap';
 import { VinLookupPanel } from './VinLookupPanel';
+import { apDataJobUrl } from '../config/apData';
 import { BookingModal } from '../components/BookingModal';
 import {
   fetchJobPaymentSummary,
@@ -821,6 +823,14 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           VIN{booking.vin ? '' : ' · not given'}
         </p>
         <VinLookupPanel key={booking.id} initialVin={booking.vin} />
+        <a
+          href={apDataJobUrl({ referenceCode: booking.id, vin: booking.vin, vehicle: booking.vehicle, issueDescription: booking.issueDescription })}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-orange-400 hover:underline"
+        >
+          <BookOpen className="w-3.5 h-3.5" /> Open in AP Data
+        </a>
       </div>
 
       <div>

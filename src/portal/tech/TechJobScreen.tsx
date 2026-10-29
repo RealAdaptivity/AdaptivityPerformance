@@ -8,6 +8,7 @@ import { todayISODate } from '../../services/scheduleWindows';
 import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../../services/serviceCatalog';
 import { vehicleLaborRateLabel } from '../../services/vehicleLaborRate';
 import { JobChatPanel } from '../../components/JobChatPanel';
+import { ApDataCard } from './ApDataCard';
 import { capClass, cardClass, directionsUrl, primaryService } from './techUi';
 import type { TechJobsApi } from './useTechJobs';
 
@@ -131,6 +132,8 @@ export const TechJobScreen: React.FC<{
             </a>
           </div>
         </div>
+
+        <ApDataCard referenceCode={job.referenceCode} vin={job.vin} vehicle={job.vehicle} issue={job.issueDescription} />
 
         <div className={`${cardClass} space-y-3 p-4`}>
           <div className="flex items-center justify-between">
