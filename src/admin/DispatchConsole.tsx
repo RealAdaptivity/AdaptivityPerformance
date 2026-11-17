@@ -563,11 +563,16 @@ const JobCard: React.FC<{
         ${booking.totalEstimate.toFixed(2)}
       </p>
 
-      {(outsideRadius || addressUnusable || slaHot || booking.bookingSource === 'phone') && (
+      {(outsideRadius || addressUnusable || slaHot || booking.bookingSource === 'phone' || booking.bookingSource === 'tech') && (
         <span className="flex flex-wrap gap-1 mt-2">
           {booking.bookingSource === 'phone' && (
             <span className="text-[9px] font-bold text-sky-300 bg-sky-500/15 border border-sky-500/30 rounded-full px-2 py-0.5">
               Phone booking
+            </span>
+          )}
+          {booking.bookingSource === 'tech' && (
+            <span className="text-[9px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 rounded-full px-2 py-0.5">
+              Tech booking
             </span>
           )}
           {addressUnusable && (
@@ -731,7 +736,7 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
         )}
       </div>
 
-      {booking.status === 'UNASSIGNED' && (
+      {booking.status === 'UNASSIGNED' && !booking.claimedBy && (
         <div className="space-y-1">
           <button
             type="button"
@@ -814,6 +819,12 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           <p className="flex items-center gap-2 text-[11px] text-sky-300">
             <PhoneCall className="w-3.5 h-3.5" />
             Booked by phone{booking.bookedByName ? ` · taken by ${booking.bookedByName}` : ''}
+          </p>
+        )}
+        {booking.bookingSource === 'tech' && (
+          <p className="flex items-center gap-2 text-[11px] text-emerald-300">
+            <PhoneCall className="w-3.5 h-3.5" />
+            Booked by {booking.bookedByName || 'a tech'} from the tech portal · not started until they tap Start
           </p>
         )}
       </div>

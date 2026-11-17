@@ -33,6 +33,13 @@ export function myActiveJobs<T extends BoardJob>(jobs: T[], me: string | null): 
     });
 }
 
+/** Visits booked for the tech (by themselves or by dispatch) that they have
+ *  not started yet: theirs, but still UNASSIGNED. Soonest first. */
+export function myBookedJobs<T extends BoardJob>(jobs: T[], me: string | null): T[] {
+  if (!me) return [];
+  return jobs.filter((j) => j.mechanicId === me && j.status === 'UNASSIGNED').sort(byWhen);
+}
+
 /** Open jobs: ASAP first, then soonest day, then oldest request. */
 export function openJobs<T extends BoardJob>(jobs: T[]): T[] {
   return jobs.filter(isOpenJob).sort(byWhen);
@@ -95,7 +102,7 @@ export function townOf(address: string): string {
 }
 
 export type JobStage = 0 | 1 | 2 | 3;
-export const JOB_STAGES = ['Claimed', 'On the way', 'On site', 'Paid'] as const;
+export const JOB_STAGES = ['Booked', 'On the way', 'On site', 'Paid'] as const;
 
 export function jobStage(status: string): JobStage {
   if (status === 'COMPLETED') return 3;

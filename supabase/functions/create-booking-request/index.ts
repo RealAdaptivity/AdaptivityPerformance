@@ -20,6 +20,7 @@ import {
   townFromAddress,
 } from '../_shared/newJobAlert.ts';
 import { sendExpoPush } from '../_shared/expoPush.ts';
+import { techBookingBlocker } from '../_shared/techBooking.ts';
 
 /** Replaces create-booking-with-hold. No card is taken online any more: the
  *  booking is a request for a visit, and the customer pays the technician in
@@ -72,6 +73,8 @@ Deno.serve(async (req) => {
     } = body;
     /* An admin booking a visit for a caller from the dispatch board. */
     const phoneBooking = body.phoneBooking === true;
+    /* A technician booking a visit for a customer from the tech portal. */
+    const techBooking = body.techBooking === true && !phoneBooking;
 
     if (!customerName?.trim() || !customerAddress?.trim() || !Array.isArray(services) || services.length === 0) {
       return jsonResponse({ error: 'Missing required booking fields' }, 400);
@@ -123,7 +126,30 @@ Deno.serve(async (req) => {
     if (phoneBooking && callerRole !== 'admin') {
       return jsonResponse({ error: 'Only an admin can book a visit for a caller.' }, 403);
     }
-    const customerId = phoneBooking ? null : userId;
+
+    /* A tech booking is the same, except the visit goes straight to the tech
+       who booked it. That is a claim, so it takes the same paperwork a claim
+       does (W-9 on file, current contractor agreement signed), but no open
+       shift: the visit is usually for a later day. */
+    if (techBooking) {
+      if (callerRole !== 'tech' || !userId) {
+        return jsonResponse({ error: 'Only a technician can book a visit for themselves.' }, 403);
+      }
+      const [{ data: detail }, { data: versionRow }] = await Promise.all([
+        supabase
+          .from('mechanic_details')
+          .select(
+            'terminated_at, w9_completed_at, tax_id_provided, contractor_agreement_signed_at, contractor_agreement_signature_path, contractor_agreement_version'
+          )
+          .eq('profile_id', userId)
+          .maybeSingle(),
+        supabase.from('app_config').select('value').eq('key', 'contractor_agreement_version').maybeSingle(),
+      ]);
+      const blocked = techBookingBlocker(detail, (versionRow?.value as string | null | undefined) ?? null);
+      if (blocked) return jsonResponse({ error: blocked }, 403);
+    }
+    const onBehalf = phoneBooking || techBooking;
+    const customerId = onBehalf ? null : userId;
 
     let resolvedPartnerId: string | null = null;
     if (locationType === 'shop' && typeof partnerLocationId === 'string' && partnerLocationId.trim()) {
@@ -225,8 +251,11 @@ Deno.serve(async (req) => {
       .from('bookings')
       .insert({
         customer_id: customerId,
-        booking_source: phoneBooking ? 'phone' : 'website',
-        booked_by: phoneBooking ? userId : null,
+        booking_source: techBooking ? 'tech' : phoneBooking ? 'phone' : 'website',
+        booked_by: onBehalf ? userId : null,
+        /* Still UNASSIGNED until the tech taps Start, but already theirs:
+           it shows on their Booked list and never on the open board. */
+        mechanic_id: techBooking ? userId : null,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_email: email ?? null,
@@ -361,7 +390,8 @@ Deno.serve(async (req) => {
        awaited so the isolate is not torn down mid-send, bounded, and never
        able to fail the booking. */
     let techAlerts = { eligible: 0, pushed: 0, texted: 0 };
-    try {
+    /* A tech's own booking is already taken, so nobody else is alerted. */
+    if (!techBooking) try {
       techAlerts = await Promise.race([
         (async () => {
           const { data: techProfiles } = await supabase

@@ -53,6 +53,10 @@ export async function createBookingRequest(params: {
    *  server checks the caller is an admin, leaves the booking unowned (it
    *  belongs to the caller, not the admin) and records who took the call. */
   phoneBooking?: boolean;
+  /** A technician booking a visit for a customer. The server checks the
+   *  caller is an active tech with their paperwork done, leaves the booking
+   *  unowned (it belongs to the customer) and assigns it to that tech. */
+  techBooking?: boolean;
 }): Promise<BookingRequestResult> {
   const data = await invokeEdgeFunction<BookingRequestResult>('create-booking-request', params);
   if (!data?.bookingReference) throw new Error('Booking reference missing from server response');

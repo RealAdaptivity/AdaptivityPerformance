@@ -192,7 +192,16 @@ export const TechJobScreen: React.FC<{
       </div>
 
       <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-white/[0.06] bg-[#0b0c10] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-        {stage === 2 ? (
+        {job.status === 'UNASSIGNED' ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void api.start(job)}
+            className="flex min-h-[56px] w-full items-center justify-center rounded-2xl bg-brand font-heading text-[17px] font-bold text-[#0b0c10] disabled:opacity-60"
+          >
+            {busy ? 'Saving…' : 'Start — I’m on my way'}
+          </button>
+        ) : stage === 2 ? (
           <button type="button" onClick={onGetPaid} className="flex min-h-[56px] w-full items-center justify-center rounded-2xl bg-brand font-heading text-[17px] font-bold text-[#0b0c10]">
             Get paid &amp; close job
           </button>
