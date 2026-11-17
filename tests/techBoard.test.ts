@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { jobStage, myActiveJobs, myDoneJobs, openJobs, townOf, whenLabel, type BoardJob } from '../src/services/techBoard.ts';
+import { jobStage, myActiveJobs, myBookedJobs, myDoneJobs, openJobs, townOf, whenLabel, type BoardJob } from '../src/services/techBoard.ts';
 
 const job = (over: Partial<BoardJob> & { id: string }): BoardJob => ({
   status: 'UNASSIGNED',
@@ -34,6 +34,19 @@ test('my active jobs put the one on site first and ignore other techs', () => {
   );
   assert.deepEqual(list.map((j) => j.id), ['site', 'route']);
   assert.deepEqual(myActiveJobs([job({ id: 'a', mechanicId: 'me', status: 'EN_ROUTE' })], null), []);
+});
+
+test('booked jobs are mine, not started, soonest first, and never open', () => {
+  const jobs = [
+    job({ id: 'later', mechanicId: 'me', preferredDate: '2026-10-05' }),
+    job({ id: 'soon', mechanicId: 'me', preferredDate: '2026-10-01' }),
+    job({ id: 'started', mechanicId: 'me', status: 'EN_ROUTE', preferredDate: '2026-09-30' }),
+    job({ id: 'theirs', mechanicId: 'you', preferredDate: '2026-09-30' }),
+    job({ id: 'open', preferredDate: '2026-09-30' }),
+  ];
+  assert.deepEqual(myBookedJobs(jobs, 'me').map((j) => j.id), ['soon', 'later']);
+  assert.deepEqual(openJobs(jobs).map((j) => j.id), ['open']);
+  assert.deepEqual(myBookedJobs(jobs, null), []);
 });
 
 test('done jobs are mine and newest first', () => {

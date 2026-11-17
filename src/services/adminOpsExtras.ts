@@ -10,8 +10,11 @@ export function unclaimedAgeMinutes(booking: {
   status: string;
   createdAtIso?: string;
   dateCreated?: string;
+  claimedBy?: unknown;
 }): number | null {
-  if (booking.status !== 'UNASSIGNED') return null;
+  /* A tech's own booking is UNASSIGNED until they start it, but it is not
+     waiting for anyone to claim it. */
+  if (booking.status !== 'UNASSIGNED' || booking.claimedBy) return null;
   const raw = booking.createdAtIso || booking.dateCreated;
   if (!raw) return null;
   const t = Date.parse(raw);

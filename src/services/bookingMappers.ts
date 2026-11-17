@@ -96,7 +96,7 @@ export function rowToBooking(row: BookingRow): Booking {
     createdAtIso: row.created_at,
     preferredMechanicId: row.preferred_mechanic_id ?? null,
     holdExpiresAt: row.hold_expires_at ?? null,
-    bookingSource: row.booking_source === 'phone' ? 'phone' : 'website',
+    bookingSource: row.booking_source === 'phone' || row.booking_source === 'tech' ? row.booking_source : 'website',
     bookedByName: row.booked_by_profile?.full_name ?? null,
     supabaseId: row.id,
     paymentIntentId: row.payment_intent_id ?? null,

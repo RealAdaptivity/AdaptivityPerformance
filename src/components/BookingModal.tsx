@@ -118,6 +118,10 @@ interface BookingModalProps {
    *  consent box records that the terms were read to them, and the
    *  confirmation tells the admin what to say instead of offering an account. */
   phoneBooking?: boolean;
+  /** A technician booking a visit for a customer from the tech portal. Same
+   *  relaxed fields and wording as a phone booking, but the server puts the
+   *  visit straight on that tech's own list instead of the open board. */
+  techBooking?: boolean;
 }
 
 /** Step indexes: 0–4 are the questions, 5 is the review, 6 is the confirmation. */
@@ -166,8 +170,13 @@ export const BookingModal: React.FC<BookingModalProps> = ({
   onClose,
   initialEstimateData,
   onBookingSubmitted,
-  phoneBooking = false,
+  phoneBooking: phoneBookingProp = false,
+  techBooking = false,
 }) => {
+  /* Booking on someone's behalf (an admin on the phone, or a tech in the
+     field) gets the same form; only the wording and who owns it differ. */
+  const phoneBooking = phoneBookingProp || techBooking;
+  const who = techBooking ? 'customer' : 'caller';
   const [step, setStep] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
   /* Set when the customer taps Edit on the review screen, so Continue takes
@@ -500,7 +509,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
         customerNotes: notes.trim() || undefined,
         preferredMechanicId: initialEstimateData?.preferredMechanicId || undefined,
         ...applyReferralCodeOnBooking(referralInput),
-        ...(phoneBooking ? { phoneBooking: true } : {}),
+        ...(techBooking ? { techBooking: true } : phoneBooking ? { phoneBooking: true } : {}),
       });
 
       setBookingRef(booking.bookingReference);
@@ -744,7 +753,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <p className="text-[13px] font-semibold text-slate-400">
                 {phoneBooking && (
                   <span className="mr-2 inline-flex items-center gap-1 rounded-full bg-brand/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-brand-soft">
-                    <Phone className="h-3 w-3" aria-hidden="true" /> Phone booking
+                    <Phone className="h-3 w-3" aria-hidden="true" /> {techBooking ? 'Your booking' : 'Phone booking'}
                   </span>
                 )}
                 {done ? (phoneBooking ? 'Booked' : 'Request sent') : step === REVIEW_STEP ? 'Review' : `Step ${step + 1} of ${COUNTED_STEPS}`}
@@ -973,7 +982,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                   >
                     <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-soft" aria-hidden="true" />
                     {phoneBooking
-                      ? 'Ask the caller to read it off the bottom corner of the windshield on the driver’s side, the driver’s door jamb sticker, or their insurance card. It decodes as soon as all 17 characters are in.'
+                      ? `Ask the ${who} to read it off the bottom corner of the windshield on the driver’s side, the driver’s door jamb sticker, or their insurance card. It decodes as soon as all 17 characters are in.`
                       : 'Bottom corner of the windshield on the driver’s side, the sticker in the driver’s door jamb, or your insurance card.'}
                   </p>
                 </div>
@@ -1315,7 +1324,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
               <div className="mt-2 space-y-5">
                 <p className="text-[15px] leading-relaxed text-slate-400">
                   {phoneBooking
-                    ? 'The caller’s details. We text this number to confirm and when the tech is on the way.'
+                    ? `The ${who}’s details. We text this number to confirm and when the tech is on the way.`
                     : 'We text when your tech is on the way.'}
                 </p>
                 <div>
@@ -1424,7 +1433,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     />
                     {phoneBooking ? (
                       <span className="text-[13px] leading-relaxed text-slate-300">
-                        I read the caller the{' '}
+                        I read the {who} the{' '}
                         <a
                           href="/terms"
                           target="_blank"
@@ -1526,7 +1535,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                     tabIndex={-1}
                     className="mt-2 font-heading text-[32px] font-bold leading-[1.1] outline-none"
                   >
-                    {phoneBooking ? 'On the board.' : 'You’re on the board.'}
+                    {techBooking ? 'Booked.' : phoneBooking ? 'On the board.' : 'You’re on the board.'}
                   </h2>
                   <p className="mt-2.5 text-[15px] text-slate-400">
                     {whenLabel} · {vehicle}
@@ -1537,7 +1546,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       className="mt-3 rounded-xl border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-100"
                     >
                       {phoneBooking
-                        ? 'This caller already booked this vehicle in the last hour, so no second booking was made. This is their booking.'
+                        ? `This ${who} already booked this vehicle in the last hour, so no second booking was made. This is their booking.`
                         : 'You already booked this vehicle a few minutes ago, so we didn’t make a second booking. This is your booking.'}{' '}
                       To change it, call {SITE_PHONE_DISPLAY}.
                     </p>
@@ -1551,7 +1560,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                 {phoneBooking ? (
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-brand/30 bg-[#12141c] p-5">
-                      <p className="text-xs font-semibold uppercase tracking-[0.06em] text-brand-soft">Tell the caller</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.06em] text-brand-soft">Tell the {who}</p>
                       <ul className="mt-3 space-y-2 text-[15px] leading-relaxed text-slate-200">
                         <li>
                           “Your confirmation number is <strong>{bookingRef}</strong>.”
@@ -1572,7 +1581,9 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       </p>
                     )}
                     <p className="text-[13px] text-slate-400">
-                      It’s on the dispatch board now as a phone booking under your name. Assign a tech from there.
+                      {techBooking
+                        ? 'It’s on your Booked list. Tap Start when you head out.'
+                        : 'It’s on the dispatch board now as a phone booking under your name. Assign a tech from there.'}
                     </p>
                     <button
                       type="button"

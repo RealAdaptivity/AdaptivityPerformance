@@ -1,9 +1,9 @@
 import React from 'react';
-import { MapPin, MessageSquare, Navigation, Phone, RefreshCw } from 'lucide-react';
+import { CalendarPlus, MapPin, MessageSquare, Navigation, Phone, RefreshCw } from 'lucide-react';
 import type { DispatchBooking } from '../../services/techDispatch';
 import { specialtyMatchHint } from '../../services/jobSpecialtyMatch';
 import { todayISODate } from '../../services/scheduleWindows';
-import { isAsap, myActiveJobs, myDoneJobs, openJobs, townOf, whenLabel } from '../../services/techBoard';
+import { isAsap, myActiveJobs, myBookedJobs, myDoneJobs, openJobs, townOf, whenLabel } from '../../services/techBoard';
 import { formatCents } from '../../services/closeOut';
 import type { TechJobsApi } from './useTechJobs';
 import { capClass, cardClass, directionsUrl, primaryService } from './techUi';
@@ -163,13 +163,22 @@ export const TodayScreen: React.FC<{
   onOpenJob: (id: string) => void;
   onTextOnTheWay: (job: DispatchBooking) => void;
   onSeeOpen: () => void;
-}> = ({ api, onOpenJob, onTextOnTheWay, onSeeOpen }) => {
+  onBook: () => void;
+}> = ({ api, onOpenJob, onTextOnTheWay, onSeeOpen, onBook }) => {
   const active = myActiveJobs(api.jobs, api.me);
+  const booked = myBookedJobs(api.jobs, api.me);
   const open = openJobs(api.jobs);
   const [now, ...later] = active;
   return (
     <div className="space-y-5">
       <ShiftBanner api={api} />
+      <button
+        type="button"
+        onClick={onBook}
+        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-brand/45 bg-brand/10 text-[15px] font-bold text-orange-100 hover:bg-brand/15"
+      >
+        <CalendarPlus className="h-5 w-5" aria-hidden="true" /> Book an appointment
+      </button>
       <section className="space-y-2.5" aria-labelledby="now-heading">
         <h2 id="now-heading" className={capClass}>
           Now
@@ -203,6 +212,35 @@ export const TodayScreen: React.FC<{
               </span>
               <span className="text-sm font-semibold text-brand-soft">Open</span>
             </button>
+          ))}
+        </section>
+      )}
+
+      {booked.length > 0 && (
+        <section className="space-y-2.5" aria-labelledby="booked-heading">
+          <h2 id="booked-heading" className={capClass}>
+            Booked · {booked.length}
+          </h2>
+          {booked.map((j) => (
+            <div key={j.id} className={`${cardClass} flex items-center gap-3 p-3.5`}>
+              <button type="button" onClick={() => onOpenJob(j.id)} className="min-w-0 flex-1 text-left">
+                <span className={`${chip} ${isAsap(j) ? 'bg-red-500/15 text-red-200' : 'bg-white/[0.06] text-slate-300'}`}>
+                  {whenLabel(j.preferredDate, j.preferredTimeWindow, todayISODate())}
+                </span>
+                <span className="mt-1.5 block truncate text-base font-semibold">{primaryService(j)}</span>
+                <span className="block truncate text-[13px] text-slate-400">
+                  {j.customer} · {townOf(j.address) || j.address}
+                </span>
+              </button>
+              <button
+                type="button"
+                disabled={api.busyJobId === j.id}
+                onClick={() => void api.start(j).then((ok) => ok && onOpenJob(j.id))}
+                className="min-h-[48px] min-w-[84px] shrink-0 rounded-[14px] bg-brand text-[15px] font-bold text-[#0b0c10] disabled:opacity-40"
+              >
+                {api.busyJobId === j.id ? '…' : 'Start'}
+              </button>
+            </div>
           ))}
         </section>
       )}

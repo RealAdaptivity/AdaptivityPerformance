@@ -112,6 +112,22 @@ export function useTechJobs() {
     }
   };
 
+  /** A booked visit the tech is heading out to now. Returns true when saved. */
+  const start = async (job: DispatchBooking): Promise<boolean> => {
+    setBusyJobId(job.id);
+    setNotice(null);
+    try {
+      await updateBookingRow(job.referenceCode, { status: 'EN_ROUTE', eta_minutes: 20 });
+      await load();
+      return true;
+    } catch (e) {
+      setNotice({ tone: 'warn', text: e instanceof Error ? e.message : 'Could not start the job' });
+      return false;
+    } finally {
+      setBusyJobId(null);
+    }
+  };
+
   const release = async (job: DispatchBooking): Promise<boolean> => {
     setBusyJobId(job.id);
     try {
@@ -142,6 +158,7 @@ export function useTechJobs() {
     toggleShift,
     claim,
     markArrived,
+    start,
     release,
   };
 }

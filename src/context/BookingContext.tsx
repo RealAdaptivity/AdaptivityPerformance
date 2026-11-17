@@ -46,9 +46,10 @@ export interface Booking {
   createdAtIso?: string;
   preferredMechanicId?: string | null;
   holdExpiresAt?: string | null;
-  /** 'phone' when an admin booked it for a caller from the dispatch board. */
-  bookingSource?: 'website' | 'phone';
-  /** The admin who took a phone booking. */
+  /** 'phone' when an admin booked it for a caller from the dispatch board,
+   *  'tech' when a technician booked it for a customer from the tech portal. */
+  bookingSource?: 'website' | 'phone' | 'tech';
+  /** The admin who took a phone booking, or the tech who made a tech booking. */
   bookedByName?: string | null;
   /** Supabase row UUID (for authenticated updates). */
   supabaseId?: string;
