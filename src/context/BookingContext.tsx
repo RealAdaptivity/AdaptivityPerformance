@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { VehicleClass } from '../services/vehicleLaborRate';
+import type { WorkOrder } from '../services/workOrder';
 /**
  * `bookingsApi` is loaded on demand rather than imported. It pulls in the
  * Supabase client — 200 KB — and this provider wraps the whole site, so a
@@ -51,6 +52,12 @@ export interface Booking {
   bookingSource?: 'website' | 'phone' | 'tech';
   /** The admin who took a phone booking, or the tech who made a tech booking. */
   bookedByName?: string | null;
+  licensePlate?: string | null;
+  /** What the vehicle needs, from the tech's phone call, with the estimate
+   *  and the tech's payout on it. */
+  workOrder?: WorkOrder | null;
+  workOrderTotalCents?: number | null;
+  workOrderPayoutCents?: number | null;
   /** Supabase row UUID (for authenticated updates). */
   supabaseId?: string;
   paymentIntentId?: string | null;

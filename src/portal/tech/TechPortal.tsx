@@ -5,7 +5,7 @@ import { TechSettingsTab } from './TechSettingsTab';
 import { ContractorAgreementGate } from './ContractorAgreementGate';
 import { VehicleInsuranceDisclosureGate } from './VehicleInsuranceDisclosureGate';
 import { BrandLogo } from '../../components/BrandLogo';
-import { BookingModal } from '../../components/BookingModal';
+import { TechPhoneJobForm } from './TechPhoneJobForm';
 import { supabase } from '../../services/supabaseClient';
 import { openOnTheWaySms } from '../../services/onTheWaySms';
 import { shiftElapsedLabel } from '../../services/techShifts';
@@ -45,8 +45,8 @@ export const TechPortal: React.FC<TechPortalProps> = ({
   // Bumped when the gate captures a signature, so Me refetches its status.
   const [agreementSignedAt, setAgreementSignedAt] = useState(0);
   const [payments, setPayments] = useState<Record<string, PaymentSummary>>({});
-  /** Set while the tech is booking a visit; a fresh key gives a blank form each time. */
-  const [bookingKey, setBookingKey] = useState<number | null>(null);
+  /** True while the tech is writing up a phone call as a new job. */
+  const [newJob, setNewJob] = useState(false);
   // Back from Square Point of Sale with a card payment (or a cancel).
   const [squareReturn, setSquareReturn] = useState<SquareReturn | null>(() => {
     const r = readSquareReturn(window.location.search);
@@ -111,6 +111,7 @@ export const TechPortal: React.FC<TechPortalProps> = ({
 
   const goTab = (t: Tab) => {
     setView(null);
+    setNewJob(false);
     setTab(t);
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
@@ -132,6 +133,8 @@ export const TechPortal: React.FC<TechPortalProps> = ({
         }}
       />
     );
+  } else if (newJob) {
+    body = <TechPhoneJobForm onBack={() => setNewJob(false)} onBooked={() => void api.load()} />;
   } else if (api.loading) {
     body = <p className="py-10 text-center text-sm text-slate-400">Loading your jobs…</p>;
   } else if (view && viewJob && view.kind === 'job') {
@@ -174,12 +177,15 @@ export const TechPortal: React.FC<TechPortalProps> = ({
         onOpenJob={(id) => setView({ kind: 'job', id })}
         onTextOnTheWay={textOnTheWay}
         onSeeOpen={() => goTab('open')}
-        onBook={() => setBookingKey(Date.now())}
+        onBook={() => {
+          setNewJob(true);
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }}
       />
     );
   }
 
-  const inFlow = Boolean(view && viewJob);
+  const inFlow = Boolean(view && viewJob) || (newJob && !squareReturn);
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'today', label: 'Today', icon: <Clock className="h-[22px] w-[22px]" aria-hidden="true" /> },
     { id: 'open', label: openCount ? `Open (${openCount})` : 'Open', icon: <LayoutList className="h-[22px] w-[22px]" aria-hidden="true" /> },
@@ -267,15 +273,6 @@ export const TechPortal: React.FC<TechPortalProps> = ({
         </div>
       </main>
 
-      {bookingKey !== null && (
-        <BookingModal
-          key={bookingKey}
-          isOpen
-          techBooking
-          onClose={() => setBookingKey(null)}
-          onBookingSubmitted={() => void api.load()}
-        />
-      )}
 
       {!inFlow && (
         <nav aria-label="Tech portal" className="fixed inset-x-0 bottom-0 z-30 border-t border-white/[0.08] bg-[#0e1016] pb-[env(safe-area-inset-bottom)]">

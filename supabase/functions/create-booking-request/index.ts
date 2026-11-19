@@ -2,7 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/http.ts';
 import { assertServiceArea, resolveServiceZip } from '../_shared/serviceArea.ts';
-import { TRAVEL_FEE_DOLLARS, computeQuoteFromServices } from '../_shared/servicePricing.ts';
+import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS, computeQuoteFromServices } from '../_shared/servicePricing.ts';
 import {
   buildBookingConfirmationEmail,
   buildBookingConfirmationSms,
@@ -21,6 +21,8 @@ import {
 } from '../_shared/newJobAlert.ts';
 import { sendExpoPush } from '../_shared/expoPush.ts';
 import { techBookingBlocker } from '../_shared/techBooking.ts';
+import { parseWorkOrder, workOrderCloseOutInput } from '../_shared/workOrder.ts';
+import { computeCloseOut } from '../_shared/closeOut.ts';
 
 /** Replaces create-booking-with-hold. No card is taken online any more: the
  *  booking is a request for a visit, and the customer pays the technician in
@@ -82,13 +84,16 @@ Deno.serve(async (req) => {
     if (!customerPhone?.trim()) {
       return jsonResponse({ error: 'Phone number is required.' }, 400);
     }
+    /* A plate is optional on any booking; kept only when it looks like one. */
+    const plateRaw = typeof body.licensePlate === 'string' ? body.licensePlate.trim().toUpperCase() : '';
+    const licensePlate = /^[A-Z0-9 -]{1,10}$/.test(plateRaw) ? plateRaw : null;
 
     /* The quote is what the customer is told the visit costs, not an amount we
        collect. It still comes from the one catalog so the site, the dispatch
        console and this row cannot disagree. */
     const quote = computeQuoteFromServices(services);
-    const quotedDollars = quote.quotedDollars;
-    const normalizedServices = quote.serviceTitles;
+    let quotedDollars = quote.quotedDollars;
+    let normalizedServices = quote.serviceTitles;
 
     const email = customerEmail?.trim() || undefined;
 
@@ -149,6 +154,25 @@ Deno.serve(async (req) => {
       if (blocked) return jsonResponse({ error: blocked }, 403);
     }
     const onBehalf = phoneBooking || techBooking;
+
+    /* The tech's work order from the phone call. The totals are summed here,
+       never taken from the browser, with the close-out code itself, so the
+       estimate dispatch sees is what the tech will charge for the same lines.
+       Its lines become the services on the board, and the estimate replaces
+       the catalog quote. */
+    const workOrder = techBooking ? parseWorkOrder(body.workOrder) : null;
+    let workOrderTotals: { totalCents: number; techPayoutCents: number } | null = null;
+    if (workOrder) {
+      const c = computeCloseOut(
+        workOrderCloseOutInput(workOrder, {
+          diagnosticCents: DIAGNOSTIC_FEE_DOLLARS * 100,
+          travelCents: locType === 'shop' ? 0 : TRAVEL_FEE_DOLLARS * 100,
+        })
+      );
+      workOrderTotals = { totalCents: c.totalCents, techPayoutCents: c.techPayoutCents };
+      quotedDollars = c.totalCents / 100;
+      normalizedServices = workOrder.lines.map((l) => l.title);
+    }
     const customerId = onBehalf ? null : userId;
 
     let resolvedPartnerId: string | null = null;
@@ -256,6 +280,10 @@ Deno.serve(async (req) => {
         /* Still UNASSIGNED until the tech taps Start, but already theirs:
            it shows on their Booked list and never on the open board. */
         mechanic_id: techBooking ? userId : null,
+        license_plate: licensePlate,
+        work_order: workOrder,
+        work_order_total_cents: workOrderTotals?.totalCents ?? null,
+        work_order_tech_payout_cents: workOrderTotals?.techPayoutCents ?? null,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
         customer_email: email ?? null,
@@ -294,7 +322,7 @@ Deno.serve(async (req) => {
         /* Nothing is authorized, so hold_amount_cents stays null: a null here
            means "no card was ever held", which is now true of every booking. */
         payment_status: 'pay_in_person',
-        quote_status: quote.mode === 'diagnostic' ? 'awaiting_diagnostic' : 'none',
+        quote_status: workOrder ? 'none' : quote.mode === 'diagnostic' ? 'awaiting_diagnostic' : 'none',
       })
       .select('id, reference_code')
       .single();
@@ -340,8 +368,10 @@ Deno.serve(async (req) => {
       referenceCode: booking.reference_code,
       services: normalizedServices,
       quotedDollars,
-      quoteMode: quote.mode,
-      travelDollars: locationType === 'shop' ? 0 : TRAVEL_FEE_DOLLARS,
+      /* A work order's estimate already has the diagnostic, travel and tax
+         in it, so the text gives it as one estimate. */
+      quoteMode: workOrder ? 'direct' : quote.mode,
+      travelDollars: workOrder || locationType === 'shop' ? 0 : TRAVEL_FEE_DOLLARS,
       vehicleDescription: vehicleDescriptionFinal,
       preferredDate: typeof preferredDate === 'string' ? preferredDate.trim() : null,
       preferredTimeWindow: typeof preferredTimeWindow === 'string' ? preferredTimeWindow.trim() : null,

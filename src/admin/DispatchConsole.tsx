@@ -834,6 +834,11 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
           VIN{booking.vin ? '' : ' · not given'}
         </p>
         <VinLookupPanel key={booking.id} initialVin={booking.vin} />
+        {booking.licensePlate && (
+          <p className="mt-1.5 text-xs text-slate-300">
+            Plate <span className="font-bold tracking-wider text-white">{booking.licensePlate}</span>
+          </p>
+        )}
         <a
           href={apDataJobUrl({ referenceCode: booking.id, vin: booking.vin, vehicle: booking.vehicle, issueDescription: booking.issueDescription })}
           target="_blank"
@@ -858,6 +863,44 @@ const BookingDetail: React.FC<BookingDetailProps> = ({
             : ' · Pay in person'}
         </p>
       </div>
+
+      {booking.workOrder && (
+        <div className="rounded-xl bg-[#0b0c10] border border-emerald-500/25 p-3 space-y-2">
+          <p className="text-[10px] uppercase font-bold text-emerald-300">
+            Work order{booking.bookedByName ? ` · from ${booking.bookedByName}` : ''}
+          </p>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-slate-500 text-left">
+                <th className="font-semibold pb-1">Part / job</th>
+                <th className="font-semibold pb-1 text-right">Part</th>
+                <th className="font-semibold pb-1 text-right">Labor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {booking.workOrder.lines.map((l, i) => (
+                <tr key={i} className="text-slate-200 border-t border-white/5">
+                  <td className="py-1 pr-2">{l.title}</td>
+                  <td className="py-1 text-right">{formatMoney(l.partsCents)}</td>
+                  <td className="py-1 text-right">{formatMoney(l.laborCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="text-xs text-slate-400">
+            Parts {formatMoney(booking.workOrder.lines.reduce((t, l) => t + l.partsCents, 0))} · Labor{' '}
+            {formatMoney(booking.workOrder.lines.reduce((t, l) => t + l.laborCents, 0))} ·{' '}
+            {booking.workOrder.partsPickup ? '10% pickup fee on' : 'no pickup fee'}
+          </p>
+          {booking.workOrderTotalCents != null && (
+            <p className="text-sm font-bold text-white">Estimate {formatMoney(booking.workOrderTotalCents)}</p>
+          )}
+          {booking.workOrderPayoutCents != null && (
+            <p className="text-sm font-bold text-emerald-300">Tech payout {formatMoney(booking.workOrderPayoutCents)}</p>
+          )}
+          <p className="text-[11px] text-slate-500">Part prices include the tech’s upcharge. Final amounts are set when the tech closes the job.</p>
+        </div>
+      )}
 
       <div className="rounded-xl bg-[#0b0c10] border border-white/10 p-3 space-y-1.5">
         <p className="text-[10px] uppercase font-bold text-slate-500 flex items-center gap-1">

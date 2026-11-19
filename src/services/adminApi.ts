@@ -35,6 +35,10 @@ const ADMIN_BOOKING_SELECT = `
   preferred_mechanic_id,
   hold_expires_at,
   booking_source,
+  license_plate,
+  work_order,
+  work_order_total_cents,
+  work_order_tech_payout_cents,
   booked_by_profile:profiles!bookings_booked_by_fkey ( full_name ),
   mechanic:profiles!bookings_mechanic_id_fkey (
     id,

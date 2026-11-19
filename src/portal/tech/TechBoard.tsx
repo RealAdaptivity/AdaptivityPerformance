@@ -177,7 +177,7 @@ export const TodayScreen: React.FC<{
         onClick={onBook}
         className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl border border-brand/45 bg-brand/10 text-[15px] font-bold text-orange-100 hover:bg-brand/15"
       >
-        <CalendarPlus className="h-5 w-5" aria-hidden="true" /> Book an appointment
+        <CalendarPlus className="h-5 w-5" aria-hidden="true" /> New phone job
       </button>
       <section className="space-y-2.5" aria-labelledby="now-heading">
         <h2 id="now-heading" className={capClass}>
