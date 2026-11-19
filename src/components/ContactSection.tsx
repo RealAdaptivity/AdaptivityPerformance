@@ -164,7 +164,7 @@ export const ContactSection: React.FC<ContactFormProps> = ({ onOpenBooking }) =>
                 className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2"
               >
                 <Wrench className="w-4 h-4" />
-                Skip the Form — Book Online Now
+                Skip the Form — Call to Book
               </button>
             )}
           </div>

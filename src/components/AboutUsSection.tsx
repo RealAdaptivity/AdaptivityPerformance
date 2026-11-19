@@ -55,8 +55,8 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
   const steps = [
     {
       icon: <CalendarCheck className="w-5 h-5 text-orange-400" />,
-      title: 'Book a time',
-      body: `Online in about a minute, or call ${SITE_PHONE_DISPLAY}. Tell us the vehicle, where it is and what it’s doing.`,
+      title: 'Call to book',
+      body: `Call ${SITE_PHONE_DISPLAY} and a real person books your time. Tell us the vehicle, where it is and what it’s doing.`,
     },
     {
       icon: <Wrench className="w-5 h-5 text-orange-400" />,
@@ -211,7 +211,7 @@ export const AboutUsSection: React.FC<AboutUsSectionProps> = ({
               onClick={onOpenBooking}
               className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold"
             >
-              Book a visit <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              Call to book <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </button>
             <a
               href={SITE_PHONE_TEL}

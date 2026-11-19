@@ -53,7 +53,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking,
             </span>
           </h2>
           <p className="text-sm text-slate-400 leading-relaxed">
-            Select a service below to view transparent pricing and schedule your mobile mechanic. 
+            Select a service below to view transparent pricing, then call to book your mobile mechanic. 
             All jobs are backed by our 12-month nationwide warranty.
           </p>
           <button
@@ -61,7 +61,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ onOpenBooking,
             onClick={onOpenBooking}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm shadow-lg shadow-orange-500/20"
           >
-            Schedule Mobile Service
+            Call to book
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

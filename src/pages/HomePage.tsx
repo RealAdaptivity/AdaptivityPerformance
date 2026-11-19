@@ -30,7 +30,7 @@ type Props = {
  */
 export const HomePage: React.FC<Props> = ({ onBook }) => (
   <>
-    <Hero onBook={onBook} />
+    <Hero />
     <PriceBand />
     <ServicesGrid onBook={onBook} />
     <HowItWorks />
@@ -38,6 +38,6 @@ export const HomePage: React.FC<Props> = ({ onBook }) => (
     <CoverageSection />
     <TrustBand />
     <MoreLinks />
-    <FinalCta onBook={onBook} />
+    <FinalCta />
   </>
 );

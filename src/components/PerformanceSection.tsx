@@ -92,7 +92,7 @@ export const PerformanceSection: React.FC<PerformanceSectionProps> = ({ onOpenBo
                 onClick={onOpenBooking}
                 className="w-full mt-2 py-2.5 bg-slate-800 hover:bg-orange-500 text-slate-200 hover:text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5"
               >
-                <span>Request Custom Quote</span>
+                <span>Call for a custom quote</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

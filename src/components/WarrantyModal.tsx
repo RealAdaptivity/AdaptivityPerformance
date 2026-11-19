@@ -84,7 +84,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ isOpen, onClose, o
             }}
             className="flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-500/25 hover:scale-105 active:scale-95 transition-all text-center"
           >
-            Book Warrantied Repair Now
+            Call to Book a Warrantied Repair
           </button>
           <button
             onClick={onClose}

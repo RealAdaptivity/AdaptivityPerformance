@@ -6,6 +6,7 @@ import {
   Disc,
   Droplet,
   Gauge,
+  MessageSquare,
   Phone,
   ShieldCheck,
   Star,
@@ -13,7 +14,8 @@ import {
   Wrench,
 } from 'lucide-react';
 import { LOCAL_CITIES, LOCAL_HUB, cityPathOf } from '../site/localSeo';
-import { GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_E164, SITE_PHONE_TEL } from '../site/seo';
+import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { SiteLink } from '../site/SiteLink';
 import {
   BOOKABLE_SERVICE_CATALOG,
@@ -129,7 +131,7 @@ export const ServicesGrid: React.FC<{ onBook: OnBook }> = ({ onBook }) => (
             <span className="mt-4 flex items-center justify-between gap-2">
               <span className="text-[13px] font-bold text-brand-soft">{servicePriceLabel(service)}</span>
               <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-slate-400 group-hover:text-white">
-                Book <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                Call to book <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </span>
             </span>
           </button>
@@ -160,23 +162,23 @@ export const HowItWorks: React.FC = () => (
     <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-5">
       <h2 id="how-heading" className={`${sectionHeading} text-3xl sm:text-[38px] leading-[1.1]`}>
         Three steps,
-        <br className="hidden lg:block" /> no phone tag
+        <br className="hidden lg:block" /> one phone call
       </h2>
       <ol className="grid gap-6 sm:grid-cols-3 sm:gap-5">
         <li className="border-t-[3px] border-brand pt-5">
           <span className="font-heading text-[13px] font-bold tracking-[0.1em] text-brand">STEP 01</span>
-          <h3 className="mt-3 text-xl font-bold text-white">Book in about a minute</h3>
+          <h3 className="mt-3 text-xl font-bold text-white">Call {SITE_PHONE_DISPLAY}</h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            Tell us the vehicle, the address and what it’s doing. Add photos or a video of the noise
-            if you have them.
+            Tell a real person the vehicle, the address and what it’s doing, and get a time on the
+            call. Text photos or a video of the noise if you have them.
           </p>
         </li>
         <li className="border-t-[3px] border-white/[0.16] pt-5">
           <span className="font-heading text-[13px] font-bold tracking-[0.1em] text-slate-400">STEP 02</span>
           <h3 className="mt-3 text-xl font-bold text-white">A certified tech comes out</h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            You get a booking reference straight away and can follow the job from your customer
-            portal.
+            You get a booking reference by text straight away and can follow the job from your
+            customer portal.
           </p>
         </li>
         <li className="border-t-[3px] border-white/[0.16] pt-5">
@@ -335,7 +337,7 @@ export const MoreLinks: React.FC = () => (
   </section>
 );
 
-export const FinalCta: React.FC<{ onBook: OnBook }> = ({ onBook }) => (
+export const FinalCta: React.FC = () => (
   <section aria-labelledby="final-cta-heading" className="mt-12 lg:mt-14 bg-brand">
     <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-10 lg:py-12 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -343,7 +345,7 @@ export const FinalCta: React.FC<{ onBook: OnBook }> = ({ onBook }) => (
           Not sure what’s wrong? That’s the {FEE}.
         </h2>
         <p className="mt-1.5 text-[15px] font-medium text-[#0b0c10]/80">
-          Call and talk to a person, or book online and pick a time that suits you.
+          Call and talk to a person — we’ll book a time that suits you on the call.
         </p>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -353,13 +355,13 @@ export const FinalCta: React.FC<{ onBook: OnBook }> = ({ onBook }) => (
         >
           <Phone className="w-4 h-4" aria-hidden="true" /> Call {SITE_PHONE_DISPLAY}
         </a>
-        <button
-          type="button"
-          onClick={() => onBook({}, 'home_final_cta')}
+        <a
+          href={`sms:${SITE_PHONE_E164}`}
+          onClick={() => trackEvent(CONVERSION_EVENTS.textClicked, { source: 'home_final_cta' })}
           className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl border-[1.5px] border-[#0b0c10]/50 bg-[#0b0c10]/[0.08] px-7 text-base font-bold text-[#0b0c10] hover:bg-[#0b0c10]/[0.14]"
         >
-          Book online <ArrowRight className="w-4 h-4" aria-hidden="true" />
-        </button>
+          <MessageSquare className="w-4 h-4" aria-hidden="true" /> Text us
+        </a>
       </div>
     </div>
   </section>

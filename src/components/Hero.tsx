@@ -1,33 +1,24 @@
 import React, { useState } from 'react';
 import { ArrowRight, CheckCircle2, MapPin, Phone, ShieldCheck, Star, Wrench } from 'lucide-react';
 import { LOCAL_CITIES, LOCAL_HUB } from '../site/localSeo';
-import { GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { BUSINESS_HOURS, GOOGLE_RATING, GOOGLE_REVIEW_URL, SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
+import { CONVERSION_EVENTS, trackEvent } from '../site/analytics';
 import { lookupServiceZip } from '../services/serviceArea';
 import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../services/serviceCatalog';
-import {
-  checkHeroCoverage,
-  heroPrefill,
-  type BookingPrefill,
-  type HeroCoverage,
-} from '../site/homeContent';
-
-interface HeroProps {
-  onBook: (prefill: BookingPrefill, source: string) => void;
-}
+import { checkHeroCoverage, type HeroCoverage } from '../site/homeContent';
 
 /**
- * The top of the homepage. The right half is the first step of booking rather
- * than a button that leads to it: the one thing this page is for is getting a
- * driver from "my truck is making a noise" to a booked visit.
+ * The top of the homepage. The right half checks the driver's ZIP and then
+ * hands them the phone number: booking is by phone, with a person, so the one
+ * thing this page is for is getting a driver from "my truck is making a
+ * noise" to a call.
  *
  * There is deliberately no photo here any more. The old hero's background image
  * was the page's LCP element; the headline is now, and it paints without waiting
  * on a download. index.html no longer preloads the image for the same reason.
  */
-export const Hero: React.FC<HeroProps> = ({ onBook }) => {
+export const Hero: React.FC = () => {
   const [zip, setZip] = useState('');
-  const [vehicle, setVehicle] = useState('');
-  const [issue, setIssue] = useState('');
   /* null until they press the button; changing the ZIP clears it, so an answer
      on screen always belongs to the ZIP in the box. */
   const [result, setResult] = useState<HeroCoverage | null>(null);
@@ -37,10 +28,6 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (result?.kind === 'covered') {
-      onBook(heroPrefill({ zip: result.zip, vehicle, issue }), 'home_hero');
-      return;
-    }
     setResult(checkHeroCoverage(zip, (z) => lookupServiceZip(z)));
   };
 
@@ -77,9 +64,11 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
               className="rounded-[22px] border border-white/[0.11] bg-[#12141c] p-5 sm:p-7"
             >
               <h2 className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-white">
-                Check your address, get a time
+                Check your address, then call to book
               </h2>
-              <p className="mt-1.5 text-sm text-slate-400">Takes about a minute. No account needed.</p>
+              <p className="mt-1.5 text-sm text-slate-400">
+                A person answers {BUSINESS_HOURS.label} and books your time on the call.
+              </p>
 
               <div className="mt-5 space-y-4">
                 <div>
@@ -111,35 +100,6 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
                   )}
                 </div>
 
-                <div>
-                  <label htmlFor="hero-vehicle" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-2">
-                    Year, make &amp; model
-                  </label>
-                  <input
-                    id="hero-vehicle"
-                    type="text"
-                    autoComplete="off"
-                    placeholder="2018 Ram 1500 Big Horn"
-                    value={vehicle}
-                    onChange={(e) => setVehicle(e.target.value)}
-                    className="w-full min-h-[52px] rounded-xl bg-[#0b0c10] px-4 text-base font-medium text-white placeholder:text-slate-500 border border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-brand/60"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="hero-issue" className="block text-[11px] font-bold uppercase tracking-[0.08em] text-slate-400 mb-2">
-                    What’s it doing?
-                  </label>
-                  <input
-                    id="hero-issue"
-                    type="text"
-                    autoComplete="off"
-                    placeholder="Grinding when I brake"
-                    value={issue}
-                    onChange={(e) => setIssue(e.target.value)}
-                    className="w-full min-h-[52px] rounded-xl bg-[#0b0c10] px-4 text-base font-medium text-white placeholder:text-slate-500 border border-white/[0.14] focus:outline-none focus:ring-2 focus:ring-brand/60"
-                  />
-                </div>
               </div>
 
               <div aria-live="polite" className="empty:hidden mt-4">
@@ -174,13 +134,32 @@ export const Hero: React.FC<HeroProps> = ({ onBook }) => {
                 )}
               </div>
 
-              <button
-                type="submit"
-                className="mt-5 w-full min-h-[56px] rounded-2xl bg-brand text-[#0b0c10] text-base font-extrabold inline-flex items-center justify-center gap-2 hover:brightness-110 active:brightness-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12141c]"
-              >
-                {result?.kind === 'covered' ? 'Pick a time' : 'See if we cover you'}
-                <ArrowRight className="w-5 h-5" aria-hidden="true" />
-              </button>
+              {result?.kind === 'covered' ? (
+                <a
+                  href={SITE_PHONE_TEL}
+                  onClick={() => trackEvent(CONVERSION_EVENTS.callClicked, { source: 'home_hero' })}
+                  className="mt-5 w-full min-h-[56px] rounded-2xl bg-brand text-[#0b0c10] text-base font-extrabold inline-flex items-center justify-center gap-2 hover:brightness-110 active:brightness-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12141c]"
+                >
+                  <Phone className="w-5 h-5" aria-hidden="true" /> Call {SITE_PHONE_DISPLAY} to book
+                </a>
+              ) : (
+                <button
+                  type="submit"
+                  className="mt-5 w-full min-h-[56px] rounded-2xl bg-brand text-[#0b0c10] text-base font-extrabold inline-flex items-center justify-center gap-2 hover:brightness-110 active:brightness-95 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12141c]"
+                >
+                  See if we cover you
+                  <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                </button>
+              )}
+              {result?.kind !== 'covered' && (
+                <a
+                  href={SITE_PHONE_TEL}
+                  onClick={() => trackEvent(CONVERSION_EVENTS.callClicked, { source: 'home_hero_skip' })}
+                  className="mt-3 flex min-h-[44px] items-center justify-center gap-2 text-sm font-bold text-brand-soft hover:text-white"
+                >
+                  <Phone className="w-4 h-4" aria-hidden="true" /> Or just call {SITE_PHONE_DISPLAY}
+                </a>
+              )}
 
               <p className="mt-4 text-center text-[13px] leading-relaxed text-slate-400">
                 <strong className="font-bold text-brand-soft">${DIAGNOSTIC_FEE_DOLLARS}</strong> brings a tech

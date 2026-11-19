@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { LOCAL_HUB } from '../site/localSeo';
 import {
   Phone,
-  Calendar,
   Clock,
   ShieldCheck,
   Truck,
@@ -146,9 +145,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onOpenBooking}
             className="inline-flex items-center gap-2 whitespace-nowrap bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm px-3.5 sm:px-5 py-2.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all transform hover:-translate-y-0.5 active:scale-95"
           >
-            <Calendar className="w-4 h-4 hidden min-[400px]:block" aria-hidden="true" />
-            <span className="xl:hidden">Book now</span>
-            <span className="hidden xl:inline">Book Service Now</span>
+            <Phone className="w-4 h-4 hidden min-[400px]:block" aria-hidden="true" />
+            <span>Call to book</span>
           </button>
 
           <button
@@ -278,8 +276,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }}
                   className="mt-2 mx-1 mb-1 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-orange-500/25"
                 >
-                  <Calendar className="w-4 h-4" />
-                  Schedule / Call for Quote
+                  <Phone className="w-4 h-4" />
+                  Call to book
                 </button>
               </div>
             </div>

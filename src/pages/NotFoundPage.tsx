@@ -55,7 +55,7 @@ export const NotFoundPage: React.FC = () => {
           <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Quick Links</p>
           <div className="flex flex-wrap justify-center gap-2 text-xs">
             {([
-              ['Book Service', 'home'],
+              ['Call to Book', 'home'],
               ['Services', 'services'],
               ['Get a Quote', 'services'],
               ['About Us', 'about'],

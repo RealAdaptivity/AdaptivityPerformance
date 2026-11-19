@@ -72,7 +72,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenBooking, onOpenTracker }) 
         <div className="space-y-3">
           <h4 className="font-heading text-sm font-bold text-white uppercase tracking-wider">For customers</h4>
           <ul className="space-y-2">
-            <li><button type="button" onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Book a visit</button></li>
+            <li><button type="button" onClick={onOpenBooking} className="hover:text-orange-400 transition-colors">Call to book</button></li>
             <li><button type="button" onClick={onOpenTracker} className="hover:text-orange-400 transition-colors">Track my repair</button></li>
             <li><SiteLink to="services" className="hover:text-orange-400 transition-colors">Services &amp; prices</SiteLink></li>
             <li><SiteLink to="coverage" className="hover:text-orange-400 transition-colors">Service area — {LOCAL_HUB.radiusMiles} miles from Justin</SiteLink></li>
