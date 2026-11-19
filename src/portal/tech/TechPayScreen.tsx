@@ -60,13 +60,23 @@ export const TechPayScreen: React.FC<{
   const shop = job.locationType === 'shop';
 
   const [mode, setMode] = useState<Mode>('charge');
-  const [lines, setLines] = useState<LineDraft[]>([{ title: '', labor: '', parts: '' }]);
+  /* A job written up on the phone starts from its work order; the tech
+     changes whatever turned out different at the vehicle. */
+  const [lines, setLines] = useState<LineDraft[]>(() =>
+    job.workOrder
+      ? job.workOrder.lines.map((l) => ({
+          title: l.title,
+          labor: l.laborCents ? (l.laborCents / 100).toFixed(2) : '',
+          parts: l.partsCents ? (l.partsCents / 100).toFixed(2) : '',
+        }))
+      : [{ title: '', labor: '', parts: '' }]
+  );
   const [member, setMember] = useState(false);
   const [weather, setWeather] = useState(false);
   const [firstResponder, setFirstResponder] = useState(false);
   /* On by default: when we supply the parts (the tech or the company bought
      them), someone made the trip to get them. Off for parts already on the van. */
-  const [partsPickup, setPartsPickup] = useState(true);
+  const [partsPickup, setPartsPickup] = useState(job.workOrder ? job.workOrder.partsPickup : true);
   const [taxMode, setTaxMode] = useState<TaxMode>('parts');
   const [partsBy, setPartsBy] = useState<PartsBy>('tech');
   const [notes, setNotes] = useState('');

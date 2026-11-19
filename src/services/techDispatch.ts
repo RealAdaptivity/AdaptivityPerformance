@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient';
 import { parseVehicleClass, type VehicleClass } from './vehicleLaborRate';
 import { invokeEdgeFunction } from './edgeFunctionErrors';
+import { parseWorkOrder, type WorkOrder } from './workOrder';
 
 export type DispatchBooking = {
   id: string;
@@ -31,6 +32,12 @@ export type DispatchBooking = {
   vin: string | null;
   /** Photos and videos the customer attached, in the private booking-media bucket. */
   mediaPaths: string[];
+  licensePlate: string | null;
+  /** What the vehicle needs, from the tech's phone call. Null when none. */
+  workOrder: WorkOrder | null;
+  /** The work order's estimated total and the tech's payout on it. */
+  workOrderTotalCents: number | null;
+  workOrderPayoutCents: number | null;
   createdAt: string;
 };
 
@@ -61,6 +68,10 @@ function mapRow(row: Record<string, unknown>): DispatchBooking {
     issueDescription: (row.issue_description as string | null) ?? null,
     vin: (row.vin as string | null) ?? null,
     mediaPaths: Array.isArray(row.media_paths) ? (row.media_paths as string[]) : [],
+    licensePlate: (row.license_plate as string | null) ?? null,
+    workOrder: parseWorkOrder(row.work_order),
+    workOrderTotalCents: (row.work_order_total_cents as number | null) ?? null,
+    workOrderPayoutCents: (row.work_order_tech_payout_cents as number | null) ?? null,
     createdAt: (row.created_at as string) ?? '',
   };
 }

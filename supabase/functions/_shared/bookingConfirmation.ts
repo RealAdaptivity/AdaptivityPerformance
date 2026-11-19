@@ -28,6 +28,9 @@ const MONTHS = [
 ];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+/** '185' for whole dollars, '321.50' otherwise (a work order estimate has tax in it). */
+const dollarsText = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+
 /** '2026-10-02' -> 'Fri Oct 2'.
  *
  *  Built from the parts rather than `new Date('2026-10-02')`, which parses as
@@ -66,7 +69,7 @@ export function buildBookingConfirmationSms(input: BookingConfirmationInput): st
   parts.push(
     input.quoteMode === 'diagnostic'
       ? `$${input.quotedDollars} diagnostic${travel}; your tech quotes any repair on site before starting.`
-      : `Estimate $${input.quotedDollars}${travel}.`
+      : `Estimate $${dollarsText(input.quotedDollars)}${travel}.`
   );
 
   parts.push('Pay your tech in person when the work is done — nothing is charged online.');
@@ -108,7 +111,7 @@ export function buildBookingConfirmationEmail(input: BookingConfirmationEmailInp
   const cost =
     input.quoteMode === 'diagnostic'
       ? `$${input.quotedDollars} diagnostic${travel}. Your tech prices any repair on site before starting.`
-      : `Estimate $${input.quotedDollars}${travel}.`;
+      : `Estimate $${dollarsText(input.quotedDollars)}${travel}.`;
   const steps = [
     'We call or text to confirm your arrival time.',
     'Your technician texts when they’re on the way.',

@@ -57,6 +57,11 @@ export async function createBookingRequest(params: {
    *  caller is an active tech with their paperwork done, leaves the booking
    *  unowned (it belongs to the customer) and assigns it to that tech. */
   techBooking?: boolean;
+  /** The vehicle's license plate. Optional on any booking. */
+  licensePlate?: string;
+  /** A tech booking only: what the vehicle needs, as the tech wrote it up on
+   *  the call. Lines in dollars; the server sums the estimate and payout. */
+  workOrder?: { lines: { title: string; parts: string; labor: string }[]; partsPickup: boolean };
 }): Promise<BookingRequestResult> {
   const data = await invokeEdgeFunction<BookingRequestResult>('create-booking-request', params);
   if (!data?.bookingReference) throw new Error('Booking reference missing from server response');

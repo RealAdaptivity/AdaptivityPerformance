@@ -9,6 +9,7 @@ import { DIAGNOSTIC_FEE_DOLLARS, TRAVEL_FEE_DOLLARS } from '../../services/servi
 import { vehicleLaborRateLabel } from '../../services/vehicleLaborRate';
 import { JobChatPanel } from '../../components/JobChatPanel';
 import { ApDataCard } from './ApDataCard';
+import { WorkOrderCard } from './WorkOrderCard';
 import { capClass, cardClass, directionsUrl, primaryService } from './techUi';
 import type { TechJobsApi } from './useTechJobs';
 
@@ -90,6 +91,7 @@ export const TechJobScreen: React.FC<{
           <div>
             <p className="font-heading text-xl font-bold leading-tight">{job.vehicle}</p>
             {job.vin && <p className="font-heading text-sm tracking-[0.06em] text-slate-400">VIN {job.vin}</p>}
+            {job.licensePlate && <p className="font-heading text-sm tracking-[0.06em] text-slate-400">Plate {job.licensePlate}</p>}
             {vehicleLaborRateLabel(job.vehicle, job.vehicleClass) && (
               <p className="mt-1 text-sm font-semibold text-amber-300">{vehicleLaborRateLabel(job.vehicle, job.vehicleClass)} labor</p>
             )}
@@ -132,6 +134,10 @@ export const TechJobScreen: React.FC<{
             </a>
           </div>
         </div>
+
+        {job.workOrder && (
+          <WorkOrderCard order={job.workOrder} totalCents={job.workOrderTotalCents} payoutCents={job.workOrderPayoutCents} />
+        )}
 
         <ApDataCard referenceCode={job.referenceCode} vin={job.vin} vehicle={job.vehicle} issue={job.issueDescription} />
 
@@ -180,6 +186,7 @@ export const TechJobScreen: React.FC<{
 
         <JobChatPanel bookingId={job.id} selfId={api.me} title="Customer chat" />
 
+        {!job.workOrder && (
         <div className={`${cardClass} flex items-center justify-between gap-3 p-4`}>
           <div>
             <p className={capClass}>Due at the visit</p>
@@ -189,6 +196,7 @@ export const TechJobScreen: React.FC<{
           </div>
           <p className="font-heading text-xl font-bold">${(diagnostic + travel).toFixed(0)}</p>
         </div>
+        )}
       </div>
 
       <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-white/[0.06] bg-[#0b0c10] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">

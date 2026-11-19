@@ -1,5 +1,6 @@
 import type { Booking, JobStatus, TechProfile } from '../context/BookingContext';
 import { parseVehicleClass } from './vehicleLaborRate';
+import { parseWorkOrder } from './workOrder';
 
 export type BookingRow = {
   id: string;
@@ -33,6 +34,10 @@ export type BookingRow = {
   preferred_mechanic_id?: string | null;
   hold_expires_at?: string | null;
   booking_source?: string | null;
+  license_plate?: string | null;
+  work_order?: unknown;
+  work_order_total_cents?: number | null;
+  work_order_tech_payout_cents?: number | null;
   booked_by_profile?: { full_name: string | null } | null;
   mechanic?: {
     id: string;
@@ -98,6 +103,10 @@ export function rowToBooking(row: BookingRow): Booking {
     holdExpiresAt: row.hold_expires_at ?? null,
     bookingSource: row.booking_source === 'phone' || row.booking_source === 'tech' ? row.booking_source : 'website',
     bookedByName: row.booked_by_profile?.full_name ?? null,
+    licensePlate: row.license_plate ?? null,
+    workOrder: parseWorkOrder(row.work_order),
+    workOrderTotalCents: row.work_order_total_cents ?? null,
+    workOrderPayoutCents: row.work_order_tech_payout_cents ?? null,
     supabaseId: row.id,
     paymentIntentId: row.payment_intent_id ?? null,
     paymentStatus: row.payment_status ?? 'none',
