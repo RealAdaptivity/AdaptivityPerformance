@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Calendar,
   CheckCircle2,
   Clock,
   MapPin,
@@ -79,21 +78,13 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           </dl>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() => book('city_hero')}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              Book {city.city} service — $100 diagnostic
-            </button>
             <a
               href={SITE_PHONE_TEL}
               onClick={() => trackEvent(CONVERSION_EVENTS.callClicked, { source: 'city_hero', city: city.slug })}
-              className="inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl border border-white/15 text-sm font-bold text-slate-200 hover:border-white/30 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Phone className="w-4 h-4" />
-              {SITE_PHONE_DISPLAY}
+              Call {SITE_PHONE_DISPLAY} to book
             </a>
           </div>
 
@@ -169,15 +160,15 @@ export const CityLandingPage: React.FC<Props> = ({ city, onOpenBooking }) => {
           </h2>
           <p className="text-sm text-slate-300 max-w-lg mx-auto">
             {city.city} is {city.distanceMiles} miles from the Justin hub — roughly {city.driveMinutes} minutes.
-            Book the $100 diagnostic visit and it comes straight off the repair.
+            Call to book the $100 diagnostic visit and it comes straight off the repair.
           </p>
           <button
             type="button"
             onClick={() => book('city_footer')}
             className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
           >
-            <Calendar className="w-4 h-4" />
-            Book {city.city} service
+            <Phone className="w-4 h-4" />
+            Call to book {city.city} service
           </button>
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
             <button

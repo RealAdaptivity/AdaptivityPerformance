@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, CheckCircle2, Phone, ShieldCheck, Star, Truck } from 'lucide-react';
+import { CheckCircle2, Phone, ShieldCheck, Star, Truck } from 'lucide-react';
 import { BrandLogo } from '../components/BrandLogo';
 import { LOCAL_HUB } from '../site/localSeo';
 import { SITE_PHONE_DISPLAY, SITE_PHONE_TEL } from '../site/seo';
@@ -55,21 +55,13 @@ export const AdLandingPage: React.FC<Props> = ({ landing, onOpenBooking }) => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() => book('ad_hero')}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/25 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              {landing.ctaLabel}
-            </button>
             <a
               href={SITE_PHONE_TEL}
               onClick={() => call('ad_hero')}
-              className="inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl border border-white/20 text-sm font-bold text-slate-100 hover:border-white/40 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Phone className="w-4 h-4" />
-              Call {SITE_PHONE_DISPLAY}
+              Call {SITE_PHONE_DISPLAY} to book
             </a>
           </div>
 
@@ -123,8 +115,8 @@ export const AdLandingPage: React.FC<Props> = ({ landing, onOpenBooking }) => {
               onClick={() => book('ad_footer')}
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/25 transition-colors"
             >
-              <Calendar className="w-4 h-4" />
-              Book now
+              <Phone className="w-4 h-4" />
+              Call to book
             </button>
             <a
               href={SITE_PHONE_TEL}

@@ -78,7 +78,7 @@ export const ReferralLandingPage: React.FC<Props> = ({ onOpenBooking }) => {
             onClick={() => onOpenBooking({ referralCode: code || undefined, source: 'referral_landing' })}
             className="px-5 py-3 rounded-xl bg-orange-500 text-white text-sm font-bold"
           >
-            Book with this code
+            Call to book — mention this code
           </button>
           <button
             type="button"

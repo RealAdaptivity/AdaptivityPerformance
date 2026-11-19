@@ -291,7 +291,7 @@ export const SITE_FAQS = [
   // BOOKING PROCESS
   {
     q: 'How do I book an appointment?',
-    a: `Booking is 100% online — click Book Service on our website, enter your vehicle details and service address, and choose an appointment window. No card is needed and nothing is charged online; you pay in person when the job is done. For same-day emergency dispatch, call or text us directly at ${SITE_PHONE_DISPLAY}.`,
+    a: `Call ${SITE_PHONE_DISPLAY} (${BUSINESS_HOURS.label}). A real person takes your vehicle details and service address and books your appointment window on the call — you get your booking reference by text. No card is needed and nothing is charged on the phone; you pay in person when the job is done. You can also text the same number, photos included.`,
   },
   {
     q: 'How long does a typical mobile repair take?',

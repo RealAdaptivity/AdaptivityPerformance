@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Calendar,
   CheckCircle2,
   Clock,
   MapPin,
@@ -94,14 +93,6 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
           </dl>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={() => book()}
-              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              Book {service.shortName.toLowerCase()} in {city.city}
-            </button>
             <a
               href={SITE_PHONE_TEL}
               onClick={() =>
@@ -111,10 +102,10 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
                   city: city.slug,
                 })
               }
-              className="inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl border border-white/15 text-sm font-bold text-slate-200 hover:border-white/30 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
               <Phone className="w-4 h-4" />
-              {SITE_PHONE_DISPLAY}
+              Call {SITE_PHONE_DISPLAY} to book {service.shortName.toLowerCase()}
             </a>
           </div>
           <p className="text-xs text-slate-500">{travelLabel(city)}</p>
@@ -213,8 +204,8 @@ export const ServiceCityPage: React.FC<Props> = ({ service, city, onOpenBooking 
               onClick={() => book('service_city_footer')}
               className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold shadow-lg shadow-orange-500/20 transition-colors"
             >
-              <Calendar className="w-4 h-4" />
-              Book now
+              <Phone className="w-4 h-4" />
+              Call to book
             </button>
             <a
               href={SITE_PHONE_TEL}

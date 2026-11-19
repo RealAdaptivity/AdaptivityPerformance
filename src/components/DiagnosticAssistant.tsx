@@ -200,7 +200,7 @@ export const DiagnosticAssistant: React.FC<DiagnosticAssistantProps> = ({ onSele
                 onClick={() => onSelectRecommendedService(activeSymptom.recommendedFix)}
                 className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center space-x-2"
               >
-                <span>Book This Recommended Repair</span>
+                <span>Call to Book This Repair</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 

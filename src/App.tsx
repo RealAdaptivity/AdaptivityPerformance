@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { BookingProvider, useBookingContext } from './context/BookingContext';
+import { BookingProvider } from './context/BookingContext';
 import { Navbar } from './components/Navbar';
 import { StickyMobileActionBar } from './components/StickyMobileActionBar';
 import { Footer } from './components/Footer';
@@ -14,12 +14,9 @@ const AdminApp = lazy(() => import('./admin/AdminApp').then((m) => ({ default: m
 const PortalApp = lazy(() => import('./portal/PortalApp').then((m) => ({ default: m.PortalApp })));
 
 // Modals and the chat widget are code-split: none of them is needed to paint a
-// landing page, and together they pulled the whole booking flow into
-// the first request. Each mounts only while open, so the chunk is fetched on the
-// click that needs it — with the booking chunk warmed on idle so the primary CTA
-// still opens instantly.
+// landing page. Each mounts only while open, so the chunk is fetched on the
+// click that needs it.
 const RepairTrackerDemo = lazy(() => import('./components/RepairTrackerDemo').then((m) => ({ default: m.RepairTrackerDemo })));
-const BookingModal = lazy(() => import('./components/BookingModal').then((m) => ({ default: m.BookingModal })));
 const TechRecruitmentModal = lazy(() => import('./components/TechRecruitmentModal').then((m) => ({ default: m.TechRecruitmentModal })));
 const PartnerApplyModal = lazy(() => import('./components/PartnerApplyModal').then((m) => ({ default: m.PartnerApplyModal })));
 const MembershipModal = lazy(() => import('./components/MembershipModal').then((m) => ({ default: m.MembershipModal })));
@@ -47,9 +44,9 @@ import { AdLandingPage } from './pages/AdLandingPage';
 import { adLandingFromPath, adLandingMeta } from './site/adLandings';
 import { CONVERSION_EVENTS, trackEvent } from './site/analytics';
 import type { BookingPrefill } from './site/homeContent';
+import { CallToBookModal } from './components/CallToBookModal';
 
 function MainAppContent() {
-  const { refreshBookings } = useBookingContext();
   const page = useSitePage();
   const pathname = useSitePathname();
   const cityLanding = cityFromPath(pathname);
@@ -83,7 +80,8 @@ function MainAppContent() {
     applyDocumentSeo(PAGE_SEO[page as keyof typeof PAGE_SEO] || PAGE_SEO.home);
   }, [page, cityLanding, serviceCity, adLanding]);
 
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  /* Booking is by phone: every "book" button opens the call-to-book box. */
+  const [callToBook, setCallToBook] = useState<{ source: string; service?: string } | null>(null);
   const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   const [isRecruitmentOpen, setIsRecruitmentOpen] = useState(false);
   const [isPartnerApplyOpen, setIsPartnerApplyOpen] = useState(false);
@@ -95,7 +93,6 @@ function MainAppContent() {
      called it, so it has always been 'mobile'. Kept as state for the pages that
      read it. */
   const [activeServiceMode] = useState<'mobile' | 'shop'>('mobile');
-  const [estimateDataForBooking, setEstimateDataForBooking] = useState<any>(null);
 
   // Legacy #hash links on `/` → real pages
   useEffect(() => {
@@ -146,22 +143,8 @@ function MainAppContent() {
     return () => window.clearTimeout(t);
   }, [page]);
 
-  /**
-   * Warm the booking chunk once the page is idle, so the primary CTA never
-   * waits on a network round trip.
-   */
-  useEffect(() => {
-    const onIdle = () => {
-      void import('./components/BookingModal');
-    };
-    if (typeof window.requestIdleCallback === 'function') {
-      const id = window.requestIdleCallback(onIdle, { timeout: 3000 });
-      return () => window.cancelIdleCallback?.(id);
-    }
-    const id = window.setTimeout(onIdle, 1200);
-    return () => window.clearTimeout(id);
-  }, []);
-
+  /* Every button that used to open the online booking form now opens the
+     call-to-book box. Analytics still hears which button it was. */
   const openBooking = (opts?: {
     referralCode?: string;
     source?: string;
@@ -176,37 +159,17 @@ function MainAppContent() {
       ...(referralCode ? { referred: true } : {}),
       ...(attribution as Record<string, string>),
     });
-    setEstimateDataForBooking({
-      locationType: 'mobile',
-      ...(referralCode ? { referralCode } : {}),
-    });
-    setIsBookingOpen(true);
+    setCallToBook({ source: source ?? 'site' });
   };
 
-  /* Opens the form already holding what the customer told the homepage. Only
-     the source goes to analytics — never the ZIP, the vehicle or their own
-     description of the problem. */
+  /* Only the source goes to analytics — never what the customer typed. */
   const openBookingWithPrefill = (prefill: BookingPrefill, source: string) => {
     trackEvent(CONVERSION_EVENTS.bookingOpened, {
       source,
       page,
       ...(pathname !== '/' ? { path: pathname } : {}),
     });
-    setEstimateDataForBooking({ locationType: 'mobile', ...prefill });
-    setIsBookingOpen(true);
-  };
-
-  const handleOpenBookingWithEstimate = (estimateDetails: any) => {
-    setEstimateDataForBooking(estimateDetails);
-    setIsBookingOpen(true);
-  };
-
-  const handleSelectRecommendedService = (serviceName: string) => {
-    setEstimateDataForBooking({
-      services: [serviceName],
-      locationType: 'mobile',
-    });
-    setIsBookingOpen(true);
+    setCallToBook({ source, service: prefill.services?.[0] });
   };
 
   const handleOpenMembershipModal = (planId?: 'basic' | 'vip' | 'fleet') => {
@@ -214,47 +177,19 @@ function MainAppContent() {
     setIsMembershipOpen(true);
   };
 
-  const handleBookMobileZip = (_zip: string) => {
-    setEstimateDataForBooking({
-      locationType: 'mobile',
-    });
-    setIsBookingOpen(true);
-  };
-
-  const handleBookingSubmittedInModal = (result: {
-    bookingReference: string;
-    quotedAmountDollars: number;
-    name: string;
-    phone: string;
-    vehicle: string;
-  }) => {
-    void refreshBookings();
-    return result.bookingReference;
-  };
-
   const pageActions = {
     onOpenBooking: openBooking,
     onOpenRecruitment: () => setIsRecruitmentOpen(true),
     onOpenPartnerApply: () => setIsPartnerApplyOpen(true),
     onOpenMembership: handleOpenMembershipModal,
-    onBookWithEstimate: handleOpenBookingWithEstimate,
-    onSelectRecommendedService: handleSelectRecommendedService,
+    onBookWithEstimate: () => setCallToBook({ source: 'estimate' }),
+    onSelectRecommendedService: (serviceName: string) => setCallToBook({ source: 'recommended_service', service: serviceName }),
     onBookService: (serviceId: string) => {
       const match = SERVICE_CATALOG.find((s) => s.id === serviceId);
-      setEstimateDataForBooking({
-        services: [match?.title || serviceId],
-        locationType: 'mobile' as const,
-      });
-      setIsBookingOpen(true);
+      setCallToBook({ source: 'service', service: match?.title });
     },
-    onBookAtShop: (partnerId: string) => {
-      setEstimateDataForBooking({
-        locationType: 'shop' as const,
-        partnerLocationId: partnerId,
-      });
-      setIsBookingOpen(true);
-    },
-    onBookMobileZip: handleBookMobileZip,
+    onBookAtShop: () => setCallToBook({ source: 'partner_shop' }),
+    onBookMobileZip: () => setCallToBook({ source: 'area_checker' }),
     activeServiceMode,
   };
 
@@ -304,8 +239,12 @@ function MainAppContent() {
             onOpenBooking={() => openBooking({ source: 'footer' })}
             onOpenTracker={() => setIsTrackerOpen(true)}
           />
-          <StickyMobileActionBar onOpenBooking={() => openBooking({ source: 'sticky_mobile' })} />
+          <StickyMobileActionBar />
         </>
+      )}
+
+      {callToBook && (
+        <CallToBookModal source={callToBook.source} service={callToBook.service} onClose={() => setCallToBook(null)} />
       )}
 
       {/* Fetched on the interaction that opens them, not on first paint. */}
@@ -325,14 +264,6 @@ function MainAppContent() {
         />
         )}
 
-        {isBookingOpen && (
-        <BookingModal
-          isOpen={isBookingOpen}
-          onClose={() => setIsBookingOpen(false)}
-          initialEstimateData={estimateDataForBooking}
-          onBookingSubmitted={handleBookingSubmittedInModal}
-        />
-        )}
 
         {isTrackerOpen && (
         <RepairTrackerDemo
